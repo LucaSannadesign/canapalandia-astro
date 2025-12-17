@@ -1,0 +1,80 @@
+---
+import { loadWp, toParams } from "../lib/wp";
+
+export async function getStaticPaths() {
+  const { entries } = await loadWp();
+
+  // Normalizza SEMPRE in: string | undefined (mai array/oggetto)
+  const normalize = (input: unknown): string | undefined => {
+    let v: unknown = input;
+
+    // Array tipo ["en","slug"] → "en/slug"
+    if (Array.isArray(v)) v = v.join("/");
+
+    // Oggetto → prova a leggere campi utili
+    if (v && typeof v === "object") {
+      const anyV = v as Record<string, unknown>;
+      v = anyV.path ?? anyV.slug ?? anyV.uri ?? anyV.value ?? "";
+      if (Array.isArray(v)) v = v.join("/");
+    }
+
+    // Forza stringa
+    const s = String(v ?? "");
+
+    // Pulisci query/hash e slash
+    const cleaned = s.split(/[?#]/)[0].replace(/^\/+|\/+$/g, "");
+
+    return cleaned.length ? cleaned : undefined;
+  };
+
+  return entries
+    .map((e: any) => {
+      const raw = e?.path ?? e?.uri ?? e?.slug ?? "";
+      const path = normalize(toParams(raw));
+
+      return {
+        params: { path }, // ✅ string | undefined
+        props: { entry: e },
+      };
+    })
+    // Se hai già una homepage Astro (src/pages/index.astro), evita collisione col path undefined:
+    // .filter((r) => r.params.path !== undefined);
+}
+
+const { entry } = Astro.props;
+
+const hasYoast = typeof entry?.yoastHead === "string" && entry.yoastHead.trim().length > 0;
+
+const pageTitle =
+  (typeof entry?.title === "string" && entry.title) ||
+  (typeof entry?.name === "string" && entry.name) ||
+  "Canapalandia";
+
+const canonical = typeof entry?.link === "string" ? entry.link : undefined;
+---
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    {hasYoast ? (
+      <Fragment set:html={entry.yoastHead} />
+    ) : (
+      <>
+        <title>{pageTitle}</title>
+        {canonical && <link rel="canonical" href={canonical} />}
+        <meta name="robots" content="index,follow" />
+      </>
+    )}
+  </head>
+
+  <body>
+    <main style="max-width: 860px; margin: 0 auto; padding: 24px;">
+      {typeof entry?.title === "string" && <h1 set:html={entry.title} />}
+      {typeof entry?.html === "string" && <article set:html={entry.html} />}
+
+      {typeof entry?.name === "string" && <h1>{entry.name}</h1>}
+      {typeof entry?.description === "string" && entry.description && <div set:html={entry.description} />}
+    </main>
+  </body>
+</html>
