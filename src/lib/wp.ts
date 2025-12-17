@@ -1,118 +1,92 @@
-import fs from "node:fs/promises";
-import path from "node:path";
+---
+const WP_HOST = "https://canapalandia.com";
+const BLOG_INDEX_PATH = "blog";
+const SITE_URL = "https://canapalandia.com"; // TODO: change when Astro goes live
 
-const SITE = "https://canapalandia.com";
-
-export type Entry =
-  | {
-      kind: "post" | "page";
-      path: string; // es: "/cannabis-light-corte-giustizia-ue"
-      link: string; // assoluto
-      title: string;
-      html: string;
-      excerptHtml?: string;
-      yoastHead?: string;
-      yoastJson?: any;
-      date?: string;
-      categories?: number[];
-      tags?: number[];
-    }
-  | {
-      kind: "category" | "tag";
-      path: string;
-      link: string;
-      name: string;
-      description?: string;
-      termId: number;
-      count?: number;
-    };
-
-const toPath = (link: string) =>
-  link.replace(SITE, "").replace(/\/+$/, "").trim() || "/";
-
-export const toParams = (p: string) => {
-  const clean = p.replace(/^\/+|\/+$/g, "");
-  return clean ? clean.split("/") : [];
-};
-
-async function readJson<T>(rel: string): Promise<T> {
-  const file = path.join(process.cwd(), "data", "wp", "out", rel);
-  const raw = await fs.readFile(file, "utf8");
-  return JSON.parse(raw) as T;
+function stripHtml(input) {
+  if (!input) return "";
+  return String(input).replace(/<[^>]*>/g, "");
 }
 
-export async function loadWp() {
-  const posts = await readJson<any[]>("posts.json");
-  const pages = await readJson<any[]>("pages.json");
-  const categories = await readJson<any[]>("categories.json");
-  const tags = await readJson<any[]>("tags.json");
-
-  const all: Entry[] = [];
-
-  for (const p of posts) {
-    all.push({
-      kind: "post",
-      path: toPath(p.link),
-      link: p.link,
-      title: p?.title?.rendered ?? "",
-      html: p?.content?.rendered ?? "",
-      excerptHtml: p?.excerpt?.rendered ?? "",
-      yoastHead: p?.yoast_head ?? "",
-      yoastJson: p?.yoast_head_json ?? null,
-      date: p?.date,
-      categories: p?.categories ?? [],
-      tags: p?.tags ?? [],
-    });
-  }
-
-  for (const p of pages) {
-    all.push({
-      kind: "page",
-      path: toPath(p.link),
-      link: p.link,
-      title: p?.title?.rendered ?? "",
-      html: p?.content?.rendered ?? "",
-      excerptHtml: p?.excerpt?.rendered ?? "",
-      yoastHead: p?.yoast_head ?? "",
-      yoastJson: p?.yoast_head_json ?? null,
-      date: p?.date,
-    });
-  }
-
-  for (const c of categories) {
-    all.push({
-      kind: "category",
-      path: toPath(c.link),
-      link: c.link,
-      name: c?.name ?? "",
-      description: c?.description ?? "",
-      termId: c?.id,
-      count: c?.count,
-    });
-  }
-
-  for (const t of tags) {
-    all.push({
-      kind: "tag",
-      path: toPath(t.link),
-      link: t.link,
-      name: t?.name ?? "",
-      description: t?.description ?? "",
-      termId: t?.id,
-      count: t?.count,
-    });
-  }
-
-  // Collisioni path: page > post > term (safe)
-  const weight = (k: Entry["kind"]) => (k === "page" ? 3 : k === "post" ? 2 : 1);
-  const map = new Map<string, Entry>();
-  for (const e of all) {
-    if (e.path === "/") continue;
-    const prev = map.get(e.path);
-    if (!prev || weight(e.kind) > weight(prev.kind)) map.set(e.path, e);
-  }
-
-  const entries = [...map.values()];
-  const postsOnly = all.filter((x) => x.kind === "post") as Extract<Entry, { kind: "post" }>[];
-  return { entries, posts: postsOnly };
+function escapeXml(input) {
+  const s = String(input ?? "");
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&apos;");
 }
+
+function absUrl(p) {
+  const path = String(p || "");
+  if (!path) return SITE_URL;
+  if (path.startsWith("http")) return path;
+  return `${SITE_URL}${path.startsWith("/") ? "" : "/"}${path}`;
+}
+
+function sortPostsDesc(a, b) {
+  if (!a?.date && !b?.date) return 0;
+  if (!a?.date) return 1;
+  if (!b?.date) return -1;
+  return new Date(b.date).getTime() - new Date(a.date).getTime();
+}
+
+function buildRssXml(items) {
+  const now = new Date().toUTCString();
+  const channelTitle = "Canapalandia";
+  const channelLink = absUrl("/");
+  const channelDesc = "Aggiornamenti e articoli su canapa legale, CBD, normativa, salute.";
+  const selfLink = absUrl("/rss.xml");
+
+  const list = (items || []).slice(0, 50).map((p) => {
+    const title = stripHtml(postTitle(p)) || "Articolo";
+    const href = postHrefFromWp(p);
+    const link = absUrl(href);
+    const guid = link;
+    const pubDate = new Date(p?.date || p?.modified || Date.now()).toUTCString();
+    const desc = escapeXml(postExcerpt(p));
+
+    return `\n    <item>\n      <title>${escapeXml(title)}</title>\n      <link>${escapeXml(link)}</link>\n      <guid isPermaLink=\"true\">${escapeXml(guid)}</guid>\n      <pubDate>${escapeXml(pubDate)}</pubDate>\n      <description>${desc}</description>\n    </item>`;
+  });
+
+  return `<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<rss version=\"2.0\" xmlns:atom=\"http://www.w3.org/2005/Atom\">\n  <channel>\n    <title>${escapeXml(channelTitle)}</title>\n    <link>${escapeXml(channelLink)}</link>\n    <description>${escapeXml(channelDesc)}</description>\n    <lastBuildDate>${escapeXml(now)}</lastBuildDate>\n    <atom:link href=\"${escapeXml(selfLink)}\" rel=\"self\" type=\"application/rss+xml\" />\n    ${list.join("\n")}\n  </channel>\n</rss>\n`;
+}
+
+export async function getStaticPaths() {
+  const paths = [];
+
+  // Existing paths push for blog index
+  paths.push({
+    params: { path: BLOG_INDEX_PATH },
+    props: { entry: null, kind: "blog-index" },
+  });
+
+  paths.push({
+    params: { path: "rss.xml" },
+    props: { entry: null, kind: "rss" },
+  });
+
+  // ... other paths logic ...
+
+  return paths;
+}
+
+const routePath = Astro.params.path || "";
+const isBlogIndex = routePath === BLOG_INDEX_PATH;
+const isRss = Astro.props?.kind === "rss" || routePath === "rss.xml";
+
+// Assuming blogPosts is defined somewhere above
+const latest = blogPosts.slice(0, 18);
+
+const rssXml = isRss ? buildRssXml(blogPosts) : "";
+if (isRss) {
+  Astro.response.headers.set("Content-Type", "application/rss+xml; charset=utf-8");
+}
+{isRss ? (
+  <Fragment set:html={rssXml} />
+) : (
+  <html lang="it">
+<!-- rest of the html markup -->
+</html>
+)}

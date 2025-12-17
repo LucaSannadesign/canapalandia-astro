@@ -1,49 +1,158 @@
 ---
 import { loadWp, toParams } from "../lib/wp";
+import postsJson from "../../data/wp/out/posts.json";
+
+const WP_HOST = "https://canapalandia.com";
+const BLOG_INDEX_PATH = "blog";
+
+/* ----------------------- helpers (no TS-only syntax) ----------------------- */
+function stripHtml(input) {
+  if (!input) return "";
+  return String(input)
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function formatDate(iso) {
+  if (!iso) return "";
+  try {
+    const d = new Date(iso);
+    return new Intl.DateTimeFormat("it-IT", { year: "numeric", month: "long", day: "2-digit" }).format(d);
+  } catch {
+    return "";
+  }
+}
+
+function pickOgImageFromYoastHead(yoastHeadHtml) {
+  if (!yoastHeadHtml) return undefined;
+  const m = String(yoastHeadHtml).match(/property=["']og:image["'][^>]*content=["']([^"']+)["']/i);
+  return m?.[1];
+}
+
+function pickOgImageFromYoastJson(yoast) {
+  // Yoast JSON shape (common): { og_image: [{ url: "..." }] }
+  const url = yoast?.og_image?.[0]?.url || yoast?.og_image?.[0]?.url || yoast?.og_image?.[0]?.src;
+  return typeof url === "string" && url.length ? url : undefined;
+}
+
+function postHrefFromWp(post) {
+  // Prefer slug (most of your WP permalinks are root-level /{slug}/)
+  if (post?.slug) return `/${post.slug}/`;
+  // Fallback to link pathname if present
+  if (post?.link) {
+    try {
+      const u = new URL(post.link);
+      return u.pathname.endsWith("/") ? u.pathname : `${u.pathname}/`;
+    } catch {}
+  }
+  return "#";
+}
+
+function transformWpHtml(html) {
+  if (!html) return "";
+  let out = String(html);
+
+  // 1) Make internal links relative to the Astro site (so navigation stays inside the new app)
+  out = out
+    .replaceAll("https://www.canapalandia.com", "")
+    .replaceAll("http://www.canapalandia.com", "")
+    .replaceAll("https://canapalandia.com", "")
+    .replaceAll("http://canapalandia.com", "")
+    .replaceAll("//canapalandia.com", "");
+
+  // 2) BUT keep uploads absolute so they load on Vercel even if uploads are not committed
+  //    Match: " /wp-content/uploads/...", '( /wp-content/uploads/...', url(/wp-content/uploads/...)
+  out = out.replace(/(["'(])\/(wp-content\/uploads\/)/g, `$1${WP_HOST}/$2`);
+
+  // 3) Also handle srcset values that may include bare /wp-content/uploads/... without a leading quote
+  out = out.replace(/\s(\/wp-content\/uploads\/)/g, ` ${WP_HOST}$1`);
+
+  return out;
+}
+
+function normalizePath(input) {
+  let v = input;
+
+  if (Array.isArray(v)) v = v.join("/");
+  if (v && typeof v === "object") {
+    v = v.path ?? v.slug ?? v.uri ?? v.value ?? "";
+    if (Array.isArray(v)) v = v.join("/");
+  }
+
+  const s = String(v ?? "");
+  const cleaned = s
+    .split(/[?#]/)[0]
+    .replace(/^\/+|\/+$/g, "")
+    .trim();
+
+  return cleaned.length ? cleaned : undefined;
+}
+
+/* ----------------------------- data (blog) ----------------------------- */
+const allPosts = Array.isArray(postsJson) ? postsJson : [];
+
+function pickPostImage(post) {
+  // Prefer Yoast JSON if present
+  const fromJson = pickOgImageFromYoastJson(post?.yoast_head_json);
+  if (fromJson) return fromJson;
+
+  // Fallback: parse yoast_head string
+  const fromHead = pickOgImageFromYoastHead(post?.yoast_head);
+  if (fromHead) return fromHead;
+
+  return undefined;
+}
+
+function postTitle(post) {
+  return post?.title?.rendered || post?.title || "";
+}
+
+function postExcerpt(post) {
+  const ex = post?.excerpt?.rendered || post?.excerpt || "";
+  const cleaned = stripHtml(ex);
+  return cleaned.length ? cleaned : stripHtml(post?.content?.rendered || "").slice(0, 160);
+}
+
+function sortPostsDesc(a, b) {
+  const da = Date.parse(a?.date || a?.modified || "") || 0;
+  const db = Date.parse(b?.date || b?.modified || "") || 0;
+  return db - da;
+}
 
 export async function getStaticPaths() {
   const { entries } = await loadWp();
 
-  // Normalizza SEMPRE in: string | undefined (mai array/oggetto)
-  const normalize = (input: unknown): string | undefined => {
-    let v: unknown = input;
-
-    // Array tipo ["en","slug"] → "en/slug"
-    if (Array.isArray(v)) v = v.join("/");
-
-    // Oggetto → prova a leggere campi utili
-    if (v && typeof v === "object") {
-      const anyV = v as Record<string, unknown>;
-      v = anyV.path ?? anyV.slug ?? anyV.uri ?? anyV.value ?? "";
-      if (Array.isArray(v)) v = v.join("/");
-    }
-
-    // Forza stringa
-    const s = String(v ?? "");
-
-    // Pulisci query/hash e slash
-    const cleaned = s.split(/[?#]/)[0].replace(/^\/+|\/+$/g, "");
-
-    return cleaned.length ? cleaned : undefined;
-  };
-
-  return entries
-    .map((e: any) => {
+  const paths = (entries ?? [])
+    .map((e) => {
       const raw = e?.path ?? e?.uri ?? e?.slug ?? "";
-      const path = normalize(toParams(raw));
+      const normalized = normalizePath(toParams(raw));
+      if (!normalized) return null;
 
       return {
-        params: { path }, // ✅ string | undefined
+        params: { path: normalized },
         props: { entry: e },
       };
     })
-    // Se hai già una homepage Astro (src/pages/index.astro), evita collisione col path undefined:
-    // .filter((r) => r.params.path !== undefined);
+    .filter(Boolean);
+
+  // Add Blog index route at /blog/
+  // (No new file needed; the dynamic route renders it.)
+  paths.push({
+    params: { path: BLOG_INDEX_PATH },
+    props: { entry: null, kind: "blog-index" },
+  });
+
+  return paths;
 }
 
 const { entry } = Astro.props;
+const routePath = Astro.params?.path || "";
+const isBlogIndex = Astro.props?.kind === "blog-index" || routePath === BLOG_INDEX_PATH;
 
+/* ----------------------------- entry (single) ----------------------------- */
 const hasYoast = typeof entry?.yoastHead === "string" && entry.yoastHead.trim().length > 0;
+const yoastHeadHtml = hasYoast ? transformWpHtml(entry.yoastHead) : "";
 
 const pageTitle =
   (typeof entry?.title === "string" && entry.title) ||
@@ -51,14 +160,37 @@ const pageTitle =
   "Canapalandia";
 
 const canonical = typeof entry?.link === "string" ? entry.link : undefined;
+
+// Content HTML: keep internal links relative, but force uploads absolute
+const articleHtml = typeof entry?.html === "string" ? transformWpHtml(entry.html) : "";
+
+// Featured image (try Yoast head first)
+const featuredImage = pickOgImageFromYoastHead(entry?.yoastHead) || pickOgImageFromYoastJson(entry?.yoastHeadJson) || undefined;
+
+// Meta
+const publishedAt = entry?.date || entry?.published || entry?.publishedAt || entry?.created || "";
+const updatedAt = entry?.modified || entry?.updated || entry?.updatedAt || "";
+
+// Related posts for single pages
+const currentSlug = normalizePath(routePath);
+const related = allPosts
+  .slice()
+  .sort(sortPostsDesc)
+  .filter((p) => (p?.slug ? p.slug !== currentSlug : true))
+  .slice(0, 6);
+
+// Blog list (index)
+const blogPosts = allPosts.slice().sort(sortPostsDesc);
+const latest = blogPosts.slice(0, 18);
 ---
+
 <html lang="it">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     {hasYoast ? (
-      <Fragment set:html={entry.yoastHead} />
+      <Fragment set:html={yoastHeadHtml} />
     ) : (
       <>
         <title>{pageTitle}</title>
@@ -66,15 +198,341 @@ const canonical = typeof entry?.link === "string" ? entry.link : undefined;
         <meta name="robots" content="index,follow" />
       </>
     )}
+
+    <style>
+      :root {
+        --bg: #f6f7f8;
+        --panel: #ffffff;
+        --panel-2: #fbfbfb;
+        --text: #0f172a;
+        --muted: #475569;
+        --border: rgba(2, 6, 23, 0.10);
+        --shadow: 0 14px 40px rgba(2, 6, 23, 0.10);
+        --shadow-soft: 0 10px 24px rgba(2, 6, 23, 0.08);
+        --r: 16px;
+        --r-sm: 12px;
+        --brand: #16a34a;
+        --brand-2: #15803d;
+      }
+
+      html, body { height: 100%; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      }
+
+      a { color: inherit; }
+
+      .shell { max-width: 1120px; margin: 0 auto; padding: 28px 18px 64px; }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 18px;
+        border: 1px solid var(--border);
+        border-radius: var(--r);
+        background: rgba(255,255,255,0.8);
+        backdrop-filter: blur(8px);
+        box-shadow: var(--shadow-soft);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+
+      .nav {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: var(--panel);
+        color: var(--muted);
+        text-decoration: none;
+        font-size: 13px;
+        line-height: 1;
+      }
+
+      .chip:hover { border-color: rgba(22,163,74,0.35); color: #0b1220; }
+
+      .hero {
+        margin-top: 18px;
+        padding: 26px 22px;
+        border-radius: var(--r);
+        border: 1px solid var(--border);
+        background: linear-gradient(180deg, rgba(22,163,74,0.10), rgba(255,255,255,0.90));
+        box-shadow: var(--shadow);
+      }
+
+      .kicker { color: var(--muted); font-size: 13px; margin: 0 0 10px; }
+
+      .hero h1 {
+        margin: 0;
+        font-size: clamp(26px, 3.2vw, 42px);
+        letter-spacing: -0.03em;
+        line-height: 1.08;
+      }
+
+      .hero p {
+        margin: 12px 0 0;
+        color: var(--muted);
+        max-width: 72ch;
+        line-height: 1.55;
+      }
+
+      .meta {
+        margin-top: 14px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border-radius: 999px;
+        background: var(--brand);
+        color: #fff;
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 14px;
+        border: 1px solid rgba(0,0,0,0.05);
+        box-shadow: 0 12px 24px rgba(22,163,74,0.18);
+      }
+      .btn:hover { background: var(--brand-2); }
+
+      .btn-ghost {
+        background: transparent;
+        color: var(--text);
+        border: 1px solid var(--border);
+        box-shadow: none;
+      }
+
+      .grid {
+        margin-top: 18px;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+      }
+      @media (max-width: 980px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+      @media (max-width: 620px) { .grid { grid-template-columns: 1fr; } }
+
+      .card {
+        border: 1px solid var(--border);
+        border-radius: var(--r);
+        background: var(--panel);
+        overflow: hidden;
+        box-shadow: var(--shadow-soft);
+        transition: transform 140ms ease, box-shadow 140ms ease;
+      }
+      .card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+
+      .cardLink { display: block; text-decoration: none; }
+
+      .thumb {
+        aspect-ratio: 16 / 9;
+        background: linear-gradient(135deg, rgba(22,163,74,0.14), rgba(15,23,42,0.06));
+        position: relative;
+        overflow: hidden;
+      }
+      .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+      .cardBody { padding: 14px 14px 16px; }
+      .cardMeta { margin: 0 0 8px; font-size: 12px; color: var(--muted); }
+      .cardTitle { margin: 0; font-size: 16px; line-height: 1.25; letter-spacing: -0.01em; }
+      .cardExcerpt { margin: 10px 0 0; color: var(--muted); font-size: 13.5px; line-height: 1.45; }
+      .cardCta { margin-top: 12px; display: inline-flex; gap: 6px; align-items: center; color: var(--brand-2); font-weight: 800; font-size: 13px; }
+
+      .articleWrap {
+        margin-top: 18px;
+        border: 1px solid var(--border);
+        border-radius: var(--r);
+        background: var(--panel);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+
+      .articleHeroImg { aspect-ratio: 16 / 9; background: #eaeaea; }
+      .articleHeroImg img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+      .articleInner { padding: 22px; }
+
+      /* Typography for WP HTML */
+      article { color: var(--text); }
+      article h2, article h3 { letter-spacing: -0.02em; }
+      article p { line-height: 1.75; color: #111827; }
+      article a { color: var(--brand-2); text-decoration: underline; text-underline-offset: 3px; }
+      article ul, article ol { line-height: 1.75; }
+      article blockquote {
+        margin: 16px 0;
+        padding: 12px 14px;
+        border-left: 4px solid rgba(22,163,74,0.35);
+        background: rgba(22,163,74,0.08);
+        border-radius: 10px;
+        color: #0b1220;
+      }
+      article img { max-width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); }
+
+      .sectionTitle {
+        margin-top: 26px;
+        font-size: 18px;
+        letter-spacing: -0.02em;
+      }
+
+      footer {
+        margin-top: 28px;
+        padding: 18px;
+        color: var(--muted);
+        text-align: center;
+        font-size: 13px;
+      }
+    </style>
   </head>
 
   <body>
-    <main style="max-width: 860px; margin: 0 auto; padding: 24px;">
-      {typeof entry?.title === "string" && <h1 set:html={entry.title} />}
-      {typeof entry?.html === "string" && <article set:html={entry.html} />}
+    <div class="shell">
+      <header class="topbar">
+        <a class="brand" href="/">Canapalandia</a>
+        <nav class="nav">
+          <a class="chip" href="/">Home</a>
+          <a class="chip" href="/blog/">Blog</a>
+          <a class="chip" href="/contatti/">Contatti</a>
+        </nav>
+      </header>
 
-      {typeof entry?.name === "string" && <h1>{entry.name}</h1>}
-      {typeof entry?.description === "string" && entry.description && <div set:html={entry.description} />}
-    </main>
+      {isBlogIndex ? (
+        <>
+          <section class="hero">
+            <p class="kicker">Blog • Canapa legale, CBD, normativa, salute</p>
+            <h1>Articoli e guide</h1>
+            <p>
+              Una lista completa e aggiornata dei contenuti migrati da WordPress. Le immagini sono servite dal sito
+              WordPress finché la migrazione media non sarà finalizzata.
+            </p>
+            <div class="meta">
+              <a class="btn" href="/">Torna alla home</a>
+              <a class="btn btn-ghost" href="/">Esplora i temi</a>
+            </div>
+          </section>
+
+          <section>
+            <h2 class="sectionTitle">Ultimi articoli</h2>
+            <div class="grid">
+              {latest.map((p) => {
+                const href = postHrefFromWp(p);
+                const img = pickPostImage(p);
+                const title = postTitle(p);
+                const date = formatDate(p?.date || p?.modified);
+                const excerpt = postExcerpt(p);
+
+                return (
+                  <article class="card">
+                    <a class="cardLink" href={href}>
+                      <div class="thumb">
+                        {img ? <img src={img} alt={stripHtml(title)} loading="lazy" /> : null}
+                      </div>
+                      <div class="cardBody">
+                        <p class="cardMeta">{date}</p>
+                        <h3 class="cardTitle" set:html={title} />
+                        <p class="cardExcerpt">{excerpt}</p>
+                        <span class="cardCta">Apri articolo →</span>
+                      </div>
+                    </a>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        </>
+      ) : (
+        <>
+          <section class="hero">
+            <p class="kicker">Articolo</p>
+            <h1>{pageTitle}</h1>
+            <p>
+              {publishedAt ? (
+                <>
+                  Pubblicato il <strong>{formatDate(publishedAt)}</strong>
+                  {updatedAt ? (
+                    <>
+                      {" "}• aggiornato il <strong>{formatDate(updatedAt)}</strong>
+                    </>
+                  ) : null}
+                </>
+              ) : (
+                <>Guida e contenuto informativo dalla migrazione WordPress → Astro.</>
+              )}
+            </p>
+            <div class="meta">
+              <a class="btn btn-ghost" href="/blog/">← Tutti gli articoli</a>
+              <a class="btn" href="/">Home</a>
+            </div>
+          </section>
+
+          <section class="articleWrap">
+            {featuredImage ? (
+              <div class="articleHeroImg">
+                <img src={featuredImage} alt={pageTitle} loading="eager" />
+              </div>
+            ) : null}
+
+            <div class="articleInner">
+              {articleHtml ? <article set:html={articleHtml} /> : null}
+            </div>
+          </section>
+
+          <section>
+            <h2 class="sectionTitle">Altri articoli</h2>
+            <div class="grid">
+              {related.map((p) => {
+                const href = postHrefFromWp(p);
+                const img = pickPostImage(p);
+                const title = postTitle(p);
+                const date = formatDate(p?.date || p?.modified);
+
+                return (
+                  <article class="card">
+                    <a class="cardLink" href={href}>
+                      <div class="thumb">
+                        {img ? <img src={img} alt={stripHtml(title)} loading="lazy" /> : null}
+                      </div>
+                      <div class="cardBody">
+                        <p class="cardMeta">{date}</p>
+                        <h3 class="cardTitle" set:html={title} />
+                        <span class="cardCta">Leggi →</span>
+                      </div>
+                    </a>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        </>
+      )}
+
+      <footer>
+        © {new Date().getFullYear()} Canapalandia • Migrazione in corso (WordPress → Astro)
+      </footer>
+    </div>
   </body>
 </html>
