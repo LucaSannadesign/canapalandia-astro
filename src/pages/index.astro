@@ -1,5 +1,44 @@
 ---
-import { loadWp } from "../lib/wp";
+import { loadWp, WP_HOST } from "../lib/wp";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const BLOG_INDEX = "/blog/";
+
+function normalizePathParam(input: unknown): string {
+  if (input == null) return "";
+  const s = Array.isArray(input) ? input.join("/") : String(input);
+  return s.replace(/^\/+/, "").replace(/\/+$/, "");
+}
+
+function stripHtml(input: unknown): string {
+  if (typeof input !== "string") return "";
+  return input
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function smartExcerpt(input: unknown, max = 160): string {
+  const txt = stripHtml(input);
+  if (!txt) return "";
+  if (txt.length <= max) return txt;
+  return txt.slice(0, max).replace(/\s+\S*$/, "").trim() + "…";
+}
+
+// Usa SEMPRE testo, mai HTML
+function postExcerpt(p: any, max = 160): string {
+  const raw =
+    p?.excerpt ??
+    p?.raw?.excerpt?.rendered ??
+    p?.raw?.content?.rendered ??
+    p?.html ??
+    "";
+  return smartExcerpt(raw, max);
+}
 
 // Fonte dati: WordPress headless
 const { entries: wpEntries = [] } = await loadWp();
@@ -62,28 +101,40 @@ function internalHref(link: unknown): string {
   }
 }
 
-// Normalizza URL media WP assoluti → path relativo (utile se mirror in /public/wp-content/uploads)
-function normalizeMediaSrc(src: unknown): string {
+// Radice /public (serve per verificare se hai già “mirrorrato” i file in locale)
+const PUBLIC_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../public");
+
+/**
+ * Media strategy (robusta):
+ * - se il file esiste in /public, usa il path relativo (/wp-content/uploads/...)
+ * - altrimenti mantieni/forza l’URL assoluto verso WP_HOST (hotlink temporaneo)
+ */
+function resolveWpMediaSrc(src: unknown): string {
   if (typeof src !== "string") return "";
-  const s = src.trim();
+  let s = src.trim();
   if (!s) return "";
 
-  // Già relativo
-  if (s.startsWith("/")) return s;
-
   // Protocol-relative
-  const normalized = s.startsWith("//") ? `https:${s}` : s;
+  if (s.startsWith("//")) s = `https:${s}`;
 
+  // Se è relativo, normalizza a pathname
+  if (s.startsWith("/")) {
+    const local = path.join(PUBLIC_DIR, s.replace(/^\//, ""));
+    return fs.existsSync(local) ? s : `${WP_HOST}${s}`;
+  }
+
+  // Assoluto: se è nostro dominio -> verifica mirror locale
   try {
-    const u = new URL(normalized);
+    const u = new URL(s);
     const host = u.hostname.replace(/^www\./i, "");
+    const pathname = u.pathname || "/";
 
-    // Se è lo stesso dominio, usa solo pathname (niente query/hash)
     if (host === "canapalandia.com") {
-      return u.pathname || "/";
+      const local = path.join(PUBLIC_DIR, pathname.replace(/^\//, ""));
+      return fs.existsSync(local) ? pathname : s;
     }
 
-    // Esterno: lascialo com'è
+    // Esterno
     return s;
   } catch {
     return s;
@@ -96,30 +147,29 @@ function entryHref(p: any): string {
 }
 
 function featuredImage(p: any): { src: string; alt: string } | null {
-  // 1) campi custom (se presenti)
+  // 1) Campo già normalizzato da `loadWp()` (consigliato)
   const direct = p?.featuredImage ?? p?.featured_image ?? p?.image ?? null;
   if (typeof direct === "string" && direct.trim()) {
-    return { src: normalizeMediaSrc(direct.trim()), alt: "" };
+    return { src: resolveWpMediaSrc(direct.trim()), alt: "" };
   }
   if (direct && typeof direct === "object") {
     const src = (direct as any)?.src ?? (direct as any)?.url ?? (direct as any)?.source_url;
     const alt = (direct as any)?.alt ?? (direct as any)?.alt_text ?? "";
     if (typeof src === "string" && src.trim()) {
-      return { src: normalizeMediaSrc(src.trim()), alt: String(alt ?? "") };
+      return { src: resolveWpMediaSrc(src.trim()), alt: String(alt ?? "") };
     }
   }
 
-  // 2) WP REST _embedded
-  const fm = p?._embedded?.["wp:featuredmedia"]?.[0];
+  // 2) Fallback: se ti passa ancora un oggetto WP raw, leggi da `raw._embedded`
+  const fm = p?.raw?._embedded?.["wp:featuredmedia"]?.[0];
   const srcRaw =
     fm?.media_details?.sizes?.medium_large?.source_url ||
     fm?.media_details?.sizes?.large?.source_url ||
+    fm?.media_details?.sizes?.full?.source_url ||
     fm?.source_url;
-
   const alt = fm?.alt_text || fm?.title?.rendered || "";
-
   if (typeof srcRaw === "string" && srcRaw.trim()) {
-    return { src: normalizeMediaSrc(srcRaw.trim()), alt: String(alt ?? "") };
+    return { src: resolveWpMediaSrc(srcRaw.trim()), alt: String(alt ?? "") };
   }
   return null;
 }
@@ -139,6 +189,9 @@ const heroBgVar = "none"; // esempio futuro: `url(/images/hero.webp)`
     />
     <link rel="canonical" href="https://canapalandia.com/" />
     <meta name="robots" content="index,follow" />
+   <link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   </head>
 
   <body>
@@ -152,17 +205,18 @@ const heroBgVar = "none"; // esempio futuro: `url(/images/hero.webp)`
         </a>
 
         <nav class="nav" aria-label="Navigazione principale">
-          <a href="#percorsi">Temi</a>
-          <a href="#in-evidenza">In evidenza</a>
-          <a href="#ultimi">Ultimi</a>
-          <a href="/contatti/">Contatti</a>
-        </nav>
+  <a href="/#percorsi">Temi</a>
+  <a href="/#in-evidenza">In evidenza</a>
+  <a href="/#ultimi">Ultimi</a>
+  <a href="/blog/">Blog</a>
+  <a href="/contatti/">Contatti</a>
+</nav>
 
         <div class="header-actions">
           <a class="icon-btn" href="#" aria-label="Facebook"><span aria-hidden="true">f</span></a>
           <a class="icon-btn" href="#" aria-label="Instagram"><span aria-hidden="true">◎</span></a>
           <a class="icon-btn" href="#" aria-label="Telegram"><span aria-hidden="true">✈</span></a>
-          <a class="search" href="/?s=" aria-label="Cerca nel sito">Cerca</a>
+          <a class="search" href="/cerca/" aria-label="Cerca nel sito">Cerca</a>
         </div>
       </div>
     </header>
@@ -185,8 +239,8 @@ const heroBgVar = "none"; // esempio futuro: `url(/images/hero.webp)`
           </p>
 
           <div class="hero-cta">
-            <a class="btn primary" href="#percorsi">Inizia dai percorsi</a>
-            <a class="btn ghost" href="#ultimi">Leggi le ultime notizie</a>
+           <a class="btn primary" href="/#percorsi">Inizia dai percorsi</a>
+<a class="btn ghost" href="/#ultimi">Leggi le ultime notizie</a>
           </div>
 
           <ul class="trust" aria-label="Punti chiave">
@@ -391,50 +445,53 @@ const heroBgVar = "none"; // esempio futuro: `url(/images/hero.webp)`
 
     <style>
       :root {
-        color-scheme: light dark;
+        /* Identità visiva: dark green sempre */
+        color-scheme: dark;
 
-        --bg: #ffffff;
-        --text: #0b1220;
-        --muted: #475569;
-        --card: rgba(255, 255, 255, 0.86);
-        --card-solid: #ffffff;
-        --border: rgba(15, 23, 42, 0.14);
-        --shadow: 0 10px 30px rgba(2, 6, 23, 0.12);
+        --bg: #06130b;
+        --text: #e8f5ec;
+        --muted: #a8c1b2;
 
-        /* ✅ Brand verdi */
-        --brand: #16a34a;       /* green-600 */
-        --brand-700: #15803d;   /* green-700 */
-        --brand-300: #86efac;   /* green-300 */
-        --brand-ink: #ffffff;
+        --card-solid: #0a1c12;
+        --panel: var(--card-solid);
+        --panel-2: #072015;
+
+        --border: rgba(125, 255, 180, 0.14);
+        --shadow: 0 14px 40px rgba(0, 0, 0, 0.45);
+        --shadow-soft: 0 10px 24px rgba(0, 0, 0, 0.35);
 
         --radius: 16px;
+        --r: 16px;
+        --r-sm: 12px;
+
+        --brand: #22c55e;
+        --brand-2: #16a34a;
+        --brand-ink: #04140b;
+
         --container: 1120px;
         --pad: 20px;
+
+        --font-sans: "Sora", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji",
+          "Segoe UI Emoji";
       }
 
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --bg: #0b0f16;
-          --text: #e5e7eb;
-          --muted: #9aa4b2;
-          --card: rgba(11, 15, 22, 0.72);
-          --card-solid: #0f172a;
-          --border: rgba(226, 232, 240, 0.14);
-          --shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
-        }
-      }
 
       * { box-sizing: border-box; }
       html, body { height: 100%; }
       body {
         margin: 0;
-        font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-        line-height: 1.55;
+         line-height: 1.55;
         background: var(--bg);
         color: var(--text);
+        font-family: var(--font-sans);
       }
 
-      a { color: inherit; }
+      a { color: inherit; text-decoration: none; }
+      .post-card a,
+      .mini a,
+      .feature-main a {
+        text-decoration: none;
+      }
       .container { max-width: var(--container); margin: 0 auto; padding: 0 var(--pad); }
 
       .skip {
@@ -532,7 +589,7 @@ const heroBgVar = "none"; // esempio futuro: `url(/images/hero.webp)`
         color: inherit;
       }
       .btn.primary {
-        background: var(--brand-700);
+        background: var(--brand);
         color: var(--brand-ink);
         border-color: transparent;
         box-shadow: 0 10px 26px rgba(22, 163, 74, 0.35);
@@ -589,10 +646,10 @@ const heroBgVar = "none"; // esempio futuro: `url(/images/hero.webp)`
         border: 1px solid var(--border);
         border-radius: var(--radius);
         padding: 18px;
-        background: linear-gradient(180deg, var(--card-solid), rgba(255,255,255,0.66));
+        background: linear-gradient(180deg, rgba(10, 28, 18, 0.98), rgba(7, 32, 21, 0.92));
       }
       @media (prefers-color-scheme: dark) {
-        .feature-main { background: linear-gradient(180deg, var(--card-solid), rgba(15,23,42,0.55)); }
+        .feature-main { background: linear-gradient(180deg, rgba(10, 28, 18, 0.98), rgba(7, 32, 21, 0.92)); }
       }
 
       .feature-img, .mini-img, .post-img {
@@ -620,7 +677,13 @@ const heroBgVar = "none"; // esempio futuro: `url(/images/hero.webp)`
       }
       .mini-title { margin: 0 0 8px; font-size: 16px; }
       .mini-excerpt { margin: 0 0 10px; color: var(--muted); font-size: 14px; }
-      .mini-link { text-decoration: none; font-weight: 600; color: var(--brand-700); }
+      .mini-link {
+        text-decoration: none;
+        font-weight: 600;
+        color: var(--text);
+        opacity: 0.92;
+      }
+      .mini-link:hover { color: var(--brand); opacity: 1; }
 
       .posts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
       .post-card {
@@ -631,7 +694,13 @@ const heroBgVar = "none"; // esempio futuro: `url(/images/hero.webp)`
       }
       .post-title { margin: 0 0 8px; font-size: 18px; }
       .post-excerpt { margin: 0 0 12px; color: var(--muted); font-size: 14px; }
-      .post-link { text-decoration: none; font-weight: 700; color: var(--brand-700); }
+      .post-link {
+        text-decoration: none;
+        font-weight: 700;
+        color: var(--text);
+        opacity: 0.92;
+      }
+      .post-link:hover { color: var(--brand); opacity: 1; }
 
       .section-cta { margin-top: 18px; }
 

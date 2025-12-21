@@ -1,0 +1,50 @@
+---
+import Layout from "../layouts/MigratedLayout.astro";
+import postsJson from "../../data/wp/out/posts.json";
+
+export const prerender = false;
+
+const posts = Array.isArray(postsJson) ? postsJson : [];
+
+const postTitle = (p) => p?.title?.rendered || p?.title || "";
+const stripHtml = (s) => String(s || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+const excerpt = (p) => stripHtml(p?.excerpt?.rendered || p?.excerpt || "").slice(0, 180);
+const sortDesc = (a, b) => (Date.parse(b?.date || b?.modified || "") || 0) - (Date.parse(a?.date || a?.modified || "") || 0);
+const og = (p) => p?.yoast_head_json?.og_image?.[0]?.url || p?.yoast_head_json?.og_image?.[0]?.src || "";
+const href = (p) => (p?.slug ? `/${p.slug}/` : "#");
+const fmt = (iso) => (iso ? new Date(iso).toLocaleDateString("it-IT", { year:"numeric", month:"long", day:"2-digit" }) : "");
+
+const latest = posts.slice().sort(sortDesc).slice(0, 18);
+
+const title = "Blog — Canapalandia";
+const canonical = "https://canapalandia.com/blog/";
+---
+<Layout title={title} canonical={canonical}>
+  <section class="hero">
+    <p class="kicker">Blog</p>
+    <h1>Articoli e guide</h1>
+    <p>Lista degli ultimi contenuti migrati.</p>
+    <div class="meta">
+      <a class="btn" href="/">Home</a>
+      <a class="btn btn-ghost" href="/cerca/">Cerca</a>
+    </div>
+  </section>
+
+  <section>
+    <div class="grid">
+      {latest.map((p) => (
+        <article class="card">
+          <a class="cardLink" href={href(p)}>
+            <div class="thumb">{og(p) ? <img src={og(p)} alt={stripHtml(postTitle(p))} loading="lazy" /> : null}</div>
+            <div class="cardBody">
+              <p class="cardMeta">{fmt(p?.date || p?.modified)}</p>
+              <h3 class="cardTitle" set:html={postTitle(p)} />
+              <p class="cardExcerpt">{excerpt(p)}</p>
+              <span class="cardCta">Apri →</span>
+            </div>
+          </a>
+        </article>
+      ))}
+    </div>
+  </section>
+</Layout>

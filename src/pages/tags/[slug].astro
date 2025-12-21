@@ -1,0 +1,62 @@
+---
+import Layout from "../../layouts/MigratedLayout.astro";
+import postsJson from "../../../data/wp/out/posts.json";
+import tagsJson from "../../../data/wp/out/tags.json";
+
+export const prerender = false;
+
+const slug = Astro.params.slug || "";
+const posts = Array.isArray(postsJson) ? postsJson : [];
+const tags = Array.isArray(tagsJson) ? tagsJson : [];
+
+const stripHtml = (s) => String(s || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+const postTitle = (p) => p?.title?.rendered || p?.title || "";
+const excerpt = (p) => stripHtml(p?.excerpt?.rendered || p?.excerpt || "").slice(0, 180);
+const sortDesc = (a, b) => (Date.parse(b?.date || b?.modified || "") || 0) - (Date.parse(a?.date || a?.modified || "") || 0);
+const og = (p) => p?.yoast_head_json?.og_image?.[0]?.url || p?.yoast_head_json?.og_image?.[0]?.src || "";
+const href = (p) => (p?.slug ? `/${p.slug}/` : "#");
+const fmt = (iso) => (iso ? new Date(iso).toLocaleDateString("it-IT", { year:"numeric", month:"long", day:"2-digit" }) : "");
+
+const tag = tags.find((t) => String(t?.slug || "") === slug);
+const tagId = tag?.id;
+
+const filtered = tagId
+  ? posts.filter((p) => Array.isArray(p?.tags) && p.tags.includes(tagId)).slice().sort(sortDesc)
+  : [];
+
+const title = tag ? `Tag: ${tag.name} — Canapalandia` : "Tag — Canapalandia";
+const canonical = `https://canapalandia.com/tag/${slug}/`;
+---
+<Layout title={title} canonical={canonical}>
+  <section class="hero">
+    <p class="kicker">Tag</p>
+    <h1>{tag?.name || "Tag non trovato"}</h1>
+    <p>{tag?.description ? stripHtml(tag.description) : "Contenuti filtrati per tag."}</p>
+    <div class="meta">
+      <a class="btn btn-ghost" href="/blog/">← Blog</a>
+      <a class="btn" href="/">Home</a>
+    </div>
+  </section>
+
+  {tag ? (
+    <section>
+      <div class="grid">
+        {filtered.slice(0, 48).map((p) => (
+          <article class="card">
+            <a class="cardLink" href={href(p)}>
+              <div class="thumb">{og(p) ? <img src={og(p)} alt={stripHtml(postTitle(p))} loading="lazy" /> : null}</div>
+              <div class="cardBody">
+                <p class="cardMeta">{fmt(p?.date || p?.modified)}</p>
+                <h3 class="cardTitle" set:html={postTitle(p)} />
+                <p class="cardExcerpt">{excerpt(p)}</p>
+                <span class="cardCta">Apri →</span>
+              </div>
+            </a>
+          </article>
+        ))}
+      </div>
+    </section>
+  ) : (
+    <section class="articleWrap"><div class="articleInner"><p>Slug: <strong>{slug}</strong></p></div></section>
+  )}
+</Layout>

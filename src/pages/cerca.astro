@@ -1,0 +1,134 @@
+---
+import Layout from "../layouts/MigratedLayout.astro";
+import postsJson from "../../data/wp/out/posts.json";
+
+export const prerender = false;
+
+const posts = Array.isArray(postsJson) ? postsJson : [];
+const stripHtml = (s) => String(s || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+
+const index = posts
+  .slice()
+  .sort((a, b) => (Date.parse(b?.date || b?.modified || "") || 0) - (Date.parse(a?.date || a?.modified || "") || 0))
+  .map((p) => ({
+    href: p?.slug ? `/${p.slug}/` : "#",
+    title: stripHtml(p?.title?.rendered || p?.title || ""),
+    date: p?.date || p?.modified || "",
+    excerpt: stripHtml(p?.excerpt?.rendered || p?.excerpt || "").slice(0, 200),
+    img: p?.yoast_head_json?.og_image?.[0]?.url || p?.yoast_head_json?.og_image?.[0]?.src || "",
+  }));
+
+const title = "Cerca — Canapalandia";
+const canonical = "https://canapalandia.com/cerca/";
+---
+<Layout title={title} canonical={canonical}>
+  <section class="hero">
+    <p class="kicker">Ricerca</p>
+    <h1>Cerca nel sito</h1>
+    <p>Digita una o più parole: cerchiamo su titolo ed estratto.</p>
+
+    <div class="searchbox">
+      <input id="q" type="search" placeholder="Cerca…" autocomplete="off" />
+      <p class="rib-note">Esempi: “CBD”, “decreto sicurezza”, “corte di giustizia”…</p>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sectionTitle" id="resultsLabel">Ultimi articoli</h2>
+    <p class="rib-note" id="resultsMsg" style="margin:10px 0 0"></p>
+    <div class="grid" id="results"></div>
+  </section>
+
+  <script id="search-index" type="application/json">{JSON.stringify(index).replaceAll('<', '\\u003c')}</script>
+
+  <script>
+    const input = document.getElementById('q');
+    const label = document.getElementById('resultsLabel');
+    const msg = document.getElementById('resultsMsg');
+    const results = document.getElementById('results');
+
+    const idx = (() => {
+      try {
+        const el = document.getElementById('search-index');
+        return el ? JSON.parse(el.textContent || '[]') : [];
+      } catch { return []; }
+    })();
+
+    const SUGGESTED_LIMIT = 9;
+
+    function escapeHtml(s){
+      return String(s)
+        .replaceAll('&','&amp;')
+        .replaceAll('<','&lt;')
+        .replaceAll('>','&gt;')
+        .replaceAll('"','&quot;')
+        .replaceAll("'",'&#039;');
+    }
+
+    function normalizeText(s) {
+      try {
+        return String(s || '')
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/\p{Diacritic}/gu, '')
+          .replace(/[^a-z0-9]+/g, ' ')
+          .trim();
+      } catch {
+        return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+      }
+    }
+
+    const cardsHtml = (items) => items.map((p) => {
+      const date = p.date ? new Date(p.date).toLocaleDateString('it-IT', { year:'numeric', month:'long', day:'2-digit' }) : '';
+      return `
+        <article class="card">
+          <a class="cardLink" href="${p.href}">
+            <div class="thumb">${p.img ? `<img src="${p.img}" alt="${escapeHtml(p.title)}" loading="lazy" />` : ''}</div>
+            <div class="cardBody">
+              <p class="cardMeta">${escapeHtml(date)}</p>
+              <h3 class="cardTitle">${escapeHtml(p.title)}</h3>
+              <p class="cardExcerpt">${escapeHtml(p.excerpt)}</p>
+              <span class="cardCta">Apri →</span>
+            </div>
+          </a>
+        </article>
+      `.trim();
+    }).join('');
+
+    const render = (items) => { results.innerHTML = cardsHtml(items); };
+
+    const run = () => {
+      const raw = (input?.value || '').trim();
+      const q = normalizeText(raw);
+
+      if (!q) {
+        if (label) label.textContent = 'Ultimi articoli';
+        if (msg) msg.textContent = '';
+        render(idx.slice(0, SUGGESTED_LIMIT));
+        return;
+      }
+
+      const tokens = q.split(' ').filter(Boolean);
+
+      const out = idx
+        .filter((it) => {
+          const hay = normalizeText(`${it.title || ''} ${it.excerpt || ''}`);
+          return tokens.every((t) => hay.includes(t));
+        })
+        .slice(0, 36);
+
+      if (out.length) {
+        if (label) label.textContent = `Risultati per “${raw}”`;
+        if (msg) msg.textContent = '';
+        render(out);
+      } else {
+        if (label) label.textContent = `Nessun risultato per “${raw}”`;
+        if (msg) msg.textContent = 'Prova con un’altra parola chiave. Intanto, ecco gli ultimi articoli:';
+        render(idx.slice(0, SUGGESTED_LIMIT));
+      }
+    };
+
+    input?.addEventListener('input', run);
+    run();
+  </script>
+</Layout>

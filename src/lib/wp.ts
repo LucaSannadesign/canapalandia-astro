@@ -1,92 +1,163 @@
----
-const WP_HOST = "https://canapalandia.com";
-const BLOG_INDEX_PATH = "blog";
-const SITE_URL = "https://canapalandia.com"; // TODO: change when Astro goes live
+import postsJson from "../../data/wp/out/posts.json";
+import pagesJson from "../../data/wp/out/pages.json";
 
-function stripHtml(input) {
-  if (!input) return "";
-  return String(input).replace(/<[^>]*>/g, "");
+export const WP_HOST = "https://canapalandia.com";
+
+export type WpKind = "post" | "page";
+
+export type WpEntry = {
+  kind: WpKind;
+  id?: number;
+  slug: string;
+  path: string; // normalized, no leading/trailing slashes
+  link?: string;
+
+  title?: string;
+  html?: string;
+  excerpt?: string;
+
+  date?: string;
+  modified?: string;
+
+  /** Featured image (best-effort) extracted from WP REST `_embedded` and/or Yoast. */
+  featuredImage?: { src: string; alt: string };
+
+  yoastHead?: string;
+  yoastHeadJson?: any;
+
+  raw?: any;
+};
+
+function pickFeaturedMediaFromEmbedded(raw: any): { src: string; alt: string } | undefined {
+  const fm = raw?._embedded?.["wp:featuredmedia"]?.[0];
+  if (!fm) return undefined;
+
+  const src =
+    fm?.media_details?.sizes?.medium_large?.source_url ||
+    fm?.media_details?.sizes?.large?.source_url ||
+    fm?.media_details?.sizes?.full?.source_url ||
+    fm?.source_url;
+
+  const alt = fm?.alt_text || fm?.title?.rendered || "";
+  if (typeof src === "string" && src.trim().length) {
+    return { src: src.trim(), alt: String(alt ?? "") };
+  }
+  return undefined;
 }
 
-function escapeXml(input) {
-  const s = String(input ?? "");
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
-    .replace(/'/g, "&apos;");
+function pickFeaturedMediaFromYoast(raw: any): { src: string; alt: string } | undefined {
+  const src = raw?.yoast_head_json?.og_image?.[0]?.url || raw?.yoast_head_json?.og_image?.[0]?.src;
+  if (typeof src === "string" && src.trim().length) return { src: src.trim(), alt: "" };
+  return undefined;
 }
 
-function absUrl(p) {
-  const path = String(p || "");
-  if (!path) return SITE_URL;
-  if (path.startsWith("http")) return path;
-  return `${SITE_URL}${path.startsWith("/") ? "" : "/"}${path}`;
+function pickString(v: any): string | undefined {
+  return typeof v === "string" && v.trim().length ? v : undefined;
 }
 
-function sortPostsDesc(a, b) {
-  if (!a?.date && !b?.date) return 0;
-  if (!a?.date) return 1;
-  if (!b?.date) return -1;
-  return new Date(b.date).getTime() - new Date(a.date).getTime();
+function stripQueryHash(u: string): string {
+  return u.split("#")[0].split("?")[0];
 }
 
-function buildRssXml(items) {
-  const now = new Date().toUTCString();
-  const channelTitle = "Canapalandia";
-  const channelLink = absUrl("/");
-  const channelDesc = "Aggiornamenti e articoli su canapa legale, CBD, normativa, salute.";
-  const selfLink = absUrl("/rss.xml");
+/**
+ * Convert WP url/slug/object -> pathname without leading/trailing slashes.
+ * Examples:
+ *  - "https://canapalandia.com/foo/bar/" -> "foo/bar"
+ *  - "/foo/bar/" -> "foo/bar"
+ *  - "foo/bar" -> "foo/bar"
+ */
+export function toParams(input: any): string {
+  let s = "";
 
-  const list = (items || []).slice(0, 50).map((p) => {
-    const title = stripHtml(postTitle(p)) || "Articolo";
-    const href = postHrefFromWp(p);
-    const link = absUrl(href);
-    const guid = link;
-    const pubDate = new Date(p?.date || p?.modified || Date.now()).toUTCString();
-    const desc = escapeXml(postExcerpt(p));
+  if (typeof input === "string") {
+    s = input.trim();
+  } else if (input && typeof input === "object") {
+    const o: any = input;
+    s = String(o.path ?? o.uri ?? o.slug ?? o.link ?? o.url ?? "").trim();
+  }
 
-    return `\n    <item>\n      <title>${escapeXml(title)}</title>\n      <link>${escapeXml(link)}</link>\n      <guid isPermaLink=\"true\">${escapeXml(guid)}</guid>\n      <pubDate>${escapeXml(pubDate)}</pubDate>\n      <description>${desc}</description>\n    </item>`;
-  });
+  if (!s) return "";
 
-  return `<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<rss version=\"2.0\" xmlns:atom=\"http://www.w3.org/2005/Atom\">\n  <channel>\n    <title>${escapeXml(channelTitle)}</title>\n    <link>${escapeXml(channelLink)}</link>\n    <description>${escapeXml(channelDesc)}</description>\n    <lastBuildDate>${escapeXml(now)}</lastBuildDate>\n    <atom:link href=\"${escapeXml(selfLink)}\" rel=\"self\" type=\"application/rss+xml\" />\n    ${list.join("\n")}\n  </channel>\n</rss>\n`;
+  // If absolute URL, take pathname
+  if (/^https?:\/\//i.test(s) || s.startsWith("//")) {
+    try {
+      const u = new URL(s.startsWith("//") ? `https:${s}` : s);
+      s = u.pathname;
+    } catch {
+      // ignore
+    }
+  }
+
+  s = stripQueryHash(s);
+  return s.replace(/^\/+|\/+$/g, "");
 }
 
-export async function getStaticPaths() {
-  const paths = [];
+/** Normalize any value into `string | undefined` suitable for Astro params. */
+export function normalizePath(input: unknown): string | undefined {
+  let v: any = input;
 
-  // Existing paths push for blog index
-  paths.push({
-    params: { path: BLOG_INDEX_PATH },
-    props: { entry: null, kind: "blog-index" },
-  });
+  if (Array.isArray(v)) v = v.join("/");
+  if (v && typeof v === "object") {
+    v = (v as any).path ?? (v as any).slug ?? (v as any).uri ?? (v as any).value ?? "";
+    if (Array.isArray(v)) v = v.join("/");
+  }
 
-  paths.push({
-    params: { path: "rss.xml" },
-    props: { entry: null, kind: "rss" },
-  });
+  const s = String(v ?? "")
+    .split(/[?#]/)[0]
+    .replace(/^\/+|\/+$/g, "")
+    .trim();
 
-  // ... other paths logic ...
-
-  return paths;
+  return s.length ? s : undefined;
 }
 
-const routePath = Astro.params.path || "";
-const isBlogIndex = routePath === BLOG_INDEX_PATH;
-const isRss = Astro.props?.kind === "rss" || routePath === "rss.xml";
+function normalizeEntry(kind: WpKind, raw: any): WpEntry {
+  const slug = pickString(raw?.slug) ?? "";
+  const link = pickString(raw?.link);
 
-// Assuming blogPosts is defined somewhere above
-const latest = blogPosts.slice(0, 18);
+  // posts: usually root-level /{slug}/
+  const candidatePath = kind === "post" ? slug : raw?.path ?? raw?.uri ?? link ?? slug;
+  const path = toParams(candidatePath);
 
-const rssXml = isRss ? buildRssXml(blogPosts) : "";
-if (isRss) {
-  Astro.response.headers.set("Content-Type", "application/rss+xml; charset=utf-8");
+  const title = pickString(raw?.title?.rendered) ?? pickString(raw?.title);
+  const html = pickString(raw?.content?.rendered) ?? pickString(raw?.html);
+  const excerpt = pickString(raw?.excerpt?.rendered) ?? pickString(raw?.excerpt);
+
+  return {
+    kind,
+    id: typeof raw?.id === "number" ? raw.id : undefined,
+    slug,
+    path,
+    link,
+    title,
+    html,
+    excerpt,
+    date: pickString(raw?.date),
+    modified: pickString(raw?.modified),
+    featuredImage: pickFeaturedMediaFromEmbedded(raw) ?? pickFeaturedMediaFromYoast(raw),
+    yoastHead: pickString(raw?.yoast_head) ?? pickString(raw?.yoastHead),
+    yoastHeadJson: raw?.yoast_head_json ?? raw?.yoastHeadJson,
+    raw,
+  };
 }
-{isRss ? (
-  <Fragment set:html={rssXml} />
-) : (
-  <html lang="it">
-<!-- rest of the html markup -->
-</html>
-)}
+
+export async function loadWp(): Promise<{ entries: WpEntry[] }> {
+  const posts = Array.isArray(postsJson) ? postsJson : [];
+  const pages = Array.isArray(pagesJson) ? pagesJson : [];
+
+  const entries: WpEntry[] = [];
+  for (const p of posts) entries.push(normalizeEntry("post", p));
+  for (const p of pages) entries.push(normalizeEntry("page", p));
+
+  // Dedupe by path
+  const seen = new Set<string>();
+  const out: WpEntry[] = [];
+
+  for (const e of entries) {
+    if (!e.path) continue;
+    if (seen.has(e.path)) continue;
+    seen.add(e.path);
+    out.push(e);
+  }
+
+  return { entries: out };
+}

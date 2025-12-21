@@ -1,0 +1,95 @@
+---
+import Layout from "../layouts/MigratedLayout.astro";
+export const prerender = false;
+
+const title = "Il Ribaltatore AI — Canapalandia";
+const canonical = "https://canapalandia.com/ribaltatore/";
+---
+<Layout title={title} canonical={canonical}>
+  <section class="hero">
+    <p class="kicker">Tool • Satira & comunicazione</p>
+    <h1>Il Ribaltatore AI</h1>
+    <p>Inserisci una frase proibizionista: la ribaltiamo con ironia, senza istigare comportamenti illegali.</p>
+    <div class="meta">
+      <a class="btn btn-ghost" href="/blog/">← Blog</a>
+      <a class="btn" href="/">Home</a>
+    </div>
+  </section>
+
+  <section class="rib-wrap">
+    <div class="rib-inner">
+      <form class="rib-form" id="rib-form">
+        <label>
+          <span class="rib-note">Frase da ribaltare</span>
+          <textarea name="frase" required maxlength="420" placeholder="Esempio: “La cannabis è sempre e comunque droga”…"></textarea>
+        </label>
+        <input type="text" name="email_trap" value="" autocomplete="off" tabindex="-1" style="position:absolute;left:-9999px;opacity:0" />
+        <div class="rib-row">
+          <button class="btn" type="submit">Ribalta</button>
+          <p class="rib-note" id="rib-status" aria-live="polite"></p>
+        </div>
+      </form>
+
+      <div style="margin-top:14px" id="rib-result"></div>
+
+      <h2 class="sectionTitle">Ultime ribaltate</h2>
+      <div class="rib-list" id="rib-list"></div>
+    </div>
+  </section>
+
+  <script>
+    const form = document.getElementById('rib-form');
+    const statusEl = document.getElementById('rib-status');
+    const resultEl = document.getElementById('rib-result');
+    const listEl = document.getElementById('rib-list');
+
+    const escapeHtml = (s) => String(s)
+      .replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
+      .replaceAll('"','&quot;').replaceAll("'",'&#039;');
+
+    const renderCard = (item) => {
+      const d = item?.created_at ? new Date(item.created_at) : null;
+      const dt = d ? d.toLocaleDateString('it-IT', { year:'numeric', month:'long', day:'2-digit' }) : '';
+      return `
+        <div class="rib-card">
+          <p class="rib-meta">${dt}</p>
+          <p><strong>Frase:</strong> ${escapeHtml(item?.input || '')}</p>
+          <p><strong>Ribaltata:</strong> ${escapeHtml(item?.output || '')}</p>
+        </div>
+      `.trim();
+    };
+
+    async function loadList(){
+      try{
+        const r = await fetch('/api/ribaltate/', { headers:{ accept:'application/json' } });
+        const data = await r.json();
+        const items = Array.isArray(data?.items) ? data.items : [];
+        listEl.innerHTML = items.map(renderCard).join('') || '<p class="rib-note">Nessuna ribaltata disponibile.</p>';
+      } catch {
+        listEl.innerHTML = '<p class="rib-note">Nessuna ribaltata disponibile.</p>';
+      }
+    }
+
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      statusEl.textContent = 'Sto ribaltando…';
+      resultEl.innerHTML = '';
+
+      try{
+        const fd = new FormData(form);
+        const r = await fetch('/api/ribalta-ai/', { method:'POST', body: fd });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data?.ribaltata || data?.error || 'Errore');
+
+        statusEl.textContent = 'Fatto.';
+        resultEl.innerHTML = data?.item ? renderCard(data.item) : `<div class="rib-card"><p>${escapeHtml(data?.ribaltata || '')}</p></div>`;
+        await loadList();
+      } catch(err){
+        statusEl.textContent = '';
+        resultEl.innerHTML = `<div class="rib-card"><p><strong>Errore:</strong> ${escapeHtml(err?.message || 'Errore')}</p></div>`;
+      }
+    });
+
+    loadList();
+  </script>
+</Layout>

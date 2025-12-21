@@ -1,14 +1,41 @@
 ---
-import { loadWp, toParams } from "../lib/wp";
+import { loadWp, WP_HOST } from "../lib/wp";
 import postsJson from "../../data/wp/out/posts.json";
+import categoriesJson from "../../data/wp/out/categories.json";
+import tagsJson from "../../data/wp/out/tags.json";
+import fs from "node:fs/promises";
+import crypto from "node:crypto";
 
-const WP_HOST = "https://canapalandia.com";
-const BLOG_INDEX_PATH = "blog";
+export const prerender = false;
 
-/* ----------------------- helpers (no TS-only syntax) ----------------------- */
+const BLOG_INDEX = "blog";
+
+/* ----------------------- helpers ----------------------- */
+function normalizePathParam(input) {
+  if (input == null) return "";
+
+  let v = input;
+  if (Array.isArray(v)) v = v.filter(Boolean).join("/");
+
+  v = String(v).trim();
+  if (!v) return "";
+
+  try {
+    if (/^https?:\/\//i.test(v)) v = new URL(v).pathname;
+  } catch {}
+
+  v = v.replace(/\?.*$/, "").replace(/#.*$/, "");
+  v = v.replace(/^\/+|\/+$/g, "");
+  v = v.split("/").filter(Boolean).join("/");
+
+  return v;
+}
+
 function stripHtml(input) {
   if (!input) return "";
   return String(input)
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
     .replace(/<[^>]*>/g, " ")
     .replace(/\s+/g, " ")
     .trim();
@@ -31,15 +58,12 @@ function pickOgImageFromYoastHead(yoastHeadHtml) {
 }
 
 function pickOgImageFromYoastJson(yoast) {
-  // Yoast JSON shape (common): { og_image: [{ url: "..." }] }
-  const url = yoast?.og_image?.[0]?.url || yoast?.og_image?.[0]?.url || yoast?.og_image?.[0]?.src;
+  const url = yoast?.og_image?.[0]?.url || yoast?.og_image?.[0]?.src;
   return typeof url === "string" && url.length ? url : undefined;
 }
 
 function postHrefFromWp(post) {
-  // Prefer slug (most of your WP permalinks are root-level /{slug}/)
   if (post?.slug) return `/${post.slug}/`;
-  // Fallback to link pathname if present
   if (post?.link) {
     try {
       const u = new URL(post.link);
@@ -53,7 +77,6 @@ function transformWpHtml(html) {
   if (!html) return "";
   let out = String(html);
 
-  // 1) Make internal links relative to the Astro site (so navigation stays inside the new app)
   out = out
     .replaceAll("https://www.canapalandia.com", "")
     .replaceAll("http://www.canapalandia.com", "")
@@ -61,48 +84,25 @@ function transformWpHtml(html) {
     .replaceAll("http://canapalandia.com", "")
     .replaceAll("//canapalandia.com", "");
 
-  // 2) BUT keep uploads absolute so they load on Vercel even if uploads are not committed
-  //    Match: " /wp-content/uploads/...", '( /wp-content/uploads/...', url(/wp-content/uploads/...)
   out = out.replace(/(["'(])\/(wp-content\/uploads\/)/g, `$1${WP_HOST}/$2`);
-
-  // 3) Also handle srcset values that may include bare /wp-content/uploads/... without a leading quote
   out = out.replace(/\s(\/wp-content\/uploads\/)/g, ` ${WP_HOST}$1`);
 
   return out;
 }
 
-function normalizePath(input) {
-  let v = input;
-
-  if (Array.isArray(v)) v = v.join("/");
-  if (v && typeof v === "object") {
-    v = v.path ?? v.slug ?? v.uri ?? v.value ?? "";
-    if (Array.isArray(v)) v = v.join("/");
-  }
-
-  const s = String(v ?? "");
-  const cleaned = s
-    .split(/[?#]/)[0]
-    .replace(/^\/+|\/+$/g, "")
-    .trim();
-
-  return cleaned.length ? cleaned : undefined;
+function escapeHtml(s) {
+  return String(s)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 /* ----------------------------- data (blog) ----------------------------- */
 const allPosts = Array.isArray(postsJson) ? postsJson : [];
-
-function pickPostImage(post) {
-  // Prefer Yoast JSON if present
-  const fromJson = pickOgImageFromYoastJson(post?.yoast_head_json);
-  if (fromJson) return fromJson;
-
-  // Fallback: parse yoast_head string
-  const fromHead = pickOgImageFromYoastHead(post?.yoast_head);
-  if (fromHead) return fromHead;
-
-  return undefined;
-}
+const allCategories = Array.isArray(categoriesJson) ? categoriesJson : [];
+const allTags = Array.isArray(tagsJson) ? tagsJson : [];
 
 function postTitle(post) {
   return post?.title?.rendered || post?.title || "";
@@ -120,419 +120,835 @@ function sortPostsDesc(a, b) {
   return db - da;
 }
 
-export async function getStaticPaths() {
-  const { entries } = await loadWp();
+function pickPostImage(post) {
+  const fromJson = pickOgImageFromYoastJson(post?.yoast_head_json);
+  if (fromJson) return fromJson;
 
-  const paths = (entries ?? [])
-    .map((e) => {
-      const raw = e?.path ?? e?.uri ?? e?.slug ?? "";
-      const normalized = normalizePath(toParams(raw));
-      if (!normalized) return null;
+  const fromHead = pickOgImageFromYoastHead(post?.yoast_head);
+  if (fromHead) return fromHead;
 
-      return {
-        params: { path: normalized },
-        props: { entry: e },
-      };
-    })
-    .filter(Boolean);
-
-  // Add Blog index route at /blog/
-  // (No new file needed; the dynamic route renders it.)
-  paths.push({
-    params: { path: BLOG_INDEX_PATH },
-    props: { entry: null, kind: "blog-index" },
-  });
-
-  return paths;
+  return undefined;
 }
 
-const { entry } = Astro.props;
-const routePath = Astro.params?.path || "";
-const isBlogIndex = Astro.props?.kind === "blog-index" || routePath === BLOG_INDEX_PATH;
+/* ---------------------------- Ribaltatore store ---------------------------- */
+const STORE_PATH = process.env.RIBALTATORE_STORE_PATH || "/tmp/canapalandia-ribaltate.json";
+const MAX_STORE_ITEMS = 120;
 
-/* ----------------------------- entry (single) ----------------------------- */
+async function readStore() {
+  try {
+    const raw = await fs.readFile(STORE_PATH, "utf-8");
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+async function writeStore(items) {
+  try {
+    await fs.writeFile(STORE_PATH, JSON.stringify(items.slice(0, MAX_STORE_ITEMS), null, 2), "utf-8");
+  } catch {
+    // alcuni deploy hanno FS in sola lettura: ignoro
+  }
+}
+
+function extractClientIp(request) {
+  const xf = request.headers.get("x-forwarded-for");
+  if (xf) return xf.split(",")[0]?.trim() || "";
+  const xr = request.headers.get("x-real-ip");
+  if (xr) return xr.trim();
+  return "";
+}
+
+function hashIp(ip) {
+  if (!ip) return null;
+  return crypto.createHash("sha256").update(ip).digest("hex");
+}
+
+function getRateMap() {
+  const g = globalThis;
+  if (!g.__rib_rate) g.__rib_rate = new Map();
+  return g.__rib_rate;
+}
+
+async function callOpenAI(frase) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) return { ok: false, error: "OPENAI_API_KEY non configurata." };
+
+  const model = process.env.OPENAI_MODEL || "gpt-5";
+  const instructions = [
+    "Sei Il Ribaltatore AI di Canapalandia.",
+    "Ribalta slogan proibizionisti sulla cannabis con ironia e satira (tono antiproibizionista).",
+    "Nessuna incitazione a violare leggi. Niente odio o insulti verso gruppi protetti.",
+    "Massimo 2-4 frasi. Punchline finale.",
+    "Scrivi in italiano naturale.",
+  ].join("\n");
+
+  const r = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      instructions,
+      input: frase,
+      max_output_tokens: 220,
+    }),
+  });
+
+  if (!r.ok) {
+    const t = await r.text().catch(() => "");
+    return { ok: false, error: `Errore OpenAI (${r.status}). ${t}`.slice(0, 400) };
+  }
+
+  const data = await r.json();
+
+  const outText =
+    (typeof data?.output_text === "string" && data.output_text) ||
+    (() => {
+      const parts = [];
+      for (const item of data?.output || []) {
+        for (const c of item?.content || []) {
+          if (c?.type === "output_text" && typeof c?.text === "string") parts.push(c.text);
+        }
+      }
+      return parts.join("\n");
+    })();
+
+  const ribaltata = String(outText || "").trim();
+  if (!ribaltata) return { ok: false, error: "Risposta vuota." };
+
+  return { ok: true, ribaltata };
+}
+
+/* ----------------------------- runtime ----------------------------- */
+const routePath = normalizePathParam(Astro.params?.path ?? "");
+const method = Astro.request.method?.toUpperCase?.() || "GET";
+
+/* API: /api/ribalta-ai/ (POST) */
+if (routePath === "api/ribalta-ai") {
+  if (method !== "POST") {
+    return new Response(JSON.stringify({ error: "Method Not Allowed" }), {
+      status: 405,
+      headers: { "content-type": "application/json" },
+    });
+  }
+
+  const form = await Astro.request.formData();
+  const trap = String(form.get("email_trap") ?? "");
+  if (trap.trim()) {
+    return new Response(JSON.stringify({ ribaltata: "❌ Spam rilevato." }), {
+      status: 400,
+      headers: { "content-type": "application/json" },
+    });
+  }
+
+  const frase = String(form.get("frase") ?? "").replace(/\s+/g, " ").trim();
+  if (!frase || frase.length < 6 || frase.length > 420) {
+    return new Response(JSON.stringify({ ribaltata: "❌ Frase non valida." }), {
+      status: 400,
+      headers: { "content-type": "application/json" },
+    });
+  }
+
+  const ip = extractClientIp(Astro.request);
+  const key = ip || "local";
+  const rate = getRateMap();
+  const now = Date.now();
+  const last = rate.get(key) || 0;
+
+  if (now - last < 2500) {
+    return new Response(JSON.stringify({ ribaltata: "⏳ Troppo veloce: riprova tra un attimo." }), {
+      status: 429,
+      headers: { "content-type": "application/json" },
+    });
+  }
+  rate.set(key, now);
+
+  const ai = await callOpenAI(frase);
+  if (!ai.ok) {
+    return new Response(JSON.stringify({ ribaltata: `❌ ${ai.error}` }), {
+      status: 500,
+      headers: { "content-type": "application/json" },
+    });
+  }
+
+  const items = await readStore();
+  const record = {
+    id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + "-" + Math.random().toString(16).slice(2),
+    created_at: new Date().toISOString(),
+    input: frase,
+    output: ai.ribaltata,
+    ip_hash: hashIp(ip),
+  };
+
+  items.unshift(record);
+  await writeStore(items);
+
+  return new Response(
+    JSON.stringify({
+      ribaltata: record.output,
+      item: record,
+      html: `<div class="rib-card"><p class="rib-meta">${escapeHtml(formatDate(record.created_at))}</p><p><strong>Frase:</strong> ${escapeHtml(record.input)}</p><p><strong>Ribaltata:</strong> ${escapeHtml(record.output)}</p></div>`,
+    }),
+    { headers: { "content-type": "application/json" } }
+  );
+}
+
+/* API: /api/ribaltate/ (GET) */
+if (routePath === "api/ribaltate") {
+  if (method !== "GET") {
+    return new Response(JSON.stringify({ error: "Method Not Allowed" }), {
+      status: 405,
+      headers: { "content-type": "application/json" },
+    });
+  }
+  const items = await readStore();
+  return new Response(JSON.stringify({ items: items.slice(0, 60) }), {
+    headers: { "content-type": "application/json" },
+  });
+}
+
+/* SSR lookup contenuti WP */
+const { entries } = await loadWp();
+const list = Array.isArray(entries) ? entries : [];
+const entry = list.find((e) => e?.path === routePath) || null;
+
+const isBlogIndex = routePath === BLOG_INDEX;
+const isSearch = routePath === "cerca";
+const isRibaltatore = routePath === "ribaltatore";
+
+const isCategory = routePath.startsWith("categoria/");
+const categorySlug = isCategory ? routePath.split("/").slice(1).join("/") : "";
+const category = isCategory ? allCategories.find((c) => String(c?.slug || "") === categorySlug) : null;
+const categoryId = category?.id;
+
+const isTag = routePath.startsWith("tag/");
+const tagSlug = isTag ? routePath.split("/").slice(1).join("/") : "";
+const tag = isTag ? allTags.find((t) => String(t?.slug || "") === tagSlug) : null;
+const tagId = tag?.id;
+
+const blogPosts = allPosts.slice().sort(sortPostsDesc);
+const latest = blogPosts.slice(0, 18);
+
+const categoryPosts =
+  categoryId != null ? blogPosts.filter((p) => Array.isArray(p?.categories) && p.categories.includes(categoryId)) : [];
+
+const tagPosts = tagId != null ? blogPosts.filter((p) => Array.isArray(p?.tags) && p.tags.includes(tagId)) : [];
+
 const hasYoast = typeof entry?.yoastHead === "string" && entry.yoastHead.trim().length > 0;
 const yoastHeadHtml = hasYoast ? transformWpHtml(entry.yoastHead) : "";
 
 const pageTitle =
   (typeof entry?.title === "string" && entry.title) ||
   (typeof entry?.name === "string" && entry.name) ||
-  "Canapalandia";
+  (isRibaltatore ? "Il Ribaltatore AI" : isSearch ? "Cerca" : "Canapalandia");
 
-const canonical = typeof entry?.link === "string" ? entry.link : undefined;
+const canonical = `https://canapalandia.com/${routePath ? routePath + "/" : ""}`;
 
-// Content HTML: keep internal links relative, but force uploads absolute
 const articleHtml = typeof entry?.html === "string" ? transformWpHtml(entry.html) : "";
 
-// Featured image (try Yoast head first)
-const featuredImage = pickOgImageFromYoastHead(entry?.yoastHead) || pickOgImageFromYoastJson(entry?.yoastHeadJson) || undefined;
+const featuredImage =
+  (typeof entry?.featuredImage?.src === "string" && entry.featuredImage.src) ||
+  pickOgImageFromYoastHead(entry?.yoastHead) ||
+  pickOgImageFromYoastJson(entry?.yoastHeadJson) ||
+  undefined;
 
-// Meta
 const publishedAt = entry?.date || entry?.published || entry?.publishedAt || entry?.created || "";
 const updatedAt = entry?.modified || entry?.updated || entry?.updatedAt || "";
 
-// Related posts for single pages
-const currentSlug = normalizePath(routePath);
-const related = allPosts
-  .slice()
-  .sort(sortPostsDesc)
-  .filter((p) => (p?.slug ? p.slug !== currentSlug : true))
-  .slice(0, 6);
+const currentSlug = routePath;
+const related = blogPosts.filter((p) => (p?.slug ? p.slug !== currentSlug : true)).slice(0, 6);
 
-// Blog list (index)
-const blogPosts = allPosts.slice().sort(sortPostsDesc);
-const latest = blogPosts.slice(0, 18);
+const searchIndex = blogPosts.map((p) => ({
+  href: postHrefFromWp(p),
+  title: stripHtml(postTitle(p)),
+  date: p?.date || p?.modified || "",
+  excerpt: postExcerpt(p),
+  img: pickPostImage(p) || "",
+}));
+
+const notFound = !isBlogIndex && !isSearch && !isRibaltatore && !isCategory && !isTag && !entry;
 ---
 
 <html lang="it">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
 
     {hasYoast ? (
       <Fragment set:html={yoastHeadHtml} />
     ) : (
       <>
         <title>{pageTitle}</title>
-        {canonical && <link rel="canonical" href={canonical} />}
+        <link rel="canonical" href={canonical} />
         <meta name="robots" content="index,follow" />
       </>
     )}
 
     <style>
       :root {
-        --bg: #f6f7f8;
-        --panel: #ffffff;
-        --panel-2: #fbfbfb;
-        --text: #0f172a;
+        color-scheme: light dark;
+        --bg: #ffffff;
+        --text: #0b1220;
         --muted: #475569;
-        --border: rgba(2, 6, 23, 0.10);
+        --card-solid: #ffffff;
+        --border: rgba(15, 23, 42, 0.14);
         --shadow: 0 14px 40px rgba(2, 6, 23, 0.10);
         --shadow-soft: 0 10px 24px rgba(2, 6, 23, 0.08);
-        --r: 16px;
-        --r-sm: 12px;
+        --panel: var(--card-solid);
+        --radius: 16px;
         --brand: #16a34a;
         --brand-2: #15803d;
+        --container: 1120px;
+        --pad: 20px;
+        --font-sans: "Manrope", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
       }
-
-      html, body { height: 100%; }
-      body {
-        margin: 0;
-        background: var(--bg);
-        color: var(--text);
-        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0b0f16;
+          --text: #e5e7eb;
+          --muted: #9aa4b2;
+          --card-solid: #0f172a;
+          --border: rgba(226, 232, 240, 0.14);
+          --shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+          --shadow-soft: 0 10px 24px rgba(0, 0, 0, 0.35);
+          --panel: var(--card-solid);
+        }
       }
-
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-sans); line-height: 1.55; }
       a { color: inherit; }
+      .container { max-width: var(--container); margin: 0 auto; padding: 0 var(--pad); }
+      .page-shell { padding: 28px 0 64px; }
 
-      .shell { max-width: 1120px; margin: 0 auto; padding: 28px 18px 64px; }
-
-      .topbar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 14px 18px;
-        border: 1px solid var(--border);
-        border-radius: var(--r);
-        background: rgba(255,255,255,0.8);
-        backdrop-filter: blur(8px);
-        box-shadow: var(--shadow-soft);
+      .site-header {
+        position: sticky; top: 0; z-index: 50;
+        border-bottom: 1px solid rgba(255,255,255,.10);
+        background: rgba(10, 12, 14, 0.22);
+        backdrop-filter: blur(10px);
+      }
+      .header-inner { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:14px 0; }
+      .brand { display:inline-flex; align-items:center; gap:10px; text-decoration:none; }
+      .brand-name { font-weight:800; letter-spacing:.2px; }
+      .nav { display:flex; gap:14px; flex-wrap:wrap; }
+      .nav a { text-decoration:none; opacity:.92; padding:8px 10px; border-radius:999px; }
+      .nav a:hover { background: rgba(22,163,74,.18); }
+      .header-actions { display:flex; align-items:center; gap:10px; }
+      .icon-btn {
+        width:34px; height:34px; display:inline-flex; align-items:center; justify-content:center;
+        border-radius:999px; border:1px solid rgba(255,255,255,.22);
+        text-decoration:none; background: rgba(255,255,255,.10);
+      }
+      .search {
+        text-decoration:none; padding:8px 12px; border-radius:999px;
+        border:1px solid rgba(255,255,255,.22); background: rgba(255,255,255,.10);
+        font-size:14px;
       }
 
-      .brand {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        text-decoration: none;
-        font-weight: 800;
-        letter-spacing: -0.02em;
-      }
-
-      .nav {
-        display: flex;
-        gap: 10px;
-        align-items: center;
-        flex-wrap: wrap;
-      }
-
-      .chip {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 12px;
-        border-radius: 999px;
-        border: 1px solid var(--border);
-        background: var(--panel);
-        color: var(--muted);
-        text-decoration: none;
-        font-size: 13px;
-        line-height: 1;
-      }
-
-      .chip:hover { border-color: rgba(22,163,74,0.35); color: #0b1220; }
-
-      .hero {
-        margin-top: 18px;
-        padding: 26px 22px;
-        border-radius: var(--r);
-        border: 1px solid var(--border);
-        background: linear-gradient(180deg, rgba(22,163,74,0.10), rgba(255,255,255,0.90));
-        box-shadow: var(--shadow);
-      }
-
+      .hero{ padding: 28px 0 18px; background: transparent; }
       .kicker { color: var(--muted); font-size: 13px; margin: 0 0 10px; }
-
-      .hero h1 {
-        margin: 0;
-        font-size: clamp(26px, 3.2vw, 42px);
-        letter-spacing: -0.03em;
-        line-height: 1.08;
-      }
-
-      .hero p {
-        margin: 12px 0 0;
-        color: var(--muted);
-        max-width: 72ch;
-        line-height: 1.55;
-      }
-
-      .meta {
-        margin-top: 14px;
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-        align-items: center;
-      }
+      .hero h1 { margin: 0; font-size: clamp(26px, 3.2vw, 42px); letter-spacing: -0.03em; line-height: 1.08; }
+      .hero p { margin: 12px 0 0; color: var(--muted); max-width: 72ch; }
+      .meta { margin-top: 14px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
 
       .btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 14px;
-        border-radius: 999px;
-        background: var(--brand);
-        color: #fff;
-        text-decoration: none;
-        font-weight: 700;
-        font-size: 14px;
-        border: 1px solid rgba(0,0,0,0.05);
+        display:inline-flex; align-items:center; gap:8px;
+        padding:10px 14px; border-radius:999px;
+        background: var(--brand); color:#fff; text-decoration:none;
+        font-weight:700; font-size:14px;
+        border:1px solid rgba(0,0,0,0.05);
         box-shadow: 0 12px 24px rgba(22,163,74,0.18);
       }
       .btn:hover { background: var(--brand-2); }
+      .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border); box-shadow:none; }
 
-      .btn-ghost {
-        background: transparent;
-        color: var(--text);
-        border: 1px solid var(--border);
-        box-shadow: none;
-      }
-
-      .grid {
-        margin-top: 18px;
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 14px;
-      }
+      .grid { margin-top:18px; display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap:14px; }
       @media (max-width: 980px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
       @media (max-width: 620px) { .grid { grid-template-columns: 1fr; } }
 
       .card {
-        border: 1px solid var(--border);
-        border-radius: var(--r);
-        background: var(--panel);
-        overflow: hidden;
-        box-shadow: var(--shadow-soft);
+        border:1px solid var(--border); border-radius: var(--radius);
+        background: var(--panel); overflow:hidden; box-shadow: var(--shadow-soft);
         transition: transform 140ms ease, box-shadow 140ms ease;
       }
       .card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+      .cardLink { display:block; text-decoration:none; }
+      .thumb { aspect-ratio: 16/9; background: linear-gradient(135deg, rgba(22,163,74,0.14), rgba(15,23,42,0.06)); overflow:hidden; }
+      .thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+      .cardBody { padding:14px 14px 16px; }
+      .cardMeta { margin:0 0 8px; font-size:12px; color: var(--muted); }
+      .cardTitle { margin:0; font-size:16px; line-height:1.25; letter-spacing:-0.01em; }
+      .cardExcerpt { margin:10px 0 0; color: var(--muted); font-size:13.5px; line-height:1.45; }
+      .cardCta { margin-top:12px; display:inline-flex; gap:6px; align-items:center; color: var(--brand-2); font-weight:800; font-size:13px; }
 
-      .cardLink { display: block; text-decoration: none; }
-
-      .thumb {
-        aspect-ratio: 16 / 9;
-        background: linear-gradient(135deg, rgba(22,163,74,0.14), rgba(15,23,42,0.06));
-        position: relative;
-        overflow: hidden;
-      }
-      .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-
-      .cardBody { padding: 14px 14px 16px; }
-      .cardMeta { margin: 0 0 8px; font-size: 12px; color: var(--muted); }
-      .cardTitle { margin: 0; font-size: 16px; line-height: 1.25; letter-spacing: -0.01em; }
-      .cardExcerpt { margin: 10px 0 0; color: var(--muted); font-size: 13.5px; line-height: 1.45; }
-      .cardCta { margin-top: 12px; display: inline-flex; gap: 6px; align-items: center; color: var(--brand-2); font-weight: 800; font-size: 13px; }
-
-      .articleWrap {
-        margin-top: 18px;
-        border: 1px solid var(--border);
-        border-radius: var(--r);
-        background: var(--panel);
-        box-shadow: var(--shadow);
-        overflow: hidden;
-      }
-
-      .articleHeroImg { aspect-ratio: 16 / 9; background: #eaeaea; }
-      .articleHeroImg img { width: 100%; height: 100%; object-fit: cover; display: block; }
-
-      .articleInner { padding: 22px; }
-
-      /* Typography for WP HTML */
-      article { color: var(--text); }
-      article h2, article h3 { letter-spacing: -0.02em; }
-      article p { line-height: 1.75; color: #111827; }
+      .articleWrap { margin-top:18px; border:1px solid var(--border); border-radius: var(--radius); background: var(--panel); box-shadow: var(--shadow); overflow:hidden; }
+      .articleHeroImg { aspect-ratio: 16/9; background:#eaeaea; }
+      .articleHeroImg img { width:100%; height:100%; object-fit:cover; display:block; }
+      .articleInner { padding:22px; }
       article a { color: var(--brand-2); text-decoration: underline; text-underline-offset: 3px; }
-      article ul, article ol { line-height: 1.75; }
-      article blockquote {
-        margin: 16px 0;
-        padding: 12px 14px;
-        border-left: 4px solid rgba(22,163,74,0.35);
-        background: rgba(22,163,74,0.08);
-        border-radius: 10px;
-        color: #0b1220;
-      }
-      article img { max-width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); }
 
-      .sectionTitle {
-        margin-top: 26px;
-        font-size: 18px;
-        letter-spacing: -0.02em;
-      }
+      .site-footer { border-top:1px solid var(--border); padding:34px 0; background: rgba(2, 6, 23, 0.06); }
+      .footer-inner { display:grid; gap:18px; grid-template-columns: 1.2fr 1fr 1fr; }
+      .footer-title { margin:0; font-weight:800; }
+      .footer-desc { margin:8px 0 0; color: var(--muted); }
+      .footer-nav { display:grid; gap:10px; }
+      .footer-nav a { text-decoration:none; color: var(--muted); }
+      .footer-nav a:hover { color: var(--text); }
+      .footer-copy { margin:0; color: var(--muted); }
 
-      footer {
-        margin-top: 28px;
-        padding: 18px;
-        color: var(--muted);
-        text-align: center;
-        font-size: 13px;
+      /* Ribaltatore + Search */
+      .rib-wrap { margin-top: 18px; border:1px solid var(--border); border-radius: var(--radius); background: var(--panel); box-shadow: var(--shadow); overflow:hidden; }
+      .rib-inner { padding: 18px; }
+      .rib-form { display:grid; gap:12px; }
+      .rib-form textarea {
+        width:100%; min-height:120px; padding:12px;
+        border-radius:12px; border:1px solid var(--border);
+        background: rgba(255,255,255,0.06); color: var(--text);
+        font: inherit; line-height:1.5; resize: vertical;
       }
+      .rib-row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+      .rib-note { color: var(--muted); font-size:13px; margin:0; }
+      .rib-card { border:1px solid var(--border); border-radius:14px; padding:12px; background: rgba(2,6,23,0.04); }
+      .rib-meta { margin:0 0 8px; font-size:12px; color: var(--muted); }
+      .rib-list { display:grid; gap:10px; margin-top:12px; }
+
+      .searchbox { display:grid; gap:10px; margin-top:14px; }
+      .searchbox input {
+        width:100%; padding:12px;
+        border-radius:999px; border:1px solid var(--border);
+        background: rgba(255,255,255,0.06); color: var(--text); font: inherit;
+      }
+      .sectionTitle { margin-top:26px; font-size:18px; letter-spacing:-0.02em; }
+
+      @media (max-width: 980px) { .footer-inner { grid-template-columns: 1fr; } }
+      @media (max-width: 560px) { .nav { display:none; } }
     </style>
   </head>
 
   <body>
-    <div class="shell">
-      <header class="topbar">
-        <a class="brand" href="/">Canapalandia</a>
-        <nav class="nav">
-          <a class="chip" href="/">Home</a>
-          <a class="chip" href="/blog/">Blog</a>
-          <a class="chip" href="/contatti/">Contatti</a>
+    <header class="site-header">
+      <div class="container header-inner">
+        <a class="brand" href="/" aria-label="Canapalandia, Home">
+          <span aria-hidden="true">🍃</span>
+          <span class="brand-name">Canapalandia</span>
+        </a>
+
+        <nav class="nav" aria-label="Navigazione principale">
+          <a href="/#percorsi">Temi</a>
+          <a href="/#in-evidenza">In evidenza</a>
+          <a href="/#ultimi">Ultimi</a>
+          <a href="/blog/">Blog</a>
+          <a href="/ribaltatore/">Ribaltatore</a>
+          <a href="/contatti/">Contatti</a>
         </nav>
-      </header>
 
-      {isBlogIndex ? (
-        <>
-          <section class="hero">
-            <p class="kicker">Blog • Canapa legale, CBD, normativa, salute</p>
-            <h1>Articoli e guide</h1>
-            <p>
-              Una lista completa e aggiornata dei contenuti migrati da WordPress. Le immagini sono servite dal sito
-              WordPress finché la migrazione media non sarà finalizzata.
-            </p>
-            <div class="meta">
-              <a class="btn" href="/">Torna alla home</a>
-              <a class="btn btn-ghost" href="/">Esplora i temi</a>
-            </div>
-          </section>
+        <div class="header-actions">
+          <a class="search" href="/cerca/" aria-label="Cerca nel sito">Cerca</a>
+        </div>
+      </div>
+    </header>
 
-          <section>
-            <h2 class="sectionTitle">Ultimi articoli</h2>
-            <div class="grid">
-              {latest.map((p) => {
-                const href = postHrefFromWp(p);
-                const img = pickPostImage(p);
-                const title = postTitle(p);
-                const date = formatDate(p?.date || p?.modified);
-                const excerpt = postExcerpt(p);
-
-                return (
-                  <article class="card">
-                    <a class="cardLink" href={href}>
-                      <div class="thumb">
-                        {img ? <img src={img} alt={stripHtml(title)} loading="lazy" /> : null}
-                      </div>
-                      <div class="cardBody">
-                        <p class="cardMeta">{date}</p>
-                        <h3 class="cardTitle" set:html={title} />
-                        <p class="cardExcerpt">{excerpt}</p>
-                        <span class="cardCta">Apri articolo →</span>
-                      </div>
-                    </a>
-                  </article>
-                );
-              })}
-            </div>
-          </section>
-        </>
-      ) : (
-        <>
-          <section class="hero">
-            <p class="kicker">Articolo</p>
-            <h1>{pageTitle}</h1>
-            <p>
-              {publishedAt ? (
-                <>
-                  Pubblicato il <strong>{formatDate(publishedAt)}</strong>
-                  {updatedAt ? (
-                    <>
-                      {" "}• aggiornato il <strong>{formatDate(updatedAt)}</strong>
-                    </>
-                  ) : null}
-                </>
-              ) : (
-                <>Guida e contenuto informativo dalla migrazione WordPress → Astro.</>
-              )}
-            </p>
-            <div class="meta">
-              <a class="btn btn-ghost" href="/blog/">← Tutti gli articoli</a>
-              <a class="btn" href="/">Home</a>
-            </div>
-          </section>
-
-          <section class="articleWrap">
-            {featuredImage ? (
-              <div class="articleHeroImg">
-                <img src={featuredImage} alt={pageTitle} loading="eager" />
+    <main id="contenuto">
+      <div class="container page-shell">
+        {isRibaltatore ? (
+          <>
+            <section class="hero">
+              <p class="kicker">Tool • Satira & comunicazione</p>
+              <h1>Il Ribaltatore AI</h1>
+              <p>Inserisci una frase proibizionista: la ribaltiamo con ironia, senza istigare comportamenti illegali.</p>
+              <div class="meta">
+                <a class="btn btn-ghost" href="/blog/">← Blog</a>
+                <a class="btn" href="/">Home</a>
               </div>
-            ) : null}
+            </section>
 
-            <div class="articleInner">
-              {articleHtml ? <article set:html={articleHtml} /> : null}
-            </div>
-          </section>
+            <section class="rib-wrap">
+              <div class="rib-inner">
+                <form class="rib-form" id="rib-form">
+                  <label>
+                    <span class="rib-note">Frase da ribaltare</span>
+                    <textarea name="frase" required maxlength="420" placeholder="Esempio: 'La cannabis è sempre e comunque droga'…"></textarea>
+                  </label>
+                  <input type="text" name="email_trap" value="" autocomplete="off" tabindex="-1" style="position:absolute;left:-9999px;opacity:0" />
+                  <div class="rib-row">
+                    <button class="btn" type="submit">Ribalta</button>
+                    <p class="rib-note" id="rib-status" aria-live="polite"></p>
+                  </div>
+                </form>
 
-          <section>
-            <h2 class="sectionTitle">Altri articoli</h2>
-            <div class="grid">
-              {related.map((p) => {
-                const href = postHrefFromWp(p);
-                const img = pickPostImage(p);
-                const title = postTitle(p);
-                const date = formatDate(p?.date || p?.modified);
+                <div style="margin-top:14px" id="rib-result"></div>
 
-                return (
-                  <article class="card">
-                    <a class="cardLink" href={href}>
-                      <div class="thumb">
-                        {img ? <img src={img} alt={stripHtml(title)} loading="lazy" /> : null}
-                      </div>
-                      <div class="cardBody">
-                        <p class="cardMeta">{date}</p>
-                        <h3 class="cardTitle" set:html={title} />
-                        <span class="cardCta">Leggi →</span>
-                      </div>
-                    </a>
-                  </article>
-                );
-              })}
-            </div>
-          </section>
-        </>
-      )}
+                <h2 class="sectionTitle">Ultime ribaltate</h2>
+                <div class="rib-list" id="rib-list"></div>
+              </div>
+            </section>
 
-      <footer>
-        © {new Date().getFullYear()} Canapalandia • Migrazione in corso (WordPress → Astro)
-      </footer>
-    </div>
+            <script>
+              const form = document.getElementById('rib-form');
+              const statusEl = document.getElementById('rib-status');
+              const resultEl = document.getElementById('rib-result');
+              const listEl = document.getElementById('rib-list');
+
+              function escapeHtml(s){
+                return String(s)
+                  .replaceAll('&','&amp;')
+                  .replaceAll('<','&lt;')
+                  .replaceAll('>','&gt;')
+                  .replaceAll('"','&quot;')
+                  .replaceAll("'",'&#039;');
+              }
+
+              const renderCard = (item) => {
+                const d = item?.created_at ? new Date(item.created_at) : null;
+                const dt = d ? d.toLocaleDateString('it-IT', { year:'numeric', month:'long', day:'2-digit' }) : '';
+                return `
+                  <div class="rib-card">
+                    <p class="rib-meta">${dt}</p>
+                    <p><strong>Frase:</strong> ${escapeHtml(item?.input || '')}</p>
+                    <p><strong>Ribaltata:</strong> ${escapeHtml(item?.output || '')}</p>
+                  </div>
+                `.trim();
+              };
+
+              async function loadList(){
+                try{
+                  const r = await fetch('/api/ribaltate/', { headers: { 'accept':'application/json' } });
+                  const data = await r.json();
+                  const items = Array.isArray(data?.items) ? data.items : [];
+                  listEl.innerHTML = items.map(renderCard).join('') || '<p class="rib-note">Nessuna ribaltata disponibile.</p>';
+                } catch {
+                  listEl.innerHTML = '<p class="rib-note">Nessuna ribaltata disponibile.</p>';
+                }
+              }
+
+              form?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                statusEl.textContent = 'Sto ribaltando…';
+                resultEl.innerHTML = '';
+
+                const fd = new FormData(form);
+
+                try{
+                  const r = await fetch('/api/ribalta-ai/', { method:'POST', body: fd });
+                  const data = await r.json();
+                  if (!r.ok) throw new Error(data?.ribaltata || data?.error || 'Errore');
+
+                  statusEl.textContent = 'Fatto.';
+                  if (data?.item) resultEl.innerHTML = renderCard(data.item);
+                  else resultEl.innerHTML = `<div class="rib-card"><p><strong>Ribaltata:</strong> ${escapeHtml(data?.ribaltata || '')}</p></div>`;
+
+                  await loadList();
+                } catch(err){
+                  statusEl.textContent = '';
+                  resultEl.innerHTML = `<div class="rib-card"><p><strong>Errore:</strong> ${escapeHtml(err?.message || 'Errore')}</p></div>`;
+                }
+              });
+
+              loadList();
+            </script>
+          </>
+        ) : isSearch ? (
+          <>
+            <section class="hero">
+              <p class="kicker">Ricerca</p>
+              <h1>Cerca nel sito</h1>
+              <p>Ricerca rapida tra titoli ed estratti degli articoli migrati.</p>
+              <div class="meta">
+                <a class="btn btn-ghost" href="/blog/">← Blog</a>
+                <a class="btn" href="/">Home</a>
+              </div>
+
+              <div class="searchbox">
+                <input id="q" type="search" placeholder="Cerca…" autocomplete="off" />
+                <p class="rib-note">Suggerimento: “CBD”, “decreto sicurezza”, “corte di giustizia”…</p>
+              </div>
+            </section>
+
+            <section>
+              <h2 class="sectionTitle" id="resultsLabel">Ultimi articoli</h2>
+              <div class="grid" id="results"></div>
+            </section>
+
+            <script define:vars={{ INDEX: searchIndex }}>
+              const input = document.getElementById('q');
+              const results = document.getElementById('results');
+              const idx = Array.isArray(INDEX) ? INDEX : [];
+
+              function escapeHtml(s){
+                return String(s)
+                  .replaceAll('&','&amp;')
+                  .replaceAll('<','&lt;')
+                  .replaceAll('>','&gt;')
+                  .replaceAll('"','&quot;')
+                  .replaceAll("'",'&#039;');
+              }
+
+              const score = (q, item) => {
+                const t = (item.title || '').toLowerCase();
+                const e = (item.excerpt || '').toLowerCase();
+                if (t.includes(q)) return 3;
+                if (e.includes(q)) return 1;
+                return 0;
+              };
+
+              const render = (items) => {
+                results.innerHTML = items.map((p) => {
+                  const date = p.date ? new Date(p.date).toLocaleDateString('it-IT', { year:'numeric', month:'long', day:'2-digit' }) : '';
+                  return `
+                    <article class="card">
+                      <a class="cardLink" href="${p.href}">
+                        <div class="thumb">${p.img ? `<img src="${p.img}" alt="${escapeHtml(p.title)}" loading="lazy" />` : ''}</div>
+                        <div class="cardBody">
+                          <p class="cardMeta">${escapeHtml(date)}</p>
+                          <h3 class="cardTitle">${escapeHtml(p.title)}</h3>
+                          <p class="cardExcerpt">${escapeHtml(p.excerpt)}</p>
+                          <span class="cardCta">Apri →</span>
+                        </div>
+                      </a>
+                    </article>
+                  `.trim();
+                }).join('');
+              };
+
+              const run = () => {
+                const q = (input.value || '').trim().toLowerCase();
+                if (!q) { render(idx.slice(0, 18)); return; }
+
+                const out = idx
+                  .map((it) => ({ it, s: score(q, it) }))
+                  .filter((x) => x.s > 0)
+                  .sort((a,b) => b.s - a.s)
+                  .slice(0, 36)
+                  .map((x) => x.it);
+
+                render(out);
+              };
+
+              input.addEventListener('input', run);
+              run();
+            </script>
+          </>
+        ) : isCategory ? (
+          <>
+            <section class="hero">
+              <p class="kicker">Categoria</p>
+              <h1>{category?.name || "Categoria"}</h1>
+              <p>{category?.description ? stripHtml(category.description) : "Contenuti filtrati per categoria."}</p>
+              <div class="meta">
+                <a class="btn btn-ghost" href="/blog/">← Blog</a>
+                <a class="btn" href="/">Home</a>
+              </div>
+            </section>
+
+            {category ? (
+              <section>
+                <h2 class="sectionTitle">Articoli</h2>
+                <div class="grid">
+                  {categoryPosts.slice(0, 48).map((p) => {
+                    const href = postHrefFromWp(p);
+                    const img = pickPostImage(p);
+                    const title = postTitle(p);
+                    const date = formatDate(p?.date || p?.modified);
+                    const excerpt = postExcerpt(p);
+
+                    return (
+                      <article class="card">
+                        <a class="cardLink" href={href}>
+                          <div class="thumb">{img ? <img src={img} alt={stripHtml(title)} loading="lazy" /> : null}</div>
+                          <div class="cardBody">
+                            <p class="cardMeta">{date}</p>
+                            <h3 class="cardTitle" set:html={title} />
+                            <p class="cardExcerpt">{excerpt}</p>
+                            <span class="cardCta">Apri →</span>
+                          </div>
+                        </a>
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+            ) : (
+              <section class="articleWrap"><div class="articleInner"><p>Categoria non trovata.</p></div></section>
+            )}
+          </>
+        ) : isTag ? (
+          <>
+            <section class="hero">
+              <p class="kicker">Tag</p>
+              <h1>{tag?.name || "Tag"}</h1>
+              <p>{tag?.description ? stripHtml(tag.description) : "Contenuti filtrati per tag."}</p>
+              <div class="meta">
+                <a class="btn btn-ghost" href="/blog/">← Blog</a>
+                <a class="btn" href="/">Home</a>
+              </div>
+            </section>
+
+            {tag ? (
+              <section>
+                <h2 class="sectionTitle">Articoli</h2>
+                <div class="grid">
+                  {tagPosts.slice(0, 48).map((p) => {
+                    const href = postHrefFromWp(p);
+                    const img = pickPostImage(p);
+                    const title = postTitle(p);
+                    const date = formatDate(p?.date || p?.modified);
+                    const excerpt = postExcerpt(p);
+
+                    return (
+                      <article class="card">
+                        <a class="cardLink" href={href}>
+                          <div class="thumb">{img ? <img src={img} alt={stripHtml(title)} loading="lazy" /> : null}</div>
+                          <div class="cardBody">
+                            <p class="cardMeta">{date}</p>
+                            <h3 class="cardTitle" set:html={title} />
+                            <p class="cardExcerpt">{excerpt}</p>
+                            <span class="cardCta">Apri →</span>
+                          </div>
+                        </a>
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+            ) : (
+              <section class="articleWrap"><div class="articleInner"><p>Tag non trovato.</p></div></section>
+            )}
+          </>
+        ) : isBlogIndex ? (
+          <>
+            <section class="hero">
+              <p class="kicker">Blog • Canapa legale, CBD, normativa, salute</p>
+              <h1>Articoli e guide</h1>
+              <p>Lista completa dei contenuti migrati da WordPress.</p>
+              <div class="meta">
+                <a class="btn" href="/">Torna alla home</a>
+                <a class="btn btn-ghost" href="/#percorsi">Esplora i temi</a>
+              </div>
+            </section>
+
+            <section>
+              <h2 class="sectionTitle">Ultimi articoli</h2>
+              <div class="grid">
+                {latest.map((p) => {
+                  const href = postHrefFromWp(p);
+                  const img = pickPostImage(p);
+                  const title = postTitle(p);
+                  const date = formatDate(p?.date || p?.modified);
+                  const excerpt = postExcerpt(p);
+
+                  return (
+                    <article class="card">
+                      <a class="cardLink" href={href}>
+                        <div class="thumb">{img ? <img src={img} alt={stripHtml(title)} loading="lazy" /> : null}</div>
+                        <div class="cardBody">
+                          <p class="cardMeta">{date}</p>
+                          <h3 class="cardTitle" set:html={title} />
+                          <p class="cardExcerpt">{excerpt}</p>
+                          <span class="cardCta">Apri articolo →</span>
+                        </div>
+                      </a>
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+          </>
+        ) : notFound ? (
+          <>
+            <section class="hero">
+              <p class="kicker">404</p>
+              <h1>Pagina non trovata</h1>
+              <p>Questa rotta non esiste nella migrazione corrente. Puoi cercare un articolo o tornare al blog.</p>
+              <div class="meta">
+                <a class="btn" href="/cerca/">Cerca</a>
+                <a class="btn btn-ghost" href="/blog/">Blog</a>
+              </div>
+            </section>
+          </>
+        ) : (
+          <>
+            <section class="hero">
+              <p class="kicker">Articolo</p>
+              <h1>{pageTitle}</h1>
+              <p>
+                {publishedAt ? (
+                  <>
+                    Pubblicato il <strong>{formatDate(publishedAt)}</strong>
+                    {updatedAt ? <> • aggiornato il <strong>{formatDate(updatedAt)}</strong></> : null}
+                  </>
+                ) : (
+                  <>Guida e contenuto informativo dalla migrazione WordPress → Astro.</>
+                )}
+              </p>
+              <div class="meta">
+                <a class="btn btn-ghost" href="/blog/">← Tutti gli articoli</a>
+                <a class="btn" href="/">Home</a>
+              </div>
+            </section>
+
+            <section class="articleWrap">
+              {featuredImage ? (
+                <div class="articleHeroImg">
+                  <img src={featuredImage} alt={pageTitle} loading="eager" />
+                </div>
+              ) : null}
+
+              <div class="articleInner">
+                {articleHtml ? <article set:html={articleHtml} /> : null}
+              </div>
+            </section>
+
+            <section>
+              <h2 class="sectionTitle">Altri articoli</h2>
+              <div class="grid">
+                {related.map((p) => {
+                  const href = postHrefFromWp(p);
+                  const img = pickPostImage(p);
+                  const title = postTitle(p);
+                  const date = formatDate(p?.date || p?.modified);
+
+                  return (
+                    <article class="card">
+                      <a class="cardLink" href={href}>
+                        <div class="thumb">{img ? <img src={img} alt={stripHtml(title)} loading="lazy" /> : null}</div>
+                        <div class="cardBody">
+                          <p class="cardMeta">{date}</p>
+                          <h3 class="cardTitle" set:html={title} />
+                          <span class="cardCta">Leggi →</span>
+                        </div>
+                      </a>
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+          </>
+        )}
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-inner">
+        <div>
+          <p class="footer-title">Canapalandia</p>
+          <p class="footer-desc">Informazione su cannabis legale e CBD, con focus Italia.</p>
+        </div>
+        <nav aria-label="Link utili" class="footer-nav">
+          <a href="/privacy-policy/">Privacy</a>
+          <a href="/termini-e-condizioni/">Termini</a>
+          <a href="/contatti/">Contatti</a>
+        </nav>
+        <p class="footer-copy">© {new Date().getFullYear()} Canapalandia</p>
+      </div>
+    </footer>
   </body>
 </html>
