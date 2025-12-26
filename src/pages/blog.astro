@@ -1,6 +1,7 @@
 ---
 import Layout from "../layouts/MigratedLayout.astro";
 import postsJson from "../../data/wp/out/posts.json";
+import { toParams } from "../lib/wp";
 
 export const prerender = false;
 
@@ -11,7 +12,11 @@ const stripHtml = (s) => String(s || "").replace(/<[^>]*>/g, " ").replace(/\s+/g
 const excerpt = (p) => stripHtml(p?.excerpt?.rendered || p?.excerpt || "").slice(0, 180);
 const sortDesc = (a, b) => (Date.parse(b?.date || b?.modified || "") || 0) - (Date.parse(a?.date || a?.modified || "") || 0);
 const og = (p) => p?.yoast_head_json?.og_image?.[0]?.url || p?.yoast_head_json?.og_image?.[0]?.src || "";
-const href = (p) => (p?.slug ? `/${p.slug}/` : "#");
+const href = (p) => {
+  const url = p?.yoast_head_json?.canonical || p?.link || p?.slug || "";
+  const path = toParams(url);
+  return path ? `/${path}/` : "#";
+};
 const fmt = (iso) => (iso ? new Date(iso).toLocaleDateString("it-IT", { year:"numeric", month:"long", day:"2-digit" }) : "");
 
 const latest = posts.slice().sort(sortDesc).slice(0, 18);
@@ -33,7 +38,7 @@ const canonical = "https://canapalandia.com/blog/";
   <section>
     <div class="grid">
       {latest.map((p) => (
-        <article class="card">
+        <article class="card post-card">
           <a class="cardLink" href={href(p)}>
             <div class="thumb">{og(p) ? <img src={og(p)} alt={stripHtml(postTitle(p))} loading="lazy" /> : null}</div>
             <div class="cardBody">

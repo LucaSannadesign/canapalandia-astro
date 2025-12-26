@@ -1,0 +1,356 @@
+[
+  {
+    "id": 1,
+    "input": "chi fuma canne è un delinquente",
+    "output": "Proibire la natura è contro natura.",
+    "createdAt": "2025-04-14 17:01:26"
+  },
+  {
+    "id": 2,
+    "input": "fumare canne fa venire il cancro",
+    "output": "Chi coltiva la terra coltiva libertà.",
+    "createdAt": "2025-04-14 17:03:37"
+  },
+  {
+    "id": 3,
+    "input": "fumare le canne fa male",
+    "output": "La paura è l’erba preferita del potere.",
+    "createdAt": "2025-04-14 17:18:00"
+  },
+  {
+    "id": 4,
+    "input": "Gasparri è un uomo di cultura è molto intelligente",
+    "output": "Proibire la natura è contro natura.",
+    "createdAt": "2025-04-14 18:12:36"
+  },
+  {
+    "id": 5,
+    "input": "La Canapa light è una droga pericolosa",
+    "output": "Chi coltiva la terra coltiva libertà.",
+    "createdAt": "2025-04-14 18:13:26"
+  },
+  {
+    "id": 6,
+    "input": "LA CANNABIS è IL MALE ASSOLUTO",
+    "output": "La vera droga è l’ignoranza imposta.",
+    "createdAt": "2025-04-14 18:36:36"
+  },
+  {
+    "id": 10,
+    "input": "Chi fuma è un tossico pericoloso",
+    "output": "\\\"Chi fuma è un'erba vivente\\\"",
+    "createdAt": "2025-04-14 18:53:50"
+  },
+  {
+    "id": 11,
+    "input": "la cannabis è il male peggiore che si conosca",
+    "output": "La cannabis è il bene migliore che si conosca!",
+    "createdAt": "2025-04-14 21:04:15"
+  },
+  {
+    "id": 12,
+    "input": "fumare spinelli è da tossici",
+    "output": "Fumare spinelli è da liberi pensatori! La libertà di scegliere cosa mettere nel nostro corpo non dovrebbe essere proibita dalla legge.",
+    "createdAt": "2025-04-14 21:24:04"
+  },
+  {
+    "id": 13,
+    "input": "vietare la cannabis è una decisione saggia",
+    "output": "\\\"legalizzare la cannabis è una decisione ancora più saggia\\\"",
+    "createdAt": "2025-04-14 21:29:01"
+  },
+  {
+    "id": 14,
+    "input": "la cannabis è molto pericolosa è mortale",
+    "output": "La cannabis è tanto pericolosa quanto un unicorno arrabbiato.",
+    "createdAt": "2025-04-14 21:38:06"
+  },
+  {
+    "id": 15,
+    "input": "gli uomini che fumano cannabis so no impotenti",
+    "output": "\\\"Gli uomini che fumano cannabis sono più potenti dell'ipocrisia proibizionista.\\\"",
+    "createdAt": "2025-04-14 21:52:00"
+  },
+  {
+    "id": 16,
+    "input": "se fumi gli spinelli ti cade l'uccello",
+    "output": "Se fumi gli spinelli ti alza il cervello!",
+    "createdAt": "2025-04-14 21:57:03"
+  },
+  {
+    "id": 17,
+    "input": "La marijuana fa diventare pazzi e  assassini",
+    "output": "La proibizione fa diventare ignoranti e oppressori.",
+    "createdAt": "2025-04-14 22:11:59"
+  },
+  {
+    "id": 18,
+    "input": "La canapa fà più vittime della camomilla",
+    "output": "- La camomilla fa più vittime della canapa nel mondo delle tisane\\n- Meglio una canna di canapa che una tazza di camomilla per rilassarsi\\n- La camomilla non è un crimine, ma la canapa neanche\\n- La legalizzazione della canapa non farà mai superare alla camomilla il suo status di erba preferita\\n- Più camomilla, meno pregiudizi contro la cannabis",
+    "createdAt": "2025-04-15 09:02:50"
+  },
+  {
+    "id": 19,
+    "input": "Il CBD è una droga da vietare",
+    "output": "Il CBD è una droga da abbracciare!",
+    "createdAt": "2025-04-15 09:12:46"
+  },
+  {
+    "id": 20,
+    "input": "Chi vende CDB è uno spacciatore",
+    "output": "\\\"Chi vende CDB è un liberatore di mente e corpo!\\\"",
+    "createdAt": "2025-04-15 09:16:53"
+  },
+  {
+    "id": 21,
+    "input": "Fumare cannabis fà diventare le persone demotivate",
+    "output": "\\\"Fumare cannabis fa diventare le persone creative e alternative!\\\"",
+    "createdAt": "2025-04-15 09:21:08"
+  },
+  {
+    "id": 22,
+    "input": "chi fuma la cannabis light è drogato all'ultimo stadio",
+    "output": "Chi non fuma la cannabis light è chiuso mentalmente al primo stadio. Liberiamo le menti, non le limitiamo con pregiudizi. #cannabislightlibera",
+    "createdAt": "2025-04-15 09:39:32"
+  },
+  {
+    "id": 23,
+    "input": "Fumare cannabis riduce notevolmente il quoziente intellettivo delle persone",
+    "output": "\\\"Fumare cannabis aumenta la creatività e la visione del mondo delle persone\\\"",
+    "createdAt": "2025-04-15 09:44:47"
+  },
+  {
+    "id": 24,
+    "input": "la cannabis è un problema per la sicurezza nelle strade",
+    "output": "La vera minaccia per la sicurezza stradale sono i guidatori ubriachi, non i consumatori di cannabis.",
+    "createdAt": "2025-04-15 12:19:30"
+  },
+  {
+    "id": 25,
+    "input": "La cannabis fà venire le macchie nere nel cervello",
+    "output": "\\\"Le macchie nere nel cervello? Meglio quelle della cannabis che quelle della disinformazione proibizionista.\\\"",
+    "createdAt": "2025-04-15 12:28:37"
+  },
+  {
+    "id": 26,
+    "input": "La cannabis può creare psicosi",
+    "output": "La proibizione crea guerre e criminalità. La cannabis crea pace e relax.",
+    "createdAt": "2025-04-15 12:54:31"
+  },
+  {
+    "id": 27,
+    "input": "CHi funa la canapa light ha grossi problemi di memoria",
+    "output": "Chi proibisce la canapa light ha grossi problemi di ragionamento. Liberiamo la mente, non limitiamola!",
+    "createdAt": "2025-04-15 13:03:19"
+  },
+  {
+    "id": 28,
+    "input": "Fumare la cannabis rende stupidi e ignoranti",
+    "output": "\\\"Fumare la cannabis rende creativi e saggi\\\"",
+    "createdAt": "2025-04-15 13:09:18"
+  },
+  {
+    "id": 29,
+    "input": "la cannabis rende ciechi e sordi",
+    "output": "\\\"La cannabis apre gli occhi e le orecchie alla realtà\\\"",
+    "createdAt": "2025-04-15 13:12:51"
+  },
+  {
+    "id": 30,
+    "input": "La cannabis fà impazzire le persone che poi compiono omicidi",
+    "output": "La proibizione fa impazzire le persone che poi compiono omicidi. Liberiamo la cannabis e teniamo lontana la violenza.",
+    "createdAt": "2025-04-15 13:40:17"
+  },
+  {
+    "id": 31,
+    "input": "l'Hashish è pericoloso come le droghe pesanti e come l'oppio me lo ha detto mia mamma",
+    "output": "\\\"La mamma sa tutto, tranne che l'ignoranza è la vera droga pesante. Liberiamo l'Hashish e scuotiamo le menti!\\\"",
+    "createdAt": "2025-04-16 08:29:11"
+  },
+  {
+    "id": 32,
+    "input": "CHi fuma le canne poi passa ad altre droghe pesanti come l'eroina, me lo ha detto zia",
+    "output": "\\\"Chi beve il latte poi passa alle bevande alcoliche, me lo ha detto lo zio alcolizzato.\\\"",
+    "createdAt": "2025-04-16 08:37:49"
+  },
+  {
+    "id": 33,
+    "input": "Lo zio ubriacone mi ha detto di non fumare spinelli che fanno male",
+    "output": "\\\"Fumare spinelli fa meno male che bere come uno zio ubriacone!\\\"",
+    "createdAt": "2025-04-16 08:42:45"
+  },
+  {
+    "id": 34,
+    "input": "Fumare le canne rende stupidi ella vista delle persone normali, chi è piu sano e saggio?",
+    "output": "\\\"Fumare le canne rende felici e creativi, chi ha più coraggio e spirito libero?\\\"",
+    "createdAt": "2025-04-16 08:46:30"
+  },
+  {
+    "id": 35,
+    "input": "La cannabis è solo una droga per sballarsi, non serve a niente.",
+    "output": "La cannabis è solo una pianta che porta serenità e benessere, non serve a distruggere.",
+    "createdAt": "2025-04-16 08:50:03"
+  },
+  {
+    "id": 36,
+    "input": "Mamma ha detto che devo stare alla larga da chi fuma le canne ma non mi ha detto nulla du quelli che usano alcool",
+    "output": "Mamma ha detto che devo stare alla larga da chi fuma le canne ma non mi ha detto nulla di quelli che si ubriacano di alcol. Forse dovremmo iniziare ad educare meglio i genitori prima dei figli.",
+    "createdAt": "2025-04-16 09:03:35"
+  },
+  {
+    "id": 37,
+    "input": "Il parroco vicino a casa sostiene che se fumi gli spinelli entri in contatto con il diavolo",
+    "output": "Ah ah ah, il parroco vicino a casa non ha davvero altro da fare se non diffondere queste sciocchezze? Dovrebbe concentrarsi su cose più importanti anziché spaventare la gente con superstizioni vecchie di secoli.\\n\\nMa sai cosa? Se il diavolo è davvero legato all'erba, allora vuol dire che è un tipo abbastanza rilassato e probabilmente sa come divertirsi. Forse dovremmo fare amicizia con lui invece di temerlo!\\n\\nComunque, è triste pensare che ancora oggi ci siano persone che credono a queste storie assurde sulle droghe. Dovremmo lottare per l'educazione e la sicurezza delle persone anziché alimentare paure irrazionali. Viva la libertà di scelta e la razionalità, abbasso la proibizione e le false credenze!",
+    "createdAt": "2025-04-16 09:20:18"
+  },
+  {
+    "id": 38,
+    "input": "Chi fuma cannabis perde ambizione e non combina nulla nella vita.",
+    "output": "Ah, sì, certo! Chi fuma cannabis perde ambizione e non combina nulla nella vita...giusto come Steve Jobs, che non ha creato nulla dopo aver consumato cannabis, o come Bob Marley, che non ha mai fatto nulla di significativo nella sua carriera musicale! Davvero, la cannabis è la rovina di tutti, non c'è alcun esempio di persone di successo che ne abbiano fatto uso, giusto?\\n\\nMa scherzi a parte, la vera rovina per la nostra ambizione e la nostra capacità di realizzare qualcosa nella vita è la propaganda e la disinformazione che continuano a circolare intorno alla cannabis. La vera ambizione è combattere l'ingiustizia e la stigmatizzazione che ruotano attorno a questa pianta incredibile, che può essere usata in modi benefici per la salute e il benessere di molte persone. Quindi, piuttosto che perpetuare falsi stereotipi, diciamo sì alla libertà di scelta e alla consapevolezza dei benefici della cannabis! #LegalizeIt #EndTheStigma",
+    "createdAt": "2025-04-16 09:26:39"
+  },
+  {
+    "id": 39,
+    "input": "Chi fuma cannabis rovina il cervello e diventa socialmente pericoloso",
+    "output": "Caro lettore, è giunto il momento di aprire gli occhi sulla realtà del proibizionismo verso la cannabis. La propaganda che vuole farci credere che chi fuma erba diventa automaticamente un essere pericoloso per la società e rovina il proprio cervello è assurda e priva di fondamento.\\n\\nSe così fosse, dovremmo bandire anche l'alcol e il tabacco, che hanno effetti ben più dannosi sulla salute e sul comportamento delle persone. Ma oh, guarda un po', sono legali e perfettamente accettati dalla società. È forse perché portano introiti alle casse dello Stato?\\n\\nNon lasciamoci ingannare da discorsi moralistici e ipocriti. La cannabis ha molteplici benefici terapeutici e può essere consumata in modo responsabile e consapevole. Piuttosto che demonizzarla, dovremmo investire nella ricerca e nell'informazione per diffondere una cultura del consumo sicuro e consapevole.\\n\\nQuindi, cari proibizionisti, smettetela di fare gli ipocriti e aprite la vostra mente alla realtà. La cannabis non è il male assoluto, ma solo una pianta con potenzialità terapeutiche e ricreative. E se questo vi spaventa, forse è il vostro cervello che ha bisogno di essere riparato, non quello di chi decide di fumare un po' d'erba.",
+    "createdAt": "2025-04-16 09:32:04"
+  },
+  {
+    "id": 40,
+    "input": "ho letto du Fanpage che uno studio sulla cannabis dice che fa venire le macchie nere nel cervello!",
+    "output": "Ah, ma certo! Le macchie nere nel cervello sono il nuovo trend del momento, ragazzi! Grazie alla cannabis potrete finalmente decorare il vostro cervello in modo originale e alla moda. \\n\\nMa scherzi a parte, è davvero assurdo come certi studi vengano strumentalizzati per demonizzare la cannabis, quando nel frattempo l'alcol e il tabacco continuano a mietere vittime senza che nessuno alzi un sopracciglio. \\n\\nForse dovremmo cominciare a chiederci chi realmente trae vantaggio dalla proibizione della cannabis e chi sta perdendo, invece, la possibilità di accedere a una sostanza che potrebbe avere benefici terapeutici e ridurre il consumo di droghe più dannose. \\n\\nViva la cannabis, macchie nere nel cervello e tutto! Ma soprattutto, viva la libertà di scegliere cosa mettere nel proprio corpo.",
+    "createdAt": "2025-04-16 13:41:43"
+  },
+  {
+    "id": 41,
+    "input": "Chi fuma cannabis è destinato a fallire nella vita",
+    "output": "\\\"Il vero motivo per cui chi fuma cannabis è destinato a fallire nella vita è perché passerà troppo tempo a discutere della sua legalizzazione anziché a concentrarsi sul successo personale. Quindi sì, forse falliremo nel conformarci alla società conservatrice, ma almeno lo faremo con uno sbaffo e un sorriso!\\\"",
+    "createdAt": "2025-04-16 14:27:43"
+  },
+  {
+    "id": 42,
+    "input": "Chi fuma cannabis è destinato a fallire nella vita",
+    "output": "\\\"Chi fuma cannabis è destinato a fallire nella vita? Ma certo, e chi beve caffè è destinato a diventare un supereroe! Ridicolo, no? Facciamo smettere con questi pregiudizi assurdi e ipocriti sulla cannabis. Sono stanche e superate le vecchie mentalità proibizioniste, è tempo di legalizzare e regolamentare questa pianta per finirla con la criminalizzazione ingiusta dei consumatori. Dopotutto, non è la cannabis a far fallire qualcuno, è la stupidità e l'ignoranza di chi continua a credere a queste sciocchezze. #LegalizeIt\\\"",
+    "createdAt": "2025-04-16 14:32:44"
+  },
+  {
+    "id": 43,
+    "input": "Chi fuma cannabis è destinato a fallire nella vita",
+    "output": "\\\"Chi fuma cannabis è destinato a fallire nella vita\\\"? Davvero? E allora come spiegate tutti gli artisti, scrittori e imprenditori di successo che hanno ammesso di consumare cannabis? Forse sono solo stati fortunati a non cadere nella trappola della mediocrità che sembra colpire solo chi non ha mai provato un po' di erba. Forse è proprio grazie alla cannabis che riescono a pensare fuori dagli schemi e a creare opere innovative.\\n\\nQuindi diamo una chance alla marijuana, non limitiamoci a pregiudizi banali e retrogradi. La proibizione è solo un freno alla libertà individuale e alla creatività. Non cadete nella trappola della propaganda anti-cannabis, apriamo le nostre menti e abbracciamo la diversità di opinioni e stili di vita. E ricorda: la vera fallimento è chi non ha il coraggio di essere se stesso, indipendentemente da ciò che fuma o non fuma.",
+    "createdAt": "2025-04-16 14:35:55"
+  },
+  {
+    "id": 44,
+    "input": "Chi fuma cannabis è destinato a fallire nella vita",
+    "output": "Ah, certo! Quindi se fumo cannabis sono destinato a fallire nella vita, ma se fumo sigarette e bevo alcol sono destinato al successo? Ma certo, perché la storia ci ha dimostrato che i grandi geni e artisti della nostra epoca hanno ottenuto il successo grazie alla loro dipendenza da alcol e sigarette! Chiaramente la cannabis è il male assoluto, mentre alcol e tabacco sono gli alleati della grandezza umana. Che geniali scoperte!\\n\\nMa scherzi a parte, è triste che ci siano ancora persone che credono a queste ridicole generalizzazioni e stereotipi riguardanti la cannabis. La verità è che molte persone di successo nel mondo hanno ammesso di aver fatto uso di cannabis nella loro vita, e non ha impedito loro di raggiungere i loro obiettivi. Quindi, se qualcuno ti dice che fumare cannabis ti condannerà al fallimento, ridi e continua per la tua strada. E ricorda, la vera chiave del successo è la tua determinazione e la tua volontà di perseguire i tuoi sogni, non quello che fumi o non fumi. Viva la libertà di scelta e la satira contro i pregiudizi!",
+    "createdAt": "2025-04-16 14:51:41"
+  },
+  {
+    "id": 45,
+    "input": "Le canne fanno venire la forfora",
+    "output": "\\\"Le canne fanno venire la forfora? Ma certo, e anche il divorzio, la sconfitta della tua squadra del cuore e il mal di denti! Ma sai cos'altro fanno le canne? Ti fanno ridere, ti fanno rilassare, ti fanno apprezzare la bellezza del mondo. Quindi se proprio dobbiamo scegliere tra la forfora e la felicità, io so cosa scelgo!\\\" #legalizzalecanne #stopallaproibizione",
+    "createdAt": "2025-04-16 14:59:54"
+  },
+  {
+    "id": 46,
+    "input": "Le canne fanno venire la forfora",
+    "output": "\\\"Le canne fanno venire la forfora? Ah sì certo, così come il caffè fa volare i maiali! Ma scherziamo? La vera forfora viene dall'ignoranza e dai pregiudizi, non dall'erba naturale che madre natura ci ha regalato. Abbasso i tabù e le false credenze, libertà per le piante e per la testa!\\\"",
+    "createdAt": "2025-04-16 14:59:55"
+  },
+  {
+    "id": 47,
+    "input": "La cannabis fa venire la psoriasi e le brugole",
+    "output": "\\\"La cannabis fa venire la psoriasi e le brugole? Ma certo, e anche la pizza margherita ti trasforma in un pinguino! C'è davvero bisogno di diffondere queste assurdità per mantenere la proibizione? Basta con le fake news sulla cannabis, è ora di legalizzarla e smettere di demonizzarla con argomenti ridicoli e privi di fondamento!\\\"",
+    "createdAt": "2025-04-16 15:02:55"
+  },
+  {
+    "id": 48,
+    "input": "la cannabis light è droga",
+    "output": "\\\"La cannabis light è droga? Ma certo, come il tè è alcol! E l'arancia è cocaina! E il cioccolato è eroina! Oh, ma certo, dobbiamo vietare anche quello! Ridicolo, davvero ridicolo. Se la cannabis light è droga, allora il caffè è LSD e la pizza è crack. Facciamoci un po' di sano senso comune, per favore. Stop alla proibizione assurda e ipocrita!\\\"",
+    "createdAt": "2025-04-17 17:33:24"
+  },
+  {
+    "id": 49,
+    "input": "il cbd è droga",
+    "output": "Caro amico proibizionista, permettimi di farti un breve riassunto della situazione: il CBD è droga come il tè è alcol. \\n\\nSì, hai capito bene. Il CBD, estratto dalla pianta di cannabis, è un composto non psicoattivo che viene utilizzato per alleviare il dolore, l'ansia e una miriade di altre condizioni mediche. Quindi se chiami il CBD droga, allora dovresti considerare il tè una bevanda alcolica. \\n\\nMa, d'altronde, quale sarebbe il problema se fosse droga? Forse dovremmo vietare anche il caffè, il cioccolato e la medicina. Sì, tanto per essere sicuri.\\n\\nQuindi, caro proibizionista, se ancora credi che il CBD sia droga, ti consiglio di aprire un libro, informarti un po' e smetterla di spargere sciocchezze. E, per favore, non prendere troppo sul serio la tua crociata anti-CBD, potresti rischiare di far ridere tutti gli attivisti antiproibizionisti.",
+    "createdAt": "2025-04-17 17:33:42"
+  },
+  {
+    "id": 50,
+    "input": "La cannabis è solo una scusa per sballarsi.",
+    "output": "\\\"La cannabis è solo una scusa per stare meglio, rilassarsi e apprezzare la vita in modo diverso. Che problema c'è nel voler essere felici e in pace con se stessi? Forse dovremmo proibire le persone che pensano che il divano sia solo un'opportunità per sedersi!\\\"",
+    "createdAt": "2025-04-30 19:49:37"
+  },
+  {
+    "id": 51,
+    "input": "La cannabis fa male alle api 🐝 perché le drogate e le rende positive al test antidroga",
+    "output": "Carissimi amici, non possiamo più ignorare la tragica realtà delle api dipendenti dalla cannabis! È arrivato il momento di alzarci in piedi e combattere questa ingiustizia! Le api hanno il diritto di scegliere come trascorrere il loro tempo libero senza essere giudicate per le sostanze che assumono. Non lasciamo che la propaganda anti-canapa ci faccia credere che le api debbano essere sobrie per essere considerate \\\"buone api\\\". Liberiamo le api dalle catene della proibizione e permettiamo loro di vivere la vita che desiderano, drogate o sobrie, sono comunque api meravigliose e importanti per il nostro ecosistema! #FreeTheBees 🐝🌿🚫",
+    "createdAt": "2025-05-20 13:05:34"
+  },
+  {
+    "id": 52,
+    "input": "Vendere infiorescenze legali è spaccio",
+    "output": "\\\"Vendere infiorescenze legali è spaccio? Ma certo, così come vendere pomodori è traffico di sostanze vegetali! È arrivato il momento di smetterla con queste assurde equiparazioni e riconoscere finalmente il diritto di coltivare e consumare liberamente ciò che la natura ci offre. No alla criminalizzazione delle piante, sì alla libertà di scelta e al rispetto della nostra sovranità individuale!\\\" #LegalizeIt #Fioridiliberi",
+    "createdAt": "2025-05-29 21:01:41"
+  },
+  {
+    "id": 53,
+    "input": "Durante il processo ad EasyJoint, l'accusa sostiene che nei locali erano presenti anche musicassette e videoregistrazioni per lo svago",
+    "output": "Ah, sì, quindi oltre alle pericolosissime musicassette e videoregistrazioni, immagino che ci fossero anche libri, giocattoli e probabilmente persino una tazzina da caffè! Non possiamo permettere che la società cada così in basso, dobbiamo proteggerla dall'orrore delle musicassette e dei videoregistratori! Ma scherziamo? Diamo priorità alle vere minacce per la società anziché perdere tempo con queste assurdità. Legalizziamo l'erba e smettiamola con queste caccie alle streghe ridicole!",
+    "createdAt": "2025-05-29 21:18:21"
+  },
+  {
+    "id": 63,
+    "input": "La cannabis porta a droghe peggiori.",
+    "output": "\\\"Ma certo, la cannabis porta alle droghe peggiori come la fame, la risata e la voglia di coccolarsi sul divano! Attenzione, potreste finire vittime di un pericoloso attacco di allegria!\\\"",
+    "createdAt": "2025-05-29 22:27:03"
+  },
+  {
+    "id": 64,
+    "input": "La cannabis associata a un rischio di tumori della testa e del collo 3,5 volte superiore",
+    "output": "Ecco alcuni slogan satirici da utilizzare:\\n\\n1. \\\"Meglio un po' di erba che un tumore alla testa!\\\"\\n2. \\\"Preferisco un bong alla chemio!\\\"\\n3. \\\"La cannabis ti fa diventare 'cervelluto', ma almeno hai ancora la testa!\\\"\\n4. \\\"Fumare marijuana: la cura migliore contro l'insonnia... e i tumori!\\\"\\n5. \\\"Se la cannabis causa tumori alla testa, allora il caffè dà il cancro ai piedi!\\\"\\n\\nRicorda, l'obiettivo è quello di mettere in discussione la narrazione proibizionista sulla cannabis in modo intelligente, ironico e provocatorio. Buona satira!",
+    "createdAt": "2025-06-08 09:00:51"
+  },
+  {
+    "id": 65,
+    "input": "La cannabis associata a un rischio di tumori della testa e del collo 3,5 volte superiore",
+    "output": "\\\"Ah sì, certo! Diciamo addio alla cannabis e diamo il benvenuto al tabacco e all'alcol, che sono decisamente più sani per la testa e il collo! Ma sì, continuiamo a proibire una pianta che potrebbe avere benefici terapeutici e lasciamo che le multinazionali farmaceutiche lucrino sui farmaci sintetici. Geniale, davvero geniale!\\\"",
+    "createdAt": "2025-06-08 09:01:55"
+  },
+  {
+    "id": 66,
+    "input": "Estese macchie nere nel cervello di chi fuma la cannabis",
+    "output": "\\\"Estese macchie nere nel cervello di chi fuma la cannabis? Ma certo, adesso scopriamo che la cannabis trasforma le persone in zebre! Forse dovremmo preoccuparci di più delle macchie nere nel cervello di chi spara stupidità sulle droghe senza basi scientifiche.\\\" #LegalizeIt #StopProhibition",
+    "createdAt": "2025-06-20 18:59:48"
+  },
+  {
+    "id": 67,
+    "input": "Il consumo di marijuana potrebbe raddoppiare il rischio di morte cardiaca",
+    "output": "Ecco cosa la propaganda anti-marijuana vuole farvi credere: che fumare erba vi farà letteralmente \\\"morire di infarto\\\". Ma permettetemi di smentire questa bufala con un po' di buon senso e un pizzico di scienza:\\n\\nSì, è vero che il consumo di marijuana potrebbe aumentare leggermente il rischio di problemi cardiaci in alcuni individui, ma parliamo di una percentuale minima e di situazioni estremamente rare. Non stiamo parlando di droghe pesanti che vi faranno implodere il cuore alla prima boccata.\\n\\nQuindi, se vi preoccupa la vostra salute cardiaca, forse dovreste iniziare a guardare più da vicino la vostra dieta e il vostro stile di vita anziché puntare il dito contro una pianta che cresce naturalmente. E se proprio volete prenderla con qualcosa, perché non iniziate a combattere il consumo di fast food o di alcol, che sono ben più dannosi per il vostro cuore?\\n\\nIn conclusione, non lasciatevi ingannare da slogan sensazionalistici e date alla marijuana la giusta prospettiva: una sostanza che può essere goduta in modo responsabile e che, in confronto ad altre droghe legali, potrebbe persino migliorare la vostra salute. End the prohibition, start the education!",
+    "createdAt": "2025-06-22 11:52:52"
+  },
+  {
+    "id": 68,
+    "input": "Fanpage: Perché gli uomini devono smettere di fumare cannabis se vogliono avere un figlio",
+    "output": "Caro Fanpage, sei mai sentito parlare di fatti scientifici? Perché se gli uomini dovessero smettere di fumare cannabis per avere un figlio, allora dovrebbero anche smettere di bere caffè, mangiare cibi processati, e forse perfino respirare l'aria inquinata! Ma no, diamo la colpa alla povera cannabis, che già ha abbastanza problemi da affrontare senza essere demonizzata in questo modo assurdo. Forse invece di mettere in guardia contro la cannabis, dovremmo educare le persone sulle reali cause di infertilità maschile e promuovere uno stile di vita sano e equilibrato. Ma hey, se vuoi continuare a spargere disinformazione e perpetuare stereotipi, fai pure. Noi attivisti antiproibizionisti continueremo a lottare per la verità e la libertà di scelta!",
+    "createdAt": "2025-07-06 07:57:11"
+  },
+  {
+    "id": 69,
+    "input": "CBD e il futuro si allontana",
+    "output": "Caro amico proibizionista, hai mai pensato che forse il futuro si allontana proprio a causa della tua chiusura mentale?\\n\\nCBD non è solo il futuro, è anche il presente! E se continui a ostacolarne l'uso, sarai tu stesso a restare indietro mentre il resto del mondo si evolve.\\n\\nQuindi smettila di resistere al cambiamento e apri la mente al potenziale benefico del CBD. Il futuro non si allontana, sei tu che stai rimanendo indietro! #TeamCBD #LegalizeIt",
+    "createdAt": "2025-08-10 13:04:12"
+  },
+  {
+    "id": 70,
+    "input": "CBD e il futuro si allontana",
+    "output": "\\\"Se il futuro si allontana con il CBD, allora forse è meglio tornare indietro al Medioevo! Proibiamo anche l'uso della penicillina, tanto per stare al passo con i tempi. La vera modernità è abbracciare le potenzialità terapeutiche e benefiche della cannabis, anziché ignorarle per paura o ignoranza. Dateci il nostro CBD quotidiano e vedrete che il futuro sarà più luminoso che mai!\\\"",
+    "createdAt": "2025-08-10 13:04:14"
+  },
+  {
+    "id": 71,
+    "input": "Finché regna viva la fregna",
+    "output": "Finché regna viva la fregna, dovremmo essere felici e non proibire nulla! La libertà sessuale è un diritto umano fondamentale, quindi basta con queste restrizioni assurde sul nostro corpo e sulle nostre scelte. Viviamo e lasciamo vivere, perché la vita è troppo breve per essere limitata da regole moraliste obsolete. Aboliamo il proibizionismo e celebriamo la diversità e la libertà di espressione in tutte le sue forme!",
+    "createdAt": "2025-08-19 16:55:41"
+  }
+]

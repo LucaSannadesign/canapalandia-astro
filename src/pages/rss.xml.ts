@@ -1,6 +1,7 @@
 export const prerender = true;
 
 import postsJson from "../../data/wp/out/posts.json";
+import { toParams } from "../lib/wp";
 
 const SITE_URL = "https://canapalandia.com"; // TODO: cambia quando vai live su Vercel
 
@@ -23,14 +24,9 @@ function escapeXml(input: unknown) {
 }
 
 function postHref(post: any) {
-  if (post?.slug) return `/${post.slug}/`;
-  if (typeof post?.link === "string") {
-    try {
-      const u = new URL(post.link);
-      return u.pathname.endsWith("/") ? u.pathname : `${u.pathname}/`;
-    } catch {}
-  }
-  return "/";
+  const url = post?.yoast_head_json?.canonical || post?.link || post?.slug || "";
+  const path = toParams(url);
+  return path ? `/${path}/` : "/";
 }
 
 function absUrl(p: string) {

@@ -114,8 +114,13 @@ function normalizeEntry(kind: WpKind, raw: any): WpEntry {
   const slug = pickString(raw?.slug) ?? "";
   const link = pickString(raw?.link);
 
-  // posts: usually root-level /{slug}/
-  const candidatePath = kind === "post" ? slug : raw?.path ?? raw?.uri ?? link ?? slug;
+  // Prefer canonical/link because they preserve the real URL structure
+  // (e.g. multilingual paths like /en/... or custom permalink settings).
+  const canonical =
+    pickString(raw?.yoast_head_json?.canonical) ??
+    pickString(raw?.yoastHeadJson?.canonical);
+
+  const candidatePath = canonical ?? link ?? raw?.path ?? raw?.uri ?? slug;
   const path = toParams(candidatePath);
 
   const title = pickString(raw?.title?.rendered) ?? pickString(raw?.title);

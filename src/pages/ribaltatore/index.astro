@@ -1,0 +1,120 @@
+---
+import SiteLayout from "../../layouts/SiteLayout.astro";
+
+const title = "Il Ribaltatore AI – Canapalandia";
+const canonical = "http://localhost:4321/ribaltatore/"; // in produzione metti il dominio vero
+---
+
+<SiteLayout title={title} canonical={canonical}>
+  <header class="page-header">
+    <p class="kicker">Tool • Satira &amp; comunicazione</p>
+    <h1>Il Ribaltatore AI</h1>
+    <p>
+      Inserisci una frase proibizionista: la ribaltiamo con ironia, senza istigare comportamenti illegali.
+    </p>
+    <p><a href="/" class="back-link">← Blog Home</a></p>
+  </header>
+
+  <section class="tool">
+    <form id="ribaltatore-form" class="tool-form">
+      <label for="frase" class="tool-label">Frase da ribaltare</label>
+
+      <textarea
+        id="frase"
+        name="frase"
+        rows="3"
+        placeholder='Esempio: “La cannabis è sempre e comunque un male.”'
+        required
+      ></textarea>
+
+      <button type="submit">Ribalta</button>
+
+      <p id="tool-error" role="alert" style="margin-top:.75rem;"></p>
+      <div id="tool-result" style="margin-top:1rem;"></div>
+    </form>
+  </section>
+
+  <section class="latest">
+    <h2>Ultime ribaltate</h2>
+    <div id="latest-wrap">
+      <p>Nessuna ribaltata disponibile.</p>
+    </div>
+  </section>
+
+  <script is:inline>
+(async () => {
+  const form = document.getElementById('ribaltatore-form');
+  const textarea = document.getElementById('frase');
+  const errorEl = document.getElementById('tool-error');
+  const resultEl = document.getElementById('tool-result');
+  const latestWrap = document.getElementById('latest-wrap');
+
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+
+  const renderLatest = (items) => {
+    if (!Array.isArray(items) || items.length === 0) {
+      latestWrap.innerHTML = '<p>Nessuna ribaltata disponibile.</p>';
+      return;
+    }
+
+    latestWrap.innerHTML = `
+      <ul class="latest-list">
+        ${items.map((it) => `
+          <li class="latest-item">
+            <p><strong>Originale:</strong> ${esc(it.originale ?? it.original ?? '')}</p>
+            <p><strong>Ribaltata:</strong> ${esc(it.ribaltata ?? it.result ?? '')}</p>
+          </li>
+        `).join('')}
+      </ul>
+    `;
+  };
+
+  const loadLatest = async () => {
+    try {
+      const res = await fetch('/api/ribaltate/');
+      if (!res.ok) return;
+      const data = await res.json();
+      // supporta sia {items:[...]} che [...]
+      renderLatest(data.items ?? data);
+    } catch {}
+  };
+
+  await loadLatest();
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errorEl.textContent = '';
+    resultEl.innerHTML = '';
+
+    const frase = (textarea.value || '').trim();
+    if (!frase) return;
+
+    try {
+      const res = await fetch('/api/ribalta-ai/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ frase }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || data.error) {
+        errorEl.textContent = data.error || 'Errore durante la richiesta.';
+        return;
+      }
+
+      const out = data.ribaltata ?? data.result ?? data.text ?? '';
+      resultEl.innerHTML = out
+        ? `<div class="tool-output"><p>${esc(out)}</p></div>`
+        : `<div class="tool-output"><p>Risposta vuota.</p></div>`;
+
+      await loadLatest();
+    } catch (err) {
+      errorEl.textContent = 'Errore di rete o server non raggiungibile.';
+    }
+  });
+})();
+  </script>
+</SiteLayout>

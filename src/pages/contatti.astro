@@ -1,0 +1,100 @@
+---
+import Layout from "../layouts/MigratedLayout.astro";
+
+const title = "Contatti — Canapalandia";
+const canonical = "https://canapalandia.com/contatti/";
+const FORMSPREE_ACTION = "https://formspree.io/f/maqynojl";
+
+const sent = Astro.url.searchParams.get("sent") === "1";
+---
+
+<Layout title={title} canonical={canonical}>
+  <section class="section">
+    <div class="container">
+      <div class="section-head">
+        <h1>Contatti</h1>
+        <p class="section-lead">
+          Segnalazioni, correzioni, partnership o richieste editoriali: scrivici qui.
+        </p>
+      </div>
+
+      {sent ? (
+        <div class="notice success" role="status" aria-live="polite">
+          Messaggio inviato correttamente. Grazie! Ti risponderemo appena possibile.
+        </div>
+      ) : null}
+
+      <div class="contact-grid">
+        <div class="contact-card">
+          <h2 class="contact-title">Invia un messaggio</h2>
+
+          <form class="contact-form" method="POST" action={FORMSPREE_ACTION}>
+            {/* Anti-spam honeypot (lasciare vuoto) */}
+            <input class="hp" type="text" name="_gotcha" tabindex="-1" autocomplete="off" aria-hidden="true" />
+
+            {/* Formspree utilities */}
+            <input type="hidden" name="_subject" value="Canapalandia — Nuovo contatto" />
+            <input type="hidden" name="_redirect" value="https://canapalandia.com/contatti/?sent=1" />
+
+            <div class="field">
+              <label for="name">Nome</label>
+              <input id="name" name="name" type="text" autocomplete="name" required />
+            </div>
+
+            <div class="field">
+              <label for="email">Email</label>
+              <input id="email" name="email" type="email" autocomplete="email" required />
+            </div>
+
+            <div class="field">
+              <label for="subject">Oggetto</label>
+              <input
+                id="subject"
+                name="subject"
+                type="text"
+                placeholder="Es. Segnalazione / Collaborazione / Correzione"
+                required
+              />
+            </div>
+
+            <div class="field">
+              <label for="message">Messaggio</label>
+              <textarea id="message" name="message" rows="7" required></textarea>
+            </div>
+
+            <label class="check">
+              <input type="checkbox" name="privacy" required />
+              <span>Ho letto e accetto l’informativa privacy.</span>
+            </label>
+
+            <div class="form-actions">
+              <button class="btn primary" type="submit">Invia</button>
+              <a class="btn ghost" href="/">Torna alla home</a>
+            </div>
+
+            <p class="form-note">
+              Per segnalazioni: inserisci il link dell’articolo e una descrizione breve dell’errore.
+            </p>
+          </form>
+        </div>
+
+        <aside class="contact-aside">
+          <div class="contact-card">
+            <h2 class="contact-title">Info</h2>
+            <ul class="contact-list">
+              <li><strong>Temi:</strong> CBD, canapa industriale, normativa, attualità</li>
+              <li><strong>Partnership:</strong> trasparenti e dichiarate</li>
+            </ul>
+          </div>
+
+          <div class="contact-card">
+            <h2 class="contact-title">Tempi</h2>
+            <p class="contact-muted">
+              In genere rispondiamo entro 24–72 ore (in base al carico editoriale).
+            </p>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+</Layout>

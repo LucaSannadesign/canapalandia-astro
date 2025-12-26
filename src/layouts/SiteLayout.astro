@@ -1,0 +1,260 @@
+---
+import "../styles/app.css";
+
+const THEME_STORAGE_KEY = "canapalandia_theme";
+const { title, canonical, yoastHeadHtml, shell = true } = Astro.props;
+---
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    {yoastHeadHtml ? (
+      <Fragment set:html={yoastHeadHtml} />
+    ) : (
+      <>
+        <title>{title}</title>
+        {canonical ? <link rel="canonical" href={canonical} /> : null}
+        <meta name="robots" content="index,follow" />
+      </>
+    )}
+
+    <!-- Imposta subito il tema (evita flash) -->
+    <script is:inline define:vars={{ THEME_STORAGE_KEY }}>
+      (() => {
+        const key = THEME_STORAGE_KEY;
+        // Default brand: dark, salvo scelta esplicita dell'utente.
+        let theme = "dark";
+        try {
+          const saved = localStorage.getItem(key);
+          if (saved === "dark" || saved === "light") theme = saved;
+        } catch {}
+
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
+  </head>
+
+  <body>
+    <a class="skip" href="#contenuto">Salta al contenuto</a>
+
+    <header class="site-header" data-overlay>
+      <div class="container header-inner">
+    <a class="brand" href="/" aria-label="Canapalandia, Home">
+  <img
+  class="brand-logo"
+  src="/images/logo-canapalandia.svg"
+  alt="Canapalandia"
+  height="28"
+  loading="eager"
+  decoding="async"
+/>
+  <span class="sr-only">Canapalandia</span>
+</a>
+
+        <nav class="nav" aria-label="Navigazione principale">
+          <a href="/#percorsi">Temi</a>
+          <a href="/#in-evidenza">In evidenza</a>
+          <a href="/#ultimi">Ultimi</a>
+          <a href="/blog/">Blog</a>
+          <a href="/contatti/">Contatti</a>
+        </nav>
+
+        <div class="header-actions">
+          <a class="search" href="/cerca/" aria-label="Cerca nel sito">Cerca</a>
+
+          <button
+            type="button"
+            class="theme-toggle__btn"
+            data-theme-toggle
+            aria-label="Cambia tema"
+          >
+            <span class="sr-only">Cambia tema</span>
+
+            <!-- Sole: visibile quando sei in DARK -->
+            <svg
+              class="theme-toggle__icon theme-toggle__icon--sun"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+            >
+              <path
+                d="M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+            </svg>
+
+            <!-- Luna: visibile quando sei in LIGHT -->
+            <svg
+              class="theme-toggle__icon theme-toggle__icon--moon"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+            >
+              <path
+                d="M21 13.2A8.5 8.5 0 1 1 10.8 3a6.8 6.8 0 0 0 10.2 10.2Z"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main id="contenuto">
+      {shell ? (
+        <div class="container page-shell">
+          <slot />
+        </div>
+      ) : (
+        <slot />
+      )}
+    </main>
+
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <div class="footer-brand">
+      <a class="footer-logo" href="/" aria-label="Canapalandia, Home">
+        <img
+          src="/images/logo-canapalandia.svg"
+          alt="Canapalandia"
+          class="footer-logo__img"
+          height="32"
+          loading="lazy"
+          decoding="async"
+        />
+      </a>
+
+      <p class="footer-tagline">
+        Informazione e cultura su cannabis light, CBD e canapa legale in Italia.
+      </p>
+
+      <p class="footer-credits">
+        Credits:
+        <a
+          href="https://www.lswebagency.com/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          LS Web Agency
+        </a>
+      </p>
+    </div>
+
+    <nav class="footer-nav" aria-label="Link utili">
+      <a href="/blog/">Blog</a>
+      <a href="/cerca/">Cerca</a>
+      <a href="/partner-selezionati/">Partner</a>
+      <a href="/sostieni-la-nostra-causa/">Sostieni</a>
+    </nav>
+
+    <div class="footer-copy">
+      © {new Date().getFullYear()} Canapalandia. Tutti i diritti riservati.
+    </div>
+  </div>
+</footer>
+
+    <!-- Toggle click -->
+    <script is:inline define:vars={{ THEME_STORAGE_KEY }}>
+      (() => {
+        const key = THEME_STORAGE_KEY;
+        const root = document.documentElement;
+        const btn = document.querySelector("[data-theme-toggle]");
+        if (!btn) return;
+
+        const safeGet = () => {
+          try {
+            return localStorage.getItem(key);
+          } catch {
+            return null;
+          }
+        };
+        const safeSet = (v) => {
+          try {
+            localStorage.setItem(key, v);
+          } catch {}
+        };
+
+        const systemPref = () =>
+          window.matchMedia &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "dark"
+            : "light";
+
+        const normalize = (v) => (v === "dark" || v === "light" ? v : null);
+
+        const apply = (theme) => {
+          root.dataset.theme = theme;
+          btn.setAttribute(
+            "aria-label",
+            theme === "dark"
+              ? "Passa a modalità chiara"
+              : "Passa a modalità scura"
+          );
+        };
+
+        // tema iniziale (dataset > saved > system)
+        apply(normalize(root.dataset.theme) || normalize(safeGet()) || systemPref());
+
+        btn.addEventListener("click", () => {
+          const current = root.dataset.theme === "dark" ? "dark" : "light";
+          const next = current === "dark" ? "light" : "dark";
+          apply(next);
+          safeSet(next);
+        });
+      })();
+    </script>
+
+    <button
+  id="scrollTop"
+  class="scroll-top"
+  type="button"
+  aria-label="Torna su"
+  title="Torna su"
+>
+  ↑
+</button>
+
+<script is:inline>
+  (() => {
+    const btn = document.getElementById("scrollTop");
+    if (!btn) return;
+
+    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    const toggle = () => {
+      const y = window.scrollY || document.documentElement.scrollTop || 0;
+      btn.classList.toggle("is-visible", y > 600);
+    };
+
+    toggle();
+    window.addEventListener("scroll", toggle, { passive: true });
+
+    btn.addEventListener("click", () => {
+      window.scrollTo({ top: 0, behavior: prefersReduced ? "auto" : "smooth" });
+    });
+  })();
+</script>
+  </body>
+</html>

@@ -1,134 +1,139 @@
 ---
-import Layout from "../layouts/MigratedLayout.astro";
-import postsJson from "../../data/wp/out/posts.json";
-
 export const prerender = false;
 
-const posts = Array.isArray(postsJson) ? postsJson : [];
-const stripHtml = (s) => String(s || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+import MigratedLayout from "../layouts/MigratedLayout.astro";
+import { loadWp } from "../lib/wp";
 
-const index = posts
-  .slice()
-  .sort((a, b) => (Date.parse(b?.date || b?.modified || "") || 0) - (Date.parse(a?.date || a?.modified || "") || 0))
-  .map((p) => ({
-    href: p?.slug ? `/${p.slug}/` : "#",
-    title: stripHtml(p?.title?.rendered || p?.title || ""),
-    date: p?.date || p?.modified || "",
-    excerpt: stripHtml(p?.excerpt?.rendered || p?.excerpt || "").slice(0, 200),
-    img: p?.yoast_head_json?.og_image?.[0]?.url || p?.yoast_head_json?.og_image?.[0]?.src || "",
-  }));
+function stripHtml(input: unknown): string {
+  if (typeof input !== "string") return "";
+  return input
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
-const title = "Cerca — Canapalandia";
-const canonical = "https://canapalandia.com/cerca/";
+function excerptFromEntry(e: any, max = 170): string {
+  const raw = e?.excerpt ?? e?.html ?? "";
+  const t = stripHtml(raw);
+  if (!t) return "";
+  if (t.length <= max) return t;
+  return t.slice(0, max).replace(/\s+\S*$/, "").trim() + "…";
+}
+
+function timeOf(e: any): number {
+  const raw = e?.date ?? e?.modified ?? "";
+  const t = Date.parse(String(raw));
+  return Number.isFinite(t) ? t : 0;
+}
+
+function hrefOf(e: any): string {
+  const p = String(e?.path ?? "").replace(/^\/+|\/+$/g, "");
+  return p ? `/${p}/` : "/";
+}
+
+function tokenize(q: string): string[] {
+  return q.toLowerCase().trim().split(/\s+/).filter(Boolean).slice(0, 6);
+}
+
+function matchesAllTokens(haystack: string, tokens: string[]): boolean {
+  const h = haystack.toLowerCase();
+  return tokens.every((t) => h.includes(t));
+}
+
+const q = (Astro.url.searchParams.get("q") ?? Astro.url.searchParams.get("s") ?? "").trim();
+
+const { entries } = await loadWp();
+const list = Array.isArray(entries) ? entries : [];
+
+const posts = list.filter((e) => e?.kind === "post");
+const latest = posts.slice().sort((a, b) => timeOf(b) - timeOf(a)).slice(0, 9);
+
+const tokens = tokenize(q);
+
+const results = tokens.length
+  ? list
+      .filter((e) => {
+        const title = String(e?.title ?? "");
+        const body = stripHtml(e?.html ?? "");
+        const ex = stripHtml(e?.excerpt ?? "");
+        const hay = `${title} ${ex} ${body}`;
+        return hay.length && matchesAllTokens(hay, tokens);
+      })
+      .sort((a, b) => timeOf(b) - timeOf(a))
+      .slice(0, 30)
+  : [];
 ---
-<Layout title={title} canonical={canonical}>
-  <section class="hero">
-    <p class="kicker">Ricerca</p>
-    <h1>Cerca nel sito</h1>
-    <p>Digita una o più parole: cerchiamo su titolo ed estratto.</p>
 
-    <div class="searchbox">
-      <input id="q" type="search" placeholder="Cerca…" autocomplete="off" />
-      <p class="rib-note">Esempi: “CBD”, “decreto sicurezza”, “corte di giustizia”…</p>
-    </div>
+<MigratedLayout title="Cerca" description="Cerca tra i contenuti di Canapalandia.">
+  <section class="container">
+    <header class="search-head">
+      <h1>Cerca</h1>
+      <p class="muted">Digita un termine e premi Invio.</p>
+
+      <form class="search-form" method="get" action="/cerca/">
+        <label class="sr-only" for="q">Cerca</label>
+        <input id="q" name="q" type="search" placeholder="Cerca…" value={q} />
+        <button type="submit">Cerca</button>
+      </form>
+    </header>
+
+    {tokens.length ? (
+      results.length ? (
+        <section class="results">
+          <h2>Risultati</h2>
+          <div class="grid">
+            {results.map((e) => (
+              <article class="card">
+                <h3><a href={hrefOf(e)}>{e.title ?? "Senza titolo"}</a></h3>
+                <p class="muted">{excerptFromEntry(e)}</p>
+                <p class="meta">{e.kind === "page" ? "Pagina" : "Articolo"}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : (
+        <section class="results">
+          <h2>Nessun risultato</h2>
+          <p class="muted">
+            Non ho trovato corrispondenze per <strong>{q}</strong>. Qui sotto trovi gli ultimi articoli.
+          </p>
+        </section>
+      )
+    ) : (
+      <section class="results">
+        <h2>Ultimi articoli</h2>
+        <p class="muted">Suggerimenti recenti mentre non stai cercando nulla.</p>
+      </section>
+    )}
+
+    <section class="latest">
+      <div class="grid">
+        {latest.map((p) => (
+          <article class="card">
+            <h3><a href={hrefOf(p)}>{p.title ?? "Senza titolo"}</a></h3>
+            <p class="muted">{excerptFromEntry(p)}</p>
+          </article>
+        ))}
+      </div>
+    </section>
   </section>
 
-  <section>
-    <h2 class="sectionTitle" id="resultsLabel">Ultimi articoli</h2>
-    <p class="rib-note" id="resultsMsg" style="margin:10px 0 0"></p>
-    <div class="grid" id="results"></div>
-  </section>
-
-  <script id="search-index" type="application/json">{JSON.stringify(index).replaceAll('<', '\\u003c')}</script>
-
-  <script>
-    const input = document.getElementById('q');
-    const label = document.getElementById('resultsLabel');
-    const msg = document.getElementById('resultsMsg');
-    const results = document.getElementById('results');
-
-    const idx = (() => {
-      try {
-        const el = document.getElementById('search-index');
-        return el ? JSON.parse(el.textContent || '[]') : [];
-      } catch { return []; }
-    })();
-
-    const SUGGESTED_LIMIT = 9;
-
-    function escapeHtml(s){
-      return String(s)
-        .replaceAll('&','&amp;')
-        .replaceAll('<','&lt;')
-        .replaceAll('>','&gt;')
-        .replaceAll('"','&quot;')
-        .replaceAll("'",'&#039;');
-    }
-
-    function normalizeText(s) {
-      try {
-        return String(s || '')
-          .toLowerCase()
-          .normalize('NFD')
-          .replace(/\p{Diacritic}/gu, '')
-          .replace(/[^a-z0-9]+/g, ' ')
-          .trim();
-      } catch {
-        return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
-      }
-    }
-
-    const cardsHtml = (items) => items.map((p) => {
-      const date = p.date ? new Date(p.date).toLocaleDateString('it-IT', { year:'numeric', month:'long', day:'2-digit' }) : '';
-      return `
-        <article class="card">
-          <a class="cardLink" href="${p.href}">
-            <div class="thumb">${p.img ? `<img src="${p.img}" alt="${escapeHtml(p.title)}" loading="lazy" />` : ''}</div>
-            <div class="cardBody">
-              <p class="cardMeta">${escapeHtml(date)}</p>
-              <h3 class="cardTitle">${escapeHtml(p.title)}</h3>
-              <p class="cardExcerpt">${escapeHtml(p.excerpt)}</p>
-              <span class="cardCta">Apri →</span>
-            </div>
-          </a>
-        </article>
-      `.trim();
-    }).join('');
-
-    const render = (items) => { results.innerHTML = cardsHtml(items); };
-
-    const run = () => {
-      const raw = (input?.value || '').trim();
-      const q = normalizeText(raw);
-
-      if (!q) {
-        if (label) label.textContent = 'Ultimi articoli';
-        if (msg) msg.textContent = '';
-        render(idx.slice(0, SUGGESTED_LIMIT));
-        return;
-      }
-
-      const tokens = q.split(' ').filter(Boolean);
-
-      const out = idx
-        .filter((it) => {
-          const hay = normalizeText(`${it.title || ''} ${it.excerpt || ''}`);
-          return tokens.every((t) => hay.includes(t));
-        })
-        .slice(0, 36);
-
-      if (out.length) {
-        if (label) label.textContent = `Risultati per “${raw}”`;
-        if (msg) msg.textContent = '';
-        render(out);
-      } else {
-        if (label) label.textContent = `Nessun risultato per “${raw}”`;
-        if (msg) msg.textContent = 'Prova con un’altra parola chiave. Intanto, ecco gli ultimi articoli:';
-        render(idx.slice(0, SUGGESTED_LIMIT));
-      }
-    };
-
-    input?.addEventListener('input', run);
-    run();
-  </script>
-</Layout>
+  <style>
+    .container { max-width: 1120px; margin: 0 auto; padding: 24px 20px 56px; }
+    .search-head { margin-bottom: 18px; }
+    .muted { opacity: .78; }
+    .search-form { display:flex; gap: 10px; margin-top: 12px; }
+    .search-form input { flex:1; min-width: 0; padding: 12px 14px; border-radius: 14px; border: 1px solid rgba(255,255,255,.14); background: rgba(0,0,0,.18); }
+    .search-form button { padding: 12px 16px; border-radius: 14px; border: 0; background: #2ea043; font-weight: 700; cursor: pointer; }
+    .grid { display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+    .card { padding: 16px; border-radius: 18px; border: 1px solid rgba(255,255,255,.10); background: rgba(0,0,0,.18); overflow: hidden; }
+    .card h3 { margin: 0 0 8px; font-size: 18px; line-height: 1.25; }
+    .card a { text-decoration: none; }
+    .meta { margin-top: 10px; font-size: 12px; opacity: .7; }
+    .sr-only { position:absolute; left:-9999px; }
+    @media (max-width: 980px){ .grid{ grid-template-columns: repeat(2, minmax(0,1fr)); } }
+    @media (max-width: 640px){ .grid{ grid-template-columns: 1fr; } .search-form{ flex-direction: column; } }
+  </style>
+</MigratedLayout>

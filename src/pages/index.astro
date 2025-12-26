@@ -1,67 +1,39 @@
 ---
+import Layout from "../layouts/MigratedLayout.astro";
 import { loadWp, WP_HOST } from "../lib/wp";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const BLOG_INDEX = "/blog/";
+/* ---------------------------
+   Helpers: HTML → testo pulito
+--------------------------- */
 
-function normalizePathParam(input: unknown): string {
-  if (input == null) return "";
-  const s = Array.isArray(input) ? input.join("/") : String(input);
-  return s.replace(/^\/+/, "").replace(/\/+$/, "");
-}
-
-function stripHtml(input: unknown): string {
-  if (typeof input !== "string") return "";
+function decodeHtmlEntities(input: string): string {
   return input
-    .replace(/<script[\s\S]*?<\/script>/gi, " ")
-    .replace(/<style[\s\S]*?<\/style>/gi, " ")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+    // hex entities &#x2019;
+    .replace(/&#x([0-9a-fA-F]+);/g, (_m, hex) => {
+      const cp = parseInt(hex, 16);
+      return Number.isFinite(cp) ? String.fromCodePoint(cp) : _m;
+    })
+    // numeric entities &#8217;
+    .replace(/&#(\d+);/g, (_m, num) => {
+      const cp = parseInt(num, 10);
+      return Number.isFinite(cp) ? String.fromCodePoint(cp) : _m;
+    })
+    // named (principali)
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
 }
-
-function smartExcerpt(input: unknown, max = 160): string {
-  const txt = stripHtml(input);
-  if (!txt) return "";
-  if (txt.length <= max) return txt;
-  return txt.slice(0, max).replace(/\s+\S*$/, "").trim() + "…";
-}
-
-// Usa SEMPRE testo, mai HTML
-function postExcerpt(p: any, max = 160): string {
-  const raw =
-    p?.excerpt ??
-    p?.raw?.excerpt?.rendered ??
-    p?.raw?.content?.rendered ??
-    p?.html ??
-    "";
-  return smartExcerpt(raw, max);
-}
-
-// Fonte dati: WordPress headless
-const { entries: wpEntries = [] } = await loadWp();
-const entries: any[] = Array.isArray(wpEntries) ? wpEntries : [];
-
-// Post = elementi con titolo + html
-const posts = entries.filter((e) => typeof e?.title === "string" && typeof e?.html === "string");
-
-// Data robusta
-const getTime = (p: any) => {
-  const raw = p?.date ?? p?.modified ?? p?.modifiedGmt ?? "";
-  const t = Date.parse(String(raw));
-  return Number.isFinite(t) ? t : 0;
-};
-
-const sortedPosts = posts.slice().sort((a, b) => getTime(b) - getTime(a));
-const latestPosts = sortedPosts.slice(0, 6);
-const featured = sortedPosts[0];
-const featuredSide = sortedPosts.slice(1, 4);
 
 function textFromHtml(html: unknown): string {
   if (typeof html !== "string") return "";
-  return html
+  const decoded = decodeHtmlEntities(html);
+  return decoded
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
     .replace(/<style[\s\S]*?<\/style>/gi, " ")
     .replace(/<[^>]+>/g, " ")
@@ -76,54 +48,61 @@ function excerptFromHtml(html: unknown, max = 150): string {
   return t.slice(0, max).replace(/\s+\S*$/, "").trim() + "…";
 }
 
-// Converte link WP assoluti → path relativo del sito Astro
+/* ---------------------------
+   Routing / URL normalization
+--------------------------- */
+
 function internalHref(link: unknown): string {
   if (typeof link !== "string") return "#";
   const s = link.trim();
   if (!s) return "#";
 
-  // Già relativo
   if (s.startsWith("/")) return s.endsWith("/") ? s : s + "/";
 
   try {
     const u = new URL(s, "https://canapalandia.com");
-
-    // Se esterno, lascialo esterno
     const host = u.hostname.replace(/^www\./i, "");
+
+    // esterno → lascia assoluto
     if (host && host !== "canapalandia.com") return s;
 
-    const path = u.pathname || "/";
-    return path.endsWith("/") ? path : path + "/";
+    const p = u.pathname || "/";
+    return p.endsWith("/") ? p : p + "/";
   } catch {
     const stripped = s.replace(/^https?:\/\/[^/]+/i, "");
-    const path = stripped.startsWith("/") ? stripped : "/" + stripped;
-    return path.endsWith("/") ? path : path + "/";
+    const p = stripped.startsWith("/") ? stripped : "/" + stripped;
+    return p.endsWith("/") ? p : p + "/";
   }
 }
 
-// Radice /public (serve per verificare se hai già “mirrorrato” i file in locale)
-const PUBLIC_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../public");
+function entryHref(p: any): string {
+  const raw = p?.path ?? p?.uri ?? p?.slug ?? p?.link ?? "";
+  return internalHref(raw);
+}
 
-/**
- * Media strategy (robusta):
- * - se il file esiste in /public, usa il path relativo (/wp-content/uploads/...)
- * - altrimenti mantieni/forza l’URL assoluto verso WP_HOST (hotlink temporaneo)
- */
+/* ---------------------------
+   Media resolution (mirror / hotlink)
+--------------------------- */
+
+const PUBLIC_DIR = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../../public"
+);
+
 function resolveWpMediaSrc(src: unknown): string {
   if (typeof src !== "string") return "";
   let s = src.trim();
   if (!s) return "";
 
-  // Protocol-relative
   if (s.startsWith("//")) s = `https:${s}`;
 
-  // Se è relativo, normalizza a pathname
+  // relativo
   if (s.startsWith("/")) {
     const local = path.join(PUBLIC_DIR, s.replace(/^\//, ""));
     return fs.existsSync(local) ? s : `${WP_HOST}${s}`;
   }
 
-  // Assoluto: se è nostro dominio -> verifica mirror locale
+  // assoluto
   try {
     const u = new URL(s);
     const host = u.hostname.replace(/^www\./i, "");
@@ -134,607 +113,308 @@ function resolveWpMediaSrc(src: unknown): string {
       return fs.existsSync(local) ? pathname : s;
     }
 
-    // Esterno
     return s;
   } catch {
     return s;
   }
 }
 
-function entryHref(p: any): string {
-  const raw = p?.path ?? p?.uri ?? p?.slug ?? p?.link ?? "";
-  return internalHref(raw);
-}
-
 function featuredImage(p: any): { src: string; alt: string } | null {
-  // 1) Campo già normalizzato da `loadWp()` (consigliato)
+  // 1) campo normalizzato
   const direct = p?.featuredImage ?? p?.featured_image ?? p?.image ?? null;
+
   if (typeof direct === "string" && direct.trim()) {
     return { src: resolveWpMediaSrc(direct.trim()), alt: "" };
   }
+
   if (direct && typeof direct === "object") {
-    const src = (direct as any)?.src ?? (direct as any)?.url ?? (direct as any)?.source_url;
-    const alt = (direct as any)?.alt ?? (direct as any)?.alt_text ?? "";
+    const src =
+      (direct as any)?.src ??
+      (direct as any)?.url ??
+      (direct as any)?.source_url;
+
+    const alt =
+      (direct as any)?.alt ??
+      (direct as any)?.alt_text ??
+      "";
+
     if (typeof src === "string" && src.trim()) {
       return { src: resolveWpMediaSrc(src.trim()), alt: String(alt ?? "") };
     }
   }
 
-  // 2) Fallback: se ti passa ancora un oggetto WP raw, leggi da `raw._embedded`
+  // 2) fallback WP raw embedded
   const fm = p?.raw?._embedded?.["wp:featuredmedia"]?.[0];
   const srcRaw =
     fm?.media_details?.sizes?.medium_large?.source_url ||
     fm?.media_details?.sizes?.large?.source_url ||
     fm?.media_details?.sizes?.full?.source_url ||
     fm?.source_url;
+
   const alt = fm?.alt_text || fm?.title?.rendered || "";
+
   if (typeof srcRaw === "string" && srcRaw.trim()) {
     return { src: resolveWpMediaSrc(srcRaw.trim()), alt: String(alt ?? "") };
   }
+
   return null;
 }
 
-// Hero background: evita 404 finché non metti un file in /public/images/
-const heroBgVar = "none"; // esempio futuro: `url(/images/hero.webp)`
+/* ---------------------------
+   Data: WP headless
+--------------------------- */
+
+const { entries: wpEntries = [] } = await loadWp();
+const entries: any[] = Array.isArray(wpEntries) ? wpEntries : [];
+
+const posts = entries.filter(
+  (e) => typeof e?.title === "string" && typeof e?.html === "string"
+);
+
+const getTime = (p: any) => {
+  const raw = p?.date ?? p?.modified ?? p?.modifiedGmt ?? "";
+  const t = Date.parse(String(raw));
+  return Number.isFinite(t) ? t : 0;
+};
+
+const sortedPosts = posts.slice().sort((a, b) => getTime(b) - getTime(a));
+const latestPosts = sortedPosts.slice(0, 6);
+const featured = sortedPosts[0];
+const featuredSide = sortedPosts.slice(1, 4);
+
+/* ---------------------------
+   Page meta
+--------------------------- */
+
+const heroBgVar = "none";
+const title = "Canapalandia — Cannabis light, CBD e canapa legale in Italia";
+const canonical = "https://canapalandia.com/";
 ---
 
-<html lang="it">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Canapalandia — Cannabis light, CBD e canapa legale in Italia</title>
-    <meta
-      name="description"
-      content="Notizie, normative e guide su cannabis light, CBD e canapa legale in Italia. Informazione chiara, aggiornata e verificabile."
-    />
-    <link rel="canonical" href="https://canapalandia.com/" />
-    <meta name="robots" content="index,follow" />
-   <link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  </head>
+<Layout title={title} canonical={canonical} shell={false}>
+  <section class="hero" style={`--hero-bg:${heroBgVar}`}>
+    <div class="hero-overlay" aria-hidden="true"></div>
 
-  <body>
-    <a class="skip" href="#contenuto">Salta al contenuto</a>
+    <div class="container hero-inner">
+      <p class="kicker">Cannabis legale • CBD • Canapa industriale</p>
 
-    <header class="site-header" data-overlay>
-      <div class="container header-inner">
-        <a class="brand" href="/" aria-label="Canapalandia, Home">
-          <span class="brand-mark" aria-hidden="true">🍃</span>
-          <span class="brand-name">Canapalandia</span>
+      <h1>
+        Cannabis light, CBD e canapa legale in Italia:
+        informazione chiara e verificabile
+      </h1>
+
+      <p class="lead">
+        Notizie, normative e guide pratiche per orientarti tra leggi, prodotti, ricerca e filiera.
+        Focus Italia, aggiornamenti continui, zero sensazionalismo.
+      </p>
+
+      <div class="hero-cta">
+        <a class="btn primary" href="/#percorsi">Inizia dai percorsi</a>
+        <a class="btn ghost" href="/#ultimi">Leggi le ultime notizie</a>
+      </div>
+
+      <ul class="trust" aria-label="Punti chiave">
+        <li>Focus Italia</li>
+        <li>Fonti e contesto</li>
+        <li>Aggiornato</li>
+        <li>No promozione illegalità</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="percorsi" class="section">
+    <div class="container">
+      <div class="section-head">
+        <h2>Percorsi tematici</h2>
+        <p class="section-lead">
+          Entra subito nell’area giusta: normative, benessere, filiera e approfondimenti.
+        </p>
+      </div>
+
+      <div class="grid cards">
+        <a class="card" href="/categoria/normative-aspetti-legali/">
+          <h3>Normativa e aspetti legali</h3>
+          <p>Leggi, sentenze, decreti e cosa cambia davvero in Italia.</p>
         </a>
 
-        <nav class="nav" aria-label="Navigazione principale">
-  <a href="/#percorsi">Temi</a>
-  <a href="/#in-evidenza">In evidenza</a>
-  <a href="/#ultimi">Ultimi</a>
-  <a href="/blog/">Blog</a>
-  <a href="/contatti/">Contatti</a>
-</nav>
+        <a class="card" href="/categoria/salute-benessere/">
+          <h3>CBD e benessere</h3>
+          <p>Uso consapevole, ricerca, qualità, sicurezza e limiti.</p>
+        </a>
 
-        <div class="header-actions">
-          <a class="icon-btn" href="#" aria-label="Facebook"><span aria-hidden="true">f</span></a>
-          <a class="icon-btn" href="#" aria-label="Instagram"><span aria-hidden="true">◎</span></a>
-          <a class="icon-btn" href="#" aria-label="Telegram"><span aria-hidden="true">✈</span></a>
-          <a class="search" href="/cerca/" aria-label="Cerca nel sito">Cerca</a>
+        <a class="card" href="/categoria/cannabis-news-it/">
+          <h3>Cannabis news</h3>
+          <p>Attualità selezionata, senza panico morale né clickbait.</p>
+        </a>
+
+        <a class="card" href="/categoria/coltivazione-legale/">
+          <h3>Canapa industriale</h3>
+          <p>Filiera, economia, sostenibilità e applicazioni reali.</p>
+        </a>
+
+        <a class="card" href="/categoria/guide-tutorial/">
+          <h3>Guide pratiche</h3>
+          <p>Glossario, come leggere un COA, cosa guardare prima di acquistare.</p>
+        </a>
+
+        <a class="card" href="/categoria/partner-e-affiliazioni/">
+          <h3>Partner selezionati</h3>
+          <p>Collaborazioni trasparenti e risorse utili per supportare il progetto.</p>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section id="in-evidenza" class="section alt">
+    <div class="container">
+      <div class="section-head">
+        <h2>In evidenza</h2>
+        <p class="section-lead">
+          Una guida “pilastro” e tre letture correlate per farti un quadro completo.
+        </p>
+      </div>
+
+      <div class="grid featured">
+        {featured ? (
+          <a class="feature-main" href={entryHref(featured)}>
+            <p class="badge">Approfondimento</p>
+
+            {(() => {
+              const fi = featuredImage(featured);
+              return fi ? (
+                <img
+                  class="feature-img"
+                  src={fi.src}
+                  alt={fi.alt || textFromHtml(featured.title)}
+                  loading="eager"
+                  decoding="async"
+                />
+              ) : (
+                <div class="feature-img feature-img--placeholder" aria-hidden="true"></div>
+              );
+            })()}
+
+            <h3 class="feature-title" set:html={featured.title} />
+            <p class="feature-excerpt">{excerptFromHtml(featured.html, 180)}</p>
+            <span class="btn small">Leggi</span>
+          </a>
+        ) : (
+          <div class="feature-main">
+            <p>Selezione in evidenza in arrivo.</p>
+          </div>
+        )}
+
+        <div class="feature-side">
+          {featuredSide.map((p) => (
+            <a class="mini" href={entryHref(p)}>
+              {(() => {
+                const fi = featuredImage(p);
+                return fi ? (
+                  <img
+                    class="mini-img"
+                    src={fi.src}
+                    alt={fi.alt || textFromHtml(p.title)}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : (
+                  <div class="mini-img mini-img--placeholder" aria-hidden="true"></div>
+                );
+              })()}
+
+              <div class="mini-body">
+                <h3 class="mini-title" set:html={p.title} />
+                <p class="mini-excerpt">{excerptFromHtml(p.html, 90)}</p>
+                <span class="mini-link">Leggi</span>
+              </div>
+            </a>
+          ))}
         </div>
       </div>
-    </header>
+    </div>
+  </section>
 
-    <main id="contenuto">
-      <section class="hero" style={`--hero-bg:${heroBgVar}`}>
-        <div class="hero-overlay" aria-hidden="true"></div>
+  <section id="ultimi" class="section">
+    <div class="container">
+      <div class="section-head">
+        <h2>Ultimi articoli</h2>
+        <p class="section-lead">Aggiornamenti e analisi. Scegli cosa leggere in base al tema.</p>
+      </div>
 
-        <div class="container hero-inner">
-          <p class="kicker">Cannabis legale • CBD • Canapa industriale</p>
-
-          <h1>
-            Cannabis light, CBD e canapa legale in Italia:
-            informazione chiara e verificabile
-          </h1>
-
-          <p class="lead">
-            Notizie, normative e guide pratiche per orientarti tra leggi, prodotti, ricerca e filiera.
-            Focus Italia, aggiornamenti continui, zero sensazionalismo.
-          </p>
-
-          <div class="hero-cta">
-           <a class="btn primary" href="/#percorsi">Inizia dai percorsi</a>
-<a class="btn ghost" href="/#ultimi">Leggi le ultime notizie</a>
-          </div>
-
-          <ul class="trust" aria-label="Punti chiave">
-            <li>Focus Italia</li>
-            <li>Fonti e contesto</li>
-            <li>Aggiornato</li>
-            <li>No promozione illegalità</li>
-          </ul>
-        </div>
-      </section>
-
-      <section id="percorsi" class="section">
-        <div class="container">
-          <div class="section-head">
-            <h2>Percorsi tematici</h2>
-            <p class="section-lead">
-              Entra subito nell’area giusta: normative, benessere, filiera e approfondimenti.
-            </p>
-          </div>
-
-          <div class="grid cards">
-            <a class="card" href="/categoria/normative-aspetti-legali/">
-              <h3>Normativa e aspetti legali</h3>
-              <p>Leggi, sentenze, decreti e cosa cambia davvero in Italia.</p>
-            </a>
-
-            <a class="card" href="/categoria/salute-benessere/">
-              <h3>CBD e benessere</h3>
-              <p>Uso consapevole, ricerca, qualità, sicurezza e limiti.</p>
-            </a>
-
-            <a class="card" href="/categoria/cannabis-news-it/">
-              <h3>Cannabis news</h3>
-              <p>Attualità selezionata, senza panico morale né clickbait.</p>
-            </a>
-
-            <a class="card" href="/categoria/coltivazione-legale/">
-              <h3>Canapa industriale</h3>
-              <p>Filiera, economia, sostenibilità e applicazioni reali.</p>
-            </a>
-
-            <a class="card" href="/categoria/guide-tutorial/">
-              <h3>Guide pratiche</h3>
-              <p>Glossario, come leggere un COA, cosa guardare prima di acquistare.</p>
-            </a>
-
-            <a class="card" href="/categoria/partner-e-affiliazioni/">
-              <h3>Partner selezionati</h3>
-              <p>Collaborazioni trasparenti e risorse utili per supportare il progetto.</p>
-            </a>
-          </div>
-        </div>
-      </section>
-
-      <section id="in-evidenza" class="section alt">
-        <div class="container">
-          <div class="section-head">
-            <h2>In evidenza</h2>
-            <p class="section-lead">Una guida “pilastro” e tre letture correlate per farti un quadro completo.</p>
-          </div>
-
-          <div class="grid featured">
-            <article class="feature-main">
-              {featured ? (
-                <>
-                  <p class="badge">Approfondimento</p>
-
-                  {(() => {
-                    const fi = featuredImage(featured);
-                    return fi ? (
-                      <img
-                        class="feature-img"
-                        src={fi.src}
-                        alt={fi.alt || textFromHtml(featured.title)}
-                        loading="eager"
-                        decoding="async"
-                      />
-                    ) : (
-                      <div class="feature-img feature-img--placeholder" aria-hidden="true"></div>
-                    );
-                  })()}
-
-                  <h3 class="feature-title" set:html={featured.title} />
-                  <p class="feature-excerpt">{excerptFromHtml(featured.html, 180)}</p>
-                  <a class="btn small" href={entryHref(featured)}>Leggi</a>
-                </>
-              ) : (
-                <p>Selezione in evidenza in arrivo.</p>
-              )}
-            </article>
-
-            <div class="feature-side">
-              {featuredSide.map((p) => (
-                <article class="mini">
-                  {(() => {
-                    const fi = featuredImage(p);
-                    return fi ? (
-                      <img
-                        class="mini-img"
-                        src={fi.src}
-                        alt={fi.alt || textFromHtml(p.title)}
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    ) : (
-                      <div class="mini-img mini-img--placeholder" aria-hidden="true"></div>
-                    );
-                  })()}
-
-                  <h3 class="mini-title" set:html={p.title} />
-                  <p class="mini-excerpt">{excerptFromHtml(p.html, 90)}</p>
-                  <a class="mini-link" href={entryHref(p)}>Leggi</a>
-                </article>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="ultimi" class="section">
-        <div class="container">
-          <div class="section-head">
-            <h2>Ultimi articoli</h2>
-            <p class="section-lead">Aggiornamenti e analisi. Scegli cosa leggere in base al tema.</p>
-          </div>
-
-          <div class="grid posts">
-            {latestPosts.map((p) => (
-              <article class="post-card">
+      <div class="grid">
+        {latestPosts.map((p) => (
+          <article class="card post-card">
+            <a class="cardLink" href={entryHref(p)}>
+              <div class="thumb">
                 {(() => {
                   const fi = featuredImage(p);
                   return fi ? (
                     <img
-                      class="post-img"
                       src={fi.src}
                       alt={fi.alt || textFromHtml(p.title)}
                       loading="lazy"
                       decoding="async"
                     />
-                  ) : (
-                    <div class="post-img post-img--placeholder" aria-hidden="true"></div>
-                  );
+                  ) : null;
                 })()}
+              </div>
 
-                <h3 class="post-title" set:html={p.title} />
-                <p class="post-excerpt">{excerptFromHtml(p.html, 110)}</p>
-                <a class="post-link" href={entryHref(p)}>Apri articolo</a>
-              </article>
-            ))}
-          </div>
+              <div class="cardBody">
+                <p class="cardMeta">
+                  {(() => {
+                    const iso = p?.date ?? p?.modified ?? "";
+                    return iso
+                      ? new Date(iso).toLocaleDateString("it-IT", {
+                          year: "numeric",
+                          month: "long",
+                          day: "2-digit",
+                        })
+                      : "";
+                  })()}
+                </p>
 
-          <div class="section-cta">
-            <a class="btn ghost" href="/blog/">Vai al blog</a>
-          </div>
-        </div>
-      </section>
-
-      <section class="section alt">
-        <div class="container tool">
-          <div class="tool-inner">
-            <div>
-              <h2>Il Ribaltatore</h2>
-              <p class="section-lead">
-                Un esperimento editoriale: trasformare slogan e frasi “proibizioniste” in domande utili, ironiche e condivisibili.
-              </p>
-            </div>
-            <a class="btn primary" href="/ribaltatore/">Provalo</a>
-          </div>
-        </div>
-      </section>
-
-      <section class="section">
-        <div class="container support">
-          <div>
-            <h2>Supporta Canapalandia</h2>
-            <p class="section-lead">Se trovi utile il progetto, puoi sostenerlo o scoprire i partner selezionati.</p>
-          </div>
-          <div class="support-cta">
-            <a class="btn primary" href="/sostieni-la-nostra-causa/">Sostieni il progetto</a>
-            <a class="btn ghost" href="/partner-selezionati/">Scopri i partner</a>
-          </div>
-        </div>
-      </section>
-    </main>
-
-    <footer class="site-footer">
-      <div class="container footer-inner">
-        <div class="footer-brand">
-          <p class="footer-title">Canapalandia</p>
-          <p class="footer-desc">Informazione su cannabis legale e CBD, con focus Italia.</p>
-        </div>
-
-        <nav aria-label="Link utili" class="footer-nav">
-          <a href="/privacy-policy/">Privacy</a>
-          <a href="/termini-e-condizioni/">Termini</a>
-          <a href="/contatti/">Contatti</a>
-        </nav>
-
-        <p class="footer-copy">© {new Date().getFullYear()} Canapalandia</p>
+                <h3 class="cardTitle" set:html={p.title} />
+                <p class="cardExcerpt">{excerptFromHtml(p.html, 110)}</p>
+                <span class="cardCta">Apri →</span>
+              </div>
+            </a>
+          </article>
+        ))}
       </div>
-    </footer>
 
-    <style>
-      :root {
-        /* Identità visiva: dark green sempre */
-        color-scheme: dark;
+      <div class="section-cta">
+        <a class="btn ghost" href="/blog/">Vai al blog</a>
+      </div>
+    </div>
+  </section>
 
-        --bg: #06130b;
-        --text: #e8f5ec;
-        --muted: #a8c1b2;
+  <section class="section alt">
+    <div class="container tool">
+      <div class="tool-inner">
+        <div>
+          <h2>Il Ribaltatore</h2>
+          <p class="section-lead">
+            Un esperimento editoriale: trasformare slogan e frasi “proibizioniste” in domande utili,
+            ironiche e condivisibili.
+          </p>
+        </div>
+        <a class="btn primary" href="/ribaltatore/">Provalo</a>
+      </div>
+    </div>
+  </section>
 
-        --card-solid: #0a1c12;
-        --panel: var(--card-solid);
-        --panel-2: #072015;
-
-        --border: rgba(125, 255, 180, 0.14);
-        --shadow: 0 14px 40px rgba(0, 0, 0, 0.45);
-        --shadow-soft: 0 10px 24px rgba(0, 0, 0, 0.35);
-
-        --radius: 16px;
-        --r: 16px;
-        --r-sm: 12px;
-
-        --brand: #22c55e;
-        --brand-2: #16a34a;
-        --brand-ink: #04140b;
-
-        --container: 1120px;
-        --pad: 20px;
-
-        --font-sans: "Sora", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji",
-          "Segoe UI Emoji";
-      }
-
-
-      * { box-sizing: border-box; }
-      html, body { height: 100%; }
-      body {
-        margin: 0;
-         line-height: 1.55;
-        background: var(--bg);
-        color: var(--text);
-        font-family: var(--font-sans);
-      }
-
-      a { color: inherit; text-decoration: none; }
-      .post-card a,
-      .mini a,
-      .feature-main a {
-        text-decoration: none;
-      }
-      .container { max-width: var(--container); margin: 0 auto; padding: 0 var(--pad); }
-
-      .skip {
-        position: absolute;
-        left: -9999px;
-        top: 10px;
-        background: var(--card-solid);
-        color: var(--text);
-        padding: 10px 12px;
-        border-radius: 10px;
-        border: 1px solid var(--border);
-        z-index: 9999;
-      }
-      .skip:focus { left: 10px; }
-
-      .site-header {
-        position: sticky;
-        top: 0;
-        z-index: 50;
-        border-bottom: 1px solid rgba(255,255,255,.10);
-        background: rgba(10, 12, 14, 0.22);
-        backdrop-filter: blur(10px);
-      }
-      .header-inner {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 14px;
-        padding: 14px 0;
-      }
-      .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; }
-      .brand-name { font-weight: 800; letter-spacing: .2px; }
-
-      .nav { display: flex; gap: 14px; flex-wrap: wrap; }
-      .nav a {
-        text-decoration: none;
-        opacity: 0.92;
-        padding: 8px 10px;
-        border-radius: 999px;
-      }
-      .nav a:hover { background: rgba(22,163,74,.18); }
-
-      .header-actions { display: flex; align-items: center; gap: 10px; }
-      .icon-btn {
-        width: 34px;
-        height: 34px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 999px;
-        border: 1px solid rgba(255,255,255,.22);
-        text-decoration: none;
-        background: rgba(255,255,255,.10);
-      }
-      .search {
-        text-decoration: none;
-        padding: 8px 12px;
-        border-radius: 999px;
-        border: 1px solid rgba(255,255,255,.22);
-        background: rgba(255,255,255,.10);
-        font-size: 14px;
-      }
-
-      .hero {
-        position: relative;
-        padding: 90px 0 70px;
-        border-bottom: 1px solid var(--border);
-        background:
-          linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.55)),
-          var(--hero-bg) center / cover no-repeat;
-        color: #fff;
-      }
-      .hero-overlay {
-        position: absolute;
-        inset: 0;
-        background: radial-gradient(80% 70% at 50% 30%, rgba(134,239,172,.10), transparent 60%);
-        pointer-events: none;
-      }
-      .hero-inner { position: relative; }
-      .kicker { margin: 0 0 10px; opacity: 0.92; }
-      h1 { margin: 0 0 14px; font-size: clamp(28px, 4vw, 54px); line-height: 1.05; }
-      .lead { max-width: 70ch; margin: 0 0 18px; opacity: 0.95; }
-
-      .hero-cta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
-
-      .btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 10px 14px;
-        border-radius: 999px;
-        text-decoration: none;
-        border: 1px solid rgba(255,255,255,.22);
-        background: rgba(255,255,255,.10);
-        color: inherit;
-      }
-      .btn.primary {
-        background: var(--brand);
-        color: var(--brand-ink);
-        border-color: transparent;
-        box-shadow: 0 10px 26px rgba(22, 163, 74, 0.35);
-      }
-      .btn.small { padding: 8px 12px; font-size: 14px; }
-
-      .trust {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-        list-style: none;
-        padding: 0;
-        margin: 18px 0 0;
-      }
-      .trust li {
-        border: 1px solid rgba(255,255,255,.25);
-        border-radius: 999px;
-        padding: 6px 10px;
-        font-size: 14px;
-        background: rgba(0,0,0,.18);
-      }
-
-      .section { padding: 62px 0; }
-      .section.alt { background: rgba(2, 6, 23, 0.04); }
-      @media (prefers-color-scheme: dark) {
-        .section.alt { background: rgba(255,255,255, 0.04); }
-      }
-
-      .section-head { max-width: 78ch; }
-      h2 { margin: 0; font-size: clamp(22px, 2.2vw, 30px); }
-      .section-lead { margin: 10px 0 0; color: var(--muted); }
-
-      .grid { display: grid; gap: 14px; margin-top: 18px; }
-
-      .cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-      .card {
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 16px;
-        text-decoration: none;
-        background: var(--card-solid);
-      }
-      .card h3 { margin: 0 0 8px; }
-      .card p { margin: 0; color: var(--muted); }
-      .card:hover {
-        box-shadow: var(--shadow);
-        transform: translateY(-1px);
-        transition: .18s ease;
-        border-color: rgba(22,163,74,.45);
-      }
-
-      .featured { grid-template-columns: 2fr 1fr; align-items: start; }
-      .feature-main {
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 18px;
-        background: linear-gradient(180deg, rgba(10, 28, 18, 0.98), rgba(7, 32, 21, 0.92));
-      }
-      @media (prefers-color-scheme: dark) {
-        .feature-main { background: linear-gradient(180deg, rgba(10, 28, 18, 0.98), rgba(7, 32, 21, 0.92)); }
-      }
-
-      .feature-img, .mini-img, .post-img {
-        width: 100%;
-        aspect-ratio: 16 / 9;
-        object-fit: cover;
-        border-radius: calc(var(--radius) - 4px);
-        border: 1px solid var(--border);
-        background: linear-gradient(135deg, rgba(22,163,74,.14), rgba(15,23,42,.08));
-        display: block;
-      }
-      .feature-img { margin: 10px 0 14px; border-radius: calc(var(--radius) - 2px); }
-      .mini-img, .post-img { margin-bottom: 10px; }
-
-      .badge { margin: 0 0 10px; font-size: 13px; color: var(--muted); }
-      .feature-title { margin: 0 0 10px; }
-      .feature-excerpt { margin: 0 0 14px; color: var(--muted); }
-
-      .feature-side { display: grid; gap: 12px; }
-      .mini {
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 14px;
-        background: var(--card-solid);
-      }
-      .mini-title { margin: 0 0 8px; font-size: 16px; }
-      .mini-excerpt { margin: 0 0 10px; color: var(--muted); font-size: 14px; }
-      .mini-link {
-        text-decoration: none;
-        font-weight: 600;
-        color: var(--text);
-        opacity: 0.92;
-      }
-      .mini-link:hover { color: var(--brand); opacity: 1; }
-
-      .posts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-      .post-card {
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 16px;
-        background: var(--card-solid);
-      }
-      .post-title { margin: 0 0 8px; font-size: 18px; }
-      .post-excerpt { margin: 0 0 12px; color: var(--muted); font-size: 14px; }
-      .post-link {
-        text-decoration: none;
-        font-weight: 700;
-        color: var(--text);
-        opacity: 0.92;
-      }
-      .post-link:hover { color: var(--brand); opacity: 1; }
-
-      .section-cta { margin-top: 18px; }
-
-      .tool-inner { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
-      .support { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
-      .support-cta { display: flex; gap: 12px; flex-wrap: wrap; }
-
-      .site-footer {
-        border-top: 1px solid var(--border);
-        padding: 34px 0;
-        background: rgba(2, 6, 23, 0.06);
-      }
-      @media (prefers-color-scheme: dark) {
-        .site-footer { background: rgba(255,255,255, 0.04); }
-      }
-      .footer-inner { display: grid; gap: 18px; grid-template-columns: 1.2fr 1fr 1fr; }
-      .footer-title { margin: 0; font-weight: 800; }
-      .footer-desc { margin: 8px 0 0; color: var(--muted); }
-      .footer-nav { display: grid; gap: 10px; }
-      .footer-nav a { text-decoration: none; color: var(--muted); }
-      .footer-nav a:hover { color: var(--text); }
-      .footer-copy { margin: 0; color: var(--muted); }
-
-      @media (max-width: 980px) {
-        .cards, .posts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-        .featured { grid-template-columns: 1fr; }
-        .footer-inner { grid-template-columns: 1fr; }
-        .tool-inner { flex-direction: column; align-items: flex-start; }
-      }
-      @media (max-width: 560px) {
-        .cards, .posts { grid-template-columns: 1fr; }
-        .hero { padding: 70px 0 56px; }
-        .nav { display: none; }
-      }
-    </style>
-  </body>
-</html>
+  <section class="section">
+    <div class="container support">
+      <div>
+        <h2>Supporta Canapalandia</h2>
+        <p class="section-lead">
+          Se trovi utile il progetto, puoi sostenerlo o scoprire i partner selezionati.
+        </p>
+      </div>
+      <div class="support-cta">
+        <a class="btn primary" href="/sostieni-la-nostra-causa/">Sostieni il progetto</a>
+        <a class="btn ghost" href="/partner-selezionati/">Scopri i partner</a>
+      </div>
+    </div>
+  </section>
+</Layout>
