@@ -1,11 +1,44 @@
 {
   "redirects": [
-    { "source": "/ribaltatore", "destination": "/blog/", "permanent": true },
-    { "source": "/ribaltatore/", "destination": "/blog/", "permanent": true },
-    { "source": "/ribaltatore/:path*", "destination": "/blog/", "permanent": true },
-
-    { "source": "/categoria/:path*", "destination": "/blog/", "permanent": true },
-    { "source": "/tag/:path*", "destination": "/blog/", "permanent": true },
-    { "source": "/autore/:path*", "destination": "/blog/", "permanent": true }
+    {
+      "source": "/categoria",
+      "destination": "/blog/",
+      "permanent": true
+    },
+    {
+      "source": "/categoria/:path*",
+      "destination": "/blog/",
+      "permanent": true
+    },
+    {
+      "source": "/tag",
+      "destination": "/blog/",
+      "permanent": true
+    },
+    {
+      "source": "/tag/:path*",
+      "destination": "/blog/",
+      "permanent": true
+    },
+    {
+      "source": "/autore",
+      "destination": "/blog/",
+      "permanent": true
+    },
+    {
+      "source": "/autore/:path*",
+      "destination": "/blog/",
+      "permanent": true
+    },
+    {
+      "source": "/ribaltatore",
+      "destination": "/blog/",
+      "permanent": true
+    },
+    {
+      "source": "/ribaltatore/:path*",
+      "destination": "/blog/",
+      "permanent": true
+    }
   ]
 }
