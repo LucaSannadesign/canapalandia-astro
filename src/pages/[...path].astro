@@ -1,6 +1,6 @@
 ---
 import SiteLayout from "../layouts/SiteLayout.astro";
-import Adsense from "../components/widgets/Adsense.astro";
+import AdSlot from "../components/AdSlot.astro";
 import { loadWp, type WpEntry } from "../lib/wp";
 import {
   stripHtml,
@@ -337,7 +337,7 @@ const titleHtml = foundEntry.title || rawItem?.title?.rendered || "";
       <div set:html={contentHtml} />
 
       <div style="margin: 2rem 0;">
-        <Adsense slotId="POST_BOTTOM_ID" label="Pubblicità" />
+        <AdSlot label="Pubblicità" />
       </div>
 
       {/* CTA tra post e correlati */}

@@ -1,7 +1,7 @@
 ---
 import { Image } from "astro:assets";
 import Layout from "../layouts/MigratedLayout.astro";
-import Adsense from "../components/widgets/Adsense.astro";
+import AdSlot from "../components/AdSlot.astro";
 import { loadWp } from "../lib/wp";
 import {
   textFromHtml,
@@ -279,7 +279,7 @@ const canonical = `${WP_HOST}/`;
   </section>
 
   <div class="container">
-    <Adsense slotId="HOME_MID_ID" label="Pubblicità" />
+    <AdSlot label="Pubblicità" />
   </div>
 
   <section id="in-evidenza" class="section alt">

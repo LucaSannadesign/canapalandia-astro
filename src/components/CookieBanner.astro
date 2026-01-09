@@ -115,8 +115,24 @@
     transform: translateY(-1px);
   }
 
+  /* Tema light: miglior contrasto e hover visibile */
+  html[data-theme="light"] .cookie-banner__btn {
+    background: var(--panel-2);
+    color: var(--text);
+    border-color: var(--border);
+  }
+
   html[data-theme="light"] .cookie-banner__btn:hover {
-    background: rgba(0, 0, 0, 0.05);
+    background: rgba(22, 163, 74, 0.08);
+    border-color: rgba(22, 163, 74, 0.25);
+    box-shadow: 0 2px 8px rgba(22, 163, 74, 0.12);
+  }
+
+  html[data-theme="light"] .cookie-banner__btn:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+    background: rgba(22, 163, 74, 0.08);
+    border-color: var(--brand);
   }
 
   .cookie-banner__btn--accept {
@@ -127,6 +143,19 @@
 
   .cookie-banner__btn--accept:hover {
     background: var(--brand-2);
+  }
+
+  /* Tema light: hover accept più scuro e visibile */
+  html[data-theme="light"] .cookie-banner__btn--accept:hover {
+    background: var(--brand-2);
+    filter: brightness(0.92);
+    box-shadow: 0 2px 12px rgba(22, 163, 74, 0.3);
+  }
+
+  html[data-theme="light"] .cookie-banner__btn--accept:focus-visible {
+    outline: 2px solid var(--brand-2);
+    outline-offset: 2px;
+    filter: brightness(0.92);
   }
 
   /* Preferenze panel */
@@ -356,7 +385,7 @@
         saveConsent(true);
         banner.setAttribute("aria-hidden", "true");
         // Trigger evento per GA4
-        window.dispatchEvent(new CustomEvent("cookieConsentChanged", { detail: { analytics: true } }));
+        window.dispatchEvent(new CustomEvent("canapalandia:cookie-consent", { detail: { analytics: true } }));
       });
     }
 
@@ -366,7 +395,7 @@
       rejectBtn.addEventListener("click", () => {
         saveConsent(false);
         banner.setAttribute("aria-hidden", "true");
-        window.dispatchEvent(new CustomEvent("cookieConsentChanged", { detail: { analytics: false } }));
+        window.dispatchEvent(new CustomEvent("canapalandia:cookie-consent", { detail: { analytics: false } }));
       });
     }
 
@@ -400,7 +429,7 @@
         saveConsent(analytics);
         banner.setAttribute("aria-hidden", "true");
         closePrefs();
-        window.dispatchEvent(new CustomEvent("cookieConsentChanged", { detail: { analytics } }));
+        window.dispatchEvent(new CustomEvent("canapalandia:cookie-consent", { detail: { analytics } }));
       });
     }
   })();

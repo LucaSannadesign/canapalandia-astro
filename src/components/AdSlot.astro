@@ -1,0 +1,140 @@
+---
+interface Props {
+    slot?: string;
+    label?: string;
+}
+
+const {
+    slot = "7168595886",
+    label,
+} = Astro.props;
+
+const AD_CLIENT = "ca-pub-6462363788506395";
+---
+
+<div class="adslot-container" data-adslot-id={slot}>
+    {label && (
+        <p class="adslot-label">{label}</p>
+    )}
+
+    <ins
+        class="adsbygoogle"
+        data-ad-client={AD_CLIENT}
+        data-ad-slot={slot}
+        data-ad-format="auto"
+        data-full-width-responsive="true"
+        style="display:block"
+    >
+    </ins>
+</div>
+
+<style>
+    .adslot-container {
+        margin: 2rem 0;
+        text-align: center;
+        min-height: 100px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .adslot-label {
+        font-size: 0.75rem;
+        color: var(--muted);
+        text-transform: uppercase;
+        margin: 0 0 0.5rem;
+        opacity: 0.7;
+    }
+
+    .adsbygoogle {
+        display: block;
+        width: 100%;
+    }
+</style>
+
+<script define:vars={{ slot }}>
+    (() => {
+        const adSlotId = slot;
+        const container = document.querySelector(`[data-adslot-id="${adSlotId}"]`);
+        if (!container) return;
+
+        const adElement = container.querySelector(".adsbygoogle");
+        if (!adElement) return;
+
+        // Evita doppio push usando flag dataset
+        if (adElement.dataset.rendered === "1") {
+            return;
+        }
+
+        // Poll per aspettare che adsbygoogle esista (max 2s)
+        const pollForAdSense = (callback, maxAttempts = 20, interval = 100) => {
+            let attempts = 0;
+            const poll = () => {
+                if (window.adsbygoogle) {
+                    callback();
+                } else if (attempts < maxAttempts) {
+                    attempts++;
+                    setTimeout(poll, interval);
+                } else {
+                    console.warn(`[AdSlot ${adSlotId}] adsbygoogle not loaded after ${maxAttempts * interval}ms`);
+                }
+            };
+            poll();
+        };
+
+        // Push ad slot
+        const pushAd = () => {
+            if (adElement.dataset.rendered === "1") {
+                return;
+            }
+
+            try {
+                (window.adsbygoogle = window.adsbygoogle || []).push({});
+                adElement.dataset.rendered = "1";
+            } catch (err) {
+                console.error(`[AdSlot ${adSlotId}] Error pushing ad:`, err);
+            }
+        };
+
+        // Verifica consenso cookie (opzionale)
+        const checkConsent = () => {
+            try {
+                const saved = localStorage.getItem("canapalandia_cookie_consent");
+                if (saved) {
+                    const consent = JSON.parse(saved);
+                    // Se c'è cookie banner, richiedi consenso analytics
+                    return consent.analytics === true;
+                }
+            } catch {}
+            // Se non c'è cookie banner, mostra comunque
+            return true;
+        };
+
+        // Push solo se c'è consenso
+        if (checkConsent()) {
+            if (window.__adsenseLoaded) {
+                // Script già caricato, aspetta che adsbygoogle esista
+                pollForAdSense(pushAd);
+            } else {
+                // Aspetta che lo script si carichi
+                window.addEventListener("adsense:script-loaded", () => {
+                    pollForAdSense(pushAd);
+                }, { once: true });
+            }
+        }
+
+        // Ascolta evento consenso cookie
+        window.addEventListener("canapalandia:cookie-consent", (e) => {
+            if (e.detail && e.detail.analytics === true && adElement.dataset.rendered !== "1") {
+                if (window.__adsenseLoaded) {
+                    pollForAdSense(pushAd);
+                } else {
+                    window.addEventListener("adsense:script-loaded", () => {
+                        pollForAdSense(pushAd);
+                    }, { once: true });
+                }
+            }
+        });
+    })();
+</script>
