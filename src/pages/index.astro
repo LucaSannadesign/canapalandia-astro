@@ -10,6 +10,7 @@ import {
   resolveWpMediaSrc,
 } from "../lib/utils";
 import { WP_HOST } from "../lib/consts";
+import categoriesJson from "../../data/wp/out/categories.json";
 
 /* ---------------------------
    Helpers: imported from ../lib/utils
@@ -78,6 +79,107 @@ const featured = sortedPosts[0];
 const featuredSide = sortedPosts.slice(1, 4);
 
 /* ---------------------------
+   Mappa icone SVG per categoria
+--------------------------- */
+function getCategoryIcon(slug: string): string {
+  const iconMap: Record<string, string> = {
+    "normative-aspetti-legali": `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 3v18M6 7h12M7 7l-3 6h6l-3-6zM17 7l-3 6h6l-3-6zM6 21h12"></path>
+    </svg>`,
+    "salute-benessere": `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"></path>
+    </svg>`,
+    "cannabis-news-it": `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+      <path d="M8 8h8M8 12h8M8 16h6"></path>
+    </svg>`,
+    "coltivazione-legale": `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 2v4M4.93 4.93l2.83 2.83M2 12h4M4.93 19.07l2.83-2.83M12 22v-4M19.07 19.07l-2.83-2.83M22 12h-4M19.07 4.93l-2.83 2.83M12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6 6 6 0 0 1-6-6 6 6 0 0 1 6-6z"></path>
+    </svg>`,
+    "guide-tutorial": `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
+      <path d="M9 10h6M9 14h4"></path>
+    </svg>`,
+    "partner-e-affiliazioni": `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+      <circle cx="9" cy="7" r="4"></circle>
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path>
+    </svg>`,
+    "canapa-e-ambiente": `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+    </svg>`,
+    "cbd": `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 2s7 7 7 13a7 7 0 0 1-14 0c0-6 7-13 7-13zM9.5 14.5c1 1.2 4 1.2 5 0"></path>
+    </svg>`,
+  };
+  return iconMap[slug] || `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+  </svg>`;
+}
+
+/* ---------------------------
+   Carica categorie con count
+--------------------------- */
+type CategoryData = {
+  slug: string;
+  name: string;
+  count: number;
+  description?: string;
+};
+
+const allCategoriesRaw = Array.isArray(categoriesJson) ? categoriesJson : [];
+const categoriesMap = new Map<string, CategoryData>();
+
+// Normalizza e filtra categorie (evita duplicati IT/EN)
+const categorySlugNormalize = (slug: string): string => {
+  // Normalizza slug per evitare duplicati
+  return slug.toLowerCase().replace(/[^a-z0-9-]/g, "");
+};
+
+for (const cat of allCategoriesRaw) {
+  if (!cat.slug || !cat.name || typeof cat.count !== "number") continue;
+  const normalizedSlug = categorySlugNormalize(cat.slug);
+  
+  // Evita duplicati: se già esiste, mantieni quella con più post
+  if (!categoriesMap.has(normalizedSlug) || (cat.count > (categoriesMap.get(normalizedSlug)?.count || 0))) {
+    categoriesMap.set(normalizedSlug, {
+      slug: cat.slug,
+      name: typeof cat.name === "string" ? cat.name : "",
+      count: cat.count || 0,
+      description: typeof cat.description === "string" ? cat.description : undefined,
+    });
+  }
+}
+
+// Categorie principali da mostrare (priorità)
+const mainCategorySlugs = [
+  "normative-aspetti-legali",
+  "salute-benessere",
+  "cannabis-news-it",
+  "coltivazione-legale",
+  "guide-tutorial",
+  "partner-e-affiliazioni",
+  "canapa-e-ambiente",
+  "cbd",
+];
+
+const mainCategories: CategoryData[] = [];
+for (const slug of mainCategorySlugs) {
+  const cat = categoriesMap.get(categorySlugNormalize(slug));
+  if (cat) {
+    mainCategories.push(cat);
+  }
+}
+
+// Aggiungi altre categorie con count > 0 (max 10 totali)
+const otherCategories = Array.from(categoriesMap.values())
+  .filter((c) => !mainCategorySlugs.includes(c.slug) && c.count > 0)
+  .sort((a, b) => b.count - a.count)
+  .slice(0, Math.max(0, 10 - mainCategories.length));
+
+const displayCategories = [...mainCategories, ...otherCategories].filter((c) => c.count > 0);
+
+/* ---------------------------
    Page meta
 --------------------------- */
 
@@ -129,151 +231,24 @@ const canonical = `${WP_HOST}/`;
       </div>
 
       <div class="grid cards">
-        <a class="card card--topic" href="/categoria/normative-aspetti-legali/">
-          <span class="card-icon" aria-hidden="true">
-            <!-- Bilancia -->
-            <svg
-              width="22"
-              height="22"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M12 3v18"></path>
-              <path d="M6 7h12"></path>
-              <path d="M7 7l-3 6h6l-3-6z"></path>
-              <path d="M17 7l-3 6h6l-3-6z"></path>
-              <path d="M6 21h12"></path>
-            </svg>
-          </span>
-          <h3>Normativa e aspetti legali</h3>
-          <p>Leggi, sentenze, decreti e cosa cambia davvero in Italia.</p>
-        </a>
-
-        <a class="card card--topic" href="/categoria/salute-benessere/">
-          <span class="card-icon" aria-hidden="true">
-            <!-- Goccia -->
-            <svg
-              width="22"
-              height="22"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M12 2s7 7 7 13a7 7 0 0 1-14 0c0-6 7-13 7-13z"></path>
-              <path d="M9.5 14.5c1 1.2 4 1.2 5 0"></path>
-            </svg>
-          </span>
-          <h3>CBD e benessere</h3>
-          <p>Uso consapevole, ricerca, qualità, sicurezza e limiti.</p>
-        </a>
-
-        <a class="card card--topic" href="/categoria/cannabis-news-it/">
-          <span class="card-icon" aria-hidden="true">
-            <!-- Giornale -->
-            <svg
-              width="22"
-              height="22"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path
-                d="M6 4h11a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"
-              ></path>
-              <path d="M8 8h7"></path>
-              <path d="M8 12h8"></path>
-              <path d="M8 16h6"></path>
-            </svg>
-          </span>
-          <h3>Cannabis news</h3>
-          <p>Attualità selezionata, senza panico morale né clickbait.</p>
-        </a>
-
-        <a class="card card--topic" href="/categoria/coltivazione-legale/">
-          <span class="card-icon" aria-hidden="true">
-            <!-- Fabbrica/filiera -->
-            <svg
-              width="22"
-              height="22"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M3 21h18"></path>
-              <path d="M5 21V9l6 3V9l8 4v8"></path>
-              <path d="M9 21v-6h3v6"></path>
-            </svg>
-          </span>
-          <h3>Canapa industriale</h3>
-          <p>Filiera, economia, sostenibilità e applicazioni reali.</p>
-        </a>
-
-        <a class="card card--topic" href="/categoria/guide-tutorial/">
-          <span class="card-icon" aria-hidden="true">
-            <!-- Checklist -->
-            <svg
-              width="22"
-              height="22"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path
-                d="M7 3h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"
-              ></path>
-              <path d="M8 8h8"></path>
-              <path d="M8 12h6"></path>
-              <path d="M8 16h7"></path>
-              <path d="M7 8l.8.8L10 6.6"></path>
-            </svg>
-          </span>
-          <h3>Guide pratiche</h3>
-          <p>
-            Glossario, come leggere un COA, cosa guardare prima di acquistare.
-          </p>
-        </a>
-
-        <a class="card card--topic" href="/categoria/partner-e-affiliazioni/">
-          <span class="card-icon" aria-hidden="true">
-            <!-- Stretta di mano semplificata -->
-            <svg
-              width="22"
-              height="22"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M8 12l2 2a2 2 0 0 0 3 0l1-1"></path>
-              <path d="M3 12l4-4 5 5"></path>
-              <path d="M21 12l-4-4-3 3"></path>
-              <path d="M7 8l-2 2"></path>
-            </svg>
-          </span>
-          <h3>Partner selezionati</h3>
-          <p>
-            Collaborazioni trasparenti e risorse utili per supportare il
-            progetto.
-          </p>
-        </a>
+        {displayCategories.map((cat) => (
+          <a class="card card--topic" href={`/categoria/${cat.slug}/`}>
+            <span class="card-icon" aria-hidden="true" set:html={getCategoryIcon(cat.slug)}></span>
+            <div class="card--topic__content">
+              <div class="card--topic__header">
+                <h3>{cat.name}</h3>
+                {cat.count > 0 ? (
+                  <span class="card--topic__count">{cat.count}</span>
+                ) : null}
+              </div>
+              {cat.description ? (
+                <p>{cat.description.length > 100 ? cat.description.substring(0, 100) + "..." : cat.description}</p>
+              ) : (
+                <p>Esplora tutti gli articoli di questa categoria.</p>
+              )}
+            </div>
+          </a>
+        ))}
       </div>
     </div>
   </section>
