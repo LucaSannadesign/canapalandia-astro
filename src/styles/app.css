@@ -318,6 +318,47 @@ html[data-theme="light"] .site-footer {
   justify-content: flex-end;
 }
 
+.footer-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.footer-logo {
+  display: inline-block;
+  width: fit-content;
+}
+
+.footer-logo__img {
+  height: 32px;
+  width: auto;
+}
+
+.footer-tagline {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.footer-credits {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.footer-credits a {
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.2s ease;
+}
+
+.footer-credits a:hover {
+  color: var(--brand);
+}
+
 .footer-copy {
   grid-column: 1 / -1;
   opacity: 0.75;
@@ -577,6 +618,10 @@ html[data-theme="light"] .section.alt {
   margin: 10px 0 60px;
 }
 
+.post-layout.no-sidebar {
+  grid-template-columns: 1fr;
+}
+
 .post-main {
   min-width: 0; /* Previene overflow nella griglia */
 }
@@ -585,11 +630,92 @@ html[data-theme="light"] .section.alt {
   min-width: 0; /* Previene overflow nella griglia */
 }
 
+/* Sidebar sections */
+.sidebar-section {
+  margin-bottom: 32px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar-section:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.sidebar-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin: 0 0 16px;
+}
+
+/* Post tags */
+.post-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 0.875rem;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.tag-link:hover {
+  border-color: var(--brand);
+  background: rgba(34, 197, 94, 0.1);
+  color: var(--brand);
+  transform: translateY(-1px);
+}
+
+/* Sticky AdSense banner in sidebar */
+.sidebar-ad__wrapper {
+  /* Wrapper senza padding extra per permettere sticky */
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.sidebar-ad__sticky {
+  position: sticky;
+  top: 96px; /* Altezza header + margine */
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--panel);
+  box-shadow: var(--shadow-soft);
+  z-index: 10;
+}
+
+.sidebar-ad__sticky .sidebar-title {
+  margin-top: 0;
+}
+
+/* Reset margin di AdSlot dentro sticky per coerenza */
+.sidebar-ad__sticky :global(.adslot-container) {
+  margin: 0;
+}
+
 /* Desktop: se lo schermo è troppo piccolo, riduci la sidebar */
 @media (max-width: 1200px) {
   .post-layout {
     grid-template-columns: minmax(0, 1fr) 320px;
     gap: 24px;
+  }
+
+  .post-layout.no-sidebar {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -598,6 +724,12 @@ html[data-theme="light"] .section.alt {
   .post-layout {
     grid-template-columns: 1fr;
     gap: 36px;
+  }
+
+  /* Disattiva sticky su mobile */
+  .sidebar-ad__sticky {
+    position: static;
+    top: auto;
   }
 }
 

@@ -1,6 +1,7 @@
 ---
 import SiteLayout from "../layouts/SiteLayout.astro";
 import AdSlot from "../components/AdSlot.astro";
+import ShareBar from "../components/ShareBar.astro";
 import { loadWp, type WpEntry } from "../lib/wp";
 import {
   stripHtml,
@@ -48,7 +49,10 @@ type WPItemRaw = {
   excerpt?: { rendered: string };
   content: { rendered: string };
   categories?: number[];
-  _embedded?: { "wp:featuredmedia"?: WPFeaturedMedia[] };
+  _embedded?: { 
+    "wp:featuredmedia"?: WPFeaturedMedia[];
+    "wp:term"?: any[][];
+  };
   yoast_head_json?: {
     og_image?: Array<{ url?: string; src?: string; width?: number; height?: number }>;
   };
@@ -299,6 +303,44 @@ function findRelatedPosts(currentEntry: WpEntry, currentRaw: WPItemRaw | null): 
 const relatedPosts: CardPost[] = findRelatedPosts(foundEntry, rawItem);
 
 /* ---------------------------
+   Extract tags for sidebar
+--------------------------- */
+function extractTags(item: WPItemRaw | null | undefined): { slug: string; name: string }[] {
+  if (!item) return [];
+  // Type assertion per accedere a wp:term che non è nel tipo stretto
+  const embedded = item._embedded as any;
+  const wpTerm = embedded?.["wp:term"] as any;
+  if (!Array.isArray(wpTerm)) return [];
+  const flat = wpTerm.flat().flat();
+  return flat
+    .filter(
+      (t: any) =>
+        t &&
+        t.taxonomy === "post_tag" &&
+        typeof t.slug === "string" &&
+        typeof t.name === "string",
+    )
+    .map((t: any) => ({ slug: String(t.slug), name: String(t.name) }));
+}
+
+const postTags = extractTags(rawItem);
+
+/* ---------------------------
+   Sidebar content logic
+--------------------------- */
+// Determina se la sidebar ha contenuti da mostrare
+// Per ora: ShareBar + AdSlot sono sempre presenti per i post
+// Tags sono opzionali
+const hasSidebarContent = foundEntry.kind === "post";
+
+/* ---------------------------
+   Post URL and title for ShareBar
+--------------------------- */
+const baseUrl = "https://canapalandia.com";
+const postUrl = foundEntry.link || `${baseUrl}${canonicalPath}`;
+const postTitleForShare = title || "";
+
+/* ---------------------------
    Render content
 --------------------------- */
 const contentHtml = foundEntry.html || rawItem?.content?.rendered || "";
@@ -336,7 +378,7 @@ const titleHtml = foundEntry.title || rawItem?.title?.rendered || "";
       </figure>
     ) : null}
 
-    <div class="post-layout">
+    <div class={`post-layout ${!hasSidebarContent ? "no-sidebar" : ""}`}>
       <article class="post-main wp-page">
         <h1 set:html={titleHtml} />
         <div set:html={contentHtml} />
@@ -393,9 +435,34 @@ const titleHtml = foundEntry.title || rawItem?.title?.rendered || "";
         ) : null}
       </article>
 
-      <aside class="post-sidebar">
-        {/* Sidebar: TOC, share, tags, AdSense verranno aggiunti qui */}
-      </aside>
+      {hasSidebarContent ? (
+        <aside class="post-sidebar">
+          <div class="sidebar-section">
+            <h3 class="sidebar-title">Condividi</h3>
+            <ShareBar url={postUrl} title={postTitleForShare} />
+          </div>
+
+          {postTags.length > 0 ? (
+            <div class="sidebar-section">
+              <h3 class="sidebar-title">Tag</h3>
+              <div class="post-tags">
+                {postTags.map((tag) => (
+                  <a href={`/tag/${tag.slug}/`} class="tag-link">
+                    {tag.name}
+                  </a>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          <div class="sidebar-section sidebar-ad__wrapper">
+            <div class="sidebar-ad__sticky">
+              <h3 class="sidebar-title">Pubblicità</h3>
+              <AdSlot label="Pubblicità" />
+            </div>
+          </div>
+        </aside>
+      ) : null}
     </div>
   </main>
 </SiteLayout>
