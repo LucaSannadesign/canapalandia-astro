@@ -2,9 +2,12 @@
 import "../styles/app.css";
 import Adsense from "../components/widgets/Adsense.astro";
 import Newsletter from "../components/widgets/Newsletter.astro";
+import CookieBanner from "../components/CookieBanner.astro";
 
 const THEME_STORAGE_KEY = "canapalandia_theme";
 const { title, canonical, yoastHeadHtml, shell = true } = Astro.props;
+
+const GA4_ID = import.meta.env.PUBLIC_GA4_ID;
 ---
 
 <html lang="it">
@@ -27,17 +30,7 @@ const { title, canonical, yoastHeadHtml, shell = true } = Astro.props;
       rel="stylesheet"
     />
 
-    <!-- Google Analytics 4 -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"
-    ></script>
-    <script is:inline>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        dataLayer.push(arguments);
-      }
-      gtag("js", new Date());
-      gtag("config", "G-XXXXXXXXXX");
-    </script>
+    <!-- Google Analytics 4 - caricato solo dopo consenso -->
 
     <!-- AdSense Script Global -->
     <script
@@ -307,5 +300,64 @@ const { title, canonical, yoastHeadHtml, shell = true } = Astro.props;
         });
       })();
     </script>
+
+    <CookieBanner />
+
+    {GA4_ID ? (
+      <script is:inline define:vars={{ GA4_ID }}>
+        (() => {
+          const STORAGE_KEY = "canapalandia_cookie_consent";
+          const GA_ID = GA4_ID;
+
+          // Funzione per inizializzare GA4
+          const initGA4 = () => {
+            // Carica script gtag
+            const script = document.createElement("script");
+            script.async = true;
+            script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_ID}`;
+            document.head.appendChild(script);
+
+            // Inizializza dataLayer e gtag
+            window.dataLayer = window.dataLayer || [];
+            function gtag() {
+              dataLayer.push(arguments);
+            }
+            gtag("js", new Date());
+            gtag("config", GA_ID);
+          };
+
+          // Verifica consenso
+          const checkConsent = () => {
+            try {
+              const saved = localStorage.getItem(STORAGE_KEY);
+              if (saved) {
+                const consent = JSON.parse(saved);
+                return consent.analytics === true;
+              }
+            } catch {}
+            return false;
+          };
+
+          // Carica GA4 se c'è consenso
+          if (checkConsent()) {
+            initGA4();
+          }
+
+          // Ascolta cambiamenti consenso
+          window.addEventListener("cookieConsentChanged", (e) => {
+            if (e.detail?.analytics === true) {
+              // Se non è già caricato, caricalo ora
+              if (!window.dataLayer || window.dataLayer.length === 0) {
+                initGA4();
+              }
+            } else {
+              // Se analytics è disabilitato, rimuovi eventuali tracciamenti
+              // (GA4 non può essere "disattivato" dinamicamente, ma non invierà dati se non inizializzato)
+              // In un'implementazione più avanzata potresti usare gtag('consent', 'update', {...})
+            }
+          });
+        })();
+      </script>
+    ) : null}
   </body>
 </html>

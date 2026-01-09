@@ -1,0 +1,84 @@
+---
+import Layout from "../layouts/MigratedLayout.astro";
+
+const title = "Cookie Policy — Canapalandia";
+const canonical = "https://canapalandia.com/cookie-policy/";
+---
+
+<Layout title={title} canonical={canonical}>
+  <main class="container page-shell">
+    <article class="wp-page">
+      <h1>Cookie Policy</h1>
+
+      <p>
+        Questa Cookie Policy descrive come Canapalandia utilizza i cookie e tecnologie simili sul sito web canapalandia.com.
+      </p>
+
+      <h2>Cosa sono i cookie</h2>
+      <p>
+        I cookie sono piccoli file di testo che vengono memorizzati sul tuo dispositivo (computer, tablet, smartphone) quando visiti un sito web. I cookie permettono al sito di ricordare le tue azioni e preferenze per un periodo di tempo, così non devi reinserirle ogni volta che torni sul sito o navighi da una pagina all'altra.
+      </p>
+
+      <h2>Cookie tecnici</h2>
+      <p>
+        Utilizziamo cookie tecnici necessari per il funzionamento del sito, come:
+      </p>
+      <ul>
+        <li><strong>Preferenze tema:</strong> per ricordare se preferisci il tema chiaro o scuro</li>
+        <li><strong>Consenso cookie:</strong> per salvare le tue preferenze sui cookie</li>
+      </ul>
+      <p>
+        Questi cookie non richiedono il tuo consenso esplicito in quanto sono essenziali per il funzionamento del sito.
+      </p>
+
+      <h2>Cookie di analytics</h2>
+      <p>
+        Utilizziamo Google Analytics 4 per analizzare come i visitatori utilizzano il sito. Questi cookie ci aiutano a:
+      </p>
+      <ul>
+        <li>Comprendere quali pagine sono più visitate</li>
+        <li>Migliorare l'esperienza utente</li>
+        <li>Ottimizzare i contenuti</li>
+      </ul>
+      <p>
+        I dati raccolti sono anonimi e aggregati. Puoi gestire le preferenze per i cookie di analytics tramite il banner dei cookie o le impostazioni del tuo browser.
+      </p>
+
+      <h2>Come gestire le preferenze</h2>
+      <p>
+        Puoi modificare le tue preferenze sui cookie in qualsiasi momento:
+      </p>
+      <ul>
+        <li>Attraverso il banner dei cookie che appare in basso alla pagina</li>
+        <li>Attraverso le impostazioni del tuo browser (es. Chrome, Firefox, Safari)</li>
+      </ul>
+      <p>
+        Tieni presente che disabilitare alcuni cookie potrebbe limitare alcune funzionalità del sito.
+      </p>
+
+      <h2>Cookie di terze parti</h2>
+      <p>
+        Il sito può includere contenuti e servizi di terze parti che utilizzano i propri cookie, come:
+      </p>
+      <ul>
+        <li><strong>Google AdSense:</strong> per mostrare annunci pubblicitari</li>
+        <li><strong>Google Analytics:</strong> per l'analisi del traffico (solo con consenso)</li>
+      </ul>
+      <p>
+        Questi servizi hanno le proprie policy sui cookie. Ti invitiamo a consultarle per maggiori informazioni.
+      </p>
+
+      <h2>Contatti</h2>
+      <p>
+        Per domande o chiarimenti sulla Cookie Policy, puoi contattarci tramite la <a href="/contatti/">pagina contatti</a>.
+      </p>
+      <p>
+        Per informazioni sulla privacy, consulta la nostra <a href="/privacy-policy/">Privacy Policy</a>.
+      </p>
+
+      <p>
+        <em>Ultimo aggiornamento: {new Date().toLocaleDateString('it-IT', { year: 'numeric', month: 'long', day: 'numeric' })}</em>
+      </p>
+    </article>
+  </main>
+</Layout>

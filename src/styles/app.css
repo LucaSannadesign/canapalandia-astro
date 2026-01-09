@@ -80,7 +80,8 @@ a {
 .container {
   max-width: var(--container);
   margin: 0 auto;
-  padding: 0 var(--pad);
+  padding-left: max(var(--pad), env(safe-area-inset-left));
+  padding-right: max(var(--pad), env(safe-area-inset-right));
 }
 
 /* Accessibilità */
@@ -541,8 +542,7 @@ html[data-theme="light"] .section.alt {
 
 .wp-page p {
   margin: 0 0 20px;
-  color: #e2e8f0;
-  /* Softer white for reading */
+  color: var(--text);
   font-size: 1.125rem;
   /* 18px */
   line-height: 1.8;
@@ -552,7 +552,7 @@ html[data-theme="light"] .section.alt {
   margin: 0 0 24px 1.2rem;
   font-size: 1.125rem;
   line-height: 1.75;
-  color: #e2e8f0;
+  color: var(--text);
 }
 
 .wp-page li {
