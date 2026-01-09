@@ -79,7 +79,7 @@ const metadata = {
               const img = getFeatured(p);
               return (
                 <article class="card post-card">
-                  <a class="cardLink" href={`/${p.slug}/`}>
+                  <a class="cardLink" href={p.slug ? `/${p.slug}/` : "/"}>
                     <div class="thumb">
                       {img ? <img src={img.src} alt={img.alt} loading="lazy" decoding="async" /> : null}
                     </div>

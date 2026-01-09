@@ -71,9 +71,9 @@ export function excerptFromHtml(html: unknown, max = 150): string {
 --------------------------- */
 
 export function internalHref(link: unknown): string {
-    if (typeof link !== "string") return "#";
+    if (typeof link !== "string") return "/";
     const s = link.trim();
-    if (!s) return "#";
+    if (!s) return "/";
 
     if (s.startsWith("/")) return s.endsWith("/") ? s : s + "/";
 
@@ -94,7 +94,9 @@ export function internalHref(link: unknown): string {
 
 export function entryHref(p: any): string {
     const raw = p?.path ?? p?.uri ?? p?.slug ?? p?.link ?? "";
-    return internalHref(raw);
+    const result = internalHref(raw);
+    // Assicura che il risultato sia sempre assoluto (inizia con /)
+    return result.startsWith("/") ? result : "/";
 }
 
 /* ---------------------------

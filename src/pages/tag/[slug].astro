@@ -25,7 +25,7 @@ const og = (p) => p?.yoast_head_json?.og_image?.[0]?.url || p?.yoast_head_json?.
 const href = (p) => {
   const url = p?.yoast_head_json?.canonical || p?.link || p?.slug || "";
   const path = toParams(url);
-  return path ? `/${path}/` : "#";
+  return path ? `/${path}/` : "/";
 };
 const fmt = (iso) => (iso ? new Date(iso).toLocaleDateString("it-IT", { year:"numeric", month:"long", day:"2-digit" }) : "");
 

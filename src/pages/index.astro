@@ -232,7 +232,7 @@ const canonical = `${WP_HOST}/`;
 
       <div class="grid cards">
         {displayCategories.map((cat) => (
-          <a class="card card--topic" href={`/categoria/${cat.slug}/`}>
+          <a class="card card--topic" href={cat.slug ? `/categoria/${cat.slug}/` : "/"}>
             <span class="card-icon" aria-hidden="true" set:html={getCategoryIcon(cat.slug)}></span>
             <div class="card--topic__content">
               <div class="card--topic__header">

@@ -25,7 +25,7 @@ const og = (p: any) =>
 const href = (p: any) => {
     const url = p?.yoast_head_json?.canonical || p?.link || p?.slug || "";
     const path = toParams(url);
-    return path ? `/${path}/` : "#";
+    return path ? `/${path}/` : "/";
 };
 const fmt = (iso: any) =>
     iso

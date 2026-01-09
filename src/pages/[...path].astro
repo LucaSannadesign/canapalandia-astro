@@ -12,8 +12,9 @@ import postsJson from "../../data/wp/out/posts.json";
 import pagesJson from "../../data/wp/out/pages.json";
 
 /* ========= Config CTA (cambia qui se il link è diverso) ========= */
-const SUPPORT_URL = "/sostieni"; // <-- se nel tuo sito è diverso, modifica SOLO questa riga
-const PARTNER_URL = "/partner"; // opzionale: se hai pagina partner
+// Assicura che i link siano sempre assoluti (iniziano con /)
+const SUPPORT_URL = "/sostieni-la-nostra-causa/"; // <-- se nel tuo sito è diverso, modifica SOLO questa riga
+const PARTNER_URL = "/partner-selezionati/"; // opzionale: se hai pagina partner
 
 /* ---------------------------
    Utils
@@ -239,7 +240,10 @@ function toCardFromWp(item: WPItemRaw, entry: WpEntry): CardPost {
     : null;
 
   // Usa il path dall'entry normalizzato, aggiungi trailing slash per href
-  const href = entry.path ? `/${entry.path}/` : `/${entry.slug}/`;
+  // Assicura che href sia sempre assoluto (inizia con /)
+  const rawPath = entry.path || entry.slug || "";
+  const normalizedPath = rawPath.replace(/^\/+|\/+$/g, "").trim();
+  const href = normalizedPath ? `/${normalizedPath}/` : "/";
 
   return {
     href,

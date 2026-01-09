@@ -30,6 +30,7 @@ function timeOf(e: any): number {
 
 function hrefOf(e: any): string {
   const p = String(e?.path ?? "").replace(/^\/+|\/+$/g, "");
+  // Assicura che href sia sempre assoluto (inizia con /)
   return p ? `/${p}/` : "/";
 }
 
