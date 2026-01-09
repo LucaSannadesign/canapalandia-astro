@@ -307,89 +307,95 @@ const titleHtml = foundEntry.title || rawItem?.title?.rendered || "";
 
 <SiteLayout metadata={metadata}>
   <main class="container page-shell">
-    <article class="wp-page">
-      <nav class="breadcrumbs" aria-label="Breadcrumb">
-        <ol class="breadcrumbs__list">
-          <li class="breadcrumbs__item">
-            <a class="breadcrumbs__link" href="/">
-              Home
-            </a>
-          </li>
-          <li class="breadcrumbs__item">
-            <span class="breadcrumbs__current">{title}</span>
-          </li>
-        </ol>
-      </nav>
-
-      {hero ? (
-        <figure class="post-hero not-prose">
-          <picture>
-            {hero.mobile ? (
-              <source media="(max-width: 768px)" srcset={hero.mobile.src} />
-            ) : null}
-            <img
-              src={hero.desktop.src}
-              alt={hero.desktop.alt}
-              loading="eager"
-              decoding="async"
-            />
-          </picture>
-        </figure>
-      ) : null}
-
-      <h1 set:html={titleHtml} />
-      <div set:html={contentHtml} />
-
-      <div style="margin: 2rem 0;">
-        <AdSlot label="Pubblicità" />
-      </div>
-
-      {/* CTA tra post e correlati */}
-      <section class="post-cta" aria-label="Supporta Canapalandia">
-        <h2 class="post-cta__title">Supporta Canapalandia</h2>
-        <p class="post-cta__text">
-          Se questo contenuto ti è stato utile, puoi sostenerci: ci aiuta a
-          mantenere il progetto indipendente e aggiornato.
-        </p>
-        <div class="post-cta__actions">
-          <a class="btn primary" href={SUPPORT_URL}>
-            Sostieni il progetto
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <ol class="breadcrumbs__list">
+        <li class="breadcrumbs__item">
+          <a class="breadcrumbs__link" href="/">
+            Home
           </a>
-          <a class="btn ghost" href={PARTNER_URL}>
-            Scopri i partner
-          </a>
+        </li>
+        <li class="breadcrumbs__item">
+          <span class="breadcrumbs__current">{title}</span>
+        </li>
+      </ol>
+    </nav>
+
+    {hero ? (
+      <figure class="post-hero not-prose">
+        <picture>
+          {hero.mobile ? (
+            <source media="(max-width: 768px)" srcset={hero.mobile.src} />
+          ) : null}
+          <img
+            src={hero.desktop.src}
+            alt={hero.desktop.alt}
+            loading="eager"
+            decoding="async"
+          />
+        </picture>
+      </figure>
+    ) : null}
+
+    <div class="post-layout">
+      <article class="post-main wp-page">
+        <h1 set:html={titleHtml} />
+        <div set:html={contentHtml} />
+
+        <div style="margin: 2rem 0;">
+          <AdSlot label="Pubblicità" />
         </div>
-      </section>
 
-      {relatedPosts?.length ? (
-        <section class="related" aria-label="Post correlati">
-          <h2 class="related__title">Post correlati</h2>
-          <div class="grid">
-            {relatedPosts.map((p) => (
-              <article class="post-card">
-                <a class="cardLink" href={p.href}>
-                  <div class="thumb">
-                    {p.img ? (
-                      <img
-                        src={p.img.src}
-                        alt={p.img.alt}
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    ) : null}
-                  </div>
-                  <div class="cardBody">
-                    <p class="cardMeta">Stessa categoria</p>
-                    <h3 class="cardTitle">{p.title}</h3>
-                    <p class="cardExcerpt">{p.excerpt}</p>
-                    <span class="cardCta">Leggi →</span>
-                  </div>
-                </a>
-              </article>
-            ))}
+        {/* CTA tra post e correlati */}
+        <section class="post-cta" aria-label="Supporta Canapalandia">
+          <h2 class="post-cta__title">Supporta Canapalandia</h2>
+          <p class="post-cta__text">
+            Se questo contenuto ti è stato utile, puoi sostenerci: ci aiuta a
+            mantenere il progetto indipendente e aggiornato.
+          </p>
+          <div class="post-cta__actions">
+            <a class="btn primary" href={SUPPORT_URL}>
+              Sostieni il progetto
+            </a>
+            <a class="btn ghost" href={PARTNER_URL}>
+              Scopri i partner
+            </a>
           </div>
         </section>
-      ) : null}
-    </article>
+
+        {relatedPosts?.length ? (
+          <section class="related" aria-label="Post correlati">
+            <h2 class="related__title">Post correlati</h2>
+            <div class="grid">
+              {relatedPosts.map((p) => (
+                <article class="post-card">
+                  <a class="cardLink" href={p.href}>
+                    <div class="thumb">
+                      {p.img ? (
+                        <img
+                          src={p.img.src}
+                          alt={p.img.alt}
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      ) : null}
+                    </div>
+                    <div class="cardBody">
+                      <p class="cardMeta">Stessa categoria</p>
+                      <h3 class="cardTitle">{p.title}</h3>
+                      <p class="cardExcerpt">{p.excerpt}</p>
+                      <span class="cardCta">Leggi →</span>
+                    </div>
+                  </a>
+                </article>
+              ))}
+            </div>
+          </section>
+        ) : null}
+      </article>
+
+      <aside class="post-sidebar">
+        {/* Sidebar: TOC, share, tags, AdSense verranno aggiunti qui */}
+      </aside>
+    </div>
   </main>
 </SiteLayout>

@@ -569,9 +569,40 @@ html[data-theme="light"] .section.alt {
    WP content (post/pagine) — stile leggibile e coerente
 ------------------------------------------------------------ */
 
+/* Post layout: griglia main + sidebar */
+.post-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 32px;
+  margin: 10px 0 60px;
+}
+
+.post-main {
+  min-width: 0; /* Previene overflow nella griglia */
+}
+
+.post-sidebar {
+  min-width: 0; /* Previene overflow nella griglia */
+}
+
+/* Desktop: se lo schermo è troppo piccolo, riduci la sidebar */
+@media (max-width: 1200px) {
+  .post-layout {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 24px;
+  }
+}
+
+/* Tablet/Mobile: sidebar sotto (1 colonna) */
+@media (max-width: 1023px) {
+  .post-layout {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+}
+
 .wp-page {
-  max-width: 820px;
-  margin: 10px auto 60px;
+  /* Rimossa limitazione max-width per allinearsi al container dell'header */
 }
 
 .wp-page :where(h1, h2, h3, h4) {
@@ -1195,7 +1226,8 @@ html[data-theme="light"] .field textarea {
 
 /* Breadcrumb */
 .breadcrumbs {
-  padding: 12px 0 0;
+  padding: 12px 0 16px;
+  margin-bottom: 0;
 }
 
 .breadcrumbs__list {
@@ -1279,15 +1311,17 @@ html[data-theme="light"] .field textarea {
   color: var(--muted);
 }
 
-/* POST HERO — Contained & Responsive */
-.post-hero {
+/* POST HERO — Contained & Responsive per layout singolo post */
+/* Post hero nel layout singolo post: stile contenuto */
+.page-shell > .post-hero {
   width: 100%;
-  margin: 1.5rem 0 2rem;
+  margin: 0 0 2rem;
   overflow: hidden;
   border-radius: 14px;
   position: relative;
   background: rgba(0, 0, 0, .08);
   box-shadow: var(--shadow-soft);
+  height: auto; /* Override dell'altezza fissa per layout contenuto */
 }
 
 /* immagine */
