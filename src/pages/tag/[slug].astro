@@ -4,7 +4,14 @@ import postsJson from "../../../data/wp/out/posts.json";
 import tagsJson from "../../../data/wp/out/tags.json";
 import { toParams } from "../../lib/wp";
 
-export const prerender = false;
+export const prerender = true;
+
+export function getStaticPaths() {
+  const tags = Array.isArray(tagsJson) ? tagsJson : [];
+  return tags
+    .filter((t) => t?.slug)
+    .map((t) => ({ params: { slug: String(t.slug) } }));
+}
 
 const slug = Astro.params.slug || "";
 const posts = Array.isArray(postsJson) ? postsJson : [];
@@ -32,36 +39,3 @@ const filtered = tagId
 const title = tag ? `Tag: ${tag.name} — Canapalandia` : "Tag — Canapalandia";
 const canonical = `https://canapalandia.com/tag/${slug}/`;
 ---
-<Layout title={title} canonical={canonical}>
-  <section class="hero">
-    <p class="kicker">Tag</p>
-    <h1>{tag?.name || "Tag non trovato"}</h1>
-    <p>{tag?.description ? stripHtml(tag.description) : "Contenuti filtrati per tag."}</p>
-    <div class="meta">
-      <a class="btn btn-ghost" href="/blog/">← Blog</a>
-      <a class="btn" href="/">Home</a>
-    </div>
-  </section>
-
-  {tag ? (
-    <section>
-      <div class="grid">
-        {filtered.slice(0, 48).map((p) => (
-          <article class="card post-card">
-            <a class="cardLink" href={href(p)}>
-              <div class="thumb">{og(p) ? <img src={og(p)} alt={stripHtml(postTitle(p))} loading="lazy" /> : null}</div>
-              <div class="cardBody">
-                <p class="cardMeta">{fmt(p?.date || p?.modified)}</p>
-                <h3 class="cardTitle" set:html={postTitle(p)} />
-                <p class="cardExcerpt">{excerpt(p)}</p>
-                <span class="cardCta">Apri →</span>
-              </div>
-            </a>
-          </article>
-        ))}
-      </div>
-    </section>
-  ) : (
-    <section class="articleWrap"><div class="articleInner"><p>Slug: <strong>{slug}</strong></p></div></section>
-  )}
-</Layout>

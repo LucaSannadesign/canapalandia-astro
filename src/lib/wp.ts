@@ -1,7 +1,7 @@
 import postsJson from "../../data/wp/out/posts.json";
 import pagesJson from "../../data/wp/out/pages.json";
 
-export const WP_HOST = "https://canapalandia.com";
+import { WP_HOST } from "./consts";
 
 export type WpKind = "post" | "page";
 
@@ -92,6 +92,11 @@ export function toParams(input: any): string {
   return s.replace(/^\/+|\/+$/g, "");
 }
 
+function isValidPath(p: string): boolean {
+  // Evita path vuoti e quelli che contengono spazi o caratteri anomali (esportazioni Yoast “sporche”).
+  return Boolean(p && !/\s/.test(p) && !p.includes("⸻"));
+}
+
 /** Normalize any value into `string | undefined` suitable for Astro params. */
 export function normalizePath(input: unknown): string | undefined {
   let v: any = input;
@@ -114,14 +119,42 @@ function normalizeEntry(kind: WpKind, raw: any): WpEntry {
   const slug = pickString(raw?.slug) ?? "";
   const link = pickString(raw?.link);
 
-  // Prefer canonical/link because they preserve the real URL structure
-  // (e.g. multilingual paths like /en/... or custom permalink settings).
+  // Canonical lo teniamo per SEO/head, ma NON deve rompere i route.
+  // In alcuni export Yoast canonical può essere diverso dal permalink o perfino “sporco”.
   const canonical =
     pickString(raw?.yoast_head_json?.canonical) ??
     pickString(raw?.yoastHeadJson?.canonical);
 
-  const candidatePath = canonical ?? link ?? raw?.path ?? raw?.uri ?? slug;
-  const path = toParams(candidatePath);
+  // Path: preferisci il permalink reale (link), poi path/uri, poi slug. Canonical solo come ultima spiaggia.
+  const candidates = [link, raw?.path, raw?.uri, slug, canonical];
+
+  let path = "";
+  for (const c of candidates) {
+    const p = toParams(c);
+
+    // Home: consenti path vuoto solo se lo slug è “home-like”.
+    if (!p) {
+      const s = toParams(slug);
+      const homeLike = !s || ["home", "homepage", "index"].includes(s);
+      const linkIsRoot = Boolean(link) && toParams(link) === "";
+      if (linkIsRoot && homeLike) {
+        path = "";
+        break;
+      }
+      continue;
+    }
+
+    if (isValidPath(p)) {
+      path = p;
+      break;
+    }
+  }
+
+  // Fallback: se non abbiamo trovato nulla ma lo slug è valido, usalo.
+  if (!path) {
+    const s = toParams(slug);
+    if (isValidPath(s)) path = s;
+  }
 
   const title = pickString(raw?.title?.rendered) ?? pickString(raw?.title);
   const html = pickString(raw?.content?.rendered) ?? pickString(raw?.html);

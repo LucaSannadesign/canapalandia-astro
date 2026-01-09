@@ -1,0 +1,13 @@
+# --- Redirect strutturali (WordPress legacy) ---
+/categoria/*   /blog/   301
+/tag/*         /blog/   301
+/autore/*      /blog/   301
+
+# --- Ribaltatore (se ora non esiste) ---
+/ribaltatore   /   302
+/ribaltatore/* /   302
+
+# --- Fallback per vecchie pagine WP comuni (solo se non le hai in Astro) ---
+/wp-admin/*    /   302
+/wp-login.php  /   302
+/xmlrpc.php    /   410

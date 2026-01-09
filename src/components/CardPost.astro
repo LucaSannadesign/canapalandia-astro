@@ -1,0 +1,27 @@
+---
+const { href, img, date, title, excerpt } = Astro.props;
+---
+
+<article class="card post-card">
+    <a class="cardLink" href={href}>
+        <div class="thumb">
+            {
+                img ? (
+                    <img
+                        src={img}
+                        alt={title || ""}
+                        loading="lazy"
+                        decoding="async"
+                    />
+                ) : null
+            }
+        </div>
+
+        <div class="cardBody">
+            <p class="cardMeta">{date}</p>
+            <h3 class="cardTitle" set:html={title} />
+            <p class="cardExcerpt">{excerpt}</p>
+            <span class="cardCta">Apri →</span>
+        </div>
+    </a>
+</article>

@@ -29,3 +29,4 @@ pnpm-debug.log*
 
 # WP mirrored uploads (repo troppo grande)
 public/wp-content/uploads/
+.vercel

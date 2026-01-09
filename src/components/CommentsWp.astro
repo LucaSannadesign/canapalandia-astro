@@ -1,0 +1,105 @@
+---
+const { postId } = Astro.props;
+
+const WP_API_BASE = import.meta.env.PUBLIC_WP_API_BASE || "https://canapalandia.com/wp-json/wp/v2";
+const endpoint = `${WP_API_BASE.replace(/\/$/, "")}/comments?post=${postId}&per_page=50&order=asc`;
+
+type WPComment = {
+  id: number;
+  author_name: string;
+  date: string;
+  content: { rendered: string };
+  status?: string;
+};
+
+let comments: WPComment[] = [];
+try {
+  const res = await fetch(endpoint, { headers: { Accept: "application/json" } });
+  if (res.ok) comments = (await res.json()) as WPComment[];
+} catch {}
+---
+
+<section class="comments card">
+  <h2 class="comments__title">Commenti</h2>
+
+  {comments.length ? (
+    <ul class="comments__list">
+      {comments.map((c) => (
+        <li class="comments__item">
+          <div class="comments__meta">
+            <strong>{c.author_name}</strong>
+            <span>· {new Date(c.date).toLocaleDateString("it-IT")}</span>
+          </div>
+          <div class="comments__body" set:html={c.content.rendered}></div>
+        </li>
+      ))}
+    </ul>
+  ) : (
+    <p class="comments__empty">Nessun commento ancora.</p>
+  )}
+
+  <hr class="comments__hr" />
+
+  <h3 class="comments__subtitle">Lascia un commento</h3>
+
+  <form class="comments__form" method="post" action="/api/commenti" data-comments-form>
+    <input type="hidden" name="postId" value={postId} />
+
+    {/* honeypot */}
+    <div class="hp">
+      <label>Website</label>
+      <input name="website" autocomplete="off" tabindex="-1" />
+    </div>
+
+    <label class="field">
+      <span>Nome</span>
+      <input name="name" required />
+    </label>
+
+    <label class="field">
+      <span>Email</span>
+      <input name="email" type="email" required />
+    </label>
+
+    <label class="field">
+      <span>Commento</span>
+      <textarea name="content" rows="5" required></textarea>
+    </label>
+
+    <button class="btn primary" type="submit">Invia</button>
+
+    <p class="comments__note" data-comments-note></p>
+  </form>
+</section>
+
+<script>
+  const form = document.querySelector("[data-comments-form]");
+  const note = document.querySelector("[data-comments-note]");
+
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    note.textContent = "Invio in corso…";
+
+    const res = await fetch(form.action, { method: "POST", body: new FormData(form) });
+    const data = await res.json().catch(() => ({}));
+
+    if (res.ok && data.ok) {
+      note.textContent = data.message || "Inviato.";
+      form.reset();
+    } else {
+      note.textContent = data.error || "Errore durante l’invio.";
+    }
+  });
+</script>
+
+<style>
+  .comments.card{ padding: 18px; margin-top: 26px; }
+  .comments__title{ margin: 0 0 12px; }
+  .comments__list{ list-style:none; padding:0; margin:0; display:grid; gap:14px; }
+  .comments__item{ border:1px solid var(--border); border-radius: 14px; padding:12px 14px; background: var(--panel); }
+  .comments__meta{ display:flex; gap:8px; align-items:baseline; color: var(--muted); font-size:.92rem; }
+  .comments__meta strong{ color: var(--text); }
+  .comments__body :global(p){ margin: 8px 0 0; }
+  .comments__hr{ border:0; border-top:1px solid var(--border); margin:18px 0; }
+  .comments__note{ margin: 10px 0 0; color: var(--muted); }
+</style>

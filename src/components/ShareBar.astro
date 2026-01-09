@@ -1,0 +1,53 @@
+---
+const { url, title } = Astro.props;
+
+const u = encodeURIComponent(url);
+const t = encodeURIComponent(title ?? "");
+
+const links = [
+  { label: "Facebook", href: `https://www.facebook.com/sharer/sharer.php?u=${u}` },
+  { label: "X", href: `https://twitter.com/intent/tweet?url=${u}&text=${t}` },
+  { label: "LinkedIn", href: `https://www.linkedin.com/sharing/share-offsite/?url=${u}` },
+  { label: "Telegram", href: `https://t.me/share/url?url=${u}&text=${t}` },
+  { label: "WhatsApp", href: `https://wa.me/?text=${t}%20${u}` },
+];
+---
+
+<div class="sharebar">
+  <button class="sharebar__btn" type="button" data-share>
+    Condividi
+  </button>
+
+  <div class="sharebar__links" aria-label="Condividi sui social">
+    {links.map((l) => (
+      <a class="sharebar__link" href={l.href} target="_blank" rel="noopener noreferrer">
+        {l.label}
+      </a>
+    ))}
+  </div>
+</div>
+
+<script>
+  const btn = document.querySelector("[data-share]");
+  btn?.addEventListener("click", async () => {
+    const url = new URL(window.location.href).toString();
+    const title = document.title;
+    if (navigator.share) {
+      try { await navigator.share({ title, url }); } catch {}
+    } else {
+      // fallback: mostra link già presenti (o puoi fare focus)
+      btn.nextElementSibling?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  });
+</script>
+
+<style>
+  .sharebar{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin: 18px 0; }
+  .sharebar__btn, .sharebar__link{
+    display:inline-flex; align-items:center; justify-content:center;
+    padding:8px 12px; border-radius:999px;
+    border:1px solid var(--border); background: rgba(255,255,255,.06);
+    text-decoration:none;
+  }
+  .sharebar__links{ display:flex; gap:10px; flex-wrap:wrap; }
+</style>

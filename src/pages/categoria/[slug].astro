@@ -1,67 +1,107 @@
 ---
-import Layout from "../../layouts/MigratedLayout.astro";
-import postsJson from "../../../data/wp/out/posts.json";
-import categoriesJson from "../../../data/wp/out/categories.json";
-import { toParams } from "../../lib/wp";
-
 export const prerender = false;
 
-const slug = Astro.params.slug || "";
-const posts = Array.isArray(postsJson) ? postsJson : [];
-const cats = Array.isArray(categoriesJson) ? categoriesJson : [];
+import SiteLayout from "../../layouts/SiteLayout.astro";
 
-const stripHtml = (s) => String(s || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
-const postTitle = (p) => p?.title?.rendered || p?.title || "";
-const excerpt = (p) => stripHtml(p?.excerpt?.rendered || p?.excerpt || "").slice(0, 180);
-const sortDesc = (a, b) => (Date.parse(b?.date || b?.modified || "") || 0) - (Date.parse(a?.date || a?.modified || "") || 0);
-const og = (p) => p?.yoast_head_json?.og_image?.[0]?.url || p?.yoast_head_json?.og_image?.[0]?.src || "";
-const href = (p) => {
-  const url = p?.yoast_head_json?.canonical || p?.link || p?.slug || "";
-  const path = toParams(url);
-  return path ? `/${path}/` : "#";
+const WP_API_BASE =
+  import.meta.env.PUBLIC_WP_API_BASE ||
+  "https://canapalandia.com/wp-json/wp/v2";
+
+const slug = String(Astro.params.slug ?? "").trim();
+
+function stripHtml(html = "") {
+  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function getFeatured(item) {
+  const fm = item?._embedded?.["wp:featuredmedia"]?.[0];
+  const src =
+    fm?.media_details?.sizes?.large?.source_url ||
+    fm?.media_details?.sizes?.medium_large?.source_url ||
+    fm?.source_url;
+
+  const alt = fm?.alt_text || stripHtml(item?.title?.rendered || "") || "Immagine";
+  return src ? { src, alt } : null;
+}
+
+// 1) recupero categoria per slug
+let category = null;
+let posts = [];
+
+if (slug) {
+  const catRes = await fetch(`${WP_API_BASE}/categories?slug=${encodeURIComponent(slug)}`, {
+    headers: { Accept: "application/json" },
+  });
+
+  if (catRes.ok) {
+    const cats = await catRes.json();
+    category = Array.isArray(cats) && cats.length ? cats[0] : null;
+  }
+
+  // 2) recupero post della categoria
+  if (category?.id) {
+    const postsRes = await fetch(
+      `${WP_API_BASE}/posts?categories=${category.id}&per_page=24&_embed=1`,
+      { headers: { Accept: "application/json" } }
+    );
+
+    if (postsRes.ok) {
+      posts = await postsRes.json();
+    }
+  }
+}
+
+const metadata = {
+  title: category ? `Categoria: ${stripHtml(category.name)}` : "Categoria",
+  description: category ? stripHtml(category.description || "") : "",
+  canonical: `/categoria/${slug}/`,
+  robots: { index: true, follow: true },
 };
-const fmt = (iso) => (iso ? new Date(iso).toLocaleDateString("it-IT", { year:"numeric", month:"long", day:"2-digit" }) : "");
-
-const cat = cats.find((c) => String(c?.slug || "") === slug);
-const catId = cat?.id;
-
-const filtered = catId
-  ? posts.filter((p) => Array.isArray(p?.categories) && p.categories.includes(catId)).slice().sort(sortDesc)
-  : [];
-
-const title = cat ? `Categoria: ${cat.name} — Canapalandia` : "Categoria — Canapalandia";
-const canonical = `https://canapalandia.com/categoria/${slug}/`;
 ---
-<Layout title={title} canonical={canonical}>
-  <section class="hero">
-    <p class="kicker">Categoria</p>
-    <h1>{cat?.name || "Categoria non trovata"}</h1>
-    <p>{cat?.description ? stripHtml(cat.description) : "Contenuti filtrati per categoria."}</p>
-    <div class="meta">
-      <a class="btn btn-ghost" href="/blog/">← Blog</a>
-      <a class="btn" href="/">Home</a>
-    </div>
-  </section>
 
-  {cat ? (
-    <section>
-      <div class="grid">
-        {filtered.slice(0, 48).map((p) => (
-          <article class="card post-card">
-            <a class="cardLink" href={href(p)}>
-              <div class="thumb">{og(p) ? <img src={og(p)} alt={stripHtml(postTitle(p))} loading="lazy" /> : null}</div>
-              <div class="cardBody">
-                <p class="cardMeta">{fmt(p?.date || p?.modified)}</p>
-                <h3 class="cardTitle" set:html={postTitle(p)} />
-                <p class="cardExcerpt">{excerpt(p)}</p>
-                <span class="cardCta">Apri →</span>
-              </div>
-            </a>
-          </article>
-        ))}
+<SiteLayout metadata={metadata}>
+  <main class="container page-shell">
+    {!category ? (
+      <div class="card">
+        <h1>Categoria non trovata</h1>
+        <p>Slug richiesto: <code>{slug}</code></p>
       </div>
-    </section>
-  ) : (
-    <section class="articleWrap"><div class="articleInner"><p>Slug: <strong>{slug}</strong></p></div></section>
-  )}
-</Layout>
+    ) : (
+      <>
+        <div class="section-head">
+          <h1>Categoria: {stripHtml(category.name)}</h1>
+          {category.description ? <p class="section-lead">{stripHtml(category.description)}</p> : null}
+        </div>
+
+        {posts?.length ? (
+          <div class="grid">
+            {posts.map((p) => {
+              const img = getFeatured(p);
+              return (
+                <article class="card post-card">
+                  <a class="cardLink" href={`/${p.slug}/`}>
+                    <div class="thumb">
+                      {img ? <img src={img.src} alt={img.alt} loading="lazy" decoding="async" /> : null}
+                    </div>
+                    <div class="cardBody">
+                      <p class="cardMeta">{new Date(p.date).toLocaleDateString("it-IT")}</p>
+                      <h3 class="cardTitle" set:html={p.title.rendered}></h3>
+                      {p.excerpt?.rendered ? (
+                        <p class="cardExcerpt">{stripHtml(p.excerpt.rendered)}</p>
+                      ) : null}
+                      <div class="cardCta">Leggi →</div>
+                    </div>
+                  </a>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <div class="card">
+            <p>Nessun post trovato in questa categoria.</p>
+          </div>
+        )}
+      </>
+    )}
+  </main>
+</SiteLayout>

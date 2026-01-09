@@ -1,116 +1,391 @@
 ---
-import Layout from "../layouts/MigratedLayout.astro";
-import { loadWp, WP_HOST } from "../lib/wp";
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import SiteLayout from "../layouts/SiteLayout.astro";
+import Adsense from "../components/widgets/Adsense.astro";
+import { loadWp, type WpEntry } from "../lib/wp";
+import {
+  stripHtml,
+  ensureNoTrailingSlash,
+  ensureLeadingSlash,
+  normalizeSlugLikePath,
+} from "../lib/utils";
+import postsJson from "../../data/wp/out/posts.json";
+import pagesJson from "../../data/wp/out/pages.json";
+
+/* ========= Config CTA (cambia qui se il link è diverso) ========= */
+const SUPPORT_URL = "/sostieni"; // <-- se nel tuo sito è diverso, modifica SOLO questa riga
+const PARTNER_URL = "/partner"; // opzionale: se hai pagina partner
 
 /* ---------------------------
    Utils
 --------------------------- */
 function normalizePathParam(input: unknown): string {
-  if (input == null) return "";
-  const s = Array.isArray(input) ? input.join("/") : String(input);
-  return s.replace(/^\/+/, "").replace(/\/+$/, "");
+  if (Array.isArray(input)) return input.filter(Boolean).join("/").trim();
+  if (typeof input === "string") return input.trim();
+  return "";
 }
 
 /* ---------------------------
-   Route / Data
+   Types
 --------------------------- */
-const slug = normalizePathParam(Astro.params.path);
-const uri = `/${slug ? slug + "/" : ""}`;
 
+type WPFeaturedMedia = {
+  source_url?: string;
+  alt_text?: string;
+  media_details?: {
+    sizes?: Record<
+      string,
+      { source_url?: string; width?: number; height?: number }
+    >;
+  };
+};
+
+type WPItemRaw = {
+  id: number;
+  slug: string;
+  link?: string;
+  title: { rendered: string };
+  excerpt?: { rendered: string };
+  content: { rendered: string };
+  categories?: number[];
+  _embedded?: { "wp:featuredmedia"?: WPFeaturedMedia[] };
+  yoast_head_json?: {
+    og_image?: Array<{ url?: string; src?: string; width?: number; height?: number }>;
+  };
+};
+
+type HeroImage = {
+  desktop: { src: string; alt: string };
+  mobile?: { src: string; alt: string };
+};
+
+type CardPost = {
+  href: string;
+  title: string;
+  excerpt: string;
+  dateLabel?: string;
+  img?: { src: string; alt: string };
+};
+
+/* ---------------------------
+   Resolve requested path
+--------------------------- */
+const raw = normalizePathParam(Astro.params.path);
+const requested = normalizeSlugLikePath(raw);
+const requestedPath = requested || "";
+
+/* ---------------------------
+   Load and find entry from JSON
+--------------------------- */
 const { entries } = await loadWp();
-const page = entries.find((e) => e?.path === slug);
 
-if (!page) Astro.response.status = 404;
+// Normalizza il path richiesto per il confronto (senza leading/trailing slash)
+// normalizeSlugLikePath già rimuove leading/trailing slash, quindi requestedPath è già normalizzato
+const targetPathForMatch = requestedPath || "";
 
-/* ---------------------------
-   Meta
---------------------------- */
-const title = page?.title || "Canapalandia";
-const yoastHeadHtml = page?.yoastHead || null;
-const canonical = `https://canapalandia.com${uri}`;
-const contentHtml = page?.html || "";
-
-/* ---------------------------
-   Featured image: locale se esiste, altrimenti hotlink
---------------------------- */
-const PUBLIC_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../public");
-
-function resolveMediaSrc(src?: string): string {
-  if (!src) return "";
-  let s = String(src).trim();
-  if (!s) return "";
-
-  if (s.startsWith("//")) s = `https:${s}`;
-
-  // relativo
-  if (s.startsWith("/")) {
-    const local = path.join(PUBLIC_DIR, s.replace(/^\//, ""));
-    return fs.existsSync(local) ? s : `${WP_HOST}${s}`;
+// Cerca l'entry confrontando il pathname derivato dal campo `link`
+function findEntryByPath(pathToFind: string): WpEntry | null {
+  // Gestione home: se path vuoto o "/", cerca entry con path vuoto
+  if (!pathToFind || pathToFind === "/") {
+    const homeEntry = entries.find(
+      (e) => !e.path || e.path === "" || e.path === "home"
+    );
+    if (homeEntry) return homeEntry;
   }
 
-  // assoluto
-  try {
-    const u = new URL(s);
-    const host = u.hostname.replace(/^www\./i, "");
-    const pathname = u.pathname || "/";
+  // Cerca per path normalizzato (senza leading/trailing slash)
+  const found = entries.find((e) => {
+    const entryPath = e.path || "";
+    return entryPath === pathToFind;
+  });
 
-    // nostro dominio: prova mirror locale
-    if (host === "canapalandia.com") {
-      const local = path.join(PUBLIC_DIR, pathname.replace(/^\//, ""));
-      return fs.existsSync(local) ? pathname : s;
+  if (found) return found;
+
+  // Fallback: cerca anche confrontando il link completo
+  // Estrai pathname dal link e normalizzalo
+  for (const entry of entries) {
+    if (!entry.link) continue;
+    try {
+      const entryUrl = new URL(entry.link);
+      const entryPathname = entryUrl.pathname;
+      // Normalizza: rimuovi leading/trailing slash
+      const normalizedEntryPath = entryPathname.replace(/^\/+|\/+$/g, "");
+      const normalizedRequested = pathToFind.replace(/^\/+|\/+$/g, "");
+      
+      if (normalizedEntryPath === normalizedRequested) {
+        return entry;
+      }
+    } catch {
+      // Ignora URL non validi
+    }
+  }
+
+  return null;
+}
+
+const foundEntry = findEntryByPath(targetPathForMatch);
+
+// Se non trovato, restituisci 404
+if (!foundEntry) {
+  return Astro.redirect("/404", 302);
+}
+
+/* ---------------------------
+   Get raw WP data for featured image and related posts
+--------------------------- */
+const allItems: WPItemRaw[] = [
+  ...(Array.isArray(postsJson) ? postsJson : []),
+  ...(Array.isArray(pagesJson) ? pagesJson : []),
+];
+
+const rawItem = allItems.find((item) => item.id === foundEntry.id);
+
+/* ---------------------------
+   SEO metadata
+--------------------------- */
+const title = foundEntry.title || stripHtml(rawItem?.title?.rendered || "") || "Contenuto";
+const description =
+  foundEntry.excerpt || stripHtml(rawItem?.excerpt?.rendered || "") || "";
+
+// Usa il path normalizzato per il canonical, ma aggiungi trailing slash per output
+const canonicalPath = foundEntry.path
+  ? `/${foundEntry.path}/`
+  : "/";
+
+const metadata = {
+  title,
+  description,
+  canonical: canonicalPath,
+  robots: { index: true, follow: true },
+};
+
+/* ---------------------------
+   Featured image resolver
+--------------------------- */
+function pickWpSizeUrl(
+  fm: WPFeaturedMedia | undefined,
+  preferred: string[],
+): string | null {
+  const sizes = fm?.media_details?.sizes;
+  if (!sizes) return fm?.source_url ?? null;
+
+  for (const key of preferred) {
+    const u = sizes?.[key]?.source_url;
+    if (u) return u;
+  }
+
+  const all = Object.values(sizes)
+    .filter((s) => s?.source_url)
+    .sort((a, b) => (b.width ?? 0) - (a.width ?? 0));
+
+  return all?.[0]?.source_url ?? fm?.source_url ?? null;
+}
+
+function getWpHeroImage(item: WPItemRaw | null): HeroImage | null {
+  if (!item) return null;
+
+  // Prova prima da _embedded
+  const fm = item._embedded?.["wp:featuredmedia"]?.[0];
+  if (fm) {
+    const alt =
+      fm?.alt_text ||
+      stripHtml(item.title?.rendered || "") ||
+      "Immagine in evidenza";
+    const desktopSrc = pickWpSizeUrl(fm, [
+      "2048x2048",
+      "1536x1536",
+      "large",
+      "full",
+    ]);
+    if (!desktopSrc) return null;
+    const mobileSrc = pickWpSizeUrl(fm, ["medium_large", "medium", "large"]);
+
+    return {
+      desktop: { src: desktopSrc, alt },
+      mobile: mobileSrc ? { src: mobileSrc, alt } : undefined,
+    };
+  }
+
+  // Fallback a yoast og_image
+  const ogImage = item.yoast_head_json?.og_image?.[0];
+  if (ogImage) {
+    const src = ogImage.url || ogImage.src;
+    if (src) {
+      const alt = stripHtml(item.title?.rendered || "") || "Immagine in evidenza";
+      return {
+        desktop: { src, alt },
+      };
+    }
+  }
+
+  // Usa featuredImage da WpEntry se disponibile
+  if (foundEntry.featuredImage) {
+    return {
+      desktop: foundEntry.featuredImage,
+    };
+  }
+
+  return null;
+}
+
+const hero = getWpHeroImage(rawItem);
+
+/* ---------------------------
+   Related posts (max 6) by category
+--------------------------- */
+function toCardFromWp(item: WPItemRaw, entry: WpEntry): CardPost {
+  const fm = item._embedded?.["wp:featuredmedia"]?.[0];
+  const imgSrc = fm
+    ? pickWpSizeUrl(fm, ["medium_large", "large", "full"])
+    : null;
+
+  // Usa il path dall'entry normalizzato, aggiungi trailing slash per href
+  const href = entry.path ? `/${entry.path}/` : `/${entry.slug}/`;
+
+  return {
+    href,
+    title: stripHtml(item.title?.rendered || ""),
+    excerpt: stripHtml(item.excerpt?.rendered || ""),
+    img: imgSrc
+      ? {
+          src: imgSrc,
+          alt: fm?.alt_text || stripHtml(item.title?.rendered || ""),
+        }
+      : undefined,
+  };
+}
+
+function findRelatedPosts(currentEntry: WpEntry, currentRaw: WPItemRaw | null): CardPost[] {
+  // Solo per posts, non per pages
+  if (currentEntry.kind !== "post" || !currentRaw?.categories?.length) {
+    return [];
+  }
+
+  const currentCategories = currentRaw.categories;
+  const currentId = currentEntry.id;
+
+  // Cerca altri posts con almeno una categoria in comune
+  const related: CardPost[] = [];
+  const posts = Array.isArray(postsJson) ? postsJson : [];
+
+  for (const post of posts) {
+    // Salta il post corrente
+    if (post.id === currentId) continue;
+
+    // Controlla se ha categorie in comune
+    const postCategories = post.categories || [];
+    const hasCommonCategory = currentCategories.some((catId) =>
+      postCategories.includes(catId)
+    );
+
+    if (hasCommonCategory) {
+      // Trova l'entry corrispondente
+      const postEntry = entries.find((e) => e.id === post.id && e.kind === "post");
+      if (postEntry) {
+        related.push(toCardFromWp(post, postEntry));
+      }
     }
 
-    return s;
-  } catch {
-    return s;
+    // Limita a 6
+    if (related.length >= 6) break;
   }
+
+  return related;
 }
 
-const heroImg =
-  page?.featuredImage?.src ? resolveMediaSrc(page.featuredImage.src) : "";
-const heroAlt =
-  page?.featuredImage?.alt || page?.title || "Immagine in evidenza";
+const relatedPosts: CardPost[] = findRelatedPosts(foundEntry, rawItem);
+
+/* ---------------------------
+   Render content
+--------------------------- */
+const contentHtml = foundEntry.html || rawItem?.content?.rendered || "";
+const titleHtml = foundEntry.title || rawItem?.title?.rendered || "";
 ---
 
-<Layout title={title} canonical={canonical} yoastHeadHtml={yoastHeadHtml}>
-  {page ? (
-    <>
-      {heroImg ? (
-        <header class="post-hero">
-          {/* full-bleed banner */}
-          <div class="post-hero__media">
+<SiteLayout metadata={metadata}>
+  <main class="container page-shell">
+    <article class="wp-page">
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <ol class="breadcrumbs__list">
+          <li class="breadcrumbs__item">
+            <a class="breadcrumbs__link" href="/">
+              Home
+            </a>
+          </li>
+          <li class="breadcrumbs__item">
+            <span class="breadcrumbs__current">{title}</span>
+          </li>
+        </ol>
+      </nav>
+
+      {hero ? (
+        <figure class="post-hero not-prose">
+          <picture>
+            {hero.mobile ? (
+              <source media="(max-width: 768px)" srcset={hero.mobile.src} />
+            ) : null}
             <img
-              class="post-hero__img"
-              src={heroImg}
-              alt={heroAlt}
+              src={hero.desktop.src}
+              alt={hero.desktop.alt}
               loading="eager"
               decoding="async"
             />
-          </div>
+          </picture>
+        </figure>
+      ) : null}
 
-          {/* titolo nel container */}
-          <div class="container">
-            <div class="post-hero__content">
-              <h1 class="post-hero__title" set:html={page.title} />
-            </div>
+      <h1 set:html={titleHtml} />
+      <div set:html={contentHtml} />
+
+      <div style="margin: 2rem 0;">
+        <Adsense slotId="POST_BOTTOM_ID" label="Pubblicità" />
+      </div>
+
+      {/* CTA tra post e correlati */}
+      <section class="post-cta" aria-label="Supporta Canapalandia">
+        <h2 class="post-cta__title">Supporta Canapalandia</h2>
+        <p class="post-cta__text">
+          Se questo contenuto ti è stato utile, puoi sostenerci: ci aiuta a
+          mantenere il progetto indipendente e aggiornato.
+        </p>
+        <div class="post-cta__actions">
+          <a class="btn primary" href={SUPPORT_URL}>
+            Sostieni il progetto
+          </a>
+          <a class="btn ghost" href={PARTNER_URL}>
+            Scopri i partner
+          </a>
+        </div>
+      </section>
+
+      {relatedPosts?.length ? (
+        <section class="related" aria-label="Post correlati">
+          <h2 class="related__title">Post correlati</h2>
+          <div class="grid">
+            {relatedPosts.map((p) => (
+              <article class="post-card">
+                <a class="cardLink" href={p.href}>
+                  <div class="thumb">
+                    {p.img ? (
+                      <img
+                        src={p.img.src}
+                        alt={p.img.alt}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : null}
+                  </div>
+                  <div class="cardBody">
+                    <p class="cardMeta">Stessa categoria</p>
+                    <h3 class="cardTitle">{p.title}</h3>
+                    <p class="cardExcerpt">{p.excerpt}</p>
+                    <span class="cardCta">Leggi →</span>
+                  </div>
+                </a>
+              </article>
+            ))}
           </div>
-        </header>
-      ) : (
-        <section class="wp-page">
-          <h1 set:html={page.title} />
         </section>
-      )}
-
-      <article class="wp-page" set:html={contentHtml} />
-    </>
-  ) : (
-    <section class="wp-page">
-      <h1>Pagina non trovata</h1>
-      <p>La risorsa richiesta non è disponibile.</p>
-      <p><a href="/">Torna alla home</a></p>
-    </section>
-  )}
-</Layout>
+      ) : null}
+    </article>
+  </main>
+</SiteLayout>

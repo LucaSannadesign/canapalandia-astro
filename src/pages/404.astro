@@ -1,0 +1,24 @@
+---
+import SiteLayout from "../layouts/SiteLayout.astro";
+
+const metadata = {
+  title: "Pagina non trovata – Canapalandia",
+  description: "La pagina richiesta non esiste o è stata spostata.",
+  robots: { index: false, follow: true },
+  canonical: "/404",
+};
+---
+
+<SiteLayout metadata={metadata}>
+  <main class="container page-shell">
+    <section class="card">
+      <h1>Pagina non trovata</h1>
+      <p>Il contenuto potrebbe essere stato spostato o rimosso.</p>
+      <div class="form-actions">
+        <a class="btn primary" href="/">Torna alla Home</a>
+        <a class="btn" href="/blog/">Vai al Blog</a>
+        <a class="btn ghost" href="/cerca/">Cerca</a>
+      </div>
+    </section>
+  </main>
+</SiteLayout>

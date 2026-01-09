@@ -1,0 +1,60 @@
+---
+interface Props {
+    slotId?: string;
+    format?: "auto" | "fluid" | "rectangle" | "vertical" | "horizontal";
+    responsive?: boolean;
+    style?: string;
+    label?: string; // Etichetta opzionale per debug/riconoscimento
+}
+
+const {
+    slotId = "1234567890", // Sostituire con il vero Slot ID se si usano unità fisse
+    format = "auto",
+    responsive = true,
+    style = "display:block",
+    label,
+} = Astro.props;
+
+// Sostituisci questo con il tuo Publisher ID (lo puoi mettere anche in una costante globale o env)
+const PUBLISHER_ID = "ca-pub-XXXXXXXXXXXXXXXX";
+---
+
+<div class="adsense-container" style="margin: 2rem 0; text-align: center;">
+    {
+        label && (
+            <p style="font-size: 0.75rem; color: #888; text-transform: uppercase;">
+                {label}
+            </p>
+        )
+    }
+
+    <ins
+        class="adsbygoogle"
+        style={style}
+        data-ad-client={PUBLISHER_ID}
+        data-ad-slot={slotId}
+        data-ad-format={format}
+        data-full-width-responsive={responsive ? "true" : "false"}
+    >
+    </ins>
+
+    <script is:inline>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+    </script>
+</div>
+
+<style>
+    .adsense-container {
+        background: rgba(
+            0,
+            0,
+            0,
+            0.02
+        ); /* Sfondo leggero per visualizzare l'area in dev */
+        min-height: 100px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+</style>
