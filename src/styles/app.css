@@ -397,16 +397,37 @@ html[data-theme="light"] .site-footer {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Su mobile: regole anti-overflow per logo footer */
+@media (max-width: 767px) {
+  .footer-brand,
+  .footer-logo,
+  .footer-logo__img {
+    max-width: 100%;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    transform: none !important;
+  }
+
+  .footer-logo {
+    box-sizing: border-box;
+  }
 }
 
 .footer-logo {
   display: inline-block;
   width: fit-content;
+  max-width: 100%;
 }
 
 .footer-logo__img {
   height: 32px;
   width: auto;
+  max-width: 100%;
+  display: block;
 }
 
 .footer-tagline {
