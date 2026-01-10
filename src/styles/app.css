@@ -90,8 +90,17 @@ a {
 .container {
   max-width: var(--container);
   margin: 0 auto;
-  padding-left: max(var(--pad), env(safe-area-inset-left));
-  padding-right: max(var(--pad), env(safe-area-inset-right));
+  /* Mobile: gutter 10px */
+  padding-left: max(10px, env(safe-area-inset-left));
+  padding-right: max(10px, env(safe-area-inset-right));
+}
+
+/* Tablet e desktop: gutter più ampio */
+@media (min-width: 768px) {
+  .container {
+    padding-left: max(24px, env(safe-area-inset-left));
+    padding-right: max(24px, env(safe-area-inset-right));
+  }
 }
 
 /* Accessibilità */
