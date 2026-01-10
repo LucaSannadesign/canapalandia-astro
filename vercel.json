@@ -39,6 +39,16 @@
       "source": "/ribaltatore/:path*",
       "destination": "/blog/",
       "permanent": true
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/sitemap-0.xml",
+      "permanent": true
+    },
+    {
+      "source": "/sitemap_index.xml",
+      "destination": "/sitemap-0.xml",
+      "permanent": true
     }
   ]
 }

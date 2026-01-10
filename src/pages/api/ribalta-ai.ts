@@ -92,6 +92,43 @@ async function callOpenAI(frase: string) {
   return { ok: true as const, ribaltata };
 }
 
+async function callOllama(frase: string) {
+  const base = process.env.OLLAMA_URL || process.env.OLLAMA_HOST && `http://${process.env.OLLAMA_HOST}:${process.env.OLLAMA_PORT || 11434}` || "http://localhost:11434";
+  const url = base.replace(/\/$/, "") + "/api/generate";
+  const model = process.env.OLLAMA_MODEL || "llama2";
+
+  try {
+    const r = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model, prompt: frase, options: { max_tokens: 512 } }),
+    });
+
+    if (!r.ok) {
+      const t = await r.text().catch(() => "");
+      return { ok: false as const, error: `Errore Ollama (${r.status}). ${t}`.slice(0, 380) };
+    }
+
+    const data: any = await r.json().catch(() => null);
+
+    const outText = (typeof data?.output_text === "string" && data.output_text) || (() => {
+      const parts: string[] = [];
+      for (const item of data?.output || []) {
+        for (const c of item?.content || []) {
+          if (c?.type === "output_text" && typeof c?.text === "string") parts.push(c.text);
+        }
+      }
+      return parts.join("\n");
+    })();
+
+    const ribaltata = String(outText || "").trim();
+    if (!ribaltata) return { ok: false as const, error: "Risposta vuota da Ollama." };
+    return { ok: true as const, ribaltata };
+  } catch (err: any) {
+    return { ok: false as const, error: String(err?.message || err) };
+  }
+}
+
 export const POST: APIRoute = async ({ request }) => {
   const form = await request.formData();
 
@@ -124,7 +161,8 @@ export const POST: APIRoute = async ({ request }) => {
   }
   rate.set(key, now);
 
-  const ai = await callOpenAI(frase);
+  const useOllama = (process.env.USE_OLLAMA === "1") || !!process.env.OLLAMA_URL || !!process.env.OLLAMA_HOST;
+  const ai = useOllama ? await callOllama(frase) : await callOpenAI(frase);
   if (!ai.ok) {
     return new Response(JSON.stringify({ ribaltata: `❌ ${ai.error}` }), {
       status: 500,

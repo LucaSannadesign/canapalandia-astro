@@ -30,9 +30,11 @@ const AD_CLIENT = "ca-pub-6462363788506395";
 
 <style>
     .adslot-container {
+        width: 100%;
+        max-width: 970px;
+        min-height: 90px;
         margin: 2rem 0;
         text-align: center;
-        min-height: 100px;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -49,7 +51,30 @@ const AD_CLIENT = "ca-pub-6462363788506395";
 
     .adsbygoogle {
         display: block;
+        min-height: 90px;
         width: 100%;
+    }
+
+    /* Responsive: aumenta min-height su mobile */
+    @media (max-width: 767px) {
+        .adslot-container {
+            min-height: 100px;
+        }
+
+        .adsbygoogle {
+            min-height: 100px;
+        }
+    }
+
+    /* Mobile molto piccolo: ancora più spazio */
+    @media (max-width: 480px) {
+        .adslot-container {
+            min-height: 120px;
+        }
+
+        .adsbygoogle {
+            min-height: 120px;
+        }
     }
 </style>
 

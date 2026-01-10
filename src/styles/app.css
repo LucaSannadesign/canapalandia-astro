@@ -16,6 +16,11 @@
   --panel: var(--card-solid);
   --panel-2: #072015;
 
+  --card-bg: #0f1f16;
+  --card-text: #e8f5ec;
+  --card-muted: #a8c1b2;
+  --card-border: rgba(125, 255, 180, 0.2);
+
   --border: rgba(125, 255, 180, 0.14);
   --shadow: 0 14px 40px rgba(0, 0, 0, 0.45);
   --shadow-soft: 0 10px 24px rgba(0, 0, 0, 0.35);
@@ -45,6 +50,11 @@ html[data-theme="light"] {
   --card-solid: #f1f5f9;
   --panel: #ffffff;
   --panel-2: #f8fafc;
+
+  --card-bg: #f9fafb;
+  --card-text: #0f172a;
+  --card-muted: #475569;
+  --card-border: rgba(15, 23, 42, 0.18);
 
   --border: rgba(15, 23, 42, 0.14);
   --shadow: 0 14px 34px rgba(2, 6, 23, 0.12);
@@ -118,15 +128,46 @@ a {
   position: sticky;
   top: 0;
   z-index: 50;
-  border-bottom: 1px solid rgba(255, 255, 255, .10);
-  background: rgba(10, 12, 14, 0.22);
-  backdrop-filter: blur(10px);
+  border-bottom: 1px solid transparent;
+  background: transparent;
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
   overflow: visible;
+  box-shadow: none;
+  transition: background 240ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              border-bottom-color 240ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              box-shadow 240ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Fallback per browser senza backdrop-filter */
+@supports not (backdrop-filter: blur(10px)) {
+  .site-header.is-scrolled {
+    background: rgba(10, 12, 14, 0.92);
+  }
+  
+  html[data-theme="light"] .site-header.is-scrolled {
+    background: rgba(255, 255, 255, 0.92);
+  }
+}
+
+/* Stato scrolled: glass effect + shadow + border */
+.site-header.is-scrolled {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(10, 12, 14, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
 }
 
 html[data-theme="light"] .site-header {
-  border-bottom: 1px solid rgba(2, 6, 23, .10);
-  background: rgba(255, 255, 255, 0.75);
+  border-bottom: 1px solid transparent;
+  background: transparent;
+}
+
+html[data-theme="light"] .site-header.is-scrolled {
+  border-bottom: 1px solid rgba(2, 6, 23, 0.12);
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 4px 16px rgba(2, 6, 23, 0.12);
 }
 
 .header-inner {
@@ -134,9 +175,15 @@ html[data-theme="light"] .site-header {
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  padding: 14px 0;
+  padding: 20px 0;
   position: relative;
   overflow: visible;
+  transition: padding 240ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Shrink padding quando scrolled */
+.site-header.is-scrolled .header-inner {
+  padding: 14px 0;
 }
 
 .brand {
@@ -154,6 +201,8 @@ html[data-theme="light"] .site-header {
   display: flex;
   gap: 14px;
   flex-wrap: wrap;
+  overflow: visible;
+  white-space: normal;
 }
 
 .nav a {
@@ -162,6 +211,16 @@ html[data-theme="light"] .site-header {
   border-radius: 999px;
   font-weight: 500;
   transition: all 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: rgba(34, 197, 94, 0.2);
+}
+
+.nav a:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
 }
 
 .nav a:hover {
@@ -183,55 +242,7 @@ html[data-theme="light"] .nav a:hover {
   gap: 10px;
 }
 
-/* Menu toggle (hamburger) */
-.menu-toggle {
-  display: none;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  min-height: 44px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  background: rgba(255, 255, 255, 0.10);
-  color: inherit;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  padding: 0;
-  position: relative;
-  z-index: 51;
-}
-
-html[data-theme="light"] .menu-toggle {
-  border: 1px solid rgba(2, 6, 23, .12);
-  background: rgba(2, 6, 23, .04);
-}
-
-.menu-toggle:hover {
-  transform: translateY(-1px);
-  background: rgba(255, 255, 255, 0.14);
-}
-
-html[data-theme="light"] .menu-toggle:hover {
-  background: rgba(2, 6, 23, .06);
-}
-
-.menu-toggle:focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: 2px;
-}
-
-.menu-toggle__icon {
-  width: 24px;
-  height: 24px;
-  stroke: currentColor;
-  transition: transform 0.2s ease;
-}
-
-.menu-toggle[aria-expanded="true"] .menu-toggle__icon {
-  transform: rotate(90deg);
-}
+/* Menu toggle rimosso - non più usato */
 
 .search {
   padding: 8px 12px;
@@ -559,10 +570,34 @@ html[data-theme="light"] .section.alt {
 }
 
 .cardBody {
-  padding: 16px 18px 18px;
+  padding: 12px 16px 14px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0;
+}
+
+/* Badge categoria: stile discreto pill/small-caps */
+.cardCategory {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  margin: 0 0 8px;
+  width: fit-content;
+  opacity: 0.85;
+  transition: all 0.2s ease;
+}
+
+.cardLink:hover .cardCategory {
+  border-color: var(--brand);
+  color: var(--brand);
+  opacity: 1;
 }
 
 .cardMeta {
@@ -572,28 +607,39 @@ html[data-theme="light"] .section.alt {
 }
 
 .cardTitle {
-  margin: 0;
-  line-height: 1.2;
-  font-size: 1.08rem;
-}
-
-.cardExcerpt {
-  margin: 0;
-  color: var(--muted);
+  margin: 0 0 8px;
+  line-height: 1.3;
+  font-size: 1.05rem;
+  font-weight: 600;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  min-height: 2.6em;
+}
+
+.cardExcerpt {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  opacity: 0.9;
 }
 
 .cardCta {
   margin-top: auto;
   font-weight: 700;
+  font-size: 0.92rem;
   color: var(--brand);
   display: inline-flex;
   align-items: center;
   gap: 4px;
   transition: transform 0.2s ease;
+  width: fit-content;
 }
 
 .cardLink:hover .cardCta {
@@ -604,6 +650,84 @@ html[data-theme="light"] .section.alt {
 
 .cardLink:hover .cardTitle {
   text-decoration: none;
+}
+
+/* Sezione post correlati */
+.related {
+  margin-top: 3rem;
+}
+
+.related__title {
+  margin: 0 0 20px;
+  font-size: clamp(1.5rem, 3vw, 1.9rem);
+  line-height: 1.2;
+}
+
+/* Card correlate: più compatte, gap ridotti */
+.related .post-card .thumb {
+  margin-bottom: 0;
+}
+
+.related .cardBody {
+  padding-top: 10px;
+  padding-bottom: 14px;
+  gap: 0;
+}
+
+.related .cardCategory {
+  margin-bottom: 6px;
+}
+
+.related .cardTitle {
+  margin-top: 0;
+  margin-bottom: 8px;
+  line-height: 1.3;
+  min-height: 2.6em;
+}
+
+.related .cardExcerpt {
+  margin-bottom: 12px;
+  line-height: 1.5;
+  font-size: 0.9rem;
+}
+
+.related .cardCta {
+  margin-top: 4px;
+}
+
+/* Dark mode: assicura contrasto per badge e excerpt */
+html[data-theme="dark"] .cardCategory {
+  color: var(--muted);
+  border-color: rgba(125, 255, 180, 0.25);
+  background: rgba(125, 255, 180, 0.05);
+}
+
+html[data-theme="dark"] .cardLink:hover .cardCategory {
+  border-color: var(--brand);
+  color: var(--brand);
+  background: rgba(34, 197, 94, 0.1);
+}
+
+html[data-theme="light"] .cardCategory {
+  color: var(--muted);
+  border-color: rgba(15, 23, 42, 0.18);
+  background: rgba(15, 23, 42, 0.03);
+}
+
+html[data-theme="light"] .cardLink:hover .cardCategory {
+  border-color: var(--brand);
+  color: var(--brand);
+  background: rgba(22, 163, 74, 0.08);
+}
+
+html[data-theme="dark"] .cardExcerpt {
+  color: var(--muted);
+  opacity: 0.9;
+}
+
+html[data-theme="light"] .cardExcerpt {
+  color: var(--muted);
+  opacity: 0.85;
 }
 
 /* ------------------------------------------------------------
@@ -827,90 +951,201 @@ html[data-theme="light"] .wp-page code {
   margin: 26px 0;
 }
 
-/* Menu mobile */
-.mobile-menu {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 45;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s ease;
-  overflow-y: auto;
+/* Donation card: fix contrasto per dark mode */
+/* Targeta div con stili inline specifici della card donazione */
+.donation-card,
+.wp-page div[style*="background-color:#f9f9f9"],
+.wp-page div[style*="background-color: #f9f9f9"],
+.wp-page div[style*="background-color:#F9F9F9"],
+.wp-page div[style*="background-color: #F9F9F9"] {
+  background-color: var(--card-bg) !important;
+  color: var(--card-text) !important;
+  border: 1px solid var(--card-border) !important;
+  padding: 20px !important;
+  border-radius: 8px !important;
+  margin: 20px 0 !important;
 }
 
-html[data-theme="light"] .mobile-menu {
-  background: rgba(0, 0, 0, 0.3);
+/* Testi nella card: rimuovi opacity e usa token colore */
+.donation-card,
+.donation-card *,
+.wp-page div[style*="background-color:#f9f9f9"],
+.wp-page div[style*="background-color: #f9f9f9"],
+.wp-page div[style*="background-color:#F9F9F9"],
+.wp-page div[style*="background-color: #F9F9F9"],
+.wp-page div[style*="background-color:#f9f9f9"] *,
+.wp-page div[style*="background-color: #f9f9f9"] *,
+.wp-page div[style*="background-color:#F9F9F9"] *,
+.wp-page div[style*="background-color: #F9F9F9"] * {
+  opacity: 1 !important;
 }
 
-.mobile-menu[aria-hidden="false"] {
-  opacity: 1;
-  pointer-events: auto;
+.donation-card p,
+.wp-page div[style*="background-color:#f9f9f9"] p,
+.wp-page div[style*="background-color: #f9f9f9"] p,
+.wp-page div[style*="background-color:#F9F9F9"] p,
+.wp-page div[style*="background-color: #F9F9F9"] p {
+  color: var(--card-text) !important;
+  opacity: 1 !important;
 }
 
-.mobile-menu__content {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 280px;
-  max-width: 85vw;
-  background: var(--panel);
-  border-left: 1px solid var(--border);
-  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
-  padding: 80px 24px 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  transform: translateX(100%);
-  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+.donation-card li,
+.wp-page div[style*="background-color:#f9f9f9"] li,
+.wp-page div[style*="background-color: #f9f9f9"] li,
+.wp-page div[style*="background-color:#F9F9F9"] li,
+.wp-page div[style*="background-color: #F9F9F9"] li {
+  color: var(--card-text) !important;
+  opacity: 1 !important;
 }
 
-.mobile-menu[aria-hidden="false"] .mobile-menu__content {
-  transform: translateX(0);
+.donation-card h3,
+.wp-page div[style*="background-color:#f9f9f9"] h3,
+.wp-page div[style*="background-color: #f9f9f9"] h3,
+.wp-page div[style*="background-color:#F9F9F9"] h3,
+.wp-page div[style*="background-color: #F9F9F9"] h3 {
+  color: var(--card-text) !important;
+  margin-top: 0;
+  opacity: 1 !important;
 }
 
-.mobile-menu__content a {
-  display: block;
-  padding: 14px 18px;
-  border-radius: 12px;
-  font-weight: 500;
-  color: var(--text);
-  text-decoration: none;
-  transition: all 0.2s ease;
-  min-height: 44px;
-  display: flex;
-  align-items: center;
+.donation-card a,
+.wp-page div[style*="background-color:#f9f9f9"] a,
+.wp-page div[style*="background-color: #f9f9f9"] a,
+.wp-page div[style*="background-color:#F9F9F9"] a,
+.wp-page div[style*="background-color: #F9F9F9"] a {
+  color: var(--brand) !important;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  opacity: 1 !important;
 }
 
-.mobile-menu__content a:hover {
-  background: rgba(34, 197, 94, 0.12);
-  color: var(--brand);
-  transform: translateX(4px);
+.donation-card a:hover,
+.wp-page div[style*="background-color:#f9f9f9"] a:hover,
+.wp-page div[style*="background-color: #f9f9f9"] a:hover,
+.wp-page div[style*="background-color:#F9F9F9"] a:hover,
+.wp-page div[style*="background-color: #F9F9F9"] a:hover {
+  color: var(--brand-2) !important;
 }
 
-html[data-theme="light"] .mobile-menu__content a:hover {
-  background: rgba(22, 163, 74, 0.08);
+.donation-card strong,
+.wp-page div[style*="background-color:#f9f9f9"] strong,
+.wp-page div[style*="background-color: #f9f9f9"] strong,
+.wp-page div[style*="background-color:#F9F9F9"] strong,
+.wp-page div[style*="background-color: #F9F9F9"] strong {
+  color: var(--card-text) !important;
+  opacity: 1 !important;
+  font-weight: 600;
 }
 
-.mobile-menu__content a:focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: -2px;
+.donation-card em,
+.wp-page div[style*="background-color:#f9f9f9"] em,
+.wp-page div[style*="background-color: #f9f9f9"] em,
+.wp-page div[style*="background-color:#F9F9F9"] em,
+.wp-page div[style*="background-color: #F9F9F9"] em {
+  color: var(--card-muted) !important;
+  opacity: 1 !important;
+  font-style: italic;
 }
 
-/* Responsive */
-@media (max-width: 820px) {
+/* PayPal button: fix contrasto (testo verde su giallo) */
+.btn-paypal,
+.wp-page a[href*="paypal.me"],
+.wp-page a[href*="paypal"],
+.wp-page a[style*="background-color:#ffc439"],
+.wp-page a[style*="background-color: #ffc439"],
+.wp-page a[style*="background-color:#FFC439"],
+.wp-page a[style*="background-color: #FFC439"],
+/* PayPal button dentro card donazione */
+.donation-card a[href*="paypal.me"],
+.donation-card a[href*="paypal"],
+.wp-page div[style*="background-color:#f9f9f9"] a[href*="paypal.me"],
+.wp-page div[style*="background-color: #f9f9f9"] a[href*="paypal.me"],
+.wp-page div[style*="background-color:#f9f9f9"] a[href*="paypal"],
+.wp-page div[style*="background-color: #f9f9f9"] a[href*="paypal"],
+.wp-page div[style*="background-color:#F9F9F9"] a[href*="paypal.me"],
+.wp-page div[style*="background-color: #F9F9F9"] a[href*="paypal.me"],
+.wp-page div[style*="background-color:#F9F9F9"] a[href*="paypal"],
+.wp-page div[style*="background-color: #F9F9F9"] a[href*="paypal"] {
+  background-color: #ffc439 !important;
+  color: #111827 !important;
+  font-weight: 700 !important;
+  padding: 12px 24px !important;
+  font-size: 18px !important;
+  border-radius: 6px !important;
+  text-decoration: none !important;
+  display: inline-block !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  transition: filter 0.2s ease, outline 0.2s ease !important;
+}
+
+.btn-paypal:hover,
+.wp-page a[href*="paypal.me"]:hover,
+.wp-page a[href*="paypal"]:hover,
+.wp-page a[style*="background-color:#ffc439"]:hover,
+.wp-page a[style*="background-color: #ffc439"]:hover,
+.wp-page a[style*="background-color:#FFC439"]:hover,
+.wp-page a[style*="background-color: #FFC439"]:hover,
+.donation-card a[href*="paypal.me"]:hover,
+.donation-card a[href*="paypal"]:hover,
+.wp-page div[style*="background-color:#f9f9f9"] a[href*="paypal.me"]:hover,
+.wp-page div[style*="background-color: #f9f9f9"] a[href*="paypal.me"]:hover,
+.wp-page div[style*="background-color:#f9f9f9"] a[href*="paypal"]:hover,
+.wp-page div[style*="background-color: #f9f9f9"] a[href*="paypal"]:hover,
+.wp-page div[style*="background-color:#F9F9F9"] a[href*="paypal.me"]:hover,
+.wp-page div[style*="background-color: #F9F9F9"] a[href*="paypal.me"]:hover,
+.wp-page div[style*="background-color:#F9F9F9"] a[href*="paypal"]:hover,
+.wp-page div[style*="background-color: #F9F9F9"] a[href*="paypal"]:hover {
+  filter: brightness(0.95) !important;
+  text-decoration: none !important;
+}
+
+.btn-paypal:focus-visible,
+.wp-page a[href*="paypal.me"]:focus-visible,
+.wp-page a[href*="paypal"]:focus-visible,
+.wp-page a[style*="background-color:#ffc439"]:focus-visible,
+.wp-page a[style*="background-color: #ffc439"]:focus-visible,
+.wp-page a[style*="background-color:#FFC439"]:focus-visible,
+.wp-page a[style*="background-color: #FFC439"]:focus-visible,
+.donation-card a[href*="paypal.me"]:focus-visible,
+.donation-card a[href*="paypal"]:focus-visible,
+.wp-page div[style*="background-color:#f9f9f9"] a[href*="paypal.me"]:focus-visible,
+.wp-page div[style*="background-color: #f9f9f9"] a[href*="paypal.me"]:focus-visible,
+.wp-page div[style*="background-color:#f9f9f9"] a[href*="paypal"]:focus-visible,
+.wp-page div[style*="background-color: #f9f9f9"] a[href*="paypal"]:focus-visible,
+.wp-page div[style*="background-color:#F9F9F9"] a[href*="paypal.me"]:focus-visible,
+.wp-page div[style*="background-color: #F9F9F9"] a[href*="paypal.me"]:focus-visible,
+.wp-page div[style*="background-color:#F9F9F9"] a[href*="paypal"]:focus-visible,
+.wp-page div[style*="background-color: #F9F9F9"] a[href*="paypal"]:focus-visible {
+  outline: 3px solid rgba(34, 197, 94, 0.5) !important;
+  outline-offset: 2px !important;
+  text-decoration: none !important;
+}
+
+/* Menu mobile rimosso - non più usato */
+
+/* Responsive: nav orizzontale scrollabile su mobile */
+@media (max-width: 1024px) {
   .nav {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    gap: 10px;
+    padding-right: 8px;
+  }
+
+  .nav::-webkit-scrollbar {
     display: none;
   }
 
-  .menu-toggle {
-    display: inline-flex;
+  .nav a {
+    flex-shrink: 0;
+    min-width: auto;
+    padding: 10px 16px;
   }
 
   /* Su mobile molto piccolo, nascondi search link se serve spazio */
@@ -921,10 +1156,23 @@ html[data-theme="light"] .mobile-menu__content a:hover {
   }
 }
 
-@media (min-width: 821px) {
-  .mobile-menu {
-    display: none;
+/* Desktop: nav sempre fissa e visibile, no scroll */
+@media (min-width: 1025px) {
+  .nav {
+    overflow: visible;
+    flex-wrap: wrap;
+    white-space: normal;
   }
+  
+  .nav a {
+    flex-shrink: 1;
+  }
+}
+
+/* Nascondi sempre menu-toggle e mobile-menu (non più usati) */
+.menu-toggle,
+.mobile-menu {
+  display: none !important;
 }
 
 

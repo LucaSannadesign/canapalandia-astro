@@ -11,6 +11,8 @@ import {
 } from "../lib/utils";
 import postsJson from "../../data/wp/out/posts.json";
 import pagesJson from "../../data/wp/out/pages.json";
+import categoriesJson from "../../data/wp/out/categories.json";
+import tagsJson from "../../data/wp/out/tags.json";
 
 /* ========= Config CTA (cambia qui se il link è diverso) ========= */
 // Assicura che i link siano sempre assoluti (iniziano con /)
@@ -69,6 +71,7 @@ type CardPost = {
   excerpt: string;
   dateLabel?: string;
   img?: { src: string; alt: string };
+  category?: string;
 };
 
 /* ---------------------------
@@ -237,6 +240,29 @@ const hero = getWpHeroImage(rawItem);
 /* ---------------------------
    Related posts (max 6) by category
 --------------------------- */
+function getCategoryName(categoryId: number): string | undefined {
+  const categories = Array.isArray(categoriesJson) ? categoriesJson : [];
+  const category = categories.find((c: any) => c.id === categoryId);
+  return category?.name ? stripHtml(category.name) : undefined;
+}
+
+function getFirstTagName(item: WPItemRaw): string | undefined {
+  const embedded = item._embedded as any;
+  const wpTerm = embedded?.["wp:term"] as any;
+  if (!Array.isArray(wpTerm)) return undefined;
+  const flat = wpTerm.flat().flat();
+  const tags = flat.filter(
+    (t: any) =>
+      t &&
+      t.taxonomy === "post_tag" &&
+      typeof t.name === "string",
+  );
+  if (tags.length > 0) {
+    return stripHtml(tags[0].name);
+  }
+  return undefined;
+}
+
 function toCardFromWp(item: WPItemRaw, entry: WpEntry): CardPost {
   const fm = item._embedded?.["wp:featuredmedia"]?.[0];
   const imgSrc = fm
@@ -249,6 +275,15 @@ function toCardFromWp(item: WPItemRaw, entry: WpEntry): CardPost {
   const normalizedPath = rawPath.replace(/^\/+|\/+$/g, "").trim();
   const href = normalizedPath ? `/${normalizedPath}/` : "/";
 
+  // Estrai categoria: prima categoria disponibile, fallback a primo tag
+  let categoryName: string | undefined;
+  if (item.categories && item.categories.length > 0) {
+    categoryName = getCategoryName(item.categories[0]);
+  }
+  if (!categoryName) {
+    categoryName = getFirstTagName(item);
+  }
+
   return {
     href,
     title: stripHtml(item.title?.rendered || ""),
@@ -259,6 +294,7 @@ function toCardFromWp(item: WPItemRaw, entry: WpEntry): CardPost {
           alt: fm?.alt_text || stripHtml(item.title?.rendered || ""),
         }
       : undefined,
+    category: categoryName,
   };
 }
 
@@ -422,7 +458,9 @@ const titleHtml = foundEntry.title || rawItem?.title?.rendered || "";
                       ) : null}
                     </div>
                     <div class="cardBody">
-                      <p class="cardMeta">Stessa categoria</p>
+                      {p.category ? (
+                        <span class="cardCategory">{p.category}</span>
+                      ) : null}
                       <h3 class="cardTitle">{p.title}</h3>
                       <p class="cardExcerpt">{p.excerpt}</p>
                       <span class="cardCta">Leggi →</span>
