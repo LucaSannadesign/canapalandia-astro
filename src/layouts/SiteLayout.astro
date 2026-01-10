@@ -3,6 +3,7 @@ import "../styles/app.css";
 import AdSlot from "../components/AdSlot.astro";
 import Newsletter from "../components/widgets/Newsletter.astro";
 import CookieBanner from "../components/CookieBanner.astro";
+import SpeedInsights from "@vercel/speed-insights/astro";
 
 const THEME_STORAGE_KEY = "canapalandia_theme";
 const { title, canonical, yoastHeadHtml, shell = true } = Astro.props;
@@ -440,5 +441,6 @@ const GA4_ID = import.meta.env.PUBLIC_GA4_ID;
       </script>
     ) : null}
 
+    <SpeedInsights />
   </body>
 </html>
