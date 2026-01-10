@@ -35,6 +35,7 @@
 
   --container: 1120px;
   --pad: 20px;
+  --gutter: 10px;
 
   --font-sans: "Sora", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial,
     "Apple Color Emoji", "Segoe UI Emoji";
@@ -87,19 +88,25 @@ a {
   text-decoration: none;
 }
 
+/* Tablet e desktop: gutter più ampio */
+@media (min-width: 768px) {
+  :root {
+    --gutter: 24px;
+  }
+}
+
 .container {
   max-width: var(--container);
   margin: 0 auto;
-  /* Mobile: gutter 10px */
-  padding-left: max(10px, env(safe-area-inset-left));
-  padding-right: max(10px, env(safe-area-inset-right));
+  padding-left: max(var(--gutter), env(safe-area-inset-left));
+  padding-right: max(var(--gutter), env(safe-area-inset-right));
 }
 
-/* Tablet e desktop: gutter più ampio */
-@media (min-width: 768px) {
-  .container {
-    padding-left: max(24px, env(safe-area-inset-left));
-    padding-right: max(24px, env(safe-area-inset-right));
+/* Gutter per contenuti fuori .container (solo mobile) */
+@media (max-width: 767px) {
+  main#contenuto {
+    padding-left: max(var(--gutter), env(safe-area-inset-left));
+    padding-right: max(var(--gutter), env(safe-area-inset-right));
   }
 }
 
