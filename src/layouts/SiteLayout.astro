@@ -136,6 +136,31 @@ const GA4_ID = import.meta.env.PUBLIC_GA4_ID;
         </nav>
 
         <div class="header-actions">
+          <button
+            type="button"
+            class="menu-toggle"
+            data-menu-toggle
+            aria-label="Apri menu"
+            aria-expanded="false"
+            aria-controls="mobile-menu"
+          >
+            <span class="sr-only">Apri menu</span>
+            <svg
+              class="menu-toggle__icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+            >
+              <path
+                d="M3 12h18M3 6h18M3 18h18"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+            </svg>
+          </button>
+
           <a class="search" href="/cerca/" aria-label="Cerca nel sito">Cerca</a>
 
           <button
@@ -185,6 +210,18 @@ const GA4_ID = import.meta.env.PUBLIC_GA4_ID;
           </button>
         </div>
       </div>
+
+      <!-- Menu mobile -->
+      <nav class="mobile-menu" id="mobile-menu" aria-label="Menu mobile" aria-hidden="true">
+        <div class="mobile-menu__content">
+          <a href="/#percorsi">Temi</a>
+          <a href="/#in-evidenza">In evidenza</a>
+          <a href="/#ultimi">Ultimi</a>
+          <a href="/blog/">Blog</a>
+          <a href="/contatti/">Contatti</a>
+          <a href="/cerca/">Cerca</a>
+        </div>
+      </nav>
 
       <!-- AdSense Banner in Header -->
       <div
@@ -369,6 +406,64 @@ const GA4_ID = import.meta.env.PUBLIC_GA4_ID;
 
         // Usa passive listener per performance
         window.addEventListener("scroll", updateHeader, { passive: true });
+      })();
+    </script>
+
+    <!-- Menu mobile toggle -->
+    <script is:inline>
+      (() => {
+        const menuToggle = document.querySelector("[data-menu-toggle]");
+        const mobileMenu = document.getElementById("mobile-menu");
+
+        if (!menuToggle || !mobileMenu) return;
+
+        const closeMenu = () => {
+          menuToggle.setAttribute("aria-expanded", "false");
+          menuToggle.setAttribute("aria-label", "Apri menu");
+          mobileMenu.setAttribute("aria-hidden", "true");
+          document.body.style.overflow = "";
+        };
+
+        const openMenu = () => {
+          menuToggle.setAttribute("aria-expanded", "true");
+          menuToggle.setAttribute("aria-label", "Chiudi menu");
+          mobileMenu.setAttribute("aria-hidden", "false");
+          document.body.style.overflow = "hidden";
+        };
+
+        const toggleMenu = () => {
+          const isExpanded = menuToggle.getAttribute("aria-expanded") === "true";
+          if (isExpanded) {
+            closeMenu();
+          } else {
+            openMenu();
+          }
+        };
+
+        menuToggle.addEventListener("click", toggleMenu);
+
+        // Chiudi menu quando clicchi sull'overlay
+        mobileMenu.addEventListener("click", (e) => {
+          if (e.target === mobileMenu) {
+            closeMenu();
+          }
+        });
+
+        // Chiudi menu quando clicchi su un link
+        const menuLinks = mobileMenu.querySelectorAll("a");
+        menuLinks.forEach((link) => {
+          link.addEventListener("click", () => {
+            closeMenu();
+          });
+        });
+
+        // Chiudi menu con ESC
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape" && menuToggle.getAttribute("aria-expanded") === "true") {
+            closeMenu();
+            menuToggle.focus();
+          }
+        });
       })();
     </script>
 
