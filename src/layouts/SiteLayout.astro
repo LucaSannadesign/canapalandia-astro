@@ -448,21 +448,51 @@ const isProduction = Astro.url.origin === "https://canapalandia.com";
         if (!header) return;
 
         const SCROLL_THRESHOLD = 12;
+        const DIRECTION_THRESHOLD = 4;
         const prefersReduced = window.matchMedia(
           "(prefers-reduced-motion: reduce)",
         ).matches;
 
+        let lastY = 0;
+        let ticking = false;
+
         const updateHeader = () => {
           const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
           const isScrolled = scrollY > SCROLL_THRESHOLD;
+          
+          // Calcola direzione
+          let direction = "none";
+          if (scrollY > lastY + DIRECTION_THRESHOLD) {
+            direction = "down";
+          } else if (scrollY < lastY - DIRECTION_THRESHOLD) {
+            direction = "up";
+          }
+          
+          // Aggiorna attributi
+          header.setAttribute("data-scrolled", isScrolled ? "true" : "false");
+          if (direction !== "none") {
+            header.setAttribute("data-dir", direction);
+          }
+          
+          // Mantieni compatibilità con classe esistente
           header.classList.toggle("is-scrolled", isScrolled);
+          
+          lastY = scrollY;
+          ticking = false;
+        };
+
+        const onScroll = () => {
+          if (!ticking) {
+            requestAnimationFrame(updateHeader);
+            ticking = true;
+          }
         };
 
         // Aggiorna subito per evitare flash
         updateHeader();
 
         // Usa passive listener per performance
-        window.addEventListener("scroll", updateHeader, { passive: true });
+        window.addEventListener("scroll", onScroll, { passive: true });
       })();
     </script>
 
