@@ -52,92 +52,51 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/frasi-r
               // Formatta ribaltata: split per linee e paragrafi (come PHP)
               const righe = frase.frase_ribaltata.split(/\n/).filter((r: string) => r.trim() !== "");
               
+              // Anteprima ribaltata (max 3 righe)
+              const anteprima = frase.frase_ribaltata.split(/\n/).slice(0, 3).join(" ").slice(0, 200);
+              const mostraAnteprima = frase.frase_ribaltata.length > 200 || frase.frase_ribaltata.split(/\n/).length > 3;
+              
               return (
                 <article class="frasi-card" key={frase.id}>
-                  <p class="frasi-card__originale">
-                    <strong>Slogan Proibizionista:</strong><br />
-                    <em>{frase.frase_originale}</em>
-                  </p>
-
-                  <div class="frasi-card__ribaltata">
-                    <h2 class="frasi-card__ribaltata-title">🧠 Frase Ribaltata</h2>
-                    <div class="frasi-card__ribaltata-content">
-                      {righe.map((riga: string) => (
-                        <p class="frasi-card__ribaltata-paragraph">{riga.trim()}.</p>
-                      ))}
-                    </div>
+                  <div class="frasi-card__header">
+                    <p class="frasi-card__meta">
+                      {new Date(frase.created_at).toLocaleDateString("it-IT", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </p>
                   </div>
 
-                  <div class="frasi-card__copy">
-                    <textarea
-                      readonly
-                      rows="7"
-                      class="frasi-card__textarea"
-                      id={`frase-textarea-${frase.id}`}
-                    >
-                      {testoCondivisibile}
-                    </textarea>
+                  <p class="frasi-card__originale">
+                    <strong>Proibizionista:</strong> <em>{frase.frase_originale}</em>
+                  </p>
+
+                  <div class="frasi-card__ribaltata-preview">
+                    <p class="frasi-card__ribaltata-text">
+                      {mostraAnteprima ? anteprima + "…" : frase.frase_ribaltata}
+                    </p>
+                  </div>
+
+                  <div class="frasi-card__actions">
+                    <a href={url} class="frasi-card__link-btn">
+                      Apri →
+                    </a>
                     <button
                       type="button"
-                      class="frasi-card__copy-btn"
-                      onclick={`copyFrase(${frase.id})`}
+                      class="frasi-card__share-compact"
+                      onclick={`shareFrase(${frase.id}, "${encodeURIComponent(url)}", "${encodeURIComponent(frase.frase_ribaltata)}")`}
+                      aria-label="Condividi"
                     >
-                      📋 Copia testo
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="18" cy="5" r="3"></circle>
+                        <circle cx="6" cy="12" r="3"></circle>
+                        <circle cx="18" cy="19" r="3"></circle>
+                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                      </svg>
                     </button>
-                    <span class="frasi-card__copiato" id={`copiato-${frase.id}`}>✅ Copiato!</span>
                   </div>
-
-                  <div class="frasi-card__share">
-                    <a
-                      href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encoded}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title="Facebook"
-                      aria-label="Condividi su Facebook"
-                    >
-                      <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/facebook.svg" alt="Facebook" />
-                    </a>
-                    <a
-                      href={`https://twitter.com/intent/tweet?text=${encoded}&url=${encodeURIComponent(url)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title="X (Twitter)"
-                      aria-label="Condividi su X (Twitter)"
-                    >
-                      <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/x.svg" alt="X (Twitter)" />
-                    </a>
-                    <a
-                      href={`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encoded}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title="Telegram"
-                      aria-label="Condividi su Telegram"
-                    >
-                      <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/telegram.svg" alt="Telegram" />
-                    </a>
-                    <a
-                      href={`https://api.whatsapp.com/send?text=${encoded}%20${encodeURIComponent(url)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title="WhatsApp"
-                      aria-label="Condividi su WhatsApp"
-                    >
-                      <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/whatsapp.svg" alt="WhatsApp" />
-                    </a>
-                    <a
-                      href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title="LinkedIn"
-                      aria-label="Condividi su LinkedIn"
-                    >
-                      <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/linkedin.svg" alt="LinkedIn" />
-                    </a>
-                  </div>
-
-                  <p class="frasi-card__hint">
-                    Copia il testo e condividi la frase ribaltata nei social
-                  </p>
                 </article>
               );
             })}
@@ -206,20 +165,34 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/frasi-r
 
   .frasi-card {
     border: 1px solid var(--border);
-    padding: 25px;
+    padding: 20px 24px;
     border-radius: 12px;
     background: var(--panel);
-    margin-bottom: 30px;
-    font-size: 1rem;
+    margin-bottom: 20px;
+    font-size: 0.95rem;
+  }
+
+  .frasi-card__header {
+    margin-bottom: 12px;
+  }
+
+  .frasi-card__meta {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 
   .frasi-card__originale {
-    margin-bottom: 0;
+    margin: 0 0 16px;
+    font-size: 0.95rem;
+    line-height: 1.5;
   }
 
   .frasi-card__originale strong {
-    display: block;
-    margin-bottom: 8px;
+    font-weight: 600;
+    margin-right: 6px;
   }
 
   .frasi-card__originale em {
@@ -227,111 +200,75 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/frasi-r
     color: var(--muted);
   }
 
-  .frasi-card__ribaltata {
-    margin-top: 25px;
+  .frasi-card__ribaltata-preview {
+    margin-bottom: 16px;
   }
 
-  .frasi-card__ribaltata-title {
-    font-size: 1.3rem;
-    color: var(--brand);
-    margin-top: 0;
-    margin-bottom: 10px;
-  }
-
-  .frasi-card__ribaltata-content {
-    margin-top: 10px;
-  }
-
-  .frasi-card__ribaltata-paragraph {
-    font-size: 1.3rem;
-    color: var(--brand);
-    font-weight: 600;
+  .frasi-card__ribaltata-text {
+    font-size: 1.1rem;
     line-height: 1.6;
-    margin-bottom: 14px;
-    margin-top: 0;
-  }
-
-  .frasi-card__copy {
-    margin-top: 20px;
-  }
-
-  .frasi-card__textarea {
-    width: 100%;
-    font-size: 15px;
-    padding: 12px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    background: var(--panel);
     color: var(--text);
-    font-family: inherit;
-    resize: vertical;
-    min-height: 140px;
-    white-space: pre-line;
-    line-height: 1.5;
-    margin-bottom: 8px;
+    font-weight: 500;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
-  .frasi-card__copy-btn {
-    margin-top: 8px;
-    padding: 8px 16px;
+  .frasi-card__actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  .frasi-card__link-btn {
+    padding: 10px 20px;
     background: var(--brand);
     color: white;
     border: none;
     border-radius: 8px;
-    cursor: pointer;
+    text-decoration: none;
     font-weight: 600;
-    transition: background 0.2s ease;
-    min-height: 44px;
-  }
-
-  .frasi-card__copy-btn:hover {
-    background: var(--brand-2);
-  }
-
-  .frasi-card__copiato {
-    margin-left: 12px;
-    display: none;
-    color: var(--brand);
-    font-weight: 600;
-  }
-
-  .frasi-card__copiato.is-visible {
-    display: inline;
-  }
-
-  .frasi-card__share {
-    margin-top: 18px;
-    display: flex;
-    gap: 16px;
+    font-size: 0.9rem;
+    transition: background 0.2s ease, transform 0.1s ease;
+    min-height: 40px;
+    display: inline-flex;
     align-items: center;
-    flex-wrap: wrap;
   }
 
-  .frasi-card__share a {
+  .frasi-card__link-btn:hover {
+    background: var(--brand-2);
+    transform: translateY(-1px);
+  }
+
+  .frasi-card__share-compact {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
-    opacity: 0.8;
-    transition: opacity 0.2s ease, transform 0.1s ease;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.2s ease;
   }
 
-  .frasi-card__share a:hover {
-    opacity: 1;
-    transform: scale(1.1);
+  .frasi-card__share-compact:hover {
+    background: rgba(34, 197, 94, 0.1);
+    border-color: var(--brand);
   }
 
-  .frasi-card__share img {
-    width: 24px;
-    height: 24px;
-    filter: var(--icon-filter, none);
-  }
-
-  .frasi-card__hint {
-    margin-top: 10px;
-    font-size: 0.85rem;
-    color: var(--muted);
+  .frasi-card__share-compact svg {
+    width: 16px;
+    height: 16px;
   }
 
   .frasi-pagination {
@@ -401,11 +338,21 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/frasi-r
     }
 
     .frasi-card {
-      padding: 20px;
+      padding: 16px 18px;
     }
 
-    .frasi-card__ribaltata-paragraph {
-      font-size: 1.1rem;
+    .frasi-card__ribaltata-text {
+      font-size: 1rem;
+    }
+
+    .frasi-card__actions {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .frasi-card__link-btn {
+      width: 100%;
+      justify-content: center;
     }
 
     .frasi-pagination {
@@ -416,20 +363,27 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/frasi-r
 </style>
 
 <script>
-  // Funzione copy (globale per onclick)
-  (globalThis as any).copyFrase = function (id: number) {
-    const textarea = document.getElementById(`frase-textarea-${id}`) as HTMLTextAreaElement;
-    const msg = document.getElementById(`copiato-${id}`);
-
-    if (!textarea || !msg) return;
-
-    textarea.select();
-    textarea.setSelectionRange(0, 99999); // iOS
-    document.execCommand("copy");
-
-    msg.classList.add("is-visible");
-    setTimeout(() => {
-      msg.classList.remove("is-visible");
-    }, 2000);
+  // Funzione share compatta (menu o navigator.share)
+  (globalThis as any).shareFrase = async function (id: number, url: string, text: string) {
+    const decodedUrl = decodeURIComponent(url);
+    const decodedText = decodeURIComponent(text);
+    
+    // Se navigator.share disponibile (mobile), usalo
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "Ribaltatore AI",
+          text: decodedText,
+          url: decodedUrl,
+        });
+        return;
+      } catch (err: any) {
+        if (err.name === "AbortError") return; // Utente ha annullato
+      }
+    }
+    
+    // Fallback: apri WhatsApp
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`${decodedText}\n🔗 ${decodedUrl}`)}`;
+    window.open(whatsappUrl, "_blank", "noopener,noreferrer");
   };
 </script>

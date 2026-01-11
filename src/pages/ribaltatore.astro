@@ -210,88 +210,123 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/ribalta
   .risultato-card {
     max-width: 850px;
     margin: 40px auto;
-    padding: 30px 25px;
+    padding: 32px 28px;
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 16px;
     background: var(--panel);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
   }
 
-  .risultato-card__originale {
-    font-size: 1.1rem;
-    color: var(--text);
-    margin-bottom: 25px;
-  }
-
-  .risultato-card__originale strong {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 600;
-  }
-
-  .risultato-card__ribaltata {
-    margin-top: 25px;
-  }
-
-  .risultato-card__ribaltata h2 {
+  .risultato-card__title {
     font-size: 1.5rem;
-    margin-bottom: 10px;
-    color: var(--brand);
+    font-weight: 700;
+    margin: 0 0 24px;
+    color: var(--text);
+    text-align: center;
   }
 
-  .risultato-card__ribaltata-content {
-    font-size: 1.3rem;
-    color: var(--brand);
-    font-weight: 600;
-    line-height: 1.6;
-    margin-top: 10px;
-    white-space: pre-line;
+  /* Box quote per ribaltata */
+  .risultato-card__quote {
+    margin: 24px 0;
+    padding: 24px 28px;
+    border-left: 4px solid var(--brand);
+    border-radius: 8px;
+    background: rgba(34, 197, 94, 0.05);
+    border-color: var(--brand);
   }
 
-  .risultato-card__copy {
-    margin-top: 30px;
+  html[data-theme="light"] .risultato-card__quote {
+    background: rgba(22, 163, 74, 0.04);
   }
 
-  .risultato-card__copy p {
-    margin-bottom: 8px;
+  .risultato-card__quote-content {
+    font-size: 1.4rem;
+    line-height: 1.7;
+    color: var(--text);
     font-weight: 500;
+    margin: 0;
   }
 
-  .risultato-card__textarea {
+  /* Sezione social collapsible */
+  .risultato-card__social-section {
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+
+  .risultato-card__toggle-social {
     width: 100%;
-    font-size: 15px;
-    padding: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: transparent;
     border: 1px solid var(--border);
     border-radius: 8px;
-    background: var(--panel);
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 600;
     color: var(--text);
-    font-family: inherit;
-    resize: vertical;
-    min-height: 120px;
+    transition: all 0.2s ease;
+  }
+
+  .risultato-card__toggle-social:hover {
+    background: rgba(34, 197, 94, 0.05);
+    border-color: var(--brand);
+  }
+
+  .risultato-card__toggle-icon {
+    transition: transform 0.2s ease;
+    font-size: 0.8rem;
+  }
+
+  .risultato-card__social-content {
+    margin-top: 16px;
+    padding: 20px;
+    background: rgba(34, 197, 94, 0.03);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+
+  html[data-theme="light"] .risultato-card__social-content {
+    background: rgba(22, 163, 74, 0.02);
+  }
+
+  .risultato-card__social-text {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--text);
+    margin-bottom: 16px;
     white-space: pre-line;
-    margin-bottom: 10px;
   }
 
   .risultato-card__copy-btn {
-    padding: 10px 20px;
+    padding: 12px 24px;
     background: var(--brand);
     color: white;
     border: none;
     border-radius: 8px;
     cursor: pointer;
     font-weight: 600;
-    transition: background 0.2s ease;
+    font-size: 0.95rem;
+    transition: background 0.2s ease, transform 0.1s ease;
     min-height: 44px;
   }
 
   .risultato-card__copy-btn:hover {
     background: var(--brand-2);
+    transform: translateY(-1px);
+  }
+
+  .risultato-card__copy-btn:active {
+    transform: translateY(0);
   }
 
   .risultato-card__copiato {
     margin-left: 12px;
     color: var(--brand);
     font-weight: 600;
+    font-size: 0.9rem;
     display: none;
   }
 
@@ -299,33 +334,84 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/ribalta
     display: inline;
   }
 
-  .risultato-card__share {
-    margin-top: 30px;
+  /* Link actions (prima dei share buttons) */
+  .risultato-card__link-actions {
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
     display: flex;
-    gap: 14px;
-    align-items: center;
     flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
   }
 
-  .risultato-card__share a {
+  /* Azioni: share buttons (in fondo) */
+  .risultato-card__actions {
+    margin-top: 16px;
+  }
+
+  .risultato-card__share-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .risultato-card__share-btn {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    opacity: 0.8;
-    transition: opacity 0.2s ease, transform 0.1s ease;
+    gap: 6px;
+    padding: 8px 12px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    min-height: 36px;
+    cursor: pointer;
   }
 
-  .risultato-card__share a:hover {
-    opacity: 1;
-    transform: scale(1.1);
+  .risultato-card__share-btn:hover {
+    background: rgba(34, 197, 94, 0.1);
+    border-color: var(--brand);
+    transform: translateY(-1px);
   }
 
-  .risultato-card__share img {
-    width: 22px;
-    height: 22px;
-    filter: var(--icon-filter, none);
+  .risultato-card__share-btn svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+
+  .risultato-card__share-btn span {
+    font-size: 0.875rem;
+  }
+
+  .risultato-card__link-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 10px 18px;
+    background: var(--brand);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: background 0.2s ease, transform 0.1s ease;
+    min-height: 44px;
+    cursor: pointer;
+  }
+
+  .risultato-card__link-btn:hover {
+    background: var(--brand-2);
+    transform: translateY(-1px);
+  }
+
+  .risultato-card__link-btn:active {
+    transform: translateY(0);
   }
 
   .risultato-card__loading {
@@ -354,8 +440,28 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/ribalta
       padding: 24px 20px;
     }
 
-    .risultato-card__ribaltata-content {
-      font-size: 1.1rem;
+    .risultato-card__quote-content {
+      font-size: 1.2rem;
+    }
+
+    .risultato-card__share-buttons {
+      gap: 6px;
+    }
+
+    .risultato-card__share-btn {
+      flex: 1 1 calc(50% - 3px);
+      min-width: 0;
+      font-size: 0.8rem;
+      padding: 6px 10px;
+    }
+
+    .risultato-card__link-actions {
+      flex-direction: column;
+    }
+
+    .risultato-card__link-btn {
+      width: 100%;
+      justify-content: center;
     }
   }
 </style>
@@ -375,26 +481,34 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/ribalta
       return text.replace(/([.!?])(\s+)/g, "$1<br><br>");
     }
 
-    // Genera testo condivisibile (formato PHP)
-    function getTestoCondivisibile(originale: string, ribaltata: string, id: number): string {
-      const url = `${window.location.origin}/ribaltate-ai/${id}/`;
+    // Genera testo share-ready
+    function getShareText(originale: string, ribaltata: string, id: number | null): string {
+      const publicUrl = id ? `${window.location.origin}/ribaltate-ai/${id}/` : window.location.origin;
+      return `Proibizionista: "${originale}"\nRibaltata: "${ribaltata}"\n🔗 ${publicUrl}\n#LegalizeIt #TeamCBD`;
+    }
+
+    // Genera testo completo per social (formato esteso)
+    function getTestoCondivisibile(originale: string, ribaltata: string, id: number | null): string {
+      const publicUrl = id ? `${window.location.origin}/ribaltate-ai/${id}/` : window.location.origin;
       return `🔒 Frase proibizionista: "${originale}"\n🔁 Ribaltata con l'AI: "${ribaltata}"\n\n👉 Scopri il Ribaltatore AI su ${window.location.origin}/ribaltatore/\n#cannabislight #canapa #satira #antiproibizionismo #canapalandia`;
     }
 
     // Genera URL share
-    function getShareUrl(platform: string, ribaltata: string, id: number): string {
-      const url = encodeURIComponent(`${window.location.origin}/ribaltate-ai/${id}/`);
-      const text = encodeURIComponent(`🔁 Ribaltata con l'AI: "${ribaltata}"`);
+    function getShareUrl(platform: string, originale: string, ribaltata: string, id: number | null): string {
+      const publicUrl = id ? `${window.location.origin}/ribaltate-ai/${id}/` : window.location.origin;
+      const url = encodeURIComponent(publicUrl);
+      const shareText = getShareText(originale, ribaltata, id);
+      const text = encodeURIComponent(shareText);
 
       switch (platform) {
-        case "facebook":
-          return `https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${text}`;
-        case "twitter":
-          return `https://twitter.com/intent/tweet?text=${text}&url=${url}`;
+        case "whatsapp":
+          return `https://wa.me/?text=${text}`;
         case "telegram":
           return `https://t.me/share/url?url=${url}&text=${text}`;
-        case "whatsapp":
-          return `https://api.whatsapp.com/send?text=${text}%20${url}`;
+        case "twitter":
+          return `https://twitter.com/intent/tweet?text=${text}`;
+        case "facebook":
+          return `https://www.facebook.com/sharer/sharer.php?u=${url}`;
         case "linkedin":
           return `https://www.linkedin.com/sharing/share-offsite/?url=${url}`;
         default:
@@ -402,48 +516,100 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/ribalta
       }
     }
 
-    // Render risultato HTML (replica PHP)
-    function renderRisultato(originale: string, ribaltata: string, id: number): string {
+    // Render risultato HTML (Result Card migliorata)
+    function renderRisultato(originale: string, ribaltata: string, id: number | null): string {
       const testoCondivisibile = getTestoCondivisibile(originale, ribaltata, id);
-      const ribaltataFormatted = formatRibaltata(ribaltata);
+      const shareText = getShareText(originale, ribaltata, id);
+      const publicUrl = id ? `${window.location.origin}/ribaltate-ai/${id}/` : null;
+      
+      // Escape HTML per sicurezza (no innerHTML non sanificato)
+      function escapeHtml(text: string): string {
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      const ribaltataEscaped = escapeHtml(ribaltata);
+      const originaleEscaped = escapeHtml(originale);
+      const testoCondivisibileEscaped = escapeHtml(testoCondivisibile);
 
       return `
         <div class="risultato-card">
-          <div class="risultato-card__originale">
-            <strong>🔒 Frase proibizionista:</strong>
-            "${originale}"
+          <h2 class="risultato-card__title">Risposta ribaltata</h2>
+          
+          <div class="risultato-card__quote">
+            <div class="risultato-card__quote-content">${ribaltataEscaped.replace(/\n/g, "<br>")}</div>
           </div>
 
-          <div class="risultato-card__ribaltata">
-            <h2>🧠 Frase Ribaltata</h2>
-            <div class="risultato-card__ribaltata-content">${ribaltataFormatted}</div>
-          </div>
-
-          <div class="risultato-card__copy">
-            <p>📋 Copia la frase e condividila nei social:</p>
-            <textarea readonly rows="6" class="risultato-card__textarea" id="testo-copiare">${testoCondivisibile}</textarea>
-            <button type="button" class="risultato-card__copy-btn" id="btn-copia">
-              📎 Copia Testo
+          <div class="risultato-card__social-section">
+            <button type="button" class="risultato-card__toggle-social" id="toggle-social" aria-expanded="false">
+              <span>Testo per i social</span>
+              <span class="risultato-card__toggle-icon">▼</span>
             </button>
-            <span class="risultato-card__copiato" id="msg-copiato">✅ Copiato!</span>
+            <div class="risultato-card__social-content" id="social-content" style="display: none;">
+              <div class="risultato-card__social-text">${testoCondivisibileEscaped.replace(/\n/g, "<br>")}</div>
+              <button type="button" class="risultato-card__copy-btn" id="btn-copia-tutto">
+                📋 Copia tutto
+              </button>
+              <span class="risultato-card__copiato" id="msg-copiato-tutto">✅ Copiato!</span>
+            </div>
           </div>
 
-          <div class="risultato-card__share">
-            <a href="${getShareUrl("facebook", ribaltata, id)}" target="_blank" rel="noopener noreferrer" aria-label="Condividi su Facebook">
-              <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/facebook.svg" alt="Facebook" />
+          ${publicUrl ? `
+          <div class="risultato-card__link-actions">
+            <a href="${publicUrl}" class="risultato-card__link-btn" target="_blank" rel="noopener noreferrer">
+              🔗 Apri link pubblico
             </a>
-            <a href="${getShareUrl("twitter", ribaltata, id)}" target="_blank" rel="noopener noreferrer" aria-label="Condividi su X (Twitter)">
-              <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/x.svg" alt="X (Twitter)" />
-            </a>
-            <a href="${getShareUrl("telegram", ribaltata, id)}" target="_blank" rel="noopener noreferrer" aria-label="Condividi su Telegram">
-              <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/telegram.svg" alt="Telegram" />
-            </a>
-            <a href="${getShareUrl("whatsapp", ribaltata, id)}" target="_blank" rel="noopener noreferrer" aria-label="Condividi su WhatsApp">
-              <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/whatsapp.svg" alt="WhatsApp" />
-            </a>
-            <a href="${getShareUrl("linkedin", ribaltata, id)}" target="_blank" rel="noopener noreferrer" aria-label="Condividi su LinkedIn">
-              <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/linkedin.svg" alt="LinkedIn" />
-            </a>
+            <button type="button" class="risultato-card__link-btn" id="btn-copia-link" data-url="${publicUrl}">
+              📋 Copia link
+            </button>
+            <span class="risultato-card__copiato" id="msg-copiato-link">✅ Copiato!</span>
+          </div>
+          ` : ""}
+
+          <div class="risultato-card__actions">
+            <div class="risultato-card__share-buttons">
+              <a href="${getShareUrl("whatsapp", originale, ribaltata, id)}" target="_blank" rel="noopener noreferrer" class="risultato-card__share-btn" aria-label="Condividi su WhatsApp">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                </svg>
+                <span>WhatsApp</span>
+              </a>
+              <a href="${getShareUrl("telegram", originale, ribaltata, id)}" target="_blank" rel="noopener noreferrer" class="risultato-card__share-btn" aria-label="Condividi su Telegram">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161l-1.97 9.272c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295-.002 0-.003 0-.005 0l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.12l-6.87 4.326-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.458c.538-.196 1.006.128.832.941z"/>
+                </svg>
+                <span>Telegram</span>
+              </a>
+              <a href="${getShareUrl("twitter", originale, ribaltata, id)}" target="_blank" rel="noopener noreferrer" class="risultato-card__share-btn" aria-label="Condividi su X (Twitter)">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                </svg>
+                <span>X</span>
+              </a>
+              <a href="${getShareUrl("facebook", originale, ribaltata, id)}" target="_blank" rel="noopener noreferrer" class="risultato-card__share-btn" aria-label="Condividi su Facebook">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                </svg>
+                <span>Facebook</span>
+              </a>
+              <a href="${getShareUrl("linkedin", originale, ribaltata, id)}" target="_blank" rel="noopener noreferrer" class="risultato-card__share-btn" aria-label="Condividi su LinkedIn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                </svg>
+                <span>LinkedIn</span>
+              </a>
+              <button type="button" class="risultato-card__share-btn" id="btn-share-native" aria-label="Condividi">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="18" cy="5" r="3"></circle>
+                  <circle cx="6" cy="12" r="3"></circle>
+                  <circle cx="18" cy="19" r="3"></circle>
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                  <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                </svg>
+                <span>Condividi…</span>
+              </button>
+            </div>
           </div>
         </div>
       `;
@@ -534,20 +700,101 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/ribalta
         // Render risultato
         risultatoDiv.innerHTML = renderRisultato(data.originale || frase, ribaltata, id);
 
-        // Setup copy button
-        const copyBtn = document.getElementById("btn-copia");
-        const copyTextarea = document.getElementById("testo-copiare") as HTMLTextAreaElement;
-        const copyMsg = document.getElementById("msg-copiato");
+        // Setup toggle sezione social
+        const toggleSocial = document.getElementById("toggle-social");
+        const socialContent = document.getElementById("social-content");
+        if (toggleSocial && socialContent) {
+          toggleSocial.addEventListener("click", () => {
+            const isExpanded = toggleSocial.getAttribute("aria-expanded") === "true";
+            toggleSocial.setAttribute("aria-expanded", String(!isExpanded));
+            socialContent.style.display = isExpanded ? "none" : "block";
+            const icon = toggleSocial.querySelector(".risultato-card__toggle-icon");
+            if (icon) icon.textContent = isExpanded ? "▼" : "▲";
+          });
+        }
 
-        if (copyBtn && copyTextarea && copyMsg) {
-          copyBtn.addEventListener("click", () => {
-            copyTextarea.select();
-            copyTextarea.setSelectionRange(0, 99999); // iOS
-            document.execCommand("copy");
-            copyMsg.classList.add("is-visible");
-            setTimeout(() => {
-              copyMsg.classList.remove("is-visible");
-            }, 2000);
+        // Setup copy tutto
+        const copyTuttoBtn = document.getElementById("btn-copia-tutto");
+        const copyTuttoMsg = document.getElementById("msg-copiato-tutto");
+        if (copyTuttoBtn && copyTuttoMsg) {
+          const testoCompleto = getTestoCondivisibile(data.originale || frase, ribaltata, id);
+          copyTuttoBtn.addEventListener("click", async () => {
+            try {
+              await navigator.clipboard.writeText(testoCompleto);
+              copyTuttoMsg.classList.add("is-visible");
+              setTimeout(() => {
+                copyTuttoMsg.classList.remove("is-visible");
+              }, 2000);
+            } catch {
+              // Fallback per browser senza clipboard API
+              const textarea = document.createElement("textarea");
+              textarea.value = testoCompleto;
+              document.body.appendChild(textarea);
+              textarea.select();
+              document.execCommand("copy");
+              document.body.removeChild(textarea);
+              copyTuttoMsg.classList.add("is-visible");
+              setTimeout(() => {
+                copyTuttoMsg.classList.remove("is-visible");
+              }, 2000);
+            }
+          });
+        }
+
+        // Setup copy link (se id esiste)
+        const copyLinkBtn = document.getElementById("btn-copia-link");
+        const copyLinkMsg = document.getElementById("msg-copiato-link");
+        if (copyLinkBtn && copyLinkMsg) {
+          const url = copyLinkBtn.getAttribute("data-url") || "";
+          copyLinkBtn.addEventListener("click", async () => {
+            if (!url) return;
+            try {
+              await navigator.clipboard.writeText(url);
+              copyLinkMsg.classList.add("is-visible");
+              setTimeout(() => {
+                copyLinkMsg.classList.remove("is-visible");
+              }, 2000);
+            } catch {
+              // Fallback
+              const textarea = document.createElement("textarea");
+              textarea.value = url;
+              document.body.appendChild(textarea);
+              textarea.select();
+              document.execCommand("copy");
+              document.body.removeChild(textarea);
+              copyLinkMsg.classList.add("is-visible");
+              setTimeout(() => {
+                copyLinkMsg.classList.remove("is-visible");
+              }, 2000);
+            }
+          });
+        }
+
+        // Setup share nativo (navigator.share)
+        const shareNativeBtn = document.getElementById("btn-share-native");
+        if (shareNativeBtn && navigator.share) {
+          shareNativeBtn.addEventListener("click", async () => {
+            try {
+              const shareText = getShareText(data.originale || frase, ribaltata, id);
+              const publicUrl = id ? `${window.location.origin}/ribaltate-ai/${id}/` : window.location.origin;
+              await navigator.share({
+                title: "Ribaltatore AI",
+                text: shareText,
+                url: publicUrl,
+              });
+            } catch (err: any) {
+              // Se l'utente annulla o errore, fallback su WhatsApp
+              if (err.name !== "AbortError") {
+                const whatsappUrl = getShareUrl("whatsapp", data.originale || frase, ribaltata, id);
+                window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+              }
+            }
+          });
+        } else if (shareNativeBtn) {
+          // Fallback: se navigator.share non disponibile, usa WhatsApp
+          shareNativeBtn.addEventListener("click", () => {
+            const whatsappUrl = getShareUrl("whatsapp", data.originale || frase, ribaltata, id);
+            window.open(whatsappUrl, "_blank", "noopener,noreferrer");
           });
         }
 

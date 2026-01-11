@@ -24,12 +24,13 @@ async function callOpenAI(frase: string): Promise<{ ok: true; ribaltata: string 
     return { ok: false, error: "OPENAI_API_KEY non configurata." };
   }
 
-  // Prompt IDENTICO al PHP originale
-  const prompt = `Agisci come un attivista antiproibizionista e satirico. Ribalta con ironia e intelligenza lo slogan: "${frase}"`;
+  // Prompt aggiornato: massimo 3 frasi, max 350 caratteri, tono ironico/antiproibizionista
+  const prompt = `Agisci come un attivista antiproibizionista e satirico. Ribalta con ironia e intelligenza lo slogan: "${frase}". Massimo 3 frasi, massimo 350 caratteri. Tono ironico e antiproibizionista, senza incitazione a violare leggi.`;
 
-  // Parametri IDENTICI al PHP: gpt-3.5-turbo, temperature 0.9
+  // Parametri: gpt-3.5-turbo, temperature 0.9, max_tokens limitato
   const model = process.env.OPENAI_MODEL || "gpt-3.5-turbo";
   const temperature = parseFloat(process.env.OPENAI_TEMPERATURE || "0.9");
+  const maxTokens = 160; // Limite tecnico per risposte brevi
 
   try {
     const controller = new AbortController();
@@ -45,7 +46,7 @@ async function callOpenAI(frase: string): Promise<{ ok: true; ribaltata: string 
         model,
         messages: [{ role: "user", content: prompt }],
         temperature,
-        // Nota: max_tokens rimosso per allinearsi al PHP (usa default OpenAI)
+        max_tokens: maxTokens,
       }),
       signal: controller.signal,
     });
@@ -67,10 +68,18 @@ async function callOpenAI(frase: string): Promise<{ ok: true; ribaltata: string 
       return { ok: false, error: "Risposta OpenAI non valida." };
     }
 
-    // Sanitizza output: rimuovi eventuali tag HTML e limita lunghezza
+    // Sanitizza output: rimuovi eventuali tag HTML
     let ribaltata = content.trim().replace(/<[^>]*>/g, "");
-    if (ribaltata.length > 1200) {
-      ribaltata = ribaltata.slice(0, 1200) + "...";
+    
+    // Post-process: tronca a 400 caratteri se supera 420 (senza spezzare parola se possibile)
+    if (ribaltata.length > 420) {
+      let truncated = ribaltata.slice(0, 400);
+      // Cerca ultimo spazio prima del limite per non spezzare parola
+      const lastSpace = truncated.lastIndexOf(" ");
+      if (lastSpace > 350) {
+        truncated = truncated.slice(0, lastSpace);
+      }
+      ribaltata = truncated + "…";
     }
 
     return { ok: true, ribaltata };
