@@ -12,20 +12,33 @@
 import SiteLayout from "@/layouts/SiteLayout.astro";
 import { listRibaltate } from "@/lib/repositories/ribaltatoreRepo";
 
+// Forza SSR (non prerender)
+export const prerender = false;
+
 const pageSize = 20;
 const currentPage = Number(Astro.url.searchParams.get("page")) || 1;
 
 let items: any[] = [];
 let totalPages = 0;
 let total = 0;
+let errorMessage: string | null = null;
 
 try {
   const result = await listRibaltate({ page: currentPage, pageSize });
-  items = result.items;
-  totalPages = result.totalPages;
-  total = result.total;
+  items = result.items || [];
+  totalPages = result.totalPages || 0;
+  total = result.total || 0;
 } catch (err: any) {
-  console.error("[frasi-ribaltate] Errore DB:", err?.message);
+  console.error("[frasi-ribaltate] Errore DB:", err);
+  errorMessage = err?.message || "Errore nel caricamento dei dati";
+  // In sviluppo, mostra l'errore anche nella pagina
+  if (import.meta.env.DEV) {
+    console.error("[frasi-ribaltate] Dettagli errore:", {
+      message: err?.message,
+      stack: err?.stack,
+      code: err?.code,
+    });
+  }
 }
 
 const title = "🧠 Frasi Ribaltate | Canapalandia";
@@ -42,15 +55,19 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/frasi-r
           Copiale, condividile, e aiutaci a diffondere la verità con ironia!
         </p>
 
-        {items.length > 0 ? (
+        {errorMessage ? (
+          <div class="frasi-error">
+            <p>⚠️ Errore nel caricamento: {errorMessage}</p>
+            {import.meta.env.DEV && (
+              <p style="font-size: 0.85rem; color: var(--muted); margin-top: 8px;">
+                Verifica che SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY siano configurate in .env
+              </p>
+            )}
+          </div>
+        ) : items.length > 0 ? (
           <>
             {items.map((frase) => {
               const url = `${import.meta.env.SITE || "https://canapalandia.com"}/ribaltate-ai/${frase.id}/`;
-              const testoCondivisibile = `🔒 Frase proibizionista: "${frase.frase_originale}"\n🔁 Ribaltata con l'AI: "${frase.frase_ribaltata}"\n\n👉 Scopri il Ribaltatore AI su ${import.meta.env.SITE || "https://canapalandia.com"}/ribaltatore/\n#cannabislight #canapalegale #canapa #satira #antiproibizionismo #canapalandia`;
-              const encoded = encodeURIComponent(frase.frase_ribaltata);
-              
-              // Formatta ribaltata: split per linee e paragrafi (come PHP)
-              const righe = frase.frase_ribaltata.split(/\n/).filter((r: string) => r.trim() !== "");
               
               // Anteprima ribaltata (max 3 righe)
               const anteprima = frase.frase_ribaltata.split(/\n/).slice(0, 3).join(" ").slice(0, 200);
@@ -308,6 +325,26 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/frasi-r
     padding: 60px 20px;
     color: var(--muted);
     font-size: 1.1rem;
+  }
+
+  .frasi-error {
+    text-align: center;
+    padding: 24px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+    color: #ef4444;
+    margin: 20px 0;
+  }
+
+  .frasi-error {
+    text-align: center;
+    padding: 24px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+    color: #ef4444;
+    margin: 20px 0;
   }
 
   .frasi-cta {

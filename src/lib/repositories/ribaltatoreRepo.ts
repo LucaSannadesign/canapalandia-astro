@@ -112,6 +112,10 @@ export async function listRibaltate(options: {
   const total = count || 0;
   const totalPages = Math.ceil(total / pageSize);
 
+  if (import.meta.env.DEV) {
+    console.log(`[ribaltatoreRepo] Totale record: ${total}, Pagina: ${page}/${totalPages}, Offset: ${offset}`);
+  }
+
   // Recupera items paginati (ordinati per più recenti)
   const { data, error } = await supabase
     .from("ribaltatore")
@@ -130,6 +134,10 @@ export async function listRibaltate(options: {
     frase_ribaltata: row.frase_ribaltata,
     created_at: row.created_at,
   }));
+
+  if (import.meta.env.DEV) {
+    console.log(`[ribaltatoreRepo] Record recuperati: ${items.length}`);
+  }
 
   return {
     items,
