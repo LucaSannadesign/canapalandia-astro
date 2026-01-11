@@ -2,14 +2,18 @@
 interface Props {
     slot?: string;
     label?: string;
+    client?: string;
 }
 
 const {
     slot = "7168595886",
     label,
+    client = "ca-pub-6462363788506395", // Default, può essere override via prop o env
 } = Astro.props;
 
-const AD_CLIENT = "ca-pub-6462363788506395";
+// Usa env se disponibile, altrimenti prop, altrimenti default
+const AD_CLIENT = import.meta.env.PUBLIC_ADSENSE_CLIENT || client;
+const isDev = import.meta.env.DEV;
 ---
 
 <div class="adslot-container" data-adslot-id={slot}>
@@ -78,86 +82,138 @@ const AD_CLIENT = "ca-pub-6462363788506395";
     }
 </style>
 
-<script define:vars={{ slot }}>
+<script define:vars={{ slot, isDev }}>
     (() => {
+        // WeakSet globale per tracciare elementi già inizializzati (evita duplicati)
+        if (!window.__adsenseInitialized) {
+            window.__adsenseInitialized = new WeakSet();
+        }
+
         const adSlotId = slot;
+        const STORAGE_KEY = "canapalandia_cookie_consent";
+
+        // Trova container e elemento ad (solo se nel DOM)
         const container = document.querySelector(`[data-adslot-id="${adSlotId}"]`);
-        if (!container) return;
-
-        const adElement = container.querySelector(".adsbygoogle");
-        if (!adElement) return;
-
-        // Evita doppio push usando flag dataset
-        if (adElement.dataset.rendered === "1") {
+        if (!container) {
+            if (isDev) console.warn(`[AdSlot ${adSlotId}] Container not found`);
             return;
         }
 
-        // Poll per aspettare che adsbygoogle esista (max 2s)
-        const pollForAdSense = (callback, maxAttempts = 20, interval = 100) => {
+        const adElement = container.querySelector(".adsbygoogle");
+        if (!adElement) {
+            if (isDev) console.warn(`[AdSlot ${adSlotId}] Ad element not found`);
+            return;
+        }
+
+        // Evita doppio push: controlla WeakSet e dataset flag
+        if (window.__adsenseInitialized.has(adElement) || adElement.dataset.adsInitialized === "1") {
+            if (isDev) console.warn(`[AdSlot ${adSlotId}] Already initialized, skipping`);
+            return;
+        }
+
+        // Verifica consenso cookie
+        const checkConsent = () => {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const consent = JSON.parse(saved);
+                    return consent.analytics === true;
+                }
+            } catch {}
+            // Se non c'è cookie banner, mostra comunque (compatibilità retroattiva)
+            return true;
+        };
+
+        // Poll per aspettare che adsbygoogle esista (max 3s, più generoso)
+        const pollForAdSense = (callback, maxAttempts = 30, interval = 100) => {
             let attempts = 0;
             const poll = () => {
-                if (window.adsbygoogle) {
+                if (window.adsbygoogle && typeof window.adsbygoogle.push === "function") {
                     callback();
                 } else if (attempts < maxAttempts) {
                     attempts++;
                     setTimeout(poll, interval);
                 } else {
-                    console.warn(`[AdSlot ${adSlotId}] adsbygoogle not loaded after ${maxAttempts * interval}ms`);
+                    if (isDev) {
+                        console.warn(`[AdSlot ${adSlotId}] adsbygoogle not loaded after ${maxAttempts * interval}ms`);
+                    }
                 }
             };
             poll();
         };
 
-        // Push ad slot
+        // Push ad slot (protetto e idempotente)
         const pushAd = () => {
-            if (adElement.dataset.rendered === "1") {
+            // Double-check: evita push multipli
+            if (window.__adsenseInitialized.has(adElement) || adElement.dataset.adsInitialized === "1") {
+                return;
+            }
+
+            // Verifica che l'elemento sia ancora nel DOM
+            if (!document.contains(adElement)) {
+                if (isDev) console.warn(`[AdSlot ${adSlotId}] Element removed from DOM`);
+                return;
+            }
+
+            // Verifica che adsbygoogle sia disponibile
+            if (!window.adsbygoogle || typeof window.adsbygoogle.push !== "function") {
+                if (isDev) console.warn(`[AdSlot ${adSlotId}] adsbygoogle.push not available`);
                 return;
             }
 
             try {
-                (window.adsbygoogle = window.adsbygoogle || []).push({});
-                adElement.dataset.rendered = "1";
+                // Usa requestAnimationFrame per assicurarsi che il DOM sia pronto
+                requestAnimationFrame(() => {
+                    try {
+                        (window.adsbygoogle = window.adsbygoogle || []).push({});
+                        window.__adsenseInitialized.add(adElement);
+                        adElement.dataset.adsInitialized = "1";
+                        if (isDev) {
+                            console.log(`[AdSlot ${adSlotId}] AdSense push executed for slot ${adSlotId}`);
+                        }
+                    } catch (err) {
+                        console.error(`[AdSlot ${adSlotId}] Error pushing ad:`, err);
+                    }
+                });
             } catch (err) {
-                console.error(`[AdSlot ${adSlotId}] Error pushing ad:`, err);
+                console.error(`[AdSlot ${adSlotId}] Error in pushAd:`, err);
             }
         };
 
-        // Verifica consenso cookie (opzionale)
-        const checkConsent = () => {
-            try {
-                const saved = localStorage.getItem("canapalandia_cookie_consent");
-                if (saved) {
-                    const consent = JSON.parse(saved);
-                    // Se c'è cookie banner, richiedi consenso analytics
-                    return consent.analytics === true;
-                }
-            } catch {}
-            // Se non c'è cookie banner, mostra comunque
-            return true;
-        };
+        // Funzione principale: inizializza ad se c'è consenso
+        const initAd = () => {
+            if (!checkConsent()) {
+                if (isDev) console.log(`[AdSlot ${adSlotId}] No consent, waiting...`);
+                return;
+            }
 
-        // Push solo se c'è consenso
-        if (checkConsent()) {
             if (window.__adsenseLoaded) {
                 // Script già caricato, aspetta che adsbygoogle esista
                 pollForAdSense(pushAd);
             } else {
                 // Aspetta che lo script si carichi
-                window.addEventListener("adsense:script-loaded", () => {
+                const handler = () => {
                     pollForAdSense(pushAd);
-                }, { once: true });
+                };
+                window.addEventListener("adsense:script-loaded", handler, { once: true });
             }
-        }
+        };
 
-        // Ascolta evento consenso cookie
+        // Inizializza subito se c'è consenso
+        initAd();
+
+        // Ascolta evento consenso cookie (per utenti che accettano dopo)
         window.addEventListener("canapalandia:cookie-consent", (e) => {
-            if (e.detail && e.detail.analytics === true && adElement.dataset.rendered !== "1") {
-                if (window.__adsenseLoaded) {
-                    pollForAdSense(pushAd);
-                } else {
-                    window.addEventListener("adsense:script-loaded", () => {
+            if (e.detail && e.detail.analytics === true) {
+                // Verifica che non sia già inizializzato
+                if (!window.__adsenseInitialized.has(adElement) && adElement.dataset.adsInitialized !== "1") {
+                    if (window.__adsenseLoaded) {
                         pollForAdSense(pushAd);
-                    }, { once: true });
+                    } else {
+                        window.addEventListener("adsense:script-loaded", () => {
+                            pollForAdSense(pushAd);
+                        }, { once: true });
+                    }
                 }
             }
         });

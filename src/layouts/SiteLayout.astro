@@ -39,6 +39,8 @@ const GA4_ID = import.meta.env.PUBLIC_GA4_ID;
       (() => {
         const STORAGE_KEY = "canapalandia_cookie_consent";
         const ADSENSE_CLIENT = "ca-pub-6462363788506395";
+        // Rileva dev mode: localhost o vercel preview
+        const isDev = window.location.hostname === "localhost" || window.location.hostname.includes("vercel.app");
 
         // Verifica consenso (ads = analytics true)
         const checkConsent = () => {
@@ -49,22 +51,47 @@ const GA4_ID = import.meta.env.PUBLIC_GA4_ID;
               return consent.analytics === true;
             }
           } catch {}
-          // Se non c'è cookie banner, carica comunque AdSense
+          // Se non c'è cookie banner, carica comunque AdSense (compatibilità retroattiva)
           return true;
         };
 
-        // Funzione per caricare script AdSense
+        // Funzione per caricare script AdSense (una sola volta)
         const loadAdSense = () => {
-          if (window.__adsenseLoaded) return;
-
-          if (!document.querySelector(`script[src*="googlesyndication.com/pagead/js/adsbygoogle.js"]`)) {
-            const script = document.createElement("script");
-            script.async = true;
-            script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`;
-            script.crossOrigin = "anonymous";
-            document.head.appendChild(script);
-            window.__adsenseLoaded = true;
+          // Evita doppio caricamento
+          if (window.__adsenseLoaded) {
+            if (isDev) console.log("[AdSense] Script already loaded, skipping");
+            return;
           }
+
+          // Verifica che lo script non sia già presente nel DOM
+          if (document.querySelector(`script[src*="googlesyndication.com/pagead/js/adsbygoogle.js"]`)) {
+            if (isDev) console.log("[AdSense] Script tag already exists in DOM");
+            window.__adsenseLoaded = true;
+            window.dispatchEvent(new CustomEvent("adsense:script-loaded"));
+            return;
+          }
+
+          // Crea e carica script
+          const script = document.createElement("script");
+          script.async = true;
+          script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`;
+          script.crossOrigin = "anonymous";
+          
+          // Log quando lo script viene caricato (solo in dev)
+          script.onload = () => {
+            window.__adsenseLoaded = true;
+            if (isDev) {
+              console.log("[AdSense] Script loaded successfully");
+            }
+            window.dispatchEvent(new CustomEvent("adsense:script-loaded"));
+          };
+
+          script.onerror = () => {
+            console.error("[AdSense] Failed to load script");
+          };
+
+          document.head.appendChild(script);
+          window.__adsenseLoaded = true; // Set subito per evitare race condition
         };
 
         // Carica se c'è consenso salvato
@@ -74,9 +101,13 @@ const GA4_ID = import.meta.env.PUBLIC_GA4_ID;
 
         // Ascolta evento consenso cookie
         window.addEventListener("canapalandia:cookie-consent", (e) => {
-          if (e.detail && e.detail.analytics === true && !window.__adsenseLoaded) {
-            loadAdSense();
-            window.dispatchEvent(new CustomEvent("adsense:script-loaded"));
+          if (e.detail && e.detail.analytics === true) {
+            if (!window.__adsenseLoaded) {
+              loadAdSense();
+            } else {
+              // Script già caricato, emetti evento per componenti in attesa
+              window.dispatchEvent(new CustomEvent("adsense:script-loaded"));
+            }
           }
         });
       })();
