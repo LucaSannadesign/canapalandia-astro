@@ -46,7 +46,7 @@ try {
 }
 
 const title = "🧠 Frasi Ribaltate | Canapalandia";
-const canonical = `${siteUrl}/frasi-ribaltate/`;
+const canonical = `${Astro.url.origin}/frasi-ribaltate/`;
 ---
 
 <SiteLayout title={title} canonical={canonical}>
@@ -71,7 +71,7 @@ const canonical = `${siteUrl}/frasi-ribaltate/`;
         ) : items.length > 0 ? (
           <>
             {items.map((frase) => {
-              const url = `${siteUrl}/ribaltate-ai/${frase.id}/`;
+              const url = `/ribaltate-ai/${frase.id}/`;
               
               // Anteprima ribaltata (max 3 righe)
               const anteprima = frase.frase_ribaltata.split(/\n/).slice(0, 3).join(" ").slice(0, 200);
