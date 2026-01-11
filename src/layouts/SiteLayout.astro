@@ -303,36 +303,38 @@ const isProduction = Astro.url.origin === "https://canapalandia.com";
 
     <footer class="site-footer">
       <div class="container footer-inner">
-        <div class="footer-brand">
-          <a class="footer-logo" href="/" aria-label="Canapalandia, Home">
-            <img
-              src="/images/logo-canapalandia.svg"
-              alt="Canapalandia"
-              class="footer-logo__img"
-              height="32"
-              loading="lazy"
-              decoding="async"
-            />
-          </a>
-
-          <p class="footer-tagline">
-            Informazione e cultura su cannabis light, CBD e canapa legale in
-            Italia.
-          </p>
-
-          <p class="footer-credits">
-            Sito realizzato da{" "}
-            <a
-              href="https://www.lswebagency.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              LS Web Agency
+        <div class="footer-top">
+          <div class="footer-brand">
+            <a class="footer-logo" href="/" aria-label="Canapalandia, Home">
+              <img
+                src="/images/logo-canapalandia.svg"
+                alt="Canapalandia"
+                class="footer-logo__img"
+                height="32"
+                loading="lazy"
+                decoding="async"
+              />
             </a>
-          </p>
+
+            <p class="footer-tagline">
+              Informazione e cultura su cannabis light, CBD e canapa legale in
+              Italia.
+            </p>
+
+            <p class="footer-credits">
+              Sito realizzato da{" "}
+              <a
+                href="https://www.lswebagency.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                LS Web Agency
+              </a>
+            </p>
+          </div>
         </div>
 
-        <nav class="footer-nav" aria-label="Link utili">
+        <nav class="footer-links footer-nav" aria-label="Link utili">
           <a href="/blog/">Blog</a>
           <a href="/ribaltatore/">Ribaltatore AI</a>
           <a href="/frasi-ribaltate/">Frasi Ribaltate</a>

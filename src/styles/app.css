@@ -397,6 +397,11 @@ html[data-theme="light"] .site-footer {
   gap: 18px;
 }
 
+.footer-top {
+  display: flex;
+  flex-direction: column;
+}
+
 .footer-nav {
   display: inline-flex;
   gap: 14px;
@@ -404,23 +409,58 @@ html[data-theme="light"] .site-footer {
   justify-content: flex-end;
 }
 
-/* Footer nav responsive: 2 colonne su mobile */
+/* Footer mobile: struttura a due livelli */
 @media (max-width: 767px) {
-  .footer-nav {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px 16px;
-    justify-content: start;
-    line-height: 1.6;
+  .footer-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
   }
-  
-  .footer-nav a {
-    padding: 4px 0;
+
+  .footer-top {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .footer-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .footer-links {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    gap: 0;
+  }
+
+  .footer-links a {
+    display: block;
+    padding: 6px 0;
+    line-height: 1.6;
   }
 }
 
-/* Footer nav torna orizzontale su desktop */
+/* Footer desktop: layout originale */
 @media (min-width: 768px) {
+  .footer-inner {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 18px;
+  }
+
+  .footer-top {
+    display: block;
+  }
+
   .footer-nav {
     display: inline-flex;
     flex-wrap: wrap;
