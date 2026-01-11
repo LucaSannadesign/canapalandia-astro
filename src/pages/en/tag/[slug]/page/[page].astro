@@ -1,0 +1,49 @@
+---
+/**
+ * Route EN tag paginazione: /en/tag/[slug]/page/[page]/
+ * Compatibilità WordPress: assorbe URL storici EN /en/tag/slug/page/2/
+ * 
+ * page=1 canonicalizza a /en/tag/[slug]/
+ * Se il sito non ha contenuti EN reali, mostra pagina minimale con noindex,follow
+ */
+import SiteLayout from "../../../../../layouts/SiteLayout.astro";
+
+export const prerender = false;
+
+const slug = String(Astro.params.slug ?? "").trim();
+const pageParam = Astro.params.page;
+const pageNum = pageParam ? parseInt(pageParam, 10) : 1;
+
+// Validazione: page deve essere intero >= 1
+if (isNaN(pageNum) || pageNum < 1) {
+  return new Response(null, {
+    status: 404,
+    statusText: "Not Found",
+  });
+}
+
+// page=1 canonicalizza a /en/tag/[slug]/
+if (pageNum === 1) {
+  return Astro.redirect(`/en/tag/${slug}/`, 301);
+}
+
+// Per ora: pagina minimale con noindex (archivio EN legacy)
+const metadata = {
+  title: `Tag: ${slug} — Page ${pageNum} — Canapalandia`,
+  description: "English tag archive (legacy).",
+  canonical: `${Astro.url.origin}/en/tag/${slug}/page/${pageNum}/`,
+  robots: { index: false, follow: true },
+};
+---
+
+<SiteLayout metadata={metadata}>
+  <main class="container page-shell">
+    <section class="card">
+      <h1>Tag: {slug} — Page {pageNum}</h1>
+      <p>This is a legacy English tag archive. The site content is primarily in Italian.</p>
+      <p>
+        <a href="/tag/{slug}/">View Italian version</a> | <a href="/blog/">Go to Blog</a>
+      </p>
+    </section>
+  </main>
+</SiteLayout>

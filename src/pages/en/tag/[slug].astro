@@ -1,0 +1,34 @@
+---
+/**
+ * Route EN tag: /en/tag/[slug]/
+ * Compatibilità WordPress: assorbe URL storici EN /en/tag/slug/
+ * 
+ * Se il sito non ha contenuti EN reali, mostra pagina minimale con noindex,follow
+ */
+import SiteLayout from "../../../layouts/SiteLayout.astro";
+
+export const prerender = false;
+
+const slug = String(Astro.params.slug ?? "").trim();
+
+// Per ora: pagina minimale con noindex (archivio EN legacy)
+// Se in futuro ci sono contenuti EN, aggiornare questa route
+const metadata = {
+  title: `Tag: ${slug} — Canapalandia`,
+  description: "English tag archive (legacy).",
+  canonical: `${Astro.url.origin}/en/tag/${slug}/`,
+  robots: { index: false, follow: true },
+};
+---
+
+<SiteLayout metadata={metadata}>
+  <main class="container page-shell">
+    <section class="card">
+      <h1>Tag: {slug}</h1>
+      <p>This is a legacy English tag archive. The site content is primarily in Italian.</p>
+      <p>
+        <a href="/tag/{slug}/">View Italian version</a> | <a href="/blog/">Go to Blog</a>
+      </p>
+    </section>
+  </main>
+</SiteLayout>

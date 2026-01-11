@@ -27,14 +27,11 @@ if (fraseId && !isNaN(fraseId)) {
   }
 }
 
-// 404 se non trovata
+// 404 se non trovata - restituisci 404 vero (no redirect)
 if (!frase) {
   return new Response(null, {
     status: 404,
     statusText: "Not Found",
-    headers: {
-      Location: "/404/",
-    },
   });
 }
 

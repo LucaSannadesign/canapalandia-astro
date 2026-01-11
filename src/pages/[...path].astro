@@ -132,9 +132,12 @@ function findEntryByPath(pathToFind: string): WpEntry | null {
 
 const foundEntry = findEntryByPath(targetPathForMatch);
 
-// Se non trovato, restituisci 404
+// Se non trovato, restituisci 404 vero (non redirect)
 if (!foundEntry) {
-  return Astro.redirect("/404", 302);
+  return new Response(null, {
+    status: 404,
+    statusText: "Not Found",
+  });
 }
 
 /* ---------------------------
