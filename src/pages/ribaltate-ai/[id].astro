@@ -36,14 +36,17 @@ if (!frase) {
 }
 
 // Meta SEO/OG
-const url = `${Astro.url.origin}/ribaltate-ai/${frase.id}/`;
+const origin = Astro.url.origin;
+const url = `${origin}/ribaltate-ai/${frase.id}/`;
 const shareText = frase.frase_ribaltata;
 const encoded = encodeURIComponent(shareText);
 const titolo = `Ribaltata: ${shareText.slice(0, 60)}${shareText.length > 60 ? "..." : ""}`;
 const descrizione = `Slogan ribaltato: ${frase.frase_originale.slice(0, 150)}${frase.frase_originale.length > 150 ? "..." : ""}`;
-// Immagine OG: usa URL assoluto solo se necessario (risorsa esterna WordPress)
-// In futuro, considera di spostare l'immagine in /public/images/
-const immagine = "https://canapalandia.com/wp-content/uploads/2025/04/ribaltatore-social.jpg";
+// Immagini OG: path locali con URL assoluto per meta tags
+const ogImagePath = "/images/ribaltatore-social.jpg";
+const ogImageAbs = origin + ogImagePath;
+const logoPath = "/images/logo-canapalandia.svg";
+const logoAbs = origin + logoPath;
 
 // Formatta ribaltata: split per linee e paragrafi (come PHP)
 const righe = frase.frase_ribaltata.split(/\n/).filter((r: string) => r.trim() !== "");
@@ -62,7 +65,7 @@ const testoCompleto = `ðŸ”’ Frase proibizionista: "${frase.frase_originale}"\nðŸ
       const ogTags = {
         'og:title': '${titolo.replace(/'/g, "\\'")}',
         'og:description': '${descrizione.replace(/'/g, "\\'")}',
-        'og:image': '${immagine}',
+        'og:image': '${ogImageAbs}',
         'og:url': '${url}',
         'og:type': 'article',
         'og:site_name': 'Canapalandia',
@@ -80,7 +83,7 @@ const testoCompleto = `ðŸ”’ Frase proibizionista: "${frase.frase_originale}"\nðŸ
         'twitter:card': 'summary_large_image',
         'twitter:title': '${titolo.replace(/'/g, "\\'")}',
         'twitter:description': '${descrizione.replace(/'/g, "\\'")}',
-        'twitter:image': '${immagine}',
+        'twitter:image': '${ogImageAbs}',
         'twitter:site': '@Canapalandia',
       };
       
@@ -100,7 +103,7 @@ const testoCompleto = `ðŸ”’ Frase proibizionista: "${frase.frase_originale}"\nðŸ
         headline: titolo,
         description: descrizione,
         url: url,
-        image: immagine,
+        image: ogImageAbs,
         author: {
           "@type": "Organization",
           name: "Canapalandia",
@@ -110,7 +113,7 @@ const testoCompleto = `ðŸ”’ Frase proibizionista: "${frase.frase_originale}"\nðŸ
           name: "Canapalandia",
           logo: {
             "@type": "ImageObject",
-            url: "https://canapalandia.com/wp-content/uploads/2024/09/logo-canapalandia-2024-definitivo-border-non.svg",
+            url: logoAbs,
           },
         },
       }))};

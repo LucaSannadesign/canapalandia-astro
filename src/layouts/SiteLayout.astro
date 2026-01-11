@@ -440,6 +440,48 @@ const isProduction = Astro.url.origin === "https://canapalandia.com";
 
     <CookieBanner />
 
+    <!-- Calcola altezza navbar dinamicamente -->
+    <script is:inline>
+      (() => {
+        const headerInner = document.querySelector(".site-header .header-inner");
+        if (!headerInner) return;
+
+        const updateNavHeight = () => {
+          const height = headerInner.offsetHeight || 72;
+          document.documentElement.style.setProperty("--nav-h", `${height}px`);
+        };
+
+        // Aggiorna all'avvio
+        updateNavHeight();
+
+        // Aggiorna su resize (con debounce via rAF)
+        let resizeTicking = false;
+        const onResize = () => {
+          if (!resizeTicking) {
+            requestAnimationFrame(() => {
+              updateNavHeight();
+              resizeTicking = false;
+            });
+            resizeTicking = true;
+          }
+        };
+
+        window.addEventListener("resize", onResize, { passive: true });
+
+        // Aggiorna anche quando lo stato scrolled cambia (padding cambia)
+        const header = document.querySelector(".site-header");
+        if (header) {
+          const observer = new MutationObserver(() => {
+            requestAnimationFrame(updateNavHeight);
+          });
+          observer.observe(header, {
+            attributes: true,
+            attributeFilter: ["class", "data-scrolled"],
+          });
+        }
+      })();
+    </script>
+
     <!-- Header scroll animation -->
     <script is:inline>
       (() => {

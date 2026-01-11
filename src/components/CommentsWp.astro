@@ -1,7 +1,8 @@
 ---
+import { WP_API_BASE } from "@/lib/consts";
+
 const { postId } = Astro.props;
 
-const WP_API_BASE = import.meta.env.PUBLIC_WP_API_BASE || "https://canapalandia.com/wp-json/wp/v2";
 const endpoint = `${WP_API_BASE.replace(/\/$/, "")}/comments?post=${postId}&per_page=50&order=asc`;
 
 type WPComment = {

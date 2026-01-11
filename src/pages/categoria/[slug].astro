@@ -2,10 +2,7 @@
 export const prerender = false;
 
 import SiteLayout from "../../layouts/SiteLayout.astro";
-
-const WP_API_BASE =
-  import.meta.env.PUBLIC_WP_API_BASE ||
-  "https://canapalandia.com/wp-json/wp/v2";
+import { WP_API_BASE } from "@/lib/consts";
 
 const slug = String(Astro.params.slug ?? "").trim();
 

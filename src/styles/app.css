@@ -36,6 +36,9 @@
   --container: 1120px;
   --pad: 20px;
   --gutter: 10px;
+  
+  /* Altezza navbar - aggiornata dinamicamente via JS */
+  --nav-h: 76px;
 
   --font-sans: "Sora", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial,
     "Apple Color Emoji", "Segoe UI Emoji";
@@ -81,20 +84,7 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
-  /* Compensa altezza header fixed + adbar (aggiornato via CSS quando adbar è nascosta) */
-  padding-top: calc(76px + 140px);
-  transition: padding-top 260ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-/* Quando adbar è nascosta, riduci padding-top */
-body:has([data-adbar][data-hidden="true"]) {
-  padding-top: 76px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  body {
-    transition: padding-top 100ms ease;
-  }
+  /* Nessun padding-top sul body - compensazione solo su main */
 }
 
 a {
@@ -114,6 +104,11 @@ a {
   margin: 0 auto;
   padding-left: max(var(--gutter), env(safe-area-inset-left));
   padding-right: max(var(--gutter), env(safe-area-inset-right));
+}
+
+/* Compensazione per header fixed */
+main#contenuto {
+  padding-top: var(--nav-h);
 }
 
 /* Gutter per contenuti fuori .container (solo mobile) */
@@ -245,6 +240,8 @@ html[data-theme="light"] .site-header.is-scrolled {
   opacity: 0;
   transform: translateY(-6px);
   pointer-events: none;
+  margin: 0;
+  padding: 0;
 }
 
 .adbar .container {
@@ -253,6 +250,12 @@ html[data-theme="light"] .site-header.is-scrolled {
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+/* Rimuovi padding quando adbar è nascosta */
+.adbar[data-hidden="true"] .container {
+  padding-top: 0;
+  padding-bottom: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {

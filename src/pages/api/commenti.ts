@@ -1,6 +1,5 @@
 import type { APIRoute } from "astro";
-
-const WP_API_BASE = import.meta.env.PUBLIC_WP_API_BASE || "https://canapalandia.com/wp-json/wp/v2";
+import { WP_API_BASE } from "@/lib/consts";
 
 // Basic anti-spam: honeypot + rate limit in-memory (ok in dev; su serverless è best-effort)
 const RATE_WINDOW_MS = 60_000; // 1 min
