@@ -83,56 +83,72 @@ async function callOpenAI(frase: string): Promise<{ ok: true; ribaltata: string 
 }
 
 export const POST: APIRoute = async ({ request }) => {
-  // 1. Valida Content-Type (multipart/form-data)
   const contentType = request.headers.get("content-type") || "";
-  if (!contentType.includes("multipart/form-data") && !contentType.includes("application/x-www-form-urlencoded")) {
-    return new Response(JSON.stringify({ error: "Content-Type non valido" }), {
-      status: 400,
-      headers: { "content-type": "application/json" },
-    });
+  let frase: string = "";
+  let trap: string = "";
+
+  // 1. Accetta sia JSON che FormData
+  if (contentType.includes("application/json")) {
+    // Parse JSON
+    try {
+      const body = await request.json();
+      // Estrai frase con priorità: frase -> testo -> text -> prompt -> input
+      frase = (body.frase || body.testo || body.text || body.prompt || body.input || "").trim();
+      trap = String(body.email_trap || "").trim();
+    } catch (err) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "Errore parsing JSON" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+    }
+  } else {
+    // Parse FormData
+    try {
+      const form = await request.formData();
+      frase = String(form.get("frase") || "").trim();
+      trap = String(form.get("email_trap") || "").trim();
+    } catch (err) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "Errore parsing form" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+    }
   }
 
-  // 2. Parse FormData
-  let form: FormData;
-  try {
-    form = await request.formData();
-  } catch (err) {
-    return new Response(JSON.stringify({ error: "Errore parsing form" }), {
-      status: 400,
-      headers: { "content-type": "application/json" },
-    });
-  }
-
-  // 3. Valida honeypot (email_trap)
-  const trap = String(form.get("email_trap") ?? "").trim();
+  // 2. Valida honeypot (email_trap)
   if (trap) {
-    // Honeypot compilato = spam
     return new Response(
-      JSON.stringify({ ribaltata: "❌ Richiesta rifiutata (spam rilevato)" }),
+      JSON.stringify({ ok: false, error: "Richiesta rifiutata (spam rilevato)" }),
       {
         status: 400,
-        headers: { "content-type": "application/json" },
+        headers: { "Content-Type": "application/json" },
       },
     );
   }
 
-  // 4. Valida frase
-  const fraseRaw = form.get("frase");
-  if (!fraseRaw || typeof fraseRaw !== "string") {
-    return new Response(JSON.stringify({ ribaltata: "❌ Frase non valida" }), {
-      status: 400,
-      headers: { "content-type": "application/json" },
-    });
-  }
-
-  const frase = fraseRaw.trim();
-  // Vincoli: min 3 caratteri, max 400 (come PHP originale o default ragionevole)
-  if (frase.length < 3 || frase.length > 400) {
+  // 3. Valida frase (vuota o mancante)
+  if (!frase) {
     return new Response(
-      JSON.stringify({ ribaltata: "❌ Frase deve essere tra 3 e 400 caratteri" }),
+      JSON.stringify({ ok: false, error: "missing_frase" }),
       {
         status: 400,
-        headers: { "content-type": "application/json" },
+        headers: { "Content-Type": "application/json" },
+      },
+    );
+  }
+  // 4. Vincoli: min 3 caratteri, max 400
+  if (frase.length < 3 || frase.length > 400) {
+    return new Response(
+      JSON.stringify({ ok: false, error: "Frase deve essere tra 3 e 400 caratteri" }),
+      {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
       },
     );
   }
@@ -144,12 +160,13 @@ export const POST: APIRoute = async ({ request }) => {
   if (!rateLimit.allowed) {
     return new Response(
       JSON.stringify({
-        ribaltata: `⏳ Troppe richieste. Riprova tra qualche minuto.`,
+        ok: false,
+        error: "Troppe richieste. Riprova tra qualche minuto.",
       }),
       {
         status: 429,
         headers: {
-          "content-type": "application/json",
+          "Content-Type": "application/json",
           "Retry-After": String(Math.ceil((rateLimit.resetAt - Date.now()) / 1000)),
         },
       },
@@ -160,14 +177,17 @@ export const POST: APIRoute = async ({ request }) => {
   const aiResult = await callOpenAI(frase);
 
   if (!aiResult.ok) {
-    return new Response(JSON.stringify({ ribaltata: `❌ ${aiResult.error}` }), {
-      status: 500,
-      headers: { "content-type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ ok: false, error: aiResult.error }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
   }
 
   // 7. Salva in DB (Supabase)
-  let id: number;
+  let id: number = 0;
   try {
     // Hash IP per privacy (opzionale, non obbligatorio)
     const ipHash = ip ? crypto.createHash("sha256").update(ip).digest("hex") : null;
@@ -180,20 +200,20 @@ export const POST: APIRoute = async ({ request }) => {
     });
   } catch (err: any) {
     console.error("[ribalta-ai] Errore salvataggio DB:", err?.message);
-    // Anche se fallisce il salvataggio, restituisci il risultato (fallback)
-    id = 0;
+    // Anche se fallisce il salvataggio, restituisci il risultato (fallback con id=0)
   }
 
-  // 8. Restituisci JSON (formato compatibile PHP: originale, ribaltata, id)
+  // 8. Restituisci JSON con schema stabile
   return new Response(
     JSON.stringify({
+      ok: true,
+      id,
       originale: frase,
       ribaltata: aiResult.ribaltata,
-      id,
     }),
     {
       status: 200,
-      headers: { "content-type": "application/json" },
+      headers: { "Content-Type": "application/json" },
     },
   );
 };

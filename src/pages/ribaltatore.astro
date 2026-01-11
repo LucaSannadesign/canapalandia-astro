@@ -479,54 +479,60 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/ribalta
           body: formData,
         });
 
+        // Leggi risposta come testo prima di parsare
+        const responseText = await response.text();
+        const contentType = response.headers.get("content-type") || "";
+
         // Verifica status HTTP
         if (!response.ok) {
-          const contentType = response.headers.get("content-type") || "";
           let errorMessage = `Errore ${response.status}: ${response.statusText}`;
           
-          // Prova a leggere messaggio errore se è JSON
+          // Prova a parsare JSON se content-type corretto
           if (contentType.includes("application/json")) {
             try {
-              const errorData = await response.json();
-              errorMessage = errorData.ribaltata || errorData.error || errorMessage;
+              const errorData = JSON.parse(responseText);
+              errorMessage = errorData.error || errorData.ribaltata || errorMessage;
             } catch {
-              // Ignora se non riesce a parsare JSON
-            }
-          } else {
-            // Se non è JSON, prova a leggere come testo (limitato)
-            try {
-              const text = await response.text();
-              if (text && text.length < 200) {
-                errorMessage = text;
+              // Se non è JSON valido, usa il testo
+              if (responseText && responseText.length < 200) {
+                errorMessage = responseText;
               }
-            } catch {
-              // Ignora se non riesce a leggere testo
             }
+          } else if (responseText && responseText.length < 200) {
+            errorMessage = responseText;
           }
           
           throw new Error(errorMessage);
         }
 
-        // Verifica content-type prima di parsare JSON
-        const contentType = response.headers.get("content-type") || "";
-        if (!contentType.includes("application/json")) {
-          throw new Error(`Risposta non valida: content-type ${contentType} non è application/json`);
-        }
-
-        // Parse JSON con gestione errori
+        // Parse JSON solo se content-type include application/json
         let data: any;
-        try {
-          data = await response.json();
-        } catch (parseError) {
-          throw new Error("Errore nel parsing della risposta JSON");
+        if (contentType.includes("application/json")) {
+          try {
+            data = JSON.parse(responseText);
+          } catch (parseError) {
+            throw new Error(`Errore nel parsing della risposta JSON: ${responseText.slice(0, 100)}`);
+          }
+        } else {
+          throw new Error(`Risposta non valida: content-type ${contentType} non è application/json. Risposta: ${responseText.slice(0, 100)}`);
         }
 
-        if (!data.ribaltata || !data.id) {
-          throw new Error("Risposta non valida: campi mancanti");
+        // Verifica ok:false
+        if (data.ok === false) {
+          throw new Error(data.error || "Errore nella generazione");
+        }
+
+        // Fallback chiavi multiple per ribaltata
+        const ribaltata = data.ribaltata ?? data.frase_ribaltata ?? data.answer ?? data.output ?? data.data?.ribaltata;
+        const id = data.id ?? data.data?.id ?? 0;
+
+        // Se ribaltata manca, mostra JSON ricevuto
+        if (!ribaltata) {
+          throw new Error(`Risposta non valida: campo ribaltata mancante. JSON ricevuto: ${JSON.stringify(data)}`);
         }
 
         // Render risultato
-        risultatoDiv.innerHTML = renderRisultato(data.originale || frase, data.ribaltata, data.id);
+        risultatoDiv.innerHTML = renderRisultato(data.originale || frase, ribaltata, id);
 
         // Setup copy button
         const copyBtn = document.getElementById("btn-copia");
