@@ -275,15 +275,14 @@ const isProduction = Astro.url.origin === "https://canapalandia.com";
           <a href="/cerca/">Cerca</a>
         </div>
       </nav>
+    </header>
 
-      <!-- AdSense Banner in Header -->
-      <div
-        class="container"
-        style="padding-top: 1rem; padding-bottom: 0.5rem; display: flex; justify-content: center;"
-      >
+    <!-- AdSense Banner Bar (separato dall'header) -->
+    <div class="adbar" data-adbar>
+      <div class="container">
         <AdSlot label="Pubblicità" />
       </div>
-    </header>
+    </div>
 
     <main id="contenuto">
       {
@@ -445,10 +444,13 @@ const isProduction = Astro.url.origin === "https://canapalandia.com";
     <script is:inline>
       (() => {
         const header = document.querySelector(".site-header");
+        const adbar = document.querySelector("[data-adbar]");
         if (!header) return;
 
         const SCROLL_THRESHOLD = 12;
         const DIRECTION_THRESHOLD = 4;
+        const ADBAR_HIDE_THRESHOLD = 120;
+        const ADBAR_SHOW_THRESHOLD = 60;
         const prefersReduced = window.matchMedia(
           "(prefers-reduced-motion: reduce)",
         ).matches;
@@ -468,7 +470,7 @@ const isProduction = Astro.url.origin === "https://canapalandia.com";
             direction = "up";
           }
           
-          // Aggiorna attributi
+          // Aggiorna attributi header
           header.setAttribute("data-scrolled", isScrolled ? "true" : "false");
           if (direction !== "none") {
             header.setAttribute("data-dir", direction);
@@ -476,6 +478,24 @@ const isProduction = Astro.url.origin === "https://canapalandia.com";
           
           // Mantieni compatibilità con classe esistente
           header.classList.toggle("is-scrolled", isScrolled);
+          
+          // Gestisci adbar
+          if (adbar) {
+            const isHidden = adbar.getAttribute("data-hidden") === "true";
+            
+            // Nascondi se: scroll > 120px OPPURE (scroll > 60px E direzione = down)
+            if (scrollY > ADBAR_HIDE_THRESHOLD || (scrollY > ADBAR_SHOW_THRESHOLD && direction === "down")) {
+              if (!isHidden) {
+                adbar.setAttribute("data-hidden", "true");
+              }
+            }
+            // Mostra se: scroll < 60px OPPURE direzione = up
+            else if (scrollY < ADBAR_SHOW_THRESHOLD || direction === "up") {
+              if (isHidden) {
+                adbar.setAttribute("data-hidden", "false");
+              }
+            }
+          }
           
           lastY = scrollY;
           ticking = false;

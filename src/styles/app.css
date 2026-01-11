@@ -81,8 +81,20 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
-  /* Compensa altezza header fixed */
+  /* Compensa altezza header fixed + adbar (aggiornato via CSS quando adbar è nascosta) */
+  padding-top: calc(76px + 140px);
+  transition: padding-top 260ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Quando adbar è nascosta, riduci padding-top */
+body:has([data-adbar][data-hidden="true"]) {
   padding-top: 76px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body {
+    transition: padding-top 100ms ease;
+  }
 }
 
 a {
@@ -211,6 +223,46 @@ html[data-theme="light"] .site-header.is-scrolled {
     transition: background 100ms ease,
                 border-bottom-color 100ms ease,
                 box-shadow 100ms ease;
+  }
+}
+
+/* Adbar: barra pubblicità sotto header */
+.adbar {
+  position: relative;
+  width: 100%;
+  max-height: 140px;
+  opacity: 1;
+  transform: translateY(0);
+  overflow: hidden;
+  transition: max-height 260ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              opacity 260ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              transform 260ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  pointer-events: auto;
+}
+
+.adbar[data-hidden="true"] {
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+}
+
+.adbar .container {
+  padding-top: 1rem;
+  padding-bottom: 0.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .adbar {
+    transition: max-height 100ms ease,
+                opacity 100ms ease;
+  }
+  
+  .adbar[data-hidden="true"] {
+    transform: none;
   }
 }
 
