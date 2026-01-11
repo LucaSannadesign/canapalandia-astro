@@ -1,0 +1,523 @@
+---
+/**
+ * Pagina principale Ribaltatore AI
+ * Replica ESATTAMENTE il comportamento del PHP page-ribaltatore.php
+ * 
+ * Comportamento:
+ * - Form con campo frase (textarea, min 3 / max 400 caratteri)
+ * - Honeypot email_trap (nascosto)
+ * - Submit via fetch POST a /api/ribalta-ai
+ * - UI: loading state, error state, risultato con copy e share
+ */
+import SiteLayout from "@/layouts/SiteLayout.astro";
+
+const title = "🧠 Ribalta con l'AI | Canapalandia";
+const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/ribaltatore/`;
+---
+
+<SiteLayout title={title} canonical={canonical}>
+  <main id="contenuto">
+    <div class="container">
+      <div class="ribaltatore-page">
+        <h1 class="ribaltatore-title">
+          🧠 Ribalta con l'AI
+        </h1>
+        <p class="ribaltatore-subtitle">
+          Inserisci uno slogan proibizionista e guarda come viene ribaltato con ironia dal nostro Ribaltatore AI.
+        </p>
+
+        <form id="form-ribalta" class="ribaltatore-form">
+          <label for="frase" class="ribaltatore-label">
+            ✍️ Inserisci lo slogan proibizionista:
+          </label>
+          <textarea
+            id="frase"
+            name="frase"
+            required
+            minlength="3"
+            maxlength="400"
+            rows="4"
+            class="ribaltatore-textarea"
+            placeholder="Es: Chi fuma canne è un delinquente"
+          ></textarea>
+          
+          <!-- Honeypot (nascosto) -->
+          <input
+            type="text"
+            name="email_trap"
+            class="ribaltatore-trap"
+            tabindex="-1"
+            autocomplete="off"
+            aria-hidden="true"
+          />
+
+          <div class="ribaltatore-submit">
+            <button type="submit" class="ribaltatore-button" id="submit-btn">
+              📎 RIBALTA ORA!
+            </button>
+          </div>
+        </form>
+
+        <div id="risultato-ribaltato" class="ribaltatore-result" aria-live="polite"></div>
+
+        <div class="ribaltatore-cta">
+          <a href="/frasi-ribaltate/" class="ribaltatore-button ribaltatore-button--secondary">
+            👀 GUARDA TUTTE LE FRASI RIBALTATE
+          </a>
+        </div>
+
+        <p class="ribaltatore-description">
+          ✊ Questo non è un semplice generatore di frasi. È un <strong>ribaltatore di propaganda</strong>, un'arma di satira di distruzione di massa.
+          Inserisci uno slogan proibizionista, guarda come si contorce sotto il peso dell'intelligenza artificiale (e del buonsenso)
+          e <strong>trasformalo in verità con un click</strong>. Da condividere ovunque: nei social, nei gruppi, nei cessi dei bar, dove vuoi.
+          <em>Perché se non puoi sconfiggere l'assurdo… ribaltalo.</em>
+        </p>
+      </div>
+    </div>
+  </main>
+</SiteLayout>
+
+<style>
+  .ribaltatore-page {
+    max-width: 850px;
+    margin: 60px auto;
+    padding: 0 var(--gutter, 24px);
+  }
+
+  .ribaltatore-title {
+    text-align: center;
+    font-size: clamp(1.8rem, 4vw, 2.2rem);
+    margin-bottom: 10px;
+    line-height: 1.2;
+  }
+
+  .ribaltatore-subtitle {
+    text-align: center;
+    font-size: 1.1rem;
+    margin-bottom: 35px;
+    color: var(--muted);
+  }
+
+  .ribaltatore-form {
+    margin-bottom: 40px;
+  }
+
+  .ribaltatore-label {
+    font-size: 1.2rem;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 10px;
+    color: var(--text);
+  }
+
+  .ribaltatore-textarea {
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--text);
+    font-family: inherit;
+    resize: vertical;
+    min-height: 100px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .ribaltatore-textarea:focus {
+    outline: none;
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+  }
+
+  .ribaltatore-trap {
+    position: absolute;
+    left: -9999px;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .ribaltatore-submit {
+    margin-top: 20px;
+  }
+
+  .ribaltatore-button {
+    padding: 12px 25px;
+    background: var(--brand);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.1s ease;
+    text-decoration: none;
+    display: inline-block;
+    min-height: 44px;
+  }
+
+  .ribaltatore-button:hover:not(:disabled) {
+    background: var(--brand-2);
+    transform: translateY(-1px);
+  }
+
+  .ribaltatore-button:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  .ribaltatore-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .ribaltatore-button--secondary {
+    background: var(--brand);
+    color: white;
+  }
+
+  .ribaltatore-cta {
+    text-align: center;
+    margin-top: 40px;
+  }
+
+  .ribaltatore-description {
+    text-align: center;
+    margin-top: 40px;
+    font-size: 1.05rem;
+    color: var(--muted);
+    line-height: 1.6;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .ribaltatore-description strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  .ribaltatore-description em {
+    font-style: italic;
+    color: var(--brand);
+  }
+
+  .ribaltatore-result {
+    margin-top: 40px;
+    min-height: 100px;
+  }
+
+  /* Risultato card */
+  .risultato-card {
+    max-width: 850px;
+    margin: 40px auto;
+    padding: 30px 25px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--panel);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+
+  .risultato-card__originale {
+    font-size: 1.1rem;
+    color: var(--text);
+    margin-bottom: 25px;
+  }
+
+  .risultato-card__originale strong {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+
+  .risultato-card__ribaltata {
+    margin-top: 25px;
+  }
+
+  .risultato-card__ribaltata h2 {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+    color: var(--brand);
+  }
+
+  .risultato-card__ribaltata-content {
+    font-size: 1.3rem;
+    color: var(--brand);
+    font-weight: 600;
+    line-height: 1.6;
+    margin-top: 10px;
+    white-space: pre-line;
+  }
+
+  .risultato-card__copy {
+    margin-top: 30px;
+  }
+
+  .risultato-card__copy p {
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+
+  .risultato-card__textarea {
+    width: 100%;
+    font-size: 15px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--panel);
+    color: var(--text);
+    font-family: inherit;
+    resize: vertical;
+    min-height: 120px;
+    white-space: pre-line;
+    margin-bottom: 10px;
+  }
+
+  .risultato-card__copy-btn {
+    padding: 10px 20px;
+    background: var(--brand);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s ease;
+    min-height: 44px;
+  }
+
+  .risultato-card__copy-btn:hover {
+    background: var(--brand-2);
+  }
+
+  .risultato-card__copiato {
+    margin-left: 12px;
+    color: var(--brand);
+    font-weight: 600;
+    display: none;
+  }
+
+  .risultato-card__copiato.is-visible {
+    display: inline;
+  }
+
+  .risultato-card__share {
+    margin-top: 30px;
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .risultato-card__share a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    opacity: 0.8;
+    transition: opacity 0.2s ease, transform 0.1s ease;
+  }
+
+  .risultato-card__share a:hover {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+
+  .risultato-card__share img {
+    width: 22px;
+    height: 22px;
+    filter: var(--icon-filter, none);
+  }
+
+  .risultato-card__loading {
+    text-align: center;
+    font-size: 1.2rem;
+    color: var(--muted);
+    padding: 40px 20px;
+  }
+
+  .risultato-card__error {
+    text-align: center;
+    color: #ef4444;
+    padding: 20px;
+    background: rgba(239, 68, 68, 0.1);
+    border-radius: 8px;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+  }
+
+  @media (max-width: 767px) {
+    .ribaltatore-page {
+      margin: 40px auto;
+      padding: 0 var(--gutter, 10px);
+    }
+
+    .risultato-card {
+      padding: 24px 20px;
+    }
+
+    .risultato-card__ribaltata-content {
+      font-size: 1.1rem;
+    }
+  }
+</style>
+
+<script>
+  (() => {
+    const form = document.getElementById("form-ribalta") as HTMLFormElement;
+    const fraseInput = document.getElementById("frase") as HTMLTextAreaElement;
+    const submitBtn = document.getElementById("submit-btn") as HTMLButtonElement;
+    const risultatoDiv = document.getElementById("risultato-ribaltato") as HTMLDivElement;
+
+    if (!form || !fraseInput || !submitBtn || !risultatoDiv) return;
+
+    // Formattazione frase ribaltata: sostituisci punteggiatura con break (come PHP)
+    function formatRibaltata(text: string): string {
+      // Sostituisci [.!?] seguito da spazio con <br><br>
+      return text.replace(/([.!?])(\s+)/g, "$1<br><br>");
+    }
+
+    // Genera testo condivisibile (formato PHP)
+    function getTestoCondivisibile(originale: string, ribaltata: string, id: number): string {
+      const url = `${window.location.origin}/ribaltate-ai/${id}/`;
+      return `🔒 Frase proibizionista: "${originale}"\n🔁 Ribaltata con l'AI: "${ribaltata}"\n\n👉 Scopri il Ribaltatore AI su ${window.location.origin}/ribaltatore/\n#cannabislight #canapa #satira #antiproibizionismo #canapalandia`;
+    }
+
+    // Genera URL share
+    function getShareUrl(platform: string, ribaltata: string, id: number): string {
+      const url = encodeURIComponent(`${window.location.origin}/ribaltate-ai/${id}/`);
+      const text = encodeURIComponent(`🔁 Ribaltata con l'AI: "${ribaltata}"`);
+
+      switch (platform) {
+        case "facebook":
+          return `https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${text}`;
+        case "twitter":
+          return `https://twitter.com/intent/tweet?text=${text}&url=${url}`;
+        case "telegram":
+          return `https://t.me/share/url?url=${url}&text=${text}`;
+        case "whatsapp":
+          return `https://api.whatsapp.com/send?text=${text}%20${url}`;
+        case "linkedin":
+          return `https://www.linkedin.com/sharing/share-offsite/?url=${url}`;
+        default:
+          return "";
+      }
+    }
+
+    // Render risultato HTML (replica PHP)
+    function renderRisultato(originale: string, ribaltata: string, id: number): string {
+      const testoCondivisibile = getTestoCondivisibile(originale, ribaltata, id);
+      const ribaltataFormatted = formatRibaltata(ribaltata);
+
+      return `
+        <div class="risultato-card">
+          <div class="risultato-card__originale">
+            <strong>🔒 Frase proibizionista:</strong>
+            "${originale}"
+          </div>
+
+          <div class="risultato-card__ribaltata">
+            <h2>🧠 Frase Ribaltata</h2>
+            <div class="risultato-card__ribaltata-content">${ribaltataFormatted}</div>
+          </div>
+
+          <div class="risultato-card__copy">
+            <p>📋 Copia la frase e condividila nei social:</p>
+            <textarea readonly rows="6" class="risultato-card__textarea" id="testo-copiare">${testoCondivisibile}</textarea>
+            <button type="button" class="risultato-card__copy-btn" id="btn-copia">
+              📎 Copia Testo
+            </button>
+            <span class="risultato-card__copiato" id="msg-copiato">✅ Copiato!</span>
+          </div>
+
+          <div class="risultato-card__share">
+            <a href="${getShareUrl("facebook", ribaltata, id)}" target="_blank" rel="noopener noreferrer" aria-label="Condividi su Facebook">
+              <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/facebook.svg" alt="Facebook" />
+            </a>
+            <a href="${getShareUrl("twitter", ribaltata, id)}" target="_blank" rel="noopener noreferrer" aria-label="Condividi su X (Twitter)">
+              <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/x.svg" alt="X (Twitter)" />
+            </a>
+            <a href="${getShareUrl("telegram", ribaltata, id)}" target="_blank" rel="noopener noreferrer" aria-label="Condividi su Telegram">
+              <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/telegram.svg" alt="Telegram" />
+            </a>
+            <a href="${getShareUrl("whatsapp", ribaltata, id)}" target="_blank" rel="noopener noreferrer" aria-label="Condividi su WhatsApp">
+              <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/whatsapp.svg" alt="WhatsApp" />
+            </a>
+            <a href="${getShareUrl("linkedin", ribaltata, id)}" target="_blank" rel="noopener noreferrer" aria-label="Condividi su LinkedIn">
+              <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/linkedin.svg" alt="LinkedIn" />
+            </a>
+          </div>
+        </div>
+      `;
+    }
+
+    // Gestione submit form
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const frase = fraseInput.value.trim();
+      if (!frase || frase.length < 3 || frase.length > 400) {
+        risultatoDiv.innerHTML = '<div class="risultato-card__error">❌ Frase deve essere tra 3 e 400 caratteri</div>';
+        return;
+      }
+
+      // Disabilita submit
+      submitBtn.disabled = true;
+      submitBtn.textContent = "⏳ Elaborazione...";
+
+      // Mostra loading
+      risultatoDiv.innerHTML = '<div class="risultato-card__loading">💭 Sto pensando... Dammi un secondo!</div>';
+
+      // Honeypot
+      const emailTrap = (form.querySelector('input[name="email_trap"]') as HTMLInputElement)?.value || "";
+
+      try {
+        const formData = new FormData();
+        formData.append("frase", frase);
+        formData.append("email_trap", emailTrap);
+
+        const response = await fetch("/api/ribalta-ai", {
+          method: "POST",
+          body: formData,
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.ribaltata || data.error || "Errore nella generazione");
+        }
+
+        if (!data.ribaltata || !data.id) {
+          throw new Error("Risposta non valida");
+        }
+
+        // Render risultato
+        risultatoDiv.innerHTML = renderRisultato(data.originale || frase, data.ribaltata, data.id);
+
+        // Setup copy button
+        const copyBtn = document.getElementById("btn-copia");
+        const copyTextarea = document.getElementById("testo-copiare") as HTMLTextAreaElement;
+        const copyMsg = document.getElementById("msg-copiato");
+
+        if (copyBtn && copyTextarea && copyMsg) {
+          copyBtn.addEventListener("click", () => {
+            copyTextarea.select();
+            copyTextarea.setSelectionRange(0, 99999); // iOS
+            document.execCommand("copy");
+            copyMsg.classList.add("is-visible");
+            setTimeout(() => {
+              copyMsg.classList.remove("is-visible");
+            }, 2000);
+          });
+        }
+
+        // Scroll a risultato
+        risultatoDiv.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      } catch (err: any) {
+        console.error("[ribaltatore] Errore:", err);
+        risultatoDiv.innerHTML = `<div class="risultato-card__error">❌ ${err.message || "Errore nella generazione. Riprova."}</div>`;
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "📎 RIBALTA ORA!";
+      }
+    });
+  })();
+</script>

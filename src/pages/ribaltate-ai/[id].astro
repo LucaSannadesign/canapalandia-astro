@@ -1,0 +1,484 @@
+---
+/**
+ * Pagina singola frase ribaltata
+ * Replica ESATTAMENTE il comportamento del PHP ribaltata-singola.php
+ * 
+ * Comportamento:
+ * - SSR: legge dal DB per ID
+ * - Meta SEO/OG/Twitter/canonical (titolo, description, og:title, og:description, og:url)
+ * - Formattazione tipografica "a respiro" (paragrafi)
+ * - Pulsante copia testo e share (Facebook, X, Telegram, WhatsApp, LinkedIn)
+ * - Gestisce 404 se id non esiste
+ */
+import SiteLayout from "@/layouts/SiteLayout.astro";
+import { getRibaltataById } from "@/lib/repositories/ribaltatoreRepo";
+import { Fragment } from "astro/jsx-runtime";
+
+const { id } = Astro.params;
+const fraseId = id ? Number(id) : null;
+
+let frase: any = null;
+
+if (fraseId && !isNaN(fraseId)) {
+  try {
+    frase = await getRibaltataById(fraseId);
+  } catch (err: any) {
+    console.error("[ribaltate-ai] Errore DB:", err?.message);
+  }
+}
+
+// 404 se non trovata
+if (!frase) {
+  return new Response(null, {
+    status: 404,
+    statusText: "Not Found",
+    headers: {
+      Location: "/404/",
+    },
+  });
+}
+
+// Meta SEO/OG
+const url = `${import.meta.env.SITE || "https://canapalandia.com"}/ribaltate-ai/${frase.id}/`;
+const shareText = frase.frase_ribaltata;
+const encoded = encodeURIComponent(shareText);
+const titolo = `Ribaltata: ${shareText.slice(0, 60)}${shareText.length > 60 ? "..." : ""}`;
+const descrizione = `Slogan ribaltato: ${frase.frase_originale.slice(0, 150)}${frase.frase_originale.length > 150 ? "..." : ""}`;
+const immagine = "https://canapalandia.com/wp-content/uploads/2025/04/ribaltatore-social.jpg";
+
+// Formatta ribaltata: split per linee e paragrafi (come PHP)
+const righe = frase.frase_ribaltata.split(/\n/).filter((r: string) => r.trim() !== "");
+
+// Testo condivisibile
+const testoCompleto = `🔒 Frase proibizionista: "${frase.frase_originale}"\n🔁 Ribaltata con l'AI: "${frase.frase_ribaltata}"\n\n👉 Scopri il Ribaltatore AI su canapalandia.com`;
+---
+
+<Fragment>
+  {/* SEO + Open Graph meta tags (injected in head via script - not ideal but works) */}
+  <script is:inline set:html={`
+    (() => {
+      const head = document.head || document.getElementsByTagName('head')[0];
+      
+      // Meta OG
+      const ogTags = {
+        'og:title': '${titolo.replace(/'/g, "\\'")}',
+        'og:description': '${descrizione.replace(/'/g, "\\'")}',
+        'og:image': '${immagine}',
+        'og:url': '${url}',
+        'og:type': 'article',
+        'og:site_name': 'Canapalandia',
+      };
+      
+      Object.entries(ogTags).forEach(([prop, content]) => {
+        const meta = document.createElement('meta');
+        meta.setAttribute('property', prop);
+        meta.setAttribute('content', content);
+        head.appendChild(meta);
+      });
+      
+      // Meta Twitter
+      const twitterTags = {
+        'twitter:card': 'summary_large_image',
+        'twitter:title': '${titolo.replace(/'/g, "\\'")}',
+        'twitter:description': '${descrizione.replace(/'/g, "\\'")}',
+        'twitter:image': '${immagine}',
+        'twitter:site': '@Canapalandia',
+      };
+      
+      Object.entries(twitterTags).forEach(([name, content]) => {
+        const meta = document.createElement('meta');
+        meta.setAttribute('name', name);
+        meta.setAttribute('content', content);
+        head.appendChild(meta);
+      });
+      
+      // Structured Data
+      const script = document.createElement('script');
+      script.type = 'application/ld+json';
+      script.textContent = ${JSON.stringify(JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "CreativeWork",
+        headline: titolo,
+        description: descrizione,
+        url: url,
+        image: immagine,
+        author: {
+          "@type": "Organization",
+          name: "Canapalandia",
+        },
+        publisher: {
+          "@type": "Organization",
+          name: "Canapalandia",
+          logo: {
+            "@type": "ImageObject",
+            url: "https://canapalandia.com/wp-content/uploads/2024/09/logo-canapalandia-2024-definitivo-border-non.svg",
+          },
+        },
+      }))};
+      head.appendChild(script);
+    })();
+  `} />
+</Fragment>
+
+<SiteLayout title={titolo} canonical={url}>
+  <main id="contenuto">
+    <div class="container">
+      <div class="ribaltata-page">
+        <h1 class="ribaltata-title">🧠 Ribaltatore AI</h1>
+
+        <p class="ribaltata-originale">
+          <strong>🔒 Slogan Proibizionista:</strong><br />
+          <em>{frase.frase_originale}</em>
+        </p>
+
+        <div class="ribaltata-content">
+          <p class="ribaltata-content__label"><strong>🔁 Ribaltata con Ironia:</strong></p>
+          <div class="ribaltata-content__text">
+            {righe.map((riga: string) => (
+              <p class="ribaltata-content__paragraph">{riga.trim()}</p>
+            ))}
+          </div>
+        </div>
+
+        {/* Social e Copy */}
+        <div class="ribaltata-share">
+          <a
+            href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encoded}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Facebook"
+            aria-label="Condividi su Facebook"
+          >
+            <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/facebook.svg" alt="Facebook" />
+          </a>
+          <a
+            href={`https://twitter.com/intent/tweet?text=${encoded}&url=${encodeURIComponent(url)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="X (Twitter)"
+            aria-label="Condividi su X (Twitter)"
+          >
+            <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/x.svg" alt="X (Twitter)" />
+          </a>
+          <a
+            href={`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encoded}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Telegram"
+            aria-label="Condividi su Telegram"
+          >
+            <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/telegram.svg" alt="Telegram" />
+          </a>
+          <a
+            href={`https://api.whatsapp.com/send?text=${encoded}%20${encodeURIComponent(url)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="WhatsApp"
+            aria-label="Condividi su WhatsApp"
+          >
+            <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/whatsapp.svg" alt="WhatsApp" />
+          </a>
+          <a
+            href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="LinkedIn"
+            aria-label="Condividi su LinkedIn"
+          >
+            <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/linkedin.svg" alt="LinkedIn" />
+          </a>
+
+          <button type="button" class="ribaltata-share__copy-btn" id="copy-link">
+            📋 Copia link
+          </button>
+          <span class="ribaltata-share__copiato" id="copiato-link">✅ Link copiato!</span>
+        </div>
+
+        {/* CTA */}
+        <div class="ribaltata-cta">
+          <a href="/ribaltatore/" class="ribaltata-button">
+            🔥 Prova anche tu il Ribaltatore
+          </a>
+        </div>
+
+        {/* Blocco Copia Testo */}
+        <div class="ribaltata-copy">
+          <p class="ribaltata-copy__label"><strong>📋 Copia la frase e condividila sui social:</strong></p>
+          <textarea
+            readonly
+            rows="5"
+            id="testo-condivisibile"
+            class="ribaltata-copy__textarea"
+          >
+            {testoCompleto}
+          </textarea>
+          <button type="button" class="ribaltata-copy__btn" id="copy-frase">
+            📎 Copia tutto il testo
+          </button>
+          <span class="ribaltata-copy__copiato" id="copiato-frase">✅ Copiato!</span>
+        </div>
+      </div>
+    </div>
+  </main>
+</SiteLayout>
+
+<style>
+  .ribaltata-page {
+    max-width: 850px;
+    margin: 80px auto;
+    padding: 30px 25px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--panel);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+
+  .ribaltata-title {
+    text-align: center;
+    font-size: clamp(1.6rem, 3vw, 1.8rem);
+    margin-bottom: 30px;
+    line-height: 1.2;
+  }
+
+  .ribaltata-originale {
+    margin-bottom: 30px;
+  }
+
+  .ribaltata-originale strong {
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  .ribaltata-originale em {
+    font-style: italic;
+    color: var(--muted);
+  }
+
+  .ribaltata-content {
+    margin-top: 30px;
+  }
+
+  .ribaltata-content__label {
+    margin-bottom: 10px;
+  }
+
+  .ribaltata-content__label strong {
+    font-weight: 600;
+  }
+
+  .ribaltata-content__text {
+    margin-top: 10px;
+  }
+
+  .ribaltata-content__paragraph {
+    font-size: 1.2rem;
+    line-height: 1.6;
+    margin-bottom: 10px;
+    margin-top: 0;
+    color: var(--brand);
+    font-weight: 500;
+  }
+
+  .ribaltata-share {
+    margin-top: 30px;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .ribaltata-share a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    opacity: 0.8;
+    transition: opacity 0.2s ease, transform 0.1s ease;
+  }
+
+  .ribaltata-share a:hover {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+
+  .ribaltata-share img {
+    width: 24px;
+    height: 24px;
+    filter: var(--icon-filter, none);
+  }
+
+  .ribaltata-share__copy-btn {
+    padding: 8px 14px;
+    font-size: 0.9rem;
+    border-radius: 8px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.2s ease;
+    min-height: 36px;
+    color: var(--text);
+  }
+
+  .ribaltata-share__copy-btn:hover {
+    background: var(--brand);
+    color: white;
+    border-color: var(--brand);
+  }
+
+  .ribaltata-share__copiato {
+    color: var(--brand);
+    font-weight: 600;
+    display: none;
+  }
+
+  .ribaltata-share__copiato.is-visible {
+    display: inline;
+  }
+
+  .ribaltata-cta {
+    margin-top: 40px;
+    text-align: center;
+  }
+
+  .ribaltata-button {
+    background: var(--brand);
+    color: white;
+    padding: 12px 25px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: background 0.2s ease;
+    display: inline-block;
+    min-height: 44px;
+  }
+
+  .ribaltata-button:hover {
+    background: var(--brand-2);
+  }
+
+  .ribaltata-copy {
+    margin-top: 40px;
+    border-top: 1px solid var(--border);
+    padding-top: 30px;
+  }
+
+  .ribaltata-copy__label {
+    margin-bottom: 12px;
+    font-weight: 600;
+  }
+
+  .ribaltata-copy__textarea {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--panel);
+    color: var(--text);
+    font-family: inherit;
+    resize: vertical;
+    min-height: 100px;
+    white-space: pre-line;
+    line-height: 1.5;
+    margin-bottom: 10px;
+  }
+
+  .ribaltata-copy__btn {
+    margin-top: 10px;
+    padding: 10px 20px;
+    background: var(--brand);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s ease;
+    min-height: 44px;
+  }
+
+  .ribaltata-copy__btn:hover {
+    background: var(--brand-2);
+  }
+
+  .ribaltata-copy__copiato {
+    margin-left: 12px;
+    color: var(--brand);
+    font-weight: 600;
+    display: none;
+  }
+
+  .ribaltata-copy__copiato.is-visible {
+    display: inline;
+  }
+
+  @media (max-width: 767px) {
+    .ribaltata-page {
+      margin: 40px auto;
+      padding: 24px 20px;
+    }
+
+    .ribaltata-content__paragraph {
+      font-size: 1.1rem;
+    }
+
+    .ribaltata-share {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .ribaltata-share__copy-btn {
+      margin-top: 8px;
+    }
+  }
+</style>
+
+<script define:vars={{ fraseId: frase.id }}>
+  (() => {
+    // Copy link
+    const copyLinkBtn = document.getElementById("copy-link");
+    const copyLinkMsg = document.getElementById("copiato-link");
+    const url = fraseId ? `${window.location.origin}/ribaltate-ai/${fraseId}/` : "";
+
+    if (copyLinkBtn && copyLinkMsg && url) {
+      copyLinkBtn.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(url);
+          copyLinkMsg.classList.add("is-visible");
+          setTimeout(() => {
+            copyLinkMsg.classList.remove("is-visible");
+          }, 2000);
+        } catch (err) {
+          // Fallback per browser senza clipboard API
+          const textarea = document.createElement("textarea");
+          textarea.value = url;
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          document.body.removeChild(textarea);
+          copyLinkMsg.classList.add("is-visible");
+          setTimeout(() => {
+            copyLinkMsg.classList.remove("is-visible");
+          }, 2000);
+        }
+      });
+    }
+
+    // Copy frase
+    const copyFraseBtn = document.getElementById("copy-frase");
+    const copyFraseTextarea = document.getElementById("testo-condivisibile") as HTMLTextAreaElement;
+    const copyFraseMsg = document.getElementById("copiato-frase");
+
+    if (copyFraseBtn && copyFraseTextarea && copyFraseMsg) {
+      copyFraseBtn.addEventListener("click", () => {
+        copyFraseTextarea.select();
+        copyFraseTextarea.setSelectionRange(0, 99999); // iOS
+        document.execCommand("copy");
+        copyFraseMsg.classList.add("is-visible");
+        setTimeout(() => {
+          copyFraseMsg.classList.remove("is-visible");
+        }, 2000);
+      });
+    }
+  })();
+</script>

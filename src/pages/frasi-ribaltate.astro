@@ -1,0 +1,435 @@
+---
+/**
+ * Pagina archivio Frasi Ribaltate
+ * Replica ESATTAMENTE il comportamento del PHP page-frasi-ribaltate.php
+ * 
+ * Comportamento:
+ * - Lista paginata (20 per pagina)
+ * - Ordine DESC (più recenti in alto)
+ * - Card per ogni frase con copy e share
+ * - Controlli paginazione (Prev/Next + indicazione pagina)
+ */
+import SiteLayout from "@/layouts/SiteLayout.astro";
+import { listRibaltate } from "@/lib/repositories/ribaltatoreRepo";
+
+const pageSize = 20;
+const currentPage = Number(Astro.url.searchParams.get("page")) || 1;
+
+let items: any[] = [];
+let totalPages = 0;
+let total = 0;
+
+try {
+  const result = await listRibaltate({ page: currentPage, pageSize });
+  items = result.items;
+  totalPages = result.totalPages;
+  total = result.total;
+} catch (err: any) {
+  console.error("[frasi-ribaltate] Errore DB:", err?.message);
+}
+
+const title = "🧠 Frasi Ribaltate | Canapalandia";
+const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/frasi-ribaltate/`;
+---
+
+<SiteLayout title={title} canonical={canonical}>
+  <main id="contenuto">
+    <div class="container">
+      <div class="frasi-page">
+        <h1 class="frasi-title">🧠 Frasi Ribaltate</h1>
+        <p class="frasi-subtitle">
+          Qui trovi una raccolta delle frasi ribaltate generate dall'intelligenza satirica del nostro Ribaltatore AI.<br />
+          Copiale, condividile, e aiutaci a diffondere la verità con ironia!
+        </p>
+
+        {items.length > 0 ? (
+          <>
+            {items.map((frase) => {
+              const url = `${import.meta.env.SITE || "https://canapalandia.com"}/ribaltate-ai/${frase.id}/`;
+              const testoCondivisibile = `🔒 Frase proibizionista: "${frase.frase_originale}"\n🔁 Ribaltata con l'AI: "${frase.frase_ribaltata}"\n\n👉 Scopri il Ribaltatore AI su ${import.meta.env.SITE || "https://canapalandia.com"}/ribaltatore/\n#cannabislight #canapalegale #canapa #satira #antiproibizionismo #canapalandia`;
+              const encoded = encodeURIComponent(frase.frase_ribaltata);
+              
+              // Formatta ribaltata: split per linee e paragrafi (come PHP)
+              const righe = frase.frase_ribaltata.split(/\n/).filter((r: string) => r.trim() !== "");
+              
+              return (
+                <article class="frasi-card" key={frase.id}>
+                  <p class="frasi-card__originale">
+                    <strong>Slogan Proibizionista:</strong><br />
+                    <em>{frase.frase_originale}</em>
+                  </p>
+
+                  <div class="frasi-card__ribaltata">
+                    <h2 class="frasi-card__ribaltata-title">🧠 Frase Ribaltata</h2>
+                    <div class="frasi-card__ribaltata-content">
+                      {righe.map((riga: string) => (
+                        <p class="frasi-card__ribaltata-paragraph">{riga.trim()}.</p>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div class="frasi-card__copy">
+                    <textarea
+                      readonly
+                      rows="7"
+                      class="frasi-card__textarea"
+                      id={`frase-textarea-${frase.id}`}
+                    >
+                      {testoCondivisibile}
+                    </textarea>
+                    <button
+                      type="button"
+                      class="frasi-card__copy-btn"
+                      onclick={`copyFrase(${frase.id})`}
+                    >
+                      📋 Copia testo
+                    </button>
+                    <span class="frasi-card__copiato" id={`copiato-${frase.id}`}>✅ Copiato!</span>
+                  </div>
+
+                  <div class="frasi-card__share">
+                    <a
+                      href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encoded}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Facebook"
+                      aria-label="Condividi su Facebook"
+                    >
+                      <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/facebook.svg" alt="Facebook" />
+                    </a>
+                    <a
+                      href={`https://twitter.com/intent/tweet?text=${encoded}&url=${encodeURIComponent(url)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="X (Twitter)"
+                      aria-label="Condividi su X (Twitter)"
+                    >
+                      <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/x.svg" alt="X (Twitter)" />
+                    </a>
+                    <a
+                      href={`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encoded}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Telegram"
+                      aria-label="Condividi su Telegram"
+                    >
+                      <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/telegram.svg" alt="Telegram" />
+                    </a>
+                    <a
+                      href={`https://api.whatsapp.com/send?text=${encoded}%20${encodeURIComponent(url)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="WhatsApp"
+                      aria-label="Condividi su WhatsApp"
+                    >
+                      <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/whatsapp.svg" alt="WhatsApp" />
+                    </a>
+                    <a
+                      href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="LinkedIn"
+                      aria-label="Condividi su LinkedIn"
+                    >
+                      <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/linkedin.svg" alt="LinkedIn" />
+                    </a>
+                  </div>
+
+                  <p class="frasi-card__hint">
+                    Copia il testo e condividi la frase ribaltata nei social
+                  </p>
+                </article>
+              );
+            })}
+
+            {totalPages > 1 && (
+              <div class="frasi-pagination">
+                {currentPage > 1 && (
+                  <a
+                    href={`/frasi-ribaltate/?page=${currentPage - 1}`}
+                    class="frasi-pagination__link"
+                    aria-label="Pagina precedente"
+                  >
+                    « Indietro
+                  </a>
+                )}
+                <span class="frasi-pagination__info">
+                  Pagina {currentPage} di {totalPages} ({total} frasi)
+                </span>
+                {currentPage < totalPages && (
+                  <a
+                    href={`/frasi-ribaltate/?page=${currentPage + 1}`}
+                    class="frasi-pagination__link"
+                    aria-label="Pagina successiva"
+                  >
+                    Avanti »
+                  </a>
+                )}
+              </div>
+            )}
+          </>
+        ) : (
+          <p class="frasi-empty">Ancora nessuna frase ribaltata trovata.</p>
+        )}
+
+        <div class="frasi-cta">
+          <a href="/ribaltatore/" class="frasi-button">
+            🔥 Prova anche tu il Ribaltatore
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+</SiteLayout>
+
+<style>
+  .frasi-page {
+    max-width: 950px;
+    margin: 60px auto;
+    padding: 0 var(--gutter, 24px);
+  }
+
+  .frasi-title {
+    text-align: center;
+    font-size: clamp(1.8rem, 4vw, 2rem);
+    margin-bottom: 20px;
+    line-height: 1.2;
+  }
+
+  .frasi-subtitle {
+    text-align: center;
+    font-size: 1.1rem;
+    margin-bottom: 40px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  .frasi-card {
+    border: 1px solid var(--border);
+    padding: 25px;
+    border-radius: 12px;
+    background: var(--panel);
+    margin-bottom: 30px;
+    font-size: 1rem;
+  }
+
+  .frasi-card__originale {
+    margin-bottom: 0;
+  }
+
+  .frasi-card__originale strong {
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  .frasi-card__originale em {
+    font-style: italic;
+    color: var(--muted);
+  }
+
+  .frasi-card__ribaltata {
+    margin-top: 25px;
+  }
+
+  .frasi-card__ribaltata-title {
+    font-size: 1.3rem;
+    color: var(--brand);
+    margin-top: 0;
+    margin-bottom: 10px;
+  }
+
+  .frasi-card__ribaltata-content {
+    margin-top: 10px;
+  }
+
+  .frasi-card__ribaltata-paragraph {
+    font-size: 1.3rem;
+    color: var(--brand);
+    font-weight: 600;
+    line-height: 1.6;
+    margin-bottom: 14px;
+    margin-top: 0;
+  }
+
+  .frasi-card__copy {
+    margin-top: 20px;
+  }
+
+  .frasi-card__textarea {
+    width: 100%;
+    font-size: 15px;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--text);
+    font-family: inherit;
+    resize: vertical;
+    min-height: 140px;
+    white-space: pre-line;
+    line-height: 1.5;
+    margin-bottom: 8px;
+  }
+
+  .frasi-card__copy-btn {
+    margin-top: 8px;
+    padding: 8px 16px;
+    background: var(--brand);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s ease;
+    min-height: 44px;
+  }
+
+  .frasi-card__copy-btn:hover {
+    background: var(--brand-2);
+  }
+
+  .frasi-card__copiato {
+    margin-left: 12px;
+    display: none;
+    color: var(--brand);
+    font-weight: 600;
+  }
+
+  .frasi-card__copiato.is-visible {
+    display: inline;
+  }
+
+  .frasi-card__share {
+    margin-top: 18px;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .frasi-card__share a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    opacity: 0.8;
+    transition: opacity 0.2s ease, transform 0.1s ease;
+  }
+
+  .frasi-card__share a:hover {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+
+  .frasi-card__share img {
+    width: 24px;
+    height: 24px;
+    filter: var(--icon-filter, none);
+  }
+
+  .frasi-card__hint {
+    margin-top: 10px;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  .frasi-pagination {
+    text-align: center;
+    margin-top: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .frasi-pagination__link {
+    padding: 10px 20px;
+    background: var(--brand);
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: background 0.2s ease;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .frasi-pagination__link:hover {
+    background: var(--brand-2);
+  }
+
+  .frasi-pagination__info {
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
+
+  .frasi-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+    font-size: 1.1rem;
+  }
+
+  .frasi-cta {
+    margin-top: 60px;
+    text-align: center;
+  }
+
+  .frasi-button {
+    background: var(--brand);
+    color: white;
+    padding: 12px 28px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: background 0.2s ease;
+    display: inline-block;
+    min-height: 44px;
+  }
+
+  .frasi-button:hover {
+    background: var(--brand-2);
+  }
+
+  @media (max-width: 767px) {
+    .frasi-page {
+      margin: 40px auto;
+      padding: 0 var(--gutter, 10px);
+    }
+
+    .frasi-card {
+      padding: 20px;
+    }
+
+    .frasi-card__ribaltata-paragraph {
+      font-size: 1.1rem;
+    }
+
+    .frasi-pagination {
+      flex-direction: column;
+      gap: 12px;
+    }
+  }
+</style>
+
+<script>
+  // Funzione copy (globale per onclick)
+  (globalThis as any).copyFrase = function (id: number) {
+    const textarea = document.getElementById(`frase-textarea-${id}`) as HTMLTextAreaElement;
+    const msg = document.getElementById(`copiato-${id}`);
+
+    if (!textarea || !msg) return;
+
+    textarea.select();
+    textarea.setSelectionRange(0, 99999); // iOS
+    document.execCommand("copy");
+
+    msg.classList.add("is-visible");
+    setTimeout(() => {
+      msg.classList.remove("is-visible");
+    }, 2000);
+  };
+</script>
