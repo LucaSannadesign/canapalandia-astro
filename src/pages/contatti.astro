@@ -2,8 +2,9 @@
 import Layout from "../layouts/MigratedLayout.astro";
 
 const title = "Contatti — Canapalandia";
-const canonical = "https://canapalandia.com/contatti/";
+const canonical = `${import.meta.env.SITE || Astro.url.origin}/contatti/`;
 const FORMSPREE_ACTION = "https://formspree.io/f/maqynojl";
+const siteOrigin = import.meta.env.SITE || Astro.url.origin;
 
 const sent = Astro.url.searchParams.get("sent") === "1";
 ---
@@ -34,7 +35,7 @@ const sent = Astro.url.searchParams.get("sent") === "1";
 
             {/* Formspree utilities */}
             <input type="hidden" name="_subject" value="Canapalandia — Nuovo contatto" />
-            <input type="hidden" name="_redirect" value="https://canapalandia.com/contatti/?sent=1" />
+            <input type="hidden" name="_redirect" value={`${siteOrigin}/contatti/?sent=1`} />
 
             <div class="field">
               <label for="name">Nome</label>

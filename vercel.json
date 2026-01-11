@@ -29,6 +29,16 @@
       "source": "/sitemap_index.xml",
       "destination": "/sitemap-0.xml",
       "permanent": true
+    },
+    {
+      "source": "/ribaltatore",
+      "destination": "/ribaltatore/",
+      "permanent": true
+    },
+    {
+      "source": "/frasi-ribaltate",
+      "destination": "/frasi-ribaltate/",
+      "permanent": true
     }
   ]
 }

@@ -104,7 +104,7 @@ const initialPosts = hasEmbeddedTerms
   : latest.slice(0, 12);
 
 const title = "Blog — Canapalandia";
-const canonical = "https://canapalandia.com/blog/";
+const canonical = `${import.meta.env.SITE || Astro.url.origin}/blog/`;
 const canonicalFinal = canonical;
 
 const initialPage = 1;
@@ -250,7 +250,7 @@ const totalPosts = latest.length; // Totale filtrato
 
           loading = false;
         } catch (err) {
-          console.error("Error loading posts:", err);
+          console.error("Errore nel caricamento dei post:", err);
           sentinel.textContent = "Errore nel caricamento.";
           observer.disconnect();
         }

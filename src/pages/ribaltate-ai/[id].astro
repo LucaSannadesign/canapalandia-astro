@@ -41,6 +41,8 @@ const shareText = frase.frase_ribaltata;
 const encoded = encodeURIComponent(shareText);
 const titolo = `Ribaltata: ${shareText.slice(0, 60)}${shareText.length > 60 ? "..." : ""}`;
 const descrizione = `Slogan ribaltato: ${frase.frase_originale.slice(0, 150)}${frase.frase_originale.length > 150 ? "..." : ""}`;
+// Immagine OG: usa URL assoluto solo se necessario (risorsa esterna WordPress)
+// In futuro, considera di spostare l'immagine in /public/images/
 const immagine = "https://canapalandia.com/wp-content/uploads/2025/04/ribaltatore-social.jpg";
 
 // Formatta ribaltata: split per linee e paragrafi (come PHP)

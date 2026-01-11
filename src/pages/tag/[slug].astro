@@ -37,5 +37,5 @@ const filtered = tagId
   : [];
 
 const title = tag ? `Tag: ${tag.name} — Canapalandia` : "Tag — Canapalandia";
-const canonical = `https://canapalandia.com/tag/${slug}/`;
+const canonical = `${import.meta.env.SITE || Astro.url.origin}/tag/${slug}/`;
 ---

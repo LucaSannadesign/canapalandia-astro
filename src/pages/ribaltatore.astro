@@ -12,7 +12,7 @@
 import SiteLayout from "@/layouts/SiteLayout.astro";
 
 const title = "🧠 Ribalta con l'AI | Canapalandia";
-const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/ribaltatore/`;
+const canonical = `${Astro.url.origin}/ribaltatore/`;
 ---
 
 <SiteLayout title={title} canonical={canonical}>
@@ -520,7 +520,10 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/ribalta
     function renderRisultato(originale: string, ribaltata: string, id: number | null): string {
       const testoCondivisibile = getTestoCondivisibile(originale, ribaltata, id);
       const shareText = getShareText(originale, ribaltata, id);
-      const publicUrl = id ? `${window.location.origin}/ribaltate-ai/${id}/` : null;
+      // URL assoluto per share (necessario per social)
+      const publicUrlAbsolute = id ? `${window.location.origin}/ribaltate-ai/${id}/` : null;
+      // Path relativo per link interno "Apri"
+      const publicPath = id ? `/ribaltate-ai/${id}/` : null;
       
       // Escape HTML per sicurezza (no innerHTML non sanificato)
       function escapeHtml(text: string): string {
@@ -555,12 +558,12 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/ribalta
             </div>
           </div>
 
-          ${publicUrl ? `
+          ${publicPath ? `
           <div class="risultato-card__link-actions">
-            <a href="${publicUrl}" class="risultato-card__link-btn" target="_blank" rel="noopener noreferrer">
+            <a href="${publicPath}" class="risultato-card__link-btn">
               🔗 Apri link pubblico
             </a>
-            <button type="button" class="risultato-card__link-btn" id="btn-copia-link" data-url="${publicUrl}">
+            <button type="button" class="risultato-card__link-btn" id="btn-copia-link" data-url="${publicUrlAbsolute}">
               📋 Copia link
             </button>
             <span class="risultato-card__copiato" id="msg-copiato-link">✅ Copiato!</span>

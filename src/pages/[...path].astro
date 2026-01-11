@@ -375,7 +375,8 @@ const hasSidebarContent = foundEntry.kind === "post";
 /* ---------------------------
    Post URL and title for ShareBar
 --------------------------- */
-const baseUrl = "https://canapalandia.com";
+// Usa Astro.url.origin per URL dinamico (adatta a localhost/preview/prod)
+const baseUrl = Astro.url.origin;
 const postUrl = foundEntry.link || `${baseUrl}${canonicalPath}`;
 const postTitleForShare = title || "";
 

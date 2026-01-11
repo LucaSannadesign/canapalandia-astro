@@ -17,7 +17,6 @@ export const prerender = false;
 
 // Variabili env SSR-safe (definite nel frontmatter)
 const isDev = import.meta.env.DEV;
-const siteUrl = import.meta.env.SITE || "https://canapalandia.com";
 
 const pageSize = 20;
 const currentPage = Number(Astro.url.searchParams.get("page")) || 1;
@@ -409,13 +408,18 @@ const canonical = `${Astro.url.origin}/frasi-ribaltate/`;
     const decodedUrl = decodeURIComponent(url);
     const decodedText = decodeURIComponent(text);
     
+    // Costruisci URL assoluto per i social (necessario)
+    const absoluteUrl = decodedUrl.startsWith("http") 
+      ? decodedUrl 
+      : `${window.location.origin}${decodedUrl.startsWith("/") ? "" : "/"}${decodedUrl}`;
+    
     // Se navigator.share disponibile (mobile), usalo
     if (navigator.share) {
       try {
         await navigator.share({
           title: "Ribaltatore AI",
           text: decodedText,
-          url: decodedUrl,
+          url: absoluteUrl,
         });
         return;
       } catch (err: any) {
@@ -424,7 +428,7 @@ const canonical = `${Astro.url.origin}/frasi-ribaltate/`;
     }
     
     // Fallback: apri WhatsApp
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`${decodedText}\n🔗 ${decodedUrl}`)}`;
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`${decodedText}\n🔗 ${absoluteUrl}`)}`;
     window.open(whatsappUrl, "_blank", "noopener,noreferrer");
   };
 </script>

@@ -3,7 +3,8 @@ export const prerender = true;
 import postsJson from "../../data/wp/out/posts.json";
 import { toParams } from "../lib/wp";
 
-const SITE_URL = "https://canapalandia.com"; // TODO: cambia quando vai live su Vercel
+// Usa import.meta.env.SITE (configurato in astro.config.mjs) o fallback
+const SITE_URL = import.meta.env.SITE || "https://canapalandia.com";
 
 function stripHtml(input: unknown) {
   if (!input) return "";

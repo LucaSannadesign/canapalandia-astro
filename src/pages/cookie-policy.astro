@@ -2,7 +2,7 @@
 import Layout from "../layouts/MigratedLayout.astro";
 
 const title = "Cookie Policy — Canapalandia";
-const canonical = "https://canapalandia.com/cookie-policy/";
+const canonical = `${import.meta.env.SITE || Astro.url.origin}/cookie-policy/`;
 ---
 
 <Layout title={title} canonical={canonical}>
