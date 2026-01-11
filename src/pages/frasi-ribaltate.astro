@@ -15,6 +15,10 @@ import { listRibaltate } from "@/lib/repositories/ribaltatoreRepo";
 // Forza SSR (non prerender)
 export const prerender = false;
 
+// Variabili env SSR-safe (definite nel frontmatter)
+const isDev = import.meta.env.DEV;
+const siteUrl = import.meta.env.SITE || "https://canapalandia.com";
+
 const pageSize = 20;
 const currentPage = Number(Astro.url.searchParams.get("page")) || 1;
 
@@ -32,7 +36,7 @@ try {
   console.error("[frasi-ribaltate] Errore DB:", err);
   errorMessage = err?.message || "Errore nel caricamento dei dati";
   // In sviluppo, mostra l'errore anche nella pagina
-  if (import.meta.env.DEV) {
+  if (isDev) {
     console.error("[frasi-ribaltate] Dettagli errore:", {
       message: err?.message,
       stack: err?.stack,
@@ -42,7 +46,7 @@ try {
 }
 
 const title = "🧠 Frasi Ribaltate | Canapalandia";
-const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/frasi-ribaltate/`;
+const canonical = `${siteUrl}/frasi-ribaltate/`;
 ---
 
 <SiteLayout title={title} canonical={canonical}>
@@ -58,7 +62,7 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/frasi-r
         {errorMessage ? (
           <div class="frasi-error">
             <p>⚠️ Errore nel caricamento: {errorMessage}</p>
-            {import.meta.env.DEV && (
+            {isDev && (
               <p style="font-size: 0.85rem; color: var(--muted); margin-top: 8px;">
                 Verifica che SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY siano configurate in .env
               </p>
@@ -67,7 +71,7 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/frasi-r
         ) : items.length > 0 ? (
           <>
             {items.map((frase) => {
-              const url = `${import.meta.env.SITE || "https://canapalandia.com"}/ribaltate-ai/${frase.id}/`;
+              const url = `${siteUrl}/ribaltate-ai/${frase.id}/`;
               
               // Anteprima ribaltata (max 3 righe)
               const anteprima = frase.frase_ribaltata.split(/\n/).slice(0, 3).join(" ").slice(0, 200);
