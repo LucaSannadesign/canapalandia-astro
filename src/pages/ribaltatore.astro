@@ -479,14 +479,50 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/ribalta
           body: formData,
         });
 
-        const data = await response.json();
-
+        // Verifica status HTTP
         if (!response.ok) {
-          throw new Error(data.ribaltata || data.error || "Errore nella generazione");
+          const contentType = response.headers.get("content-type") || "";
+          let errorMessage = `Errore ${response.status}: ${response.statusText}`;
+          
+          // Prova a leggere messaggio errore se è JSON
+          if (contentType.includes("application/json")) {
+            try {
+              const errorData = await response.json();
+              errorMessage = errorData.ribaltata || errorData.error || errorMessage;
+            } catch {
+              // Ignora se non riesce a parsare JSON
+            }
+          } else {
+            // Se non è JSON, prova a leggere come testo (limitato)
+            try {
+              const text = await response.text();
+              if (text && text.length < 200) {
+                errorMessage = text;
+              }
+            } catch {
+              // Ignora se non riesce a leggere testo
+            }
+          }
+          
+          throw new Error(errorMessage);
+        }
+
+        // Verifica content-type prima di parsare JSON
+        const contentType = response.headers.get("content-type") || "";
+        if (!contentType.includes("application/json")) {
+          throw new Error(`Risposta non valida: content-type ${contentType} non è application/json`);
+        }
+
+        // Parse JSON con gestione errori
+        let data: any;
+        try {
+          data = await response.json();
+        } catch (parseError) {
+          throw new Error("Errore nel parsing della risposta JSON");
         }
 
         if (!data.ribaltata || !data.id) {
-          throw new Error("Risposta non valida");
+          throw new Error("Risposta non valida: campi mancanti");
         }
 
         // Render risultato
