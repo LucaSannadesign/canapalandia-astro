@@ -36,7 +36,7 @@ if (!frase) {
 }
 
 // Meta SEO/OG
-const url = `${import.meta.env.SITE || "https://canapalandia.com"}/ribaltate-ai/${frase.id}/`;
+const url = `${Astro.url.origin}/ribaltate-ai/${frase.id}/`;
 const shareText = frase.frase_ribaltata;
 const encoded = encodeURIComponent(shareText);
 const titolo = `Ribaltata: ${shareText.slice(0, 60)}${shareText.length > 60 ? "..." : ""}`;
@@ -47,7 +47,7 @@ const immagine = "https://canapalandia.com/wp-content/uploads/2025/04/ribaltator
 const righe = frase.frase_ribaltata.split(/\n/).filter((r: string) => r.trim() !== "");
 
 // Testo condivisibile
-const testoCompleto = `🔒 Frase proibizionista: "${frase.frase_originale}"\n🔁 Ribaltata con l'AI: "${frase.frase_ribaltata}"\n\n👉 Scopri il Ribaltatore AI su canapalandia.com`;
+const testoCompleto = `🔒 Frase proibizionista: "${frase.frase_originale}"\n🔁 Ribaltata con l'AI: "${frase.frase_ribaltata}"\n\n👉 Scopri il Ribaltatore AI su ${Astro.url.origin.replace(/^https?:\/\//, "").replace(/\/$/, "")}`;
 ---
 
 <Fragment>
