@@ -604,6 +604,11 @@ html[data-theme="light"] .site-footer {
     display: flex;
     flex-direction: column;
     gap: 0;
+    /* Padding extra orizzontale per respiro dai bordi */
+    padding-inline: 16px;
+    /* Padding verticale aumentato */
+    padding-top: 32px;
+    padding-bottom: 32px;
   }
 
   .footer-top {
@@ -612,7 +617,7 @@ html[data-theme="light"] .site-footer {
     flex-direction: column;
     align-items: center;
     gap: 10px;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
   }
 
   .footer-brand {
@@ -623,17 +628,22 @@ html[data-theme="light"] .site-footer {
   }
 
   .footer-links {
-    margin-top: 16px;
+    margin-top: 20px;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     text-align: left;
-    gap: 0;
+    gap: 14px;
   }
 
   .footer-links a {
     display: block;
-    padding: 6px 0;
+    padding: 0;
+    line-height: 1.6;
+  }
+
+  .footer-copy {
+    margin-top: 20px;
     line-height: 1.6;
   }
 }
