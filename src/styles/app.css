@@ -161,7 +161,7 @@ main#contenuto {
   top: 0;
   left: 0;
   right: 0;
-  z-index: 100;
+  z-index: 1000;
   border-bottom: 1px solid transparent;
   background: transparent;
   backdrop-filter: blur(0px);
@@ -173,7 +173,7 @@ main#contenuto {
               box-shadow 260ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
               padding 260ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
               backdrop-filter 260ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  /* z-index 100: sotto menu mobile (9999) ma sopra contenuto */
+  /* z-index 1000: sotto menu mobile (9999) ma sopra adbar (900) e contenuto */
 }
 
 /* Mobile: navbar sempre con sfondo semitrasparente per leggibilità */
@@ -293,8 +293,8 @@ main#contenuto {
               opacity 260ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
               transform 260ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
   pointer-events: auto;
-  z-index: 50;
-  /* z-index 50: sotto header (100) e menu mobile (9999) */
+  z-index: 900;
+  /* z-index 900: sotto header (1000) e menu mobile (9999) */
 }
 
 .adbar[data-hidden="true"] {
@@ -465,18 +465,19 @@ html[data-theme="light"] .menu-toggle:hover {
 .menu-toggle__icon--hamburger {
   opacity: 1;
   transform: translate(-50%, -50%) scale(1);
+  pointer-events: auto;
 }
 
 .menu-toggle__icon--close {
   opacity: 0;
-  transform: translate(-50%, -50%) scale(0.9);
+  transform: translate(-50%, -50%) scale(0.95);
   pointer-events: none;
 }
 
 /* Stato aperto: hamburger nascosta, X visibile */
 .menu-toggle[aria-expanded="true"] .menu-toggle__icon--hamburger {
   opacity: 0;
-  transform: translate(-50%, -50%) scale(0.9);
+  transform: translate(-50%, -50%) scale(0.95);
   pointer-events: none;
 }
 
@@ -1468,7 +1469,7 @@ html[data-theme="light"] .wp-page code {
   pointer-events: none;
   transition: opacity 0.3s ease;
   overflow-y: auto;
-  /* Assicura che sia sopra header (z-index 100) e adbar */
+  /* z-index 9999: sopra header (1000), adbar (900) e tutto il contenuto */
 }
 
 .mobile-menu[aria-hidden="false"] {
@@ -1523,14 +1524,19 @@ html[data-theme="light"] .mobile-menu__overlay {
 }
 
 /* Scroll lock quando menu è aperto */
-html.menu-open {
-  overflow: hidden;
-}
-
+html.menu-open,
 html.menu-open body {
   overflow: hidden;
   position: fixed;
   width: 100%;
+  height: 100%;
+}
+
+body.menu-open {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
 }
 
 .mobile-menu__content a {

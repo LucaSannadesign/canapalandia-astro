@@ -578,7 +578,7 @@ const isProduction = Astro.url.origin === "https://canapalandia.com";
           menuToggle.setAttribute("aria-label", "Apri menu");
           mobileMenu.setAttribute("aria-hidden", "true");
           document.documentElement.classList.remove("menu-open");
-          document.body.style.overflow = "";
+          document.body.classList.remove("menu-open");
           // Ritorna focus al toggle button
           menuToggle.focus();
         };
@@ -588,7 +588,7 @@ const isProduction = Astro.url.origin === "https://canapalandia.com";
           menuToggle.setAttribute("aria-label", "Chiudi menu");
           mobileMenu.setAttribute("aria-hidden", "false");
           document.documentElement.classList.add("menu-open");
-          document.body.style.overflow = "hidden";
+          document.body.classList.add("menu-open");
           // Focus trap: metti focus al primo link
           if (firstLink) {
             requestAnimationFrame(() => {
