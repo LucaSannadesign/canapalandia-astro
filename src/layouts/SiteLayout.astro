@@ -261,21 +261,22 @@ const isProduction = Astro.url.origin === "https://canapalandia.com";
           </button>
         </div>
       </div>
-
-      <!-- Menu mobile -->
-      <nav class="mobile-menu" id="mobile-menu" aria-label="Menu mobile" aria-hidden="true">
-        <div class="mobile-menu__content">
-          <a href="/#percorsi">Temi</a>
-          <a href="/#in-evidenza">In evidenza</a>
-          <a href="/#ultimi">Ultimi</a>
-          <a href="/blog/">Blog</a>
-          <a href="/ribaltatore/">Ribaltatore AI</a>
-          <a href="/frasi-ribaltate/">Frasi Ribaltate</a>
-          <a href="/contatti/">Contatti</a>
-          <a href="/cerca/">Cerca</a>
-        </div>
-      </nav>
     </header>
+
+    <!-- Menu mobile (fuori dall'header per evitare stacking context) -->
+    <nav class="mobile-menu" id="mobile-menu" aria-label="Menu mobile" aria-hidden="true">
+      <div class="mobile-menu__overlay"></div>
+      <div class="mobile-menu__content">
+        <a href="/#percorsi">Temi</a>
+        <a href="/#in-evidenza">In evidenza</a>
+        <a href="/#ultimi">Ultimi</a>
+        <a href="/blog/">Blog</a>
+        <a href="/ribaltatore/">Ribaltatore AI</a>
+        <a href="/frasi-ribaltate/">Frasi Ribaltate</a>
+        <a href="/contatti/">Contatti</a>
+        <a href="/cerca/">Cerca</a>
+      </div>
+    </nav>
 
     <!-- AdSense Banner Bar (separato dall'header) -->
     <div class="adbar" data-adbar>
@@ -563,21 +564,37 @@ const isProduction = Astro.url.origin === "https://canapalandia.com";
       (() => {
         const menuToggle = document.querySelector("[data-menu-toggle]");
         const mobileMenu = document.getElementById("mobile-menu");
+        const overlay = mobileMenu?.querySelector(".mobile-menu__overlay");
+        const menuContent = mobileMenu?.querySelector(".mobile-menu__content");
+        const menuLinks = mobileMenu?.querySelectorAll("a");
 
         if (!menuToggle || !mobileMenu) return;
+
+        // Salva il primo link per focus trap
+        const firstLink = menuLinks?.[0];
 
         const closeMenu = () => {
           menuToggle.setAttribute("aria-expanded", "false");
           menuToggle.setAttribute("aria-label", "Apri menu");
           mobileMenu.setAttribute("aria-hidden", "true");
+          document.documentElement.classList.remove("menu-open");
           document.body.style.overflow = "";
+          // Ritorna focus al toggle button
+          menuToggle.focus();
         };
 
         const openMenu = () => {
           menuToggle.setAttribute("aria-expanded", "true");
           menuToggle.setAttribute("aria-label", "Chiudi menu");
           mobileMenu.setAttribute("aria-hidden", "false");
+          document.documentElement.classList.add("menu-open");
           document.body.style.overflow = "hidden";
+          // Focus trap: metti focus al primo link
+          if (firstLink) {
+            requestAnimationFrame(() => {
+              firstLink.focus();
+            });
+          }
         };
 
         const toggleMenu = () => {
@@ -592,27 +609,52 @@ const isProduction = Astro.url.origin === "https://canapalandia.com";
         menuToggle.addEventListener("click", toggleMenu);
 
         // Chiudi menu quando clicchi sull'overlay
-        mobileMenu.addEventListener("click", (e) => {
-          if (e.target === mobileMenu) {
-            closeMenu();
-          }
-        });
+        if (overlay) {
+          overlay.addEventListener("click", closeMenu);
+        }
 
         // Chiudi menu quando clicchi su un link
-        const menuLinks = mobileMenu.querySelectorAll("a");
-        menuLinks.forEach((link) => {
-          link.addEventListener("click", () => {
-            closeMenu();
+        if (menuLinks) {
+          menuLinks.forEach((link) => {
+            link.addEventListener("click", closeMenu);
           });
-        });
+        }
 
         // Chiudi menu con ESC
         document.addEventListener("keydown", (e) => {
           if (e.key === "Escape" && menuToggle.getAttribute("aria-expanded") === "true") {
             closeMenu();
-            menuToggle.focus();
           }
         });
+
+        // Focus trap: mantieni focus dentro il menu quando è aperto
+        if (menuContent) {
+          menuContent.addEventListener("keydown", (e) => {
+            if (e.key !== "Tab" || menuToggle.getAttribute("aria-expanded") !== "true") {
+              return;
+            }
+
+            const focusableElements = menuContent.querySelectorAll(
+              'a, button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+            );
+            const firstElement = focusableElements[0];
+            const lastElement = focusableElements[focusableElements.length - 1];
+
+            if (e.shiftKey) {
+              // Shift + Tab
+              if (document.activeElement === firstElement) {
+                e.preventDefault();
+                lastElement?.focus();
+              }
+            } else {
+              // Tab
+              if (document.activeElement === lastElement) {
+                e.preventDefault();
+                firstElement?.focus();
+              }
+            }
+          });
+        }
       })();
     </script>
 

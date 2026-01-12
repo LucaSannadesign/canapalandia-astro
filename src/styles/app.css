@@ -165,6 +165,7 @@ main#contenuto {
               border-bottom-color 260ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
               box-shadow 260ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
               padding 260ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  /* z-index 100: sotto menu mobile (9999) ma sopra contenuto */
 }
 
 /* Rispetta prefers-reduced-motion */
@@ -233,6 +234,8 @@ html[data-theme="light"] .site-header.is-scrolled {
               opacity 260ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
               transform 260ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
   pointer-events: auto;
+  z-index: 50;
+  /* z-index 50: sotto header (100) e menu mobile (9999) */
 }
 
 .adbar[data-hidden="true"] {
@@ -364,7 +367,8 @@ html[data-theme="light"] .nav a:hover {
   transition: all 0.2s ease;
   padding: 0;
   position: relative;
-  z-index: 51;
+  z-index: 10001;
+  /* z-index 10001: sopra menu mobile (9999) per rimanere cliccabile */
 }
 
 html[data-theme="light"] .menu-toggle {
@@ -1370,25 +1374,20 @@ html[data-theme="light"] .wp-page code {
   text-decoration: none !important;
 }
 
-/* Menu mobile */
+/* Menu mobile - Overlay full-screen sopra tutto */
 .mobile-menu {
   position: fixed;
+  inset: 0;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 150;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  z-index: 9999;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s ease;
   overflow-y: auto;
-}
-
-html[data-theme="light"] .mobile-menu {
-  background: rgba(0, 0, 0, 0.3);
+  /* Assicura che sia sopra header (z-index 100) e adbar */
 }
 
 .mobile-menu[aria-hidden="false"] {
@@ -1396,8 +1395,27 @@ html[data-theme="light"] .mobile-menu {
   pointer-events: auto;
 }
 
+/* Overlay background */
+.mobile-menu__overlay {
+  position: fixed;
+  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 1;
+}
+
+html[data-theme="light"] .mobile-menu__overlay {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+/* Content panel (drawer) */
 .mobile-menu__content {
-  position: absolute;
+  position: fixed;
   top: 0;
   right: 0;
   bottom: 0;
@@ -1405,17 +1423,30 @@ html[data-theme="light"] .mobile-menu {
   max-width: 85vw;
   background: var(--panel);
   border-left: 1px solid var(--border);
-  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.4);
   padding: 80px 24px 24px;
   display: flex;
   flex-direction: column;
   gap: 8px;
   transform: translateX(100%);
   transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  z-index: 2;
+  overflow-y: auto;
 }
 
 .mobile-menu[aria-hidden="false"] .mobile-menu__content {
   transform: translateX(0);
+}
+
+/* Scroll lock quando menu è aperto */
+html.menu-open {
+  overflow: hidden;
+}
+
+html.menu-open body {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
 }
 
 .mobile-menu__content a {
