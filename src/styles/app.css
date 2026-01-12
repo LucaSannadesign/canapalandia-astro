@@ -157,7 +157,7 @@ main#contenuto {
 
 /* Header */
 .site-header {
-  position: fixed;
+  position: sticky;
   top: 0;
   left: 0;
   right: 0;
@@ -173,7 +173,7 @@ main#contenuto {
               box-shadow 260ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
               padding 260ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
               backdrop-filter 260ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  /* z-index 1000: sotto menu mobile (9999) ma sopra adbar (900) e contenuto */
+  /* z-index 1000: sopra menu mobile (950) e adbar (900) */
 }
 
 /* Mobile: navbar sempre con sfondo semitrasparente per leggibilità */
@@ -421,6 +421,9 @@ html[data-theme="light"] .nav a:hover {
   display: flex;
   align-items: center;
   gap: 10px;
+  position: relative;
+  z-index: 1100;
+  /* z-index 1100: sopra menu mobile (950) per rimanere sempre visibili */
 }
 
 /* Menu toggle (hamburger) */
@@ -440,8 +443,8 @@ html[data-theme="light"] .nav a:hover {
   transition: all 0.2s ease;
   padding: 0;
   position: relative;
-  z-index: 10001;
-  /* z-index 10001: sopra menu mobile (9999) per rimanere cliccabile */
+  z-index: 1101;
+  /* z-index 1101: sopra header-actions (1100) e menu mobile (950) */
 }
 
 html[data-theme="light"] .menu-toggle {
@@ -477,25 +480,31 @@ html[data-theme="light"] .menu-toggle:hover {
 
 /* Stato iniziale: hamburger visibile, X nascosta */
 .menu-toggle__icon--hamburger {
+  display: block;
   opacity: 1;
   transform: translate(-50%, -50%) scale(1);
   pointer-events: auto;
 }
 
 .menu-toggle__icon--close {
+  display: none;
   opacity: 0;
   transform: translate(-50%, -50%) scale(0.95);
   pointer-events: none;
 }
 
-/* Stato aperto: hamburger nascosta, X visibile */
+/* Stato aperto (con classe menu-open su html): hamburger nascosta, X visibile */
+html.menu-open .menu-toggle__icon--hamburger,
 .menu-toggle[aria-expanded="true"] .menu-toggle__icon--hamburger {
+  display: none;
   opacity: 0;
   transform: translate(-50%, -50%) scale(0.95);
   pointer-events: none;
 }
 
+html.menu-open .menu-toggle__icon--close,
 .menu-toggle[aria-expanded="true"] .menu-toggle__icon--close {
+  display: block;
   opacity: 1;
   transform: translate(-50%, -50%) scale(1);
   pointer-events: auto;
@@ -534,6 +543,9 @@ html[data-theme="light"] .search {
   color: inherit;
   cursor: pointer;
   transition: transform 0.15s ease, background 0.2s ease;
+  position: relative;
+  z-index: 1101;
+  /* z-index 1101: sopra header-actions (1100) e menu mobile (950) */
 }
 
 html[data-theme="light"] .theme-toggle__btn {
@@ -1480,20 +1492,20 @@ html[data-theme="light"] .wp-page code {
   text-decoration: none !important;
 }
 
-/* Menu mobile - Overlay full-screen sopra tutto */
+/* Menu mobile - Overlay sotto header */
 .mobile-menu {
   position: fixed;
-  inset: 0;
-  top: 0;
+  top: var(--nav-h, 76px);
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 9999;
+  height: calc(100dvh - var(--nav-h, 76px));
+  z-index: 950;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s ease;
   overflow-y: auto;
-  /* z-index 9999: sopra header (1000), adbar (900) e tutto il contenuto */
+  /* z-index 950: sotto header (1000) e header-actions (1100) ma sopra contenuto */
 }
 
 .mobile-menu[aria-hidden="false"] {
@@ -1504,11 +1516,11 @@ html[data-theme="light"] .wp-page code {
 /* Overlay background */
 .mobile-menu__overlay {
   position: fixed;
-  inset: 0;
-  top: 0;
+  top: var(--nav-h, 76px);
   left: 0;
   right: 0;
   bottom: 0;
+  height: calc(100dvh - var(--nav-h, 76px));
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
@@ -1522,16 +1534,17 @@ html[data-theme="light"] .mobile-menu__overlay {
 /* Content panel (drawer) */
 .mobile-menu__content {
   position: fixed;
-  top: 0;
+  top: var(--nav-h, 76px);
   right: 0;
   bottom: 0;
+  height: calc(100dvh - var(--nav-h, 76px));
   width: 280px;
   max-width: 85vw;
   background: var(--panel);
   border-left: 1px solid var(--border);
   box-shadow: -4px 0 20px rgba(0, 0, 0, 0.4);
   /* Padding coerente con container: 12px mobile, scalabile fino a 24px */
-  padding-top: 80px;
+  padding-top: 24px;
   padding-inline: max(clamp(12px, 3vw, 24px), env(safe-area-inset-left), env(safe-area-inset-right));
   padding-bottom: 24px;
   display: flex;
