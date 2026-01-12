@@ -35,7 +35,8 @@
 
   --container: 1120px;
   --pad: 20px;
-  --gutter: 10px;
+  --gutter: 12px;
+  /* Padding orizzontale responsive: min 12px su mobile, max 24px su desktop */
   
   /* Altezza navbar - aggiornata dinamicamente via JS */
   --nav-h: 76px;
@@ -78,6 +79,11 @@ body {
   height: 100%;
 }
 
+html {
+  overflow-x: hidden;
+  /* Previene scroll orizzontale */
+}
+
 body {
   margin: 0;
   line-height: 1.55;
@@ -85,6 +91,8 @@ body {
   color: var(--text);
   font-family: var(--font-sans);
   /* Nessun padding-top sul body - compensazione solo su main */
+  overflow-x: hidden;
+  /* Previene scroll orizzontale */
 }
 
 a {
@@ -92,7 +100,7 @@ a {
   text-decoration: none;
 }
 
-/* Tablet e desktop: gutter più ampio */
+/* Tablet e desktop: gutter più ampio (per retrocompatibilità se usato altrove) */
 @media (min-width: 768px) {
   :root {
     --gutter: 24px;
@@ -102,8 +110,8 @@ a {
 .container {
   max-width: var(--container);
   margin: 0 auto;
-  padding-left: max(var(--gutter), env(safe-area-inset-left));
-  padding-right: max(var(--gutter), env(safe-area-inset-right));
+  /* Padding orizzontale responsive: 12px mobile, scalabile fino a 24px desktop */
+  padding-inline: max(clamp(12px, 3vw, 24px), env(safe-area-inset-left), env(safe-area-inset-right));
 }
 
 /* Compensazione per header fixed */
@@ -114,8 +122,7 @@ main#contenuto {
 /* Gutter per contenuti fuori .container (solo mobile) */
 @media (max-width: 767px) {
   main#contenuto {
-    padding-left: max(var(--gutter), env(safe-area-inset-left));
-    padding-right: max(var(--gutter), env(safe-area-inset-right));
+    padding-inline: max(clamp(12px, 3vw, 24px), env(safe-area-inset-left), env(safe-area-inset-right));
   }
 }
 
@@ -1424,7 +1431,10 @@ html[data-theme="light"] .mobile-menu__overlay {
   background: var(--panel);
   border-left: 1px solid var(--border);
   box-shadow: -4px 0 20px rgba(0, 0, 0, 0.4);
-  padding: 80px 24px 24px;
+  /* Padding coerente con container: 12px mobile, scalabile fino a 24px */
+  padding-top: 80px;
+  padding-inline: max(clamp(12px, 3vw, 24px), env(safe-area-inset-left), env(safe-area-inset-right));
+  padding-bottom: 24px;
   display: flex;
   flex-direction: column;
   gap: 8px;
