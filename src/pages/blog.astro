@@ -1,6 +1,8 @@
 ---
 import CardPost from "../components/CardPost.astro";
 import Layout from "../layouts/MigratedLayout.astro";
+import Callout from "../components/editorial/Callout.astro";
+import RibaltatoreCTA from "../components/editorial/RibaltatoreCTA.astro";
 import postsJson from "../../data/wp/out/posts.json";
 import { toParams } from "../lib/wp";
 
@@ -191,6 +193,24 @@ const totalPosts = latest.length; // Totale filtrato
               style="margin-top: 2rem; text-align: center; color: var(--muted);"
             >
               {totalPosts > 12 && <span>Caricamento altri articoli...</span>}
+            </div>
+
+            {/* Esempio componenti editoriali */}
+            <div style="margin-top: 3rem; max-width: 75ch;">
+              <Callout type="myth" title="La cannabis light è una scusa per vendere droga">
+                <p>
+                  Alcuni sostengono che la cannabis light sia solo un modo per aggirare le leggi e vendere sostanze psicoattive.
+                </p>
+              </Callout>
+
+              <Callout type="reality" title="La cannabis light è legale e regolamentata">
+                <p>
+                  La cannabis light in Italia è legale se rispetta il limite di THC dello 0,2% (o 0,6% per la coltivazione). 
+                  È un prodotto agricolo regolamentato, non una "scusa" ma una realtà normativa precisa.
+                </p>
+              </Callout>
+
+              <RibaltatoreCTA />
             </div>
           </>
         ) : (

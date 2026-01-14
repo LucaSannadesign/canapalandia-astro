@@ -1,0 +1,27 @@
+---
+interface Props {
+  type?: "myth" | "reality" | "sources";
+  title?: string;
+}
+
+const { type = "reality", title } = Astro.props;
+
+const badgeText = {
+  myth: "MITO",
+  reality: "REALTÀ",
+  sources: "FONTI",
+};
+
+const badgeLabel = badgeText[type];
+const ariaLabel = title ?? type;
+---
+
+<section class={`callout callout--${type}`} aria-label={ariaLabel}>
+  <div class="callout__head">
+    <span class="callout__badge">{badgeLabel}</span>
+    {title ? <h3 class="callout__title">{title}</h3> : null}
+  </div>
+  <div class="callout__body">
+    <slot />
+  </div>
+</section>
