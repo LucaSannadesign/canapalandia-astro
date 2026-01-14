@@ -4,15 +4,18 @@ const blog = defineCollection({
   type: "content",
   schema: z.object({
     title: z.string(),
-    description: z.string(),
-    slug: z.string(),
-    publishDate: z.coerce.date(),
-    updatedDate: z.coerce.date(),
-    author: z.string(),
-    category: z.string().optional(),
+    description: z.string().optional(),
+    slug: z.string().optional(),
+    publishDate: z.coerce.date().optional(),
+    updatedDate: z.coerce.date().optional(),
+    author: z.string().optional(),
+    draft: z.boolean().optional(),
+    category: z.string().optional(), // Categoria primaria (per compatibilità)
+    categories: z.array(z.string()).optional(), // Tutte le categorie (se disponibili)
     tags: z.array(z.string()).default([]),
     coverImage: z.string().optional(),
     coverAlt: z.string().optional(),
+    image: z.string().optional(), // Alias per coverImage
     canonical: z.string().optional(),
   }),
 });

@@ -2,7 +2,7 @@
 import { defineConfig } from "astro/config";
 import vercel from "@astrojs/vercel";
 import { fileURLToPath } from "node:url";
-
+import mdx from "@astrojs/mdx";
 import sitemap from "@astrojs/sitemap";
 
 export default defineConfig({
@@ -32,6 +32,7 @@ export default defineConfig({
   },
 
   integrations: [
+    mdx(),
     sitemap({
       filter: (page) => {
         // page è una stringa URL completo (es. "https://canapalandia.com/tag/slug/")

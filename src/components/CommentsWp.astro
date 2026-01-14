@@ -1,53 +1,38 @@
 ---
-import { WP_API_BASE } from "@/lib/consts";
-import { fetchWpJson } from "@/lib/wpFetch";
-
+// Commenti disattivati: WordPress REST API non più disponibile
+// Se necessario, implementare sistema commenti alternativo (es. Supabase, Disqus, ecc.)
 const { postId } = Astro.props;
 
-const endpoint = `${WP_API_BASE.replace(/\/$/, "")}/comments?post=${postId}&per_page=50&order=asc`;
-
-type WPComment = {
-  id: number;
-  author_name: string;
-  date: string;
-  content: { rendered: string };
-  status?: string;
-};
-
-let comments: WPComment[] = [];
-const result = await fetchWpJson<WPComment[]>(endpoint);
-if (result.ok && Array.isArray(result.data)) {
-  // Filtra solo commenti approvati (status "approved" o undefined)
-  comments = result.data.filter(
-    (c) => !c.status || c.status === "approved"
-  );
-}
+// Placeholder: nessun commento disponibile
+const comments: any[] = [];
+const commentsEnabled = false;
 ---
 
-<section class="comments card">
-  <h2 class="comments__title">Commenti</h2>
+{commentsEnabled ? (
+  <section class="comments card">
+    <h2 class="comments__title">Commenti</h2>
 
-  {comments.length ? (
-    <ul class="comments__list">
-      {comments.map((c) => (
-        <li class="comments__item">
-          <div class="comments__meta">
-            <strong>{c.author_name}</strong>
-            <span>· {new Date(c.date).toLocaleDateString("it-IT")}</span>
-          </div>
-          <div class="comments__body" set:html={c.content.rendered}></div>
-        </li>
-      ))}
-    </ul>
-  ) : (
-    <p class="comments__empty">Nessun commento ancora.</p>
-  )}
+    {comments.length ? (
+      <ul class="comments__list">
+        {comments.map((c) => (
+          <li class="comments__item">
+            <div class="comments__meta">
+              <strong>{c.author_name}</strong>
+              <span>· {new Date(c.date).toLocaleDateString("it-IT")}</span>
+            </div>
+            <div class="comments__body" set:html={c.content.rendered}></div>
+          </li>
+        ))}
+      </ul>
+    ) : (
+      <p class="comments__empty">Nessun commento ancora.</p>
+    )}
 
-  <hr class="comments__hr" />
+    <hr class="comments__hr" />
 
-  <h3 class="comments__subtitle">Lascia un commento</h3>
+    <h3 class="comments__subtitle">Lascia un commento</h3>
 
-  <form class="comments__form" method="post" action="/api/commenti" data-comments-form>
+    <form class="comments__form" method="post" action="/api/commenti" data-comments-form>
     <input type="hidden" name="postId" value={postId} />
 
     {/* honeypot */}
@@ -73,9 +58,10 @@ if (result.ok && Array.isArray(result.data)) {
 
     <button class="btn primary" type="submit">Invia</button>
 
-    <p class="comments__note" data-comments-note></p>
-  </form>
-</section>
+      <p class="comments__note" data-comments-note></p>
+    </form>
+  </section>
+) : null}
 
 <script>
   const form = document.querySelector("[data-comments-form]");

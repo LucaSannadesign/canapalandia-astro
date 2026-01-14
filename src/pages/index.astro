@@ -1,115 +1,39 @@
 ---
+import { getCollection } from "astro:content";
 import Layout from "../layouts/MigratedLayout.astro";
 import AdSlot from "../components/AdSlot.astro";
 import CardPost from "../components/CardPost.astro";
-import { loadWp } from "../lib/wp";
-import {
-  textFromHtml,
-  excerptFromHtml,
-  entryHref,
-  resolveWpMediaSrc,
-  getExcerpt,
-} from "../lib/utils";
-import { WP_HOST } from "../lib/consts";
-import categoriesJson from "../../data/wp/out/categories.json";
 
 /* ---------------------------
-   Helpers: imported from ../lib/utils
+   Data: Content Collections
 --------------------------- */
 
-/* ---------------------------
-   Media resolution (mirror / hotlink)
---------------------------- */
-
-function featuredImage(p: any): { src: string; alt: string } | null {
-  const direct = p?.featuredImage ?? p?.featured_image ?? p?.image ?? null;
-
-  if (typeof direct === "string" && direct.trim()) {
-    return { src: resolveWpMediaSrc(direct.trim()), alt: "" };
-  }
-
-  if (direct && typeof direct === "object") {
-    const src =
-      (direct as any)?.src ??
-      (direct as any)?.url ??
-      (direct as any)?.source_url;
-
-    const alt = (direct as any)?.alt ?? (direct as any)?.alt_text ?? "";
-
-    if (typeof src === "string" && src.trim()) {
-      return { src: resolveWpMediaSrc(src.trim()), alt: String(alt ?? "") };
-    }
-  }
-
-  const fm = p?.raw?._embedded?.["wp:featuredmedia"]?.[0];
-  const srcRaw =
-    fm?.media_details?.sizes?.medium_large?.source_url ||
-    fm?.media_details?.sizes?.large?.source_url ||
-    fm?.media_details?.sizes?.full?.source_url ||
-    fm?.source_url;
-
-  const alt = fm?.alt_text || fm?.title?.rendered || "";
-
-  if (typeof srcRaw === "string" && srcRaw.trim()) {
-    return { src: resolveWpMediaSrc(srcRaw.trim()), alt: String(alt ?? "") };
-  }
-
-  return null;
+// Helper per formattare data
+function formatDate(date: Date): string {
+  return date.toLocaleDateString("it-IT", {
+    year: "numeric",
+    month: "long",
+    day: "2-digit",
+  });
 }
 
-/* ---------------------------
-   Data: WP headless
---------------------------- */
+// Carica tutti i post dalla collection
+let postsAll = [];
+try {
+  postsAll = await getCollection("blog");
+} catch (err) {
+  // Se non ci sono contenuti, postsAll rimane vuoto
+  console.warn("[index] Nessun contenuto trovato in Content Collections");
+}
 
-const { entries: wpEntries = [] } = await loadWp();
-const entries: any[] = Array.isArray(wpEntries) ? wpEntries : [];
+// Ordina per publishDate DESC
+const sortedPosts = postsAll
+  .slice()
+  .sort((a, b) => b.data.publishDate.getTime() - a.data.publishDate.getTime());
 
-const posts = entries.filter(
-  (e) => typeof e?.title === "string" && typeof e?.html === "string",
-);
-
-const getTime = (p: any) => {
-  const raw = p?.date ?? p?.modified ?? p?.modifiedGmt ?? "";
-  const t = Date.parse(String(raw));
-  return Number.isFinite(t) ? t : 0;
-};
-
-const sortedPosts = posts.slice().sort((a, b) => getTime(b) - getTime(a));
 const latestPosts = sortedPosts.slice(0, 6);
 const featured = sortedPosts[0];
 const featuredSide = sortedPosts.slice(1, 4);
-
-// Helper per estrarre categoria da entry
-function getCategoryFromEntry(p: any): string | null {
-  if (!p?.raw) return null;
-  const raw = p.raw;
-  
-  // Prova da _embedded["wp:term"]
-  const wpTerm = raw?._embedded?.["wp:term"];
-  if (Array.isArray(wpTerm)) {
-    const flat = wpTerm.flat().flat();
-    const cats = flat.filter(
-      (t: any) =>
-        t &&
-        t.taxonomy === "category" &&
-        typeof t.name === "string",
-    );
-    if (cats.length > 0) {
-      return textFromHtml(cats[0].name);
-    }
-  }
-  
-  // Fallback: usa categories array con categoriesJson
-  if (raw?.categories && Array.isArray(raw.categories) && raw.categories.length > 0) {
-    const categories = Array.isArray(categoriesJson) ? categoriesJson : [];
-    const category = categories.find((c: any) => c.id === raw.categories[0]);
-    if (category?.name) {
-      return textFromHtml(category.name);
-    }
-  }
-  
-  return null;
-}
 
 /* ---------------------------
    Mappa icone SVG per categoria
@@ -151,7 +75,7 @@ function getCategoryIcon(slug: string): string {
 }
 
 /* ---------------------------
-   Carica categorie con count
+   Carica categorie da Content Collections o JSON
 --------------------------- */
 type CategoryData = {
   slug: string;
@@ -160,28 +84,25 @@ type CategoryData = {
   description?: string;
 };
 
-const allCategoriesRaw = Array.isArray(categoriesJson) ? categoriesJson : [];
-const categoriesMap = new Map<string, CategoryData>();
-
-// Normalizza e filtra categorie (evita duplicati IT/EN)
-const categorySlugNormalize = (slug: string): string => {
-  // Normalizza slug per evitare duplicati
-  return slug.toLowerCase().replace(/[^a-z0-9-]/g, "");
-};
-
-for (const cat of allCategoriesRaw) {
-  if (!cat.slug || !cat.name || typeof cat.count !== "number") continue;
-  const normalizedSlug = categorySlugNormalize(cat.slug);
-  
-  // Evita duplicati: se già esiste, mantieni quella con più post
-  if (!categoriesMap.has(normalizedSlug) || (cat.count > (categoriesMap.get(normalizedSlug)?.count || 0))) {
-    categoriesMap.set(normalizedSlug, {
-      slug: cat.slug,
-      name: typeof cat.name === "string" ? cat.name : "",
-      count: cat.count || 0,
-      description: typeof cat.description === "string" ? cat.description : undefined,
+// Estrai categorie dai post
+const categoryMap = new Map<string, { slug: string; name: string; count: number }>();
+for (const post of postsAll) {
+  const cat = post.data.category;
+  if (cat && typeof cat === "string" && cat.trim()) {
+    const slug = cat.trim();
+    const existing = categoryMap.get(slug);
+    categoryMap.set(slug, {
+      slug,
+      name: slug.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" "),
+      count: (existing?.count || 0) + 1,
     });
   }
+}
+
+// Unisci categorie (per ora usa solo quelle dai post, categories.json verrà generato dallo script)
+const allCategories = new Map<string, CategoryData>();
+for (const [slug, data] of categoryMap) {
+  allCategories.set(slug, data);
 }
 
 // Categorie principali da mostrare (priorità)
@@ -198,14 +119,14 @@ const mainCategorySlugs = [
 
 const mainCategories: CategoryData[] = [];
 for (const slug of mainCategorySlugs) {
-  const cat = categoriesMap.get(categorySlugNormalize(slug));
+  const cat = allCategories.get(slug);
   if (cat) {
     mainCategories.push(cat);
   }
 }
 
 // Aggiungi altre categorie con count > 0 (max 10 totali)
-const otherCategories = Array.from(categoriesMap.values())
+const otherCategories = Array.from(allCategories.values())
   .filter((c) => !mainCategorySlugs.includes(c.slug) && c.count > 0)
   .sort((a, b) => b.count - a.count)
   .slice(0, Math.max(0, 10 - mainCategories.length));
@@ -218,7 +139,7 @@ const displayCategories = [...mainCategories, ...otherCategories].filter((c) => 
 
 const heroBgVar = "none";
 const title = "Canapalandia — Cannabis light, CBD e canapa legale in Italia";
-const canonical = `${WP_HOST}/`;
+const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
 ---
 
 <Layout title={title} canonical={canonical} shell={false}>
@@ -303,35 +224,32 @@ const canonical = `${WP_HOST}/`;
         </p>
       </div>
 
-      <div class="grid featured">
-        {
-          featured ? (
-            <a class="feature-main" href={entryHref(featured)}>
+      {sortedPosts.length > 0 ? (
+        <div class="grid featured">
+          {featured ? (
+            <a class="feature-main" href={`/${featured.data.slug}/`}>
               <p class="badge">Approfondimento</p>
 
-              {(() => {
-                const fi = featuredImage(featured);
-                return fi ? (
-                  <img
-                    class="feature-img"
-                    src={fi.src}
-                    alt={fi.alt || textFromHtml(featured.title)}
-                    loading="eager"
-                    decoding="async"
-                    referrerpolicy="no-referrer"
-                    onerror="this.onerror=null;this.src='/images/placeholder.svg';"
-                  />
-                ) : (
-                  <div
-                    class="feature-img feature-img--placeholder"
-                    aria-hidden="true"
-                  />
-                );
-              })()}
+              {featured.data.coverImage ? (
+                <img
+                  class="feature-img"
+                  src={featured.data.coverImage}
+                  alt={featured.data.coverAlt || featured.data.title}
+                  loading="eager"
+                  decoding="async"
+                  referrerpolicy="no-referrer"
+                  onerror="this.onerror=null;this.src='/images/placeholder.svg';"
+                />
+              ) : (
+                <div
+                  class="feature-img feature-img--placeholder"
+                  aria-hidden="true"
+                />
+              )}
 
-              <h3 class="feature-title" set:html={featured.title} />
+              <h3 class="feature-title">{featured.data.title}</h3>
               <p class="feature-excerpt">
-                {excerptFromHtml(featured.html, 180)}
+                {featured.data.description}
               </p>
               <span class="btn small">Leggi</span>
             </a>
@@ -339,43 +257,42 @@ const canonical = `${WP_HOST}/`;
             <div class="feature-main">
               <p>Selezione in evidenza in arrivo.</p>
             </div>
-          )
-        }
+          )}
 
-        <div class="feature-side">
-          {
-            featuredSide.map((p) => (
-              <a class="mini" href={entryHref(p)}>
-                {(() => {
-                  const fi = featuredImage(p);
-                  return fi ? (
-                    <img
-                      class="mini-img"
-                      src={fi.src}
-                      alt={fi.alt || textFromHtml(p.title)}
-                      loading="lazy"
-                      decoding="async"
-                      referrerpolicy="no-referrer"
-                      onerror="this.onerror=null;this.src='/images/placeholder.svg';"
-                    />
-                  ) : (
-                    <div
-                      class="mini-img mini-img--placeholder"
-                      aria-hidden="true"
-                    />
-                  );
-                })()}
+          <div class="feature-side">
+            {featuredSide.map((p) => (
+              <a class="mini" href={`/${p.data.slug}/`}>
+                {p.data.coverImage ? (
+                  <img
+                    class="mini-img"
+                    src={p.data.coverImage}
+                    alt={p.data.coverAlt || p.data.title}
+                    loading="lazy"
+                    decoding="async"
+                    referrerpolicy="no-referrer"
+                    onerror="this.onerror=null;this.src='/images/placeholder.svg';"
+                  />
+                ) : (
+                  <div
+                    class="mini-img mini-img--placeholder"
+                    aria-hidden="true"
+                  />
+                )}
 
                 <div class="mini-body">
-                  <h3 class="mini-title" set:html={p.title} />
-                  <p class="mini-excerpt">{excerptFromHtml(p.html, 90)}</p>
+                  <h3 class="mini-title">{p.data.title}</h3>
+                  <p class="mini-excerpt">{p.data.description.slice(0, 90)}</p>
                   <span class="mini-link">Leggi</span>
                 </div>
               </a>
-            ))
-          }
+            ))}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div class="card">
+          <p>Contenuti in importazione. Torna presto!</p>
+        </div>
+      )}
     </div>
   </section>
 
@@ -388,35 +305,24 @@ const canonical = `${WP_HOST}/`;
         </p>
       </div>
 
-      <div class="grid">
-        {
-          latestPosts.map((p) => {
-            const fi = featuredImage(p);
-            const imgSrc = fi ? fi.src : null;
-            const iso = p?.date ?? p?.modified ?? "";
-            const dateFormatted = iso
-              ? new Date(iso).toLocaleDateString("it-IT", {
-                  year: "numeric",
-                  month: "long",
-                  day: "2-digit",
-                })
-              : "";
-            const categoryName = getCategoryFromEntry(p);
-            const excerptText = getExcerpt(null, p.html, 180);
-            
-            return (
-              <CardPost
-                href={entryHref(p)}
-                img={imgSrc || undefined}
-                date={dateFormatted}
-                title={p.title}
-                excerpt={excerptText}
-                category={categoryName}
-              />
-            );
-          })
-        }
-      </div>
+      {latestPosts.length > 0 ? (
+        <div class="grid">
+          {latestPosts.map((p) => (
+            <CardPost
+              href={`/${p.data.slug}/`}
+              img={p.data.coverImage || undefined}
+              date={formatDate(p.data.publishDate)}
+              title={p.data.title}
+              excerpt={p.data.description}
+              category={p.data.category || null}
+            />
+          ))}
+        </div>
+      ) : (
+        <div class="card">
+          <p>Contenuti in importazione. Torna presto!</p>
+        </div>
+      )}
 
       <div class="section-cta">
         <a class="btn ghost" href="/blog/">Vai al blog</a>

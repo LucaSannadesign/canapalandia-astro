@@ -1,0 +1,25 @@
+---
+/**
+ * DEBUG TEMPORANEO: Verifica che Astro riconosca i file MDX in src/content/blog/
+ * 
+ * Questo file è solo per debug locale e NON deve essere linkato nel sito.
+ * Rimuoverlo dopo aver verificato che la collection funziona.
+ */
+import { getCollection } from "astro:content";
+
+let blogCount = 0;
+let error = null;
+
+try {
+  const blogPosts = await getCollection("blog");
+  blogCount = blogPosts.length;
+} catch (err: any) {
+  error = err.message || String(err);
+}
+---
+
+{error ? (
+  <pre>ERROR: {error}</pre>
+) : (
+  <pre>Blog collection: {blogCount} entries</pre>
+)}

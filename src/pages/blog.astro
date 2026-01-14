@@ -18,7 +18,13 @@ function formatDate(date: Date): string {
 }
 
 // Carica tutti i post dalla collection
-const postsAll = await getCollection("blog");
+let postsAll = [];
+try {
+  postsAll = await getCollection("blog");
+} catch (err) {
+  // Se non ci sono contenuti, postsAll rimane vuoto
+  console.warn("[blog] Nessun contenuto trovato in Content Collections");
+}
 
 // Estrai categorie uniche da tutti i post
 // Usa un Set per tracciare gli slug già visti
@@ -98,7 +104,14 @@ const totalPosts = latest.length; // Totale filtrato
       <div id="posts" aria-hidden="true"></div>
 
       {
-        initialPosts.length > 0 ? (
+        postsAll.length === 0 ? (
+          <div class="card" style="padding:18px;">
+            <h2 style="margin:0 0 6px;">Contenuti in importazione</h2>
+            <p style="margin:0; color: var(--muted);">
+              I contenuti sono in fase di importazione. Torna presto!
+            </p>
+          </div>
+        ) : initialPosts.length > 0 ? (
           <>
             <div class="grid" id="blog-grid">
               {initialPosts.map((p) => (

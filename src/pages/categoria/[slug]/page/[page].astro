@@ -41,7 +41,13 @@ function formatDate(date: Date): string {
 }
 
 // Carica tutti i post dalla collection
-const postsAll = await getCollection("blog");
+let postsAll = [];
+try {
+  postsAll = await getCollection("blog");
+} catch (err) {
+  // Se non ci sono contenuti, postsAll rimane vuoto
+  console.warn("[categoria/page] Nessun contenuto trovato in Content Collections");
+}
 
 // Filtra per categoria
 const allPosts = postsAll

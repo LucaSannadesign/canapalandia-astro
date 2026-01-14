@@ -18,7 +18,13 @@ function formatDate(date: Date): string {
 }
 
 // Carica tutti i post dalla collection
-const postsAll = await getCollection("blog");
+let postsAll = [];
+try {
+  postsAll = await getCollection("blog");
+} catch (err) {
+  // Se non ci sono contenuti, postsAll rimane vuoto
+  console.warn("[blog-results] Nessun contenuto trovato in Content Collections");
+}
 
 // Filter & Pagination Logic
 const url = Astro.url;
