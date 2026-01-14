@@ -6,12 +6,47 @@ const BUTTONDOWN_API_URL = "https://buttondown.com/api/emails/embed-subscribe/Ca
 
 export const POST: APIRoute = async ({ request }) => {
     try {
-        const data = await request.json();
-        const email = data.email;
+        // Supporta sia JSON che form submissions
+        const contentType = request.headers.get("content-type") || "";
+        let email: string | null = null;
+        let consent: string | null = null;
+        let hp: string | null = null;
 
+        if (contentType.includes("application/json")) {
+            const data = await request.json();
+            email = data.email || null;
+            consent = data.consent || null;
+            hp = data.hp || null;
+        } else {
+            const form = await request.formData();
+            email = (form.get("email") as string) || null;
+            consent = (form.get("consent") as string) || null;
+            hp = (form.get("hp") as string) || null;
+        }
+
+        // Honeypot: se hp è valorizzato, ritorna OK senza iscrivere (antibot)
+        if (hp && hp.trim() !== "") {
+            return new Response(JSON.stringify({ message: "ok" }), {
+                status: 200,
+                headers: { "Content-Type": "application/json" }
+            });
+        }
+
+        // Validazione email
         if (!email || !/\S+@\S+\.\S+/.test(email)) {
             return new Response(JSON.stringify({ message: "Email non valida" }), {
                 status: 400,
+                headers: { "Content-Type": "application/json" }
+            });
+        }
+
+        // Validazione consenso GDPR
+        if (!consent || consent !== "true") {
+            return new Response(JSON.stringify({ 
+                message: "Devi accettare la Privacy Policy" 
+            }), {
+                status: 400,
+                headers: { "Content-Type": "application/json" }
             });
         }
 

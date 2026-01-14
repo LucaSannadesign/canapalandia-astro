@@ -63,7 +63,6 @@ const PUBLISHER_ID = import.meta.env.PUBLIC_ADSENSE_ID;
 
 <script define:vars={{ slotId }}>
     (() => {
-        const STORAGE_KEY = "canapalandia_cookie_consent";
         const container = document.querySelector(`[data-adsense-slot-id="${slotId}"]`);
         if (!container) return;
 
@@ -72,14 +71,12 @@ const PUBLISHER_ID = import.meta.env.PUBLIC_ADSENSE_ID;
 
         let pushed = false;
 
+        // Verifica consenso usando funzione globale CMP-ready
         const checkConsent = () => {
-            try {
-                const saved = localStorage.getItem(STORAGE_KEY);
-                if (saved) {
-                    const consent = JSON.parse(saved);
-                    return consent.analytics === true;
-                }
-            } catch {}
+            if (window.canapalandiaHasAdConsent && typeof window.canapalandiaHasAdConsent === "function") {
+                return window.canapalandiaHasAdConsent();
+            }
+            // Fallback: se funzione non esiste, ritorna false (NON permissivo)
             return false;
         };
 
@@ -110,7 +107,20 @@ const PUBLISHER_ID = import.meta.env.PUBLIC_ADSENSE_ID;
 
         // Ascolta evento consenso cookie
         window.addEventListener("canapalandia:cookie-consent", (e) => {
-            if (e.detail && e.detail.analytics === true && !pushed) {
+            if (e.detail && (e.detail.ads === true || e.detail.analytics === true) && !pushed) {
+                if (checkConsent()) {
+                    if (window.__adsenseLoaded) {
+                        pushAd();
+                    } else {
+                        window.addEventListener("adsense:script-loaded", pushAd, { once: true });
+                    }
+                }
+            }
+        });
+
+        // Ascolta evento consenso ads da CMP
+        window.addEventListener("canapalandia:ad-consent-granted", () => {
+            if (checkConsent() && !pushed) {
                 if (window.__adsenseLoaded) {
                     pushAd();
                 } else {

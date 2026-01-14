@@ -90,7 +90,6 @@ const isDev = import.meta.env.DEV;
         }
 
         const adSlotId = slot;
-        const STORAGE_KEY = "canapalandia_cookie_consent";
 
         // Trova container e elemento ad (solo se nel DOM)
         const container = document.querySelector(`[data-adslot-id="${adSlotId}"]`);
@@ -111,17 +110,13 @@ const isDev = import.meta.env.DEV;
             return;
         }
 
-        // Verifica consenso cookie
+        // Verifica consenso usando funzione globale CMP-ready
         const checkConsent = () => {
-            try {
-                const saved = localStorage.getItem(STORAGE_KEY);
-                if (saved) {
-                    const consent = JSON.parse(saved);
-                    return consent.analytics === true;
-                }
-            } catch {}
-            // Se non c'è cookie banner, mostra comunque (compatibilità retroattiva)
-            return true;
+            if (window.canapalandiaHasAdConsent && typeof window.canapalandiaHasAdConsent === "function") {
+                return window.canapalandiaHasAdConsent();
+            }
+            // Fallback: se funzione non esiste, ritorna false (NON permissivo)
+            return false;
         };
 
         // Poll per aspettare che adsbygoogle esista (max 3s, più generoso)
@@ -204,8 +199,26 @@ const isDev = import.meta.env.DEV;
 
         // Ascolta evento consenso cookie (per utenti che accettano dopo)
         window.addEventListener("canapalandia:cookie-consent", (e) => {
-            if (e.detail && e.detail.analytics === true) {
-                // Verifica che non sia già inizializzato
+            if (e.detail && (e.detail.ads === true || e.detail.analytics === true)) {
+                // Verifica consenso con funzione globale
+                if (checkConsent()) {
+                    // Verifica che non sia già inizializzato
+                    if (!window.__adsenseInitialized.has(adElement) && adElement.dataset.adsInitialized !== "1") {
+                        if (window.__adsenseLoaded) {
+                            pollForAdSense(pushAd);
+                        } else {
+                            window.addEventListener("adsense:script-loaded", () => {
+                                pollForAdSense(pushAd);
+                            }, { once: true });
+                        }
+                    }
+                }
+            }
+        });
+
+        // Ascolta evento consenso ads da CMP
+        window.addEventListener("canapalandia:ad-consent-granted", () => {
+            if (checkConsent()) {
                 if (!window.__adsenseInitialized.has(adElement) && adElement.dataset.adsInitialized !== "1") {
                     if (window.__adsenseLoaded) {
                         pollForAdSense(pushAd);

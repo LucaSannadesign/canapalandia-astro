@@ -13,6 +13,9 @@
         </div>
 
         <form class="newsletter-form" id="newsletterForm" method="POST" action="/api/newsletter">
+            {/* Honeypot anti-spam */}
+            <input class="hp" type="text" name="hp" tabindex="-1" autocomplete="off" aria-hidden="true" />
+
             <div class="input-group">
                 <label for="newsletter-email" class="sr-only">Indirizzo email</label>
                 <input
@@ -23,15 +26,15 @@
                     autocomplete="email"
                     required
                     aria-label="Indirizzo email"
-                    aria-describedby="formFeedback legalText"
+                    aria-describedby="formFeedback consentText"
                 />
                 <button type="submit" class="btn-submit">Iscriviti</button>
             </div>
             <p class="form-feedback" id="formFeedback" role="status" aria-live="polite"></p>
-            <p class="newsletter-legal" id="legalText">
-                Inviando questo form, accetti la nostra <a href="/privacy-policy/">Privacy Policy</a> e 
-                la <a href="/cookie-policy/">Cookie Policy</a>.
-            </p>
+            <label class="consent" id="consentText">
+                <input type="checkbox" name="consent" value="true" required />
+                <span>Acconsento al trattamento dei dati secondo la <a href="/privacy-policy/">Privacy Policy</a>.</span>
+            </label>
         </form>
     </div>
 </section>
@@ -277,6 +280,46 @@
         white-space: nowrap;
         border: 0;
     }
+
+    /* Honeypot: nascosto */
+    .hp {
+        display: none;
+    }
+
+    /* Checkbox consenso */
+    .consent {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        font-size: 0.9rem;
+        opacity: 0.9;
+        margin-top: 10px;
+        cursor: pointer;
+        max-width: 500px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .consent input[type="checkbox"] {
+        margin-top: 3px;
+        flex-shrink: 0;
+        cursor: pointer;
+    }
+
+    .consent span {
+        line-height: 1.5;
+        color: var(--muted);
+    }
+
+    .consent a {
+        color: var(--brand);
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
+
+    .consent a:hover {
+        color: var(--brand-2);
+    }
 </style>
 
 <script>
@@ -305,9 +348,12 @@
             }
 
             try {
+                const consent = formData.get("consent") ? true : false;
+                const hp = formData.get("hp") as string;
+
                 const res = await fetch("/api/newsletter", {
                     method: "POST",
-                    body: JSON.stringify({ email }),
+                    body: JSON.stringify({ email, consent, hp }),
                     headers: { "Content-Type": "application/json" },
                 });
 
