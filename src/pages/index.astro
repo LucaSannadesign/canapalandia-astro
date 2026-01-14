@@ -2,12 +2,14 @@
 import { Image } from "astro:assets";
 import Layout from "../layouts/MigratedLayout.astro";
 import AdSlot from "../components/AdSlot.astro";
+import CardPost from "../components/CardPost.astro";
 import { loadWp } from "../lib/wp";
 import {
   textFromHtml,
   excerptFromHtml,
   entryHref,
   resolveWpMediaSrc,
+  getExcerpt,
 } from "../lib/utils";
 import { WP_HOST } from "../lib/consts";
 import categoriesJson from "../../data/wp/out/categories.json";
@@ -77,6 +79,38 @@ const sortedPosts = posts.slice().sort((a, b) => getTime(b) - getTime(a));
 const latestPosts = sortedPosts.slice(0, 6);
 const featured = sortedPosts[0];
 const featuredSide = sortedPosts.slice(1, 4);
+
+// Helper per estrarre categoria da entry
+function getCategoryFromEntry(p: any): string | null {
+  if (!p?.raw) return null;
+  const raw = p.raw;
+  
+  // Prova da _embedded["wp:term"]
+  const wpTerm = raw?._embedded?.["wp:term"];
+  if (Array.isArray(wpTerm)) {
+    const flat = wpTerm.flat().flat();
+    const cats = flat.filter(
+      (t: any) =>
+        t &&
+        t.taxonomy === "category" &&
+        typeof t.name === "string",
+    );
+    if (cats.length > 0) {
+      return textFromHtml(cats[0].name);
+    }
+  }
+  
+  // Fallback: usa categories array con categoriesJson
+  if (raw?.categories && Array.isArray(raw.categories) && raw.categories.length > 0) {
+    const categories = Array.isArray(categoriesJson) ? categoriesJson : [];
+    const category = categories.find((c: any) => c.id === raw.categories[0]);
+    if (category?.name) {
+      return textFromHtml(category.name);
+    }
+  }
+  
+  return null;
+}
 
 /* ---------------------------
    Mappa icone SVG per categoria
@@ -196,19 +230,23 @@ const canonical = `${WP_HOST}/`;
       <p class="kicker">Cannabis legale • CBD • Canapa industriale</p>
 
       <h1>
-        Cannabis light, CBD e canapa legale in Italia: informazione chiara e
-        verificabile
+        Ribalta la propaganda. Restando nella legge.
       </h1>
 
       <p class="lead">
-        Notizie, normative e guide pratiche per orientarti tra leggi, prodotti,
-        ricerca e filiera. Focus Italia, aggiornamenti continui, zero
-        sensazionalismo.
+        Canapa e cannabis light in Italia, spiegate bene: normative, sentenze, filiera e
+        prodotti. Fonti, contesto e zero sensazionalismo.
       </p>
 
       <div class="hero-cta">
-        <a class="btn primary" href="/#percorsi">Inizia dai percorsi</a>
-        <a class="btn ghost" href="/#ultimi">Leggi le ultime notizie</a>
+        <a class="btn primary" href="/ribaltatore/">Prova il Ribaltatore</a>
+        <a class="btn ghost" href="/blog/">Guida legale 2026</a>
+      </div>
+
+      <div class="hero-links">
+        <a class="hero-link" href="/#percorsi">Vai ai percorsi</a>
+        <span aria-hidden="true">·</span>
+        <a class="hero-link" href="/#ultimi">Ultime notizie</a>
       </div>
 
       <ul class="trust" aria-label="Punti chiave">
@@ -372,54 +410,31 @@ const canonical = `${WP_HOST}/`;
 
       <div class="grid">
         {
-          latestPosts.map((p) => (
-            <article class="card post-card">
-              <a class="cardLink" href={entryHref(p)}>
-                <div class="thumb">
-                  {(() => {
-                    const fi = featuredImage(p);
-                    return fi ? (
-                      fi.src.startsWith("http") ? (
-                        <Image
-                          src={fi.src}
-                          alt={fi.alt || textFromHtml(p.title)}
-                          inferSize={true}
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      ) : (
-                        <img
-                          src={fi.src}
-                          alt={fi.alt || textFromHtml(p.title)}
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      )
-                    ) : null;
-                  })()}
-                </div>
-
-                <div class="cardBody">
-                  <p class="cardMeta">
-                    {(() => {
-                      const iso = p?.date ?? p?.modified ?? "";
-                      return iso
-                        ? new Date(iso).toLocaleDateString("it-IT", {
-                            year: "numeric",
-                            month: "long",
-                            day: "2-digit",
-                          })
-                        : "";
-                    })()}
-                  </p>
-
-                  <h3 class="cardTitle" set:html={p.title} />
-                  <p class="cardExcerpt">{excerptFromHtml(p.html, 110)}</p>
-                  <span class="cardCta">Apri →</span>
-                </div>
-              </a>
-            </article>
-          ))
+          latestPosts.map((p) => {
+            const fi = featuredImage(p);
+            const imgSrc = fi ? fi.src : null;
+            const iso = p?.date ?? p?.modified ?? "";
+            const dateFormatted = iso
+              ? new Date(iso).toLocaleDateString("it-IT", {
+                  year: "numeric",
+                  month: "long",
+                  day: "2-digit",
+                })
+              : "";
+            const categoryName = getCategoryFromEntry(p);
+            const excerptText = getExcerpt(null, p.html, 180);
+            
+            return (
+              <CardPost
+                href={entryHref(p)}
+                img={imgSrc || undefined}
+                date={dateFormatted}
+                title={p.title}
+                excerpt={excerptText}
+                category={categoryName}
+              />
+            );
+          })
         }
       </div>
 
@@ -463,6 +478,22 @@ const canonical = `${WP_HOST}/`;
   </section>
 
   <style>
+    /* Hero links discreti */
+    .hero-links {
+      margin-top: 12px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      opacity: 0.9;
+      font-size: 0.95rem;
+    }
+    .hero-link {
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
     /* Percorsi tematici: rollover elegante */
     #percorsi .grid.cards .card--topic {
       position: relative;

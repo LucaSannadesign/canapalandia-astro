@@ -169,15 +169,20 @@ const totalPosts = latest.length; // Totale filtrato
         initialPosts.length ? (
           <>
             <div class="grid" id="blog-grid">
-              {initialPosts.map((p: any) => (
-                <CardPost
-                  href={href(p)}
-                  img={og(p)}
-                  date={fmt(p?.date || p?.modified)}
-                  title={postTitle(p)}
-                  excerpt={excerpt(p)}
-                />
-              ))}
+              {initialPosts.map((p: any) => {
+                const cats = categoriesOf(p);
+                const firstCategory = cats.length > 0 ? cats[0].name : null;
+                return (
+                  <CardPost
+                    href={href(p)}
+                    img={og(p)}
+                    date={fmt(p?.date || p?.modified)}
+                    title={postTitle(p)}
+                    excerpt={excerpt(p)}
+                    category={firstCategory}
+                  />
+                );
+              })}
             </div>
 
             {/* Sentinel for Infinite Scroll */}
