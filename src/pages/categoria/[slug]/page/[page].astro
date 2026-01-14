@@ -10,9 +10,9 @@
  */
 export const prerender = false;
 
+import { getCollection } from "astro:content";
 import SiteLayout from "../../../../layouts/SiteLayout.astro";
-import { WP_API_BASE } from "@/lib/consts";
-import { getExcerpt } from "../../../../lib/utils";
+import CardPost from "../../../../components/CardPost.astro";
 
 const slug = String(Astro.params.slug ?? "").trim();
 const pageParam = Astro.params.page;
@@ -31,63 +31,35 @@ if (pageNum === 1) {
   return Astro.redirect(`/categoria/${slug}/`, 301);
 }
 
-function stripHtml(html = "") {
-  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+// Helper per formattare data
+function formatDate(date: Date): string {
+  return date.toLocaleDateString("it-IT", {
+    year: "numeric",
+    month: "long",
+    day: "2-digit",
+  });
 }
 
-function getFeatured(item) {
-  const fm = item?._embedded?.["wp:featuredmedia"]?.[0];
-  const src =
-    fm?.media_details?.sizes?.large?.source_url ||
-    fm?.media_details?.sizes?.medium_large?.source_url ||
-    fm?.source_url;
+// Carica tutti i post dalla collection
+const postsAll = await getCollection("blog");
 
-  const alt = fm?.alt_text || stripHtml(item?.title?.rendered || "") || "Immagine";
-  return src ? { src, alt } : null;
+// Filtra per categoria
+const allPosts = postsAll
+  .filter((p) => (p.data.category || "") === slug)
+  .sort((a, b) => b.data.publishDate.getTime() - a.data.publishDate.getTime());
+
+// Se categoria non esiste (0 post), 404
+if (allPosts.length === 0) {
+  return new Response(null, {
+    status: 404,
+    statusText: "Not Found",
+  });
 }
 
-// Recupero categoria per slug
-let category = null;
-let posts = [];
-
-if (slug) {
-  const catRes = await fetch(
-    `${WP_API_BASE}/categories?slug=${encodeURIComponent(slug)}`,
-    {
-      headers: { Accept: "application/json" },
-    }
-  );
-
-  if (catRes.ok) {
-    const cats = await catRes.json();
-    category = Array.isArray(cats) && cats.length ? cats[0] : null;
-  }
-
-  // Se categoria non esiste, 404
-  if (!category) {
-    return new Response(null, {
-      status: 404,
-      statusText: "Not Found",
-    });
-  }
-
-  // Recupero post della categoria
-  if (category?.id) {
-    const postsRes = await fetch(
-      `${WP_API_BASE}/posts?categories=${category.id}&per_page=100&_embed=1`,
-      { headers: { Accept: "application/json" } }
-    );
-
-    if (postsRes.ok) {
-      posts = await postsRes.json();
-    }
-  }
-}
-
-// Paginazione: 24 post per pagina (coerente con categoria/[slug].astro)
+// Paginazione: 24 post per pagina
 const PER_PAGE = 24;
-const totalPosts = posts.length;
-const totalPages = Math.ceil(totalPosts / PER_PAGE);
+const totalPosts = allPosts.length;
+const totalPages = Math.max(1, Math.ceil(totalPosts / PER_PAGE));
 
 // Se la pagina richiesta eccede il massimo, 404
 if (pageNum > totalPages) {
@@ -100,15 +72,22 @@ if (pageNum > totalPages) {
 // Calcola slice per questa pagina
 const start = (pageNum - 1) * PER_PAGE;
 const end = start + PER_PAGE;
-const pagePosts = posts.slice(start, end);
+const pagePosts = allPosts.slice(start, end);
+
+// Estrai nome categoria dal primo post
+const categoryName = allPosts[0].data.category
+  ? allPosts[0].data.category
+      .split("-")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ")
+  : slug
+      .split("-")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
 
 const metadata = {
-  title: category
-    ? pageNum > 1
-      ? `Categoria: ${stripHtml(category.name)} — Pagina ${pageNum}`
-      : `Categoria: ${stripHtml(category.name)}`
-    : "Categoria",
-  description: category ? stripHtml(category.description || "") : "",
+  title: `Categoria: ${categoryName} — Pagina ${pageNum}`,
+  description: `Articoli nella categoria ${categoryName}, pagina ${pageNum} di ${totalPages}.`,
   canonical: `${import.meta.env.SITE || "https://canapalandia.com"}/categoria/${slug}/page/${pageNum}/`,
   robots: { index: true, follow: true },
 };
@@ -117,78 +96,53 @@ const metadata = {
 <SiteLayout metadata={metadata}>
   <main class="container page-shell">
     <div class="section-head">
-      <h1>
-        Categoria: {category ? stripHtml(category.name) : slug}
-      </h1>
-      {category?.description ? (
-        <p class="section-lead">{stripHtml(category.description)}</p>
-      ) : null}
+      <h1>Categoria: {categoryName}</h1>
       <p class="section-lead">Pagina {pageNum} di {totalPages}</p>
     </div>
 
-    {pagePosts?.length ? (
-      <div class="grid">
-        {pagePosts.map((p) => {
-          const img = getFeatured(p);
-          return (
-            <article class="card post-card">
-              <a class="cardLink" href={p.slug ? `/${p.slug}/` : "/"}>
-                <div class="thumb">
-                  {img ? (
-                    <img
-                      src={img.src}
-                      alt={img.alt}
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  ) : null}
-                </div>
-                <div class="cardBody">
-                  <p class="cardMeta">
-                    {new Date(p.date).toLocaleDateString("it-IT")}
-                  </p>
-                  <h3 class="cardTitle" set:html={p.title.rendered}></h3>
-                  {(() => {
-                    const excerptText = getExcerpt(p.excerpt, p.content?.rendered || p.content, 180);
-                    return excerptText ? (
-                      <p class="cardExcerpt">{excerptText}</p>
-                    ) : null;
-                  })()}
-                  <div class="cardCta">Leggi →</div>
-                </div>
-              </a>
-            </article>
-          );
-        })}
-      </div>
+    {pagePosts.length > 0 ? (
+      <>
+        <div class="grid">
+          {pagePosts.map((p) => (
+            <CardPost
+              href={`/${p.data.slug}/`}
+              img={p.data.coverImage || undefined}
+              date={formatDate(p.data.publishDate)}
+              title={p.data.title}
+              excerpt={p.data.description}
+              category={p.data.category || null}
+            />
+          ))}
+        </div>
+
+        {/* Paginazione */}
+        <nav class="pagination" aria-label="Paginazione">
+          {pageNum > 1 && (
+            <a
+              href={
+                pageNum === 2
+                  ? `/categoria/${slug}/`
+                  : `/categoria/${slug}/page/${pageNum - 1}/`
+              }
+              class="btn"
+            >
+              « Pagina precedente
+            </a>
+          )}
+          <span class="pagination-info">
+            Pagina {pageNum} di {totalPages}
+          </span>
+          {pageNum < totalPages && (
+            <a href={`/categoria/${slug}/page/${pageNum + 1}/`} class="btn">
+              Pagina successiva »
+            </a>
+          )}
+        </nav>
+      </>
     ) : (
       <div class="card">
         <p>Nessun post trovato in questa categoria.</p>
       </div>
     )}
-
-    {/* Paginazione */}
-    <nav class="pagination" aria-label="Paginazione">
-      {pageNum > 1 && (
-        <a
-          href={
-            pageNum === 2
-              ? `/categoria/${slug}/`
-              : `/categoria/${slug}/page/${pageNum - 1}/`
-          }
-          class="btn"
-        >
-          « Pagina precedente
-        </a>
-      )}
-      <span class="pagination-info">
-        Pagina {pageNum} di {totalPages}
-      </span>
-      {pageNum < totalPages && (
-        <a href={`/categoria/${slug}/page/${pageNum + 1}/`} class="btn">
-          Pagina successiva »
-        </a>
-      )}
-    </nav>
   </main>
 </SiteLayout>

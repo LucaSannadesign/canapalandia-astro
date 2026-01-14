@@ -1,112 +1,61 @@
 ---
+import { getCollection } from "astro:content";
 import CardPost from "../components/CardPost.astro";
 import Layout from "../layouts/MigratedLayout.astro";
 import Callout from "../components/editorial/Callout.astro";
 import RibaltatoreCTA from "../components/editorial/RibaltatoreCTA.astro";
 import BlogFilters from "../components/blog/BlogFilters.astro";
-import postsJson from "../../data/wp/out/posts.json";
-import { toParams } from "../lib/wp";
 
 export const prerender = false;
 
-const posts = Array.isArray(postsJson) ? postsJson : [];
-
-const postTitle = (p: any) => p?.title?.rendered || p?.title || "";
-const stripHtml = (s: any) =>
-  String(s || "")
-    .replace(/<[^>]*>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-import { getExcerpt } from "../lib/utils";
-
-const excerpt = (p: any) =>
-  getExcerpt(p?.excerpt, p?.content?.rendered || p?.content, 180);
-const sortDesc = (a: any, b: any) =>
-  (Date.parse(b?.date || b?.modified || "") || 0) -
-  (Date.parse(a?.date || a?.modified || "") || 0);
-const og = (p: any) =>
-  p?.yoast_head_json?.og_image?.[0]?.url ||
-  p?.yoast_head_json?.og_image?.[0]?.src ||
-  "";
-const href = (p: any) => {
-  const url = p?.yoast_head_json?.canonical || p?.link || p?.slug || "";
-  const path = toParams(url);
-  return path ? `/${path}/` : "/";
-};
-const fmt = (iso: any) =>
-  iso
-    ? new Date(iso).toLocaleDateString("it-IT", {
-        year: "numeric",
-        month: "long",
-        day: "2-digit",
-      })
-    : "";
-
-/* ---------------------------
-   Categorie (WP REST: _embedded["wp:term"]) 
-   NOTE: se l'export non contiene _embedded, i filtri non possono popolarsi.
---------------------------- */
-function categoriesOf(p: any): { slug: string; name: string }[] {
-  const wpTerm = p?._embedded?.["wp:term"];
-  if (!Array.isArray(wpTerm)) return [];
-
-  // wp:term è un array di array (categorie, tag, ecc.)
-  const flat = wpTerm.flat().flat();
-  const cats = flat
-    .filter(
-      (t: any) =>
-        t &&
-        t.taxonomy === "category" &&
-        typeof t.slug === "string" &&
-        typeof t.name === "string",
-    )
-    .map((t: any) => ({ slug: String(t.slug), name: String(t.name) }));
-
-  // unique by slug
-  const m = new Map<string, { slug: string; name: string }>();
-  for (const c of cats) if (!m.has(c.slug)) m.set(c.slug, c);
-  return Array.from(m.values());
+// Helper per formattare data
+function formatDate(date: Date): string {
+  return date.toLocaleDateString("it-IT", {
+    year: "numeric",
+    month: "long",
+    day: "2-digit",
+  });
 }
 
-function allCategories(list: any[]): { slug: string; name: string }[] {
-  const m = new Map<string, { slug: string; name: string }>();
-  for (const p of list) {
-    for (const c of categoriesOf(p)) {
-      if (!m.has(c.slug)) m.set(c.slug, c);
-    }
+// Carica tutti i post dalla collection
+const postsAll = await getCollection("blog");
+
+// Estrai categorie uniche da tutti i post
+// Usa un Set per tracciare gli slug già visti
+const categorySet = new Set<string>();
+for (const post of postsAll) {
+  const cat = post.data.category;
+  if (cat && typeof cat === "string" && cat.trim()) {
+    categorySet.add(cat.trim());
   }
-  return Array.from(m.values()).sort((a, b) =>
-    a.name.localeCompare(b.name, "it"),
-  );
 }
 
-// Lista ampia per rendere utili i filtri
-const latestAll = posts.slice().sort(sortDesc).slice(0, 60);
+// Converti in array con slug e nome umanizzato, ordina per nome
+const cats = Array.from(categorySet)
+  .map((slug) => ({
+    slug,
+    name: slug
+      .split("-")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" "),
+  }))
+  .sort((a, b) => a.name.localeCompare(b.name, "it"));
 
-// Flag: abbiamo davvero categorie nei dati?
-const hasEmbeddedTerms = latestAll.some((p: any) =>
-  Array.isArray(p?._embedded?.["wp:term"]),
-);
-const cats = hasEmbeddedTerms ? allCategories(latestAll) : [];
-
-// filtro attivo: /blog/?cat=slug
+// Filtro attivo: /blog/?cat=slug
 const activeCat = (Astro.url.searchParams.get("cat") || "").trim();
 
-const latest =
-  activeCat && hasEmbeddedTerms
-    ? latestAll.filter((p: any) =>
-        categoriesOf(p).some((c) => c.slug === activeCat),
-      )
-    : latestAll;
+// Filtra post per categoria se attivo
+const filteredPosts = activeCat
+  ? postsAll.filter((p) => (p.data.category || "") === activeCat)
+  : postsAll;
 
-const activeCatName = activeCat
-  ? cats.find((c) => c.slug === activeCat)?.name || activeCat
-  : "Tutte";
+// Ordina per publishDate DESC
+const latest = filteredPosts
+  .slice()
+  .sort((a, b) => b.data.publishDate.getTime() - a.data.publishDate.getTime());
 
 // Pagina iniziale 12 post, poi scroll infinito
-const initialPosts = hasEmbeddedTerms
-  ? latest.slice(0, 12)
-  : latest.slice(0, 12);
+const initialPosts = latest.slice(0, 12);
 
 const title = "Blog — Canapalandia";
 const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/blog/`;
@@ -136,44 +85,32 @@ const totalPosts = latest.length; // Totale filtrato
   <section class="section">
     <div class="container">
       {
-        hasEmbeddedTerms && cats.length ? (
+        cats.length > 0 ? (
           <BlogFilters
             items={cats}
             active={activeCat}
             baseUrl="/blog/"
             includeAll={true}
           />
-        ) : (
-          <div class="card" style="padding:16px; margin-bottom:16px;">
-            <p style="margin:0; color: var(--muted);">
-              <strong>Filtri categoria non disponibili</strong>: nel file{" "}
-              <code>posts.json</code> non risultano presenti i termini embed (
-              <code>_embedded[\"wp:term\"]</code>).
-            </p>
-          </div>
-        )
+        ) : null
       }
 
       <div id="posts" aria-hidden="true"></div>
 
       {
-        initialPosts.length ? (
+        initialPosts.length > 0 ? (
           <>
             <div class="grid" id="blog-grid">
-              {initialPosts.map((p: any) => {
-                const cats = categoriesOf(p);
-                const firstCategory = cats.length > 0 ? cats[0].name : null;
-                return (
-                  <CardPost
-                    href={href(p)}
-                    img={og(p)}
-                    date={fmt(p?.date || p?.modified)}
-                    title={postTitle(p)}
-                    excerpt={excerpt(p)}
-                    category={firstCategory}
-                  />
-                );
-              })}
+              {initialPosts.map((p) => (
+                <CardPost
+                  href={`/${p.data.slug}/`}
+                  img={p.data.coverImage || undefined}
+                  date={formatDate(p.data.publishDate)}
+                  title={p.data.title}
+                  excerpt={p.data.description}
+                  category={p.data.category || null}
+                />
+              ))}
             </div>
 
             {/* Sentinel for Infinite Scroll */}

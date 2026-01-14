@@ -1,7 +1,6 @@
 ---
+import { getCollection } from "astro:content";
 import CardPost from "../../components/CardPost.astro";
-import postsJson from "../../../data/wp/out/posts.json";
-import { toParams } from "../../lib/wp";
 
 export const prerender = false;
 
@@ -9,96 +8,56 @@ export const prerender = false;
 Astro.response.headers.set("X-Robots-Tag", "noindex, nofollow");
 Astro.response.headers.set("Cache-Control", "public, max-age=60");
 
-// 1. Helpers (copiati da blog.astro per consistenza)
-const posts = Array.isArray(postsJson) ? postsJson : [];
-const postTitle = (p: any) => p?.title?.rendered || p?.title || "";
-const stripHtml = (s: any) =>
-    String(s || "")
-        .replace(/<[^>]*>/g, " ")
-        .replace(/\s+/g, " ")
-        .trim();
-import { getExcerpt } from "../../lib/utils";
-
-const excerpt = (p: any) =>
-    getExcerpt(p?.excerpt, p?.content?.rendered || p?.content, 180);
-const sortDesc = (a: any, b: any) =>
-    (Date.parse(b?.date || b?.modified || "") || 0) -
-    (Date.parse(a?.date || a?.modified || "") || 0);
-const og = (p: any) =>
-    p?.yoast_head_json?.og_image?.[0]?.url ||
-    p?.yoast_head_json?.og_image?.[0]?.src ||
-    "";
-const href = (p: any) => {
-    const url = p?.yoast_head_json?.canonical || p?.link || p?.slug || "";
-    const path = toParams(url);
-    return path ? `/${path}/` : "/";
-};
-const fmt = (iso: any) =>
-    iso
-        ? new Date(iso).toLocaleDateString("it-IT", {
-              year: "numeric",
-              month: "long",
-              day: "2-digit",
-          })
-        : "";
-
-function categoriesOf(p: any): { slug: string; name: string }[] {
-    const wpTerm = p?._embedded?.["wp:term"];
-    if (!Array.isArray(wpTerm)) return [];
-    const flat = wpTerm.flat().flat();
-    return flat
-        .filter(
-            (t: any) =>
-                t &&
-                t.taxonomy === "category" &&
-                typeof t.slug === "string" &&
-                typeof t.name === "string",
-        )
-        .map((t: any) => ({ slug: String(t.slug), name: String(t.name) }));
+// Helper per formattare data
+function formatDate(date: Date): string {
+  return date.toLocaleDateString("it-IT", {
+    year: "numeric",
+    month: "long",
+    day: "2-digit",
+  });
 }
 
-// 2. Filter & Pagination Logic
+// Carica tutti i post dalla collection
+const postsAll = await getCollection("blog");
+
+// Filter & Pagination Logic
 const url = Astro.url;
 const cat = (url.searchParams.get("cat") || "").trim();
 const pageParam = parseInt(url.searchParams.get("page") || "1", 10);
 const page = isNaN(pageParam) || pageParam < 1 ? 1 : pageParam;
 const PER_PAGE = 12;
 
-// Sort
-const allSorted = posts.slice().sort(sortDesc);
-
-// Filter
-let filtered = allSorted;
+// Filtra per categoria se presente
+let filtered = postsAll;
 if (cat) {
-    filtered = filtered.filter((p: any) =>
-        categoriesOf(p).some((c) => c.slug === cat),
-    );
+  filtered = filtered.filter((p) => (p.data.category || "") === cat);
 }
+
+// Ordina per publishDate DESC
+const allSorted = filtered
+  .slice()
+  .sort((a, b) => b.data.publishDate.getTime() - a.data.publishDate.getTime());
 
 // Paginate
 const start = (page - 1) * PER_PAGE;
 const end = start + PER_PAGE;
-const chunk = filtered.slice(start, end);
+const chunk = allSorted.slice(start, end);
 
 // Se non ci sono risultati per questa pagina, ritorno vuoto
 if (!chunk.length) {
-    return new Response(null, { status: 404 });
+  return new Response(null, { status: 404 });
 }
 ---
 
 {
-    chunk.map((p: any) => {
-        const cats = categoriesOf(p);
-        const firstCategory = cats.length > 0 ? cats[0].name : null;
-        return (
-            <CardPost
-                href={href(p)}
-                img={og(p)}
-                date={fmt(p?.date || p?.modified)}
-                title={postTitle(p)}
-                excerpt={excerpt(p)}
-                category={firstCategory}
-            />
-        );
-    })
+  chunk.map((p) => (
+    <CardPost
+      href={`/${p.data.slug}/`}
+      img={p.data.coverImage || undefined}
+      date={formatDate(p.data.publishDate)}
+      title={p.data.title}
+      excerpt={p.data.description}
+      category={p.data.category || null}
+    />
+  ))
 }
