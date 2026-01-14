@@ -7,7 +7,10 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "migrate:wp": "node scripts/migrate-wp-to-content.mjs"
+    "migrate:wp": "node scripts/migrate-wp-to-content.mjs",
+    "mirror:media": "node scripts/mirror-media.mjs",
+    "export:db": "node scripts/export-db-to-content.mjs",
+    "export:content": "node scripts/export-db-to-content.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.6.0",
@@ -19,9 +22,13 @@
   },
   "devDependencies": {
     "@astrojs/vercel": "^9.0.2",
+    "dotenv": "^16.6.1",
     "sharp": "^0.34.5"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild", "sharp"]
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp"
+    ]
   }
 }
