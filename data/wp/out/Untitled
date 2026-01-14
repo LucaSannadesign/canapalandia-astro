@@ -1,0 +1,36 @@
+Agisci come senior Astro + MDX maintainer. Il deploy su Vercel fallisce con:
+
+[@mdx-js/rollup] Unexpected closing slash `/` in tag, expected an open tag first
+file: src/content/blog/als-patients-buying-cannabis-from-dealers.mdx:15:2
+
+Obiettivo: far passare `pnpm run build` in locale e su Vercel SENZA cambiare il significato dei contenuti (solo correzioni sintattiche MDX/HTML/JSX). Non toccare i frontmatter se non strettamente necessario.
+
+TASK A — Fix puntuale
+1) Apri `src/content/blog/als-patients-buying-cannabis-from-dealers.mdx` e vai alla riga ~15.
+2) Individua il tag che contiene lo slash “problematico” (tipicamente `<br/>`, `<hr/>`, `<img .../>`, oppure un tag auto-chiuso non valido come `<a .../>` o markup spezzato).
+3) Correggilo in sintassi compatibile MDX/JSX:
+   - Usa self-closing con spazio: `<br />`, `<hr />`, `<img ... />`
+   - NON usare tag auto-chiusi per elementi non-void (es. `<a ... />` è invalido → rendilo `<a ...>testo</a>` oppure rimuovi il tag se era un refuso)
+   - Se il problema è un tag “rotto” o spezzato, ricostruiscilo in modo minimale.
+4) Salva e lancia `pnpm run build` per verificare che l’errore sparisca.
+
+TASK B — Bonifica preventiva (tutti i post migrati)
+5) Cerca in `src/content/blog/**/*.mdx` pattern ad alto rischio e correggili con interventi MINIMALI:
+   - `<br/>` → `<br />`
+   - `<hr/>` → `<hr />`
+   - `<img .../>` → `<img ... />`
+   - `<meta .../>` / `<link .../>` se presenti → versioni JSX corrette con spazio
+   - Tag non-void auto-chiusi (`<a .../>`, `<p .../>`, `<div .../>`, ecc.) → rendili con chiusura corretta o rimuovi SOLO il tag se era chiaramente un refuso
+   - Se trovi HTML non bilanciato, bilancialo (apri/chiudi correttamente) senza riscrivere il testo.
+IMPORTANTISSIMO: non alterare contenuto dentro i code-fence (blocchi ``` ... ```). Se fai un replace globale, assicurati di saltare quelle sezioni.
+
+6) Dopo la bonifica, esegui:
+   - `pnpm run build`
+   - `pnpm dev` e apri 2-3 post a caso per verificare che rendano correttamente.
+
+OUTPUT RICHIESTO
+- Mostrami esattamente le diff effettuate sul file incriminato e, se hai toccato altri MDX, un riepilogo conciso (quali file e quale tipo di fix).
+- Alla fine scrivi il comando “one-liner” per commit+push+deploy Vercel.
+
+ONE-LINER (alla fine me lo ristampi aggiornato):
+git add -A && git commit -m "fix: sanitize migrated MDX (valid JSX tags) to unblock Vercel build" && git push && vercel --prod --force
