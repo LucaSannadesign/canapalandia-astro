@@ -1,5 +1,6 @@
 ---
 import { WP_API_BASE } from "@/lib/consts";
+import { fetchWpJson } from "@/lib/wpFetch";
 
 const { postId } = Astro.props;
 
@@ -14,10 +15,13 @@ type WPComment = {
 };
 
 let comments: WPComment[] = [];
-try {
-  const res = await fetch(endpoint, { headers: { Accept: "application/json" } });
-  if (res.ok) comments = (await res.json()) as WPComment[];
-} catch {}
+const result = await fetchWpJson<WPComment[]>(endpoint);
+if (result.ok && Array.isArray(result.data)) {
+  // Filtra solo commenti approvati (status "approved" o undefined)
+  comments = result.data.filter(
+    (c) => !c.status || c.status === "approved"
+  );
+}
 ---
 
 <section class="comments card">

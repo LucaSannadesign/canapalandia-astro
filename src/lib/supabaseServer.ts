@@ -63,8 +63,15 @@ export function getSupabaseServer() {
 
   // Controllo presenza variabili
   if (!supabaseUrl || !supabaseServiceRoleKey) {
+    const missing = [];
+    if (!supabaseUrl) missing.push("SUPABASE_URL");
+    if (!supabaseServiceRoleKey) missing.push("SUPABASE_SERVICE_ROLE_KEY");
+    
     throw new Error(
-      "SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY devono essere configurate in env",
+      `Variabili ambiente mancanti: ${missing.join(", ")}. ` +
+      `Su Vercel, configura queste variabili in Project Settings → Environment Variables. ` +
+      `IMPORTANTE: SUPABASE_SERVICE_ROLE_KEY deve essere la service_role secret (non PUBLIC_SUPABASE_ANON_KEY). ` +
+      `Trovala su Supabase Dashboard → Settings → API → service_role secret.`
     );
   }
 
@@ -85,8 +92,8 @@ export function getSupabaseServer() {
     const keyPrefix = getKeyPrefix(supabaseServiceRoleKey);
     throw new Error(
       `SUPABASE_SERVICE_ROLE_KEY coincide con SUPABASE_ANON_KEY (inizia con "${keyPrefix}"). ` +
-      `Devi usare la service_role secret, non la anon key. ` +
-      `Vai su Supabase Dashboard → Settings → API → service_role secret.`
+      `Su Vercel, assicurati di aver configurato SUPABASE_SERVICE_ROLE_KEY (non PUBLIC_SUPABASE_ANON_KEY) ` +
+      `con la service_role secret. Trovala su Supabase Dashboard → Settings → API → service_role secret.`
     );
   }
 

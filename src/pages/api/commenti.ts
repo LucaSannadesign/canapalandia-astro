@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { WP_API_BASE } from "@/lib/consts";
+import { fetchWpJson } from "@/lib/wpFetch";
 
 // Basic anti-spam: honeypot + rate limit in-memory (ok in dev; su serverless è best-effort)
 const RATE_WINDOW_MS = 60_000; // 1 min
@@ -38,24 +39,32 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     return new Response(JSON.stringify({ ok: false, error: "Dati mancanti." }), { status: 400 });
   }
 
-  // IMPORTANTE:
-  // Se il tuo WP accetta commenti anonimi via REST, questa chiamata funziona.
-  // Se non li accetta, va aggiunta autenticazione (Application Password) ma resta gratis e senza plugin.
+  // Usa helper resiliente per fetch a WordPress
   const url = `${WP_API_BASE.replace(/\/$/, "")}/comments`;
 
-  const res = await fetch(url, {
+  const result = await fetchWpJson(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify({ post: postId, author_name, author_email, content }),
   });
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    return new Response(JSON.stringify({ ok: false, error: "Invio fallito.", details: text.slice(0, 300) }), { status: 400 });
+  if (!result.ok) {
+    return new Response(
+      JSON.stringify({
+        ok: false,
+        error: result.error || "Invio fallito. WordPress API non disponibile.",
+      }),
+      { status: 400 }
+    );
   }
 
-  return new Response(JSON.stringify({ ok: true, message: "Commento inviato. Se la moderazione è attiva, verrà pubblicato dopo approvazione." }), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
+  return new Response(
+    JSON.stringify({
+      ok: true,
+      message: "Commento inviato. Se la moderazione è attiva, verrà pubblicato dopo approvazione.",
+    }),
+    {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    }
+  );
 };
