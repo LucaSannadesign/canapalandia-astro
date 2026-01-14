@@ -86,18 +86,28 @@ html {
 
 body {
   margin: 0;
-  line-height: 1.55;
+  line-height: 1.65;
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
   /* Nessun padding-top sul body - compensazione solo su main */
   overflow-x: hidden;
   /* Previene scroll orizzontale */
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 a {
   color: inherit;
   text-decoration: none;
+}
+
+/* Focus visibile per accessibilità */
+:focus-visible {
+  outline: 2px solid var(--brand, currentColor);
+  outline-offset: 3px;
+  border-radius: 6px;
 }
 
 /* Tablet e desktop: gutter più ampio (per retrocompatibilità se usato altrove) */
@@ -1275,8 +1285,13 @@ html[data-theme="light"] .cardExcerpt {
   }
 }
 
+/* ------------------------------------------------------------
+   Editorial / Prose typography scope: .wp-page
+   Migliora leggibilità e ritmo editoriale senza toccare UI globale
+------------------------------------------------------------ */
 .wp-page {
-  /* Rimossa limitazione max-width per allinearsi al container dell'header */
+  /* Max-width per leggibilità: 75ch, ma rispetta il container */
+  max-width: 75ch;
 }
 
 .wp-page :where(h1, h2, h3, h4) {
@@ -1285,41 +1300,56 @@ html[data-theme="light"] .cardExcerpt {
 
 .wp-page h1 {
   font-size: clamp(1.9rem, 3.6vw, 2.6rem);
-  margin: 0 0 14px;
+  margin: 0 0 1rem;
+  line-height: 1.2;
 }
 
 .wp-page h2 {
   font-size: clamp(1.4rem, 2.8vw, 1.9rem);
-  margin: 36px 0 12px;
+  margin: 2.25rem 0 1rem;
+  line-height: 1.2;
 }
 
 .wp-page h3 {
   font-size: 1.25rem;
-  margin: 26px 0 10px;
+  margin: 1.75rem 0 0.75rem;
+  line-height: 1.25;
+}
+
+.wp-page h4 {
+  font-size: 1.1rem;
+  margin: 1.5rem 0 0.75rem;
+  line-height: 1.3;
 }
 
 .wp-page p {
-  margin: 0 0 20px;
+  margin: 0 0 1em;
   color: var(--text);
   font-size: 1.125rem;
-  /* 18px */
-  line-height: 1.8;
+  line-height: 1.7;
 }
 
 .wp-page :where(ul, ol) {
-  margin: 0 0 24px 1.2rem;
+  margin: 0 0 1em;
+  padding-left: 1.25em;
   font-size: 1.125rem;
   line-height: 1.75;
   color: var(--text);
 }
 
 .wp-page li {
-  margin: 8px 0;
+  margin: 0.35em 0;
 }
 
 .wp-page a {
   text-decoration: underline;
   text-underline-offset: 3px;
+  text-decoration-thickness: from-font;
+  transition: text-decoration-thickness 0.2s ease;
+}
+
+.wp-page a:hover {
+  text-decoration-thickness: 2px;
 }
 
 /* Fix: evita che i link delle card (correlati) prendano il sottolineato del post */
@@ -1331,25 +1361,38 @@ html[data-theme="light"] .cardExcerpt {
   max-width: 100%;
   height: auto;
   border-radius: 12px;
+  display: block;
 }
 
 .wp-page figure {
-  margin: 18px 0;
+  margin: 1.5em 0;
 }
 
 .wp-page figcaption {
-  margin-top: 8px;
+  margin-top: 0.5em;
   color: var(--muted);
-  font-size: .95rem;
+  font-size: 0.95rem;
+  text-align: center;
+  line-height: 1.5;
 }
 
 .wp-page blockquote {
-  margin: 18px 0;
-  padding: 14px 16px;
+  margin: 1.5em 0;
+  padding: 1em 1.25em;
+  padding-left: 1em;
   background: var(--panel);
-  border: 1px solid var(--border);
-  border-left: 4px solid var(--brand);
-  border-radius: 12px;
+  border-left: 3px solid var(--brand, rgba(34, 197, 94, 0.4));
+  border-radius: 8px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.wp-page blockquote p {
+  margin: 0;
+}
+
+.wp-page blockquote p + p {
+  margin-top: 0.75em;
 }
 
 .wp-page code {
@@ -1366,7 +1409,35 @@ html[data-theme="light"] .wp-page code {
 .wp-page hr {
   border: 0;
   border-top: 1px solid var(--border);
-  margin: 26px 0;
+  margin: 2em 0;
+}
+
+/* Spacing coerente per altri elementi editoriali */
+.wp-page > * + * {
+  margin-top: 1em;
+}
+
+.wp-page > h2 + *,
+.wp-page > h3 + * {
+  margin-top: 0.5em;
+}
+
+/* Code blocks */
+.wp-page pre {
+  margin: 1.5em 0;
+  padding: 1em;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow-x: auto;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.wp-page pre code {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
 }
 
 /* Donation card: fix contrasto per dark mode */
