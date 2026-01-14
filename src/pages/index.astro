@@ -1,5 +1,4 @@
 ---
-import { Image } from "astro:assets";
 import Layout from "../layouts/MigratedLayout.astro";
 import AdSlot from "../components/AdSlot.astro";
 import CardPost from "../components/CardPost.astro";
@@ -313,24 +312,15 @@ const canonical = `${WP_HOST}/`;
               {(() => {
                 const fi = featuredImage(featured);
                 return fi ? (
-                  fi.src.startsWith("http") ? (
-                    <Image
-                      class="feature-img"
-                      src={fi.src}
-                      alt={fi.alt || textFromHtml(featured.title)}
-                      inferSize={true}
-                      loading="eager"
-                      decoding="async"
-                    />
-                  ) : (
-                    <img
-                      class="feature-img"
-                      src={fi.src}
-                      alt={fi.alt || textFromHtml(featured.title)}
-                      loading="eager"
-                      decoding="async"
-                    />
-                  )
+                  <img
+                    class="feature-img"
+                    src={fi.src}
+                    alt={fi.alt || textFromHtml(featured.title)}
+                    loading="eager"
+                    decoding="async"
+                    referrerpolicy="no-referrer"
+                    onerror="this.onerror=null;this.src='/images/placeholder.svg';"
+                  />
                 ) : (
                   <div
                     class="feature-img feature-img--placeholder"
@@ -359,24 +349,15 @@ const canonical = `${WP_HOST}/`;
                 {(() => {
                   const fi = featuredImage(p);
                   return fi ? (
-                    fi.src.startsWith("http") ? (
-                      <Image
-                        class="mini-img"
-                        src={fi.src}
-                        alt={fi.alt || textFromHtml(p.title)}
-                        inferSize={true}
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    ) : (
-                      <img
-                        class="mini-img"
-                        src={fi.src}
-                        alt={fi.alt || textFromHtml(p.title)}
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    )
+                    <img
+                      class="mini-img"
+                      src={fi.src}
+                      alt={fi.alt || textFromHtml(p.title)}
+                      loading="lazy"
+                      decoding="async"
+                      referrerpolicy="no-referrer"
+                      onerror="this.onerror=null;this.src='/images/placeholder.svg';"
+                    />
                   ) : (
                     <div
                       class="mini-img mini-img--placeholder"

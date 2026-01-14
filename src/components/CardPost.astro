@@ -18,6 +18,8 @@ const categoryName = category && typeof category === "string" ? category.trim() 
                         alt={title || ""}
                         loading="lazy"
                         decoding="async"
+                        referrerpolicy="no-referrer"
+                        onerror="this.onerror=null;this.src='/images/placeholder.svg';"
                     />
                 ) : null
             }
