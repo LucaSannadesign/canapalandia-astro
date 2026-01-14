@@ -11,6 +11,7 @@
  */
 import SiteLayout from "@/layouts/SiteLayout.astro";
 import { listRibaltate } from "@/lib/repositories/ribaltatoreRepo";
+import { cleanPhrase } from "@/lib/utils";
 
 // Forza SSR (non prerender)
 export const prerender = false;
@@ -45,7 +46,7 @@ try {
 }
 
 const title = "🧠 Frasi Ribaltate | Canapalandia";
-const canonical = `${Astro.url.origin}/frasi-ribaltate/`;
+const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/frasi-ribaltate/`;
 ---
 
 <SiteLayout title={title} canonical={canonical}>
@@ -72,12 +73,17 @@ const canonical = `${Astro.url.origin}/frasi-ribaltate/`;
             {items.map((frase) => {
               const url = `/ribaltate-ai/${frase.id}/`;
               
+              // Pulisci frasi da caratteri escapati
+              const fraseOriginale = cleanPhrase(frase.frase_originale);
+              const fraseRibaltata = cleanPhrase(frase.frase_ribaltata, true); // Preserva newline per formattazione
+              
               // Anteprima ribaltata (max 3 righe)
-              const anteprima = frase.frase_ribaltata.split(/\n/).slice(0, 3).join(" ").slice(0, 200);
-              const mostraAnteprima = frase.frase_ribaltata.length > 200 || frase.frase_ribaltata.split(/\n/).length > 3;
+              const righe = fraseRibaltata.split(/\n/).filter((r: string) => r.trim() !== "");
+              const anteprima = righe.slice(0, 3).join(" ").slice(0, 200);
+              const mostraAnteprima = fraseRibaltata.length > 200 || righe.length > 3;
               
               return (
-                <article class="frasi-card" key={frase.id}>
+                <article class="frasi-card">
                   <div class="frasi-card__header">
                     <p class="frasi-card__meta">
                       {new Date(frase.created_at).toLocaleDateString("it-IT", {
@@ -89,12 +95,12 @@ const canonical = `${Astro.url.origin}/frasi-ribaltate/`;
                   </div>
 
                   <p class="frasi-card__originale">
-                    <strong>Proibizionista:</strong> <em>{frase.frase_originale}</em>
+                    <strong>Proibizionista:</strong> <em>{fraseOriginale}</em>
                   </p>
 
                   <div class="frasi-card__ribaltata-preview">
                     <p class="frasi-card__ribaltata-text">
-                      {mostraAnteprima ? anteprima + "…" : frase.frase_ribaltata}
+                      {mostraAnteprima ? anteprima + "…" : fraseRibaltata}
                     </p>
                   </div>
 
@@ -105,7 +111,7 @@ const canonical = `${Astro.url.origin}/frasi-ribaltate/`;
                     <button
                       type="button"
                       class="frasi-card__share-compact"
-                      onclick={`shareFrase(${frase.id}, "${encodeURIComponent(url)}", "${encodeURIComponent(frase.frase_ribaltata)}")`}
+                      onclick={`shareFrase(${frase.id}, "${encodeURIComponent(url)}", "${encodeURIComponent(fraseRibaltata)}")`}
                       aria-label="Condividi"
                     >
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

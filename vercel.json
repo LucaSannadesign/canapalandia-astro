@@ -22,12 +22,12 @@
     },
     {
       "source": "/sitemap.xml",
-      "destination": "/sitemap-0.xml",
+      "destination": "/sitemap-index.xml",
       "permanent": true
     },
     {
       "source": "/sitemap_index.xml",
-      "destination": "/sitemap-0.xml",
+      "destination": "/sitemap-index.xml",
       "permanent": true
     },
     {

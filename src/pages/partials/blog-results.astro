@@ -5,6 +5,10 @@ import { toParams } from "../../lib/wp";
 
 export const prerender = false;
 
+// Protezione SEO: endpoint tecnico non indicizzabile
+Astro.response.headers.set("X-Robots-Tag", "noindex, nofollow");
+Astro.response.headers.set("Cache-Control", "public, max-age=60");
+
 // 1. Helpers (copiati da blog.astro per consistenza)
 const posts = Array.isArray(postsJson) ? postsJson : [];
 const postTitle = (p: any) => p?.title?.rendered || p?.title || "";
@@ -13,8 +17,10 @@ const stripHtml = (s: any) =>
         .replace(/<[^>]*>/g, " ")
         .replace(/\s+/g, " ")
         .trim();
+import { getExcerpt } from "../../lib/utils";
+
 const excerpt = (p: any) =>
-    stripHtml(p?.excerpt?.rendered || p?.excerpt || "").slice(0, 180);
+    getExcerpt(p?.excerpt, p?.content?.rendered || p?.content, 180);
 const sortDesc = (a: any, b: any) =>
     (Date.parse(b?.date || b?.modified || "") || 0) -
     (Date.parse(a?.date || a?.modified || "") || 0);

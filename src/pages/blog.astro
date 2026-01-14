@@ -14,8 +14,10 @@ const stripHtml = (s: any) =>
     .replace(/<[^>]*>/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+import { getExcerpt } from "../lib/utils";
+
 const excerpt = (p: any) =>
-  stripHtml(p?.excerpt?.rendered || p?.excerpt || "").slice(0, 180);
+  getExcerpt(p?.excerpt, p?.content?.rendered || p?.content, 180);
 const sortDesc = (a: any, b: any) =>
   (Date.parse(b?.date || b?.modified || "") || 0) -
   (Date.parse(a?.date || a?.modified || "") || 0);
@@ -104,7 +106,7 @@ const initialPosts = hasEmbeddedTerms
   : latest.slice(0, 12);
 
 const title = "Blog — Canapalandia";
-const canonical = `${import.meta.env.SITE || Astro.url.origin}/blog/`;
+const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/blog/`;
 const canonicalFinal = canonical;
 
 const initialPage = 1;

@@ -11,8 +11,9 @@
  * - Gestisce 404 se id non esiste
  */
 import SiteLayout from "@/layouts/SiteLayout.astro";
-import { getRibaltataById } from "@/lib/repositories/ribaltatoreRepo";
+import { getRibaltataById, getRelatedRibaltate } from "@/lib/repositories/ribaltatoreRepo";
 import { Fragment } from "astro/jsx-runtime";
+import { cleanPhrase, isIndexablePhrase } from "@/lib/utils";
 
 const { id } = Astro.params;
 const fraseId = id ? Number(id) : null;
@@ -35,13 +36,21 @@ if (!frase) {
   });
 }
 
+// Pulisci frasi da caratteri escapati
+const fraseOriginale = cleanPhrase(frase.frase_originale);
+const fraseRibaltata = cleanPhrase(frase.frase_ribaltata, true); // Preserva newline per formattazione
+
+// Verifica se la frase è indexable (SEO gate)
+const isIndexable = isIndexablePhrase(fraseRibaltata);
+const robotsContent = isIndexable ? "index,follow" : "noindex,follow";
+
 // Meta SEO/OG
 const origin = Astro.url.origin;
 const url = `${origin}/ribaltate-ai/${frase.id}/`;
-const shareText = frase.frase_ribaltata;
+const shareText = fraseRibaltata;
 const encoded = encodeURIComponent(shareText);
 const titolo = `Ribaltata: ${shareText.slice(0, 60)}${shareText.length > 60 ? "..." : ""}`;
-const descrizione = `Slogan ribaltato: ${frase.frase_originale.slice(0, 150)}${frase.frase_originale.length > 150 ? "..." : ""}`;
+const descrizione = `Slogan ribaltato: ${fraseOriginale.slice(0, 150)}${fraseOriginale.length > 150 ? "..." : ""}`;
 // Immagini OG: path locali con URL assoluto per meta tags
 const ogImagePath = "/images/ribaltatore-social.jpg";
 const ogImageAbs = origin + ogImagePath;
@@ -49,10 +58,18 @@ const logoPath = "/images/logo-canapalandia.svg";
 const logoAbs = origin + logoPath;
 
 // Formatta ribaltata: split per linee e paragrafi (come PHP)
-const righe = frase.frase_ribaltata.split(/\n/).filter((r: string) => r.trim() !== "");
+const righe = fraseRibaltata.split(/\n/).filter((r: string) => r.trim() !== "");
 
 // Testo condivisibile
-const testoCompleto = `🔒 Frase proibizionista: "${frase.frase_originale}"\n🔁 Ribaltata con l'AI: "${frase.frase_ribaltata}"\n\n👉 Scopri il Ribaltatore AI su ${Astro.url.origin.replace(/^https?:\/\//, "").replace(/\/$/, "")}`;
+const testoCompleto = `🔒 Frase proibizionista: "${fraseOriginale}"\n🔁 Ribaltata con l'AI: "${fraseRibaltata}"\n\n👉 Scopri il Ribaltatore AI su ${Astro.url.origin.replace(/^https?:\/\//, "").replace(/\/$/, "")}`;
+
+// Frasi correlate (per sezione "Frasi correlate")
+let frasiCorrelate: any[] = [];
+try {
+  frasiCorrelate = await getRelatedRibaltate(frase.id, 6);
+} catch (err: any) {
+  console.error("[ribaltate-ai] Errore recupero frasi correlate:", err?.message);
+}
 ---
 
 <Fragment>
@@ -97,7 +114,7 @@ const testoCompleto = `🔒 Frase proibizionista: "${frase.frase_originale}"\n�
       // Structured Data
       const script = document.createElement('script');
       script.type = 'application/ld+json';
-      script.textContent = ${JSON.stringify(JSON.stringify({
+      script.textContent = ${JSON.stringify({
         "@context": "https://schema.org",
         "@type": "CreativeWork",
         headline: titolo,
@@ -116,13 +133,13 @@ const testoCompleto = `🔒 Frase proibizionista: "${frase.frase_originale}"\n�
             url: logoAbs,
           },
         },
-      }))};
+      })};
       head.appendChild(script);
     })();
   `} />
 </Fragment>
 
-<SiteLayout title={titolo} canonical={url}>
+<SiteLayout title={titolo} canonical={url} robots={robotsContent}>
   <main id="contenuto">
     <div class="container">
       <div class="ribaltata-page">
@@ -130,7 +147,7 @@ const testoCompleto = `🔒 Frase proibizionista: "${frase.frase_originale}"\n�
 
         <p class="ribaltata-originale">
           <strong>🔒 Slogan Proibizionista:</strong><br />
-          <em>{frase.frase_originale}</em>
+          <em>{fraseOriginale}</em>
         </p>
 
         <div class="ribaltata-content">
@@ -196,6 +213,16 @@ const testoCompleto = `🔒 Frase proibizionista: "${frase.frase_originale}"\n�
           <span class="ribaltata-share__copiato" id="copiato-link">✅ Link copiato!</span>
         </div>
 
+        {/* Internal Linking Actions */}
+        <div class="ribaltata-actions">
+          <a href={`/ribaltatore/?q=${encodeURIComponent(fraseOriginale)}`} class="ribaltata-action-btn">
+            🔄 Rigenera
+          </a>
+          <a href="/frasi-ribaltate/" class="ribaltata-action-btn">
+            📚 Vedi tutte le frasi
+          </a>
+        </div>
+
         {/* CTA */}
         <div class="ribaltata-cta">
           <a href="/ribaltatore/" class="ribaltata-button">
@@ -219,6 +246,32 @@ const testoCompleto = `🔒 Frase proibizionista: "${frase.frase_originale}"\n�
           </button>
           <span class="ribaltata-copy__copiato" id="copiato-frase">✅ Copiato!</span>
         </div>
+
+        {/* Frasi Correlate */}
+        {frasiCorrelate.length > 0 && (
+          <div class="ribaltata-related">
+            <h2 class="ribaltata-related__title">🔗 Frasi Correlate</h2>
+            <ul class="ribaltata-related__list">
+              {frasiCorrelate.map((fraseCorr) => {
+                const fraseCorrOriginale = cleanPhrase(fraseCorr.frase_originale);
+                const fraseCorrRibaltata = cleanPhrase(fraseCorr.frase_ribaltata, true);
+                const anteprima = fraseCorrRibaltata.slice(0, 120) + (fraseCorrRibaltata.length > 120 ? "…" : "");
+                return (
+                  <li class="ribaltata-related__item">
+                    <a href={`/ribaltate-ai/${fraseCorr.id}/`} class="ribaltata-related__link">
+                      <div class="ribaltata-related__content">
+                        <p class="ribaltata-related__originale">
+                          <strong>Proibizionista:</strong> <em>{fraseCorrOriginale}</em>
+                        </p>
+                        <p class="ribaltata-related__ribaltata">{anteprima}</p>
+                      </div>
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   </main>
@@ -338,6 +391,32 @@ const testoCompleto = `🔒 Frase proibizionista: "${frase.frase_originale}"\n�
     display: inline;
   }
 
+  .ribaltata-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+
+  .ribaltata-action-btn {
+    display: inline-block;
+    padding: 10px 18px;
+    background: var(--bg, rgba(0, 0, 0, 0.18));
+    border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+  }
+
+  .ribaltata-action-btn:hover {
+    background: var(--panel, rgba(0, 0, 0, 0.25));
+    border-color: var(--brand, rgba(34, 197, 94, 0.3));
+    transform: translateY(-1px);
+  }
+
   .ribaltata-cta {
     margin-top: 40px;
     text-align: center;
@@ -414,6 +493,77 @@ const testoCompleto = `🔒 Frase proibizionista: "${frase.frase_originale}"\n�
     display: inline;
   }
 
+  /* Frasi Correlate */
+  .ribaltata-related {
+    margin-top: 50px;
+    padding-top: 40px;
+    border-top: 2px solid var(--border);
+  }
+
+  .ribaltata-related__title {
+    font-size: 1.4rem;
+    margin-bottom: 24px;
+    color: var(--text);
+  }
+
+  .ribaltata-related__list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .ribaltata-related__item {
+    margin: 0;
+  }
+
+  .ribaltata-related__link {
+    display: block;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s ease;
+  }
+
+  .ribaltata-related__link:hover {
+    border-color: var(--brand);
+    background: var(--panel);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .ribaltata-related__content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .ribaltata-related__originale {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+
+  .ribaltata-related__originale strong {
+    font-weight: 600;
+  }
+
+  .ribaltata-related__originale em {
+    font-style: italic;
+  }
+
+  .ribaltata-related__ribaltata {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--text);
+  }
+
   @media (max-width: 767px) {
     .ribaltata-page {
       margin: 40px auto;
@@ -431,6 +581,19 @@ const testoCompleto = `🔒 Frase proibizionista: "${frase.frase_originale}"\n�
 
     .ribaltata-share__copy-btn {
       margin-top: 8px;
+    }
+
+    .ribaltata-related {
+      margin-top: 40px;
+      padding-top: 30px;
+    }
+
+    .ribaltata-related__title {
+      font-size: 1.2rem;
+    }
+
+    .ribaltata-related__link {
+      padding: 12px;
     }
   }
 </style>

@@ -8,6 +8,7 @@ import {
   ensureNoTrailingSlash,
   ensureLeadingSlash,
   normalizeSlugLikePath,
+  getExcerpt,
 } from "../lib/utils";
 import postsJson from "../../data/wp/out/posts.json";
 import pagesJson from "../../data/wp/out/pages.json";
@@ -290,7 +291,7 @@ function toCardFromWp(item: WPItemRaw, entry: WpEntry): CardPost {
   return {
     href,
     title: stripHtml(item.title?.rendered || ""),
-    excerpt: stripHtml(item.excerpt?.rendered || ""),
+    excerpt: getExcerpt(item.excerpt, item.content?.rendered || item.content, 180),
     img: imgSrc
       ? {
           src: imgSrc,
@@ -365,6 +366,63 @@ function extractTags(item: WPItemRaw | null | undefined): { slug: string; name: 
 const postTags = extractTags(rawItem);
 
 /* ---------------------------
+   Internal Linking: Generate seed phrases and keywords
+--------------------------- */
+// Genera frase precompilata per Ribaltatore da titolo/categoria
+function generateSeedPhrase(item: WPItemRaw | null, entry: WpEntry): string {
+  if (!item) return "";
+  
+  // Prova prima il titolo (primi 50 caratteri)
+  const title = stripHtml(item.title?.rendered || "");
+  if (title && title.length > 10) {
+    // Prendi prime parole significative (max 8 parole)
+    const words = title.split(/\s+/).slice(0, 8).join(" ");
+    return words.length > 50 ? words.slice(0, 47) + "..." : words;
+  }
+  
+  // Fallback: usa prima categoria
+  if (item.categories && item.categories.length > 0) {
+    const catName = getCategoryName(item.categories[0]);
+    if (catName) return catName;
+  }
+  
+  // Fallback: usa primo tag
+  const tagName = getFirstTagName(item);
+  if (tagName) return tagName;
+  
+  return "";
+}
+
+// Genera keyword tema per ricerca
+function generateThemeKeyword(item: WPItemRaw | null, entry: WpEntry): string {
+  if (!item) return "";
+  
+  // Prova prima categoria
+  if (item.categories && item.categories.length > 0) {
+    const catName = getCategoryName(item.categories[0]);
+    if (catName) return catName;
+  }
+  
+  // Fallback: primo tag
+  const tagName = getFirstTagName(item);
+  if (tagName) return tagName;
+  
+  // Fallback: prime parole del titolo (max 3)
+  const title = stripHtml(item.title?.rendered || "");
+  if (title) {
+    const words = title.split(/\s+/).slice(0, 3).join(" ");
+    return words;
+  }
+  
+  return "";
+}
+
+const seedPhrase = foundEntry.kind === "post" ? generateSeedPhrase(rawItem || null, foundEntry) : "";
+const themeKeyword = foundEntry.kind === "post" ? generateThemeKeyword(rawItem || null, foundEntry) : "";
+const ribaltatoreUrl = seedPhrase ? `/ribaltatore/?q=${encodeURIComponent(seedPhrase)}` : "/ribaltatore/";
+const cercaUrl = themeKeyword ? `/cerca/?q=${encodeURIComponent(themeKeyword)}` : "/cerca/";
+
+/* ---------------------------
    Sidebar content logic
 --------------------------- */
 // Determina se la sidebar ha contenuti da mostrare
@@ -426,6 +484,37 @@ const titleHtml = foundEntry.title || rawItem?.title?.rendered || "";
         <div style="margin: 2rem 0;">
           <AdSlot label="Pubblicità" />
         </div>
+
+        {/* Internal Linking Boxes - Solo per post */}
+        {foundEntry.kind === "post" && (seedPhrase || themeKeyword) ? (
+          <section class="internal-linking" aria-label="Esplora contenuti correlati">
+            <div class="internal-linking__grid">
+              {seedPhrase ? (
+                <div class="internal-linking__box">
+                  <h3 class="internal-linking__title">🧠 Prova il Ribaltatore</h3>
+                  <p class="internal-linking__text">
+                    Ribalta questa frase proibizionista con l'AI e scopri l'ironia dietro lo slogan.
+                  </p>
+                  <a href={ribaltatoreUrl} class="internal-linking__btn">
+                    Ribalta "{seedPhrase.slice(0, 30)}..."
+                  </a>
+                </div>
+              ) : null}
+              
+              {themeKeyword ? (
+                <div class="internal-linking__box">
+                  <h3 class="internal-linking__title">🔍 Frasi Correlate</h3>
+                  <p class="internal-linking__text">
+                    Cerca altre frasi e contenuti su questo tema nel nostro archivio.
+                  </p>
+                  <a href={cercaUrl} class="internal-linking__btn">
+                    Cerca "{themeKeyword}"
+                  </a>
+                </div>
+              ) : null}
+            </div>
+          </section>
+        ) : null}
 
         {/* CTA tra post e correlati */}
         <section class="post-cta" aria-label="Supporta Canapalandia">
@@ -508,3 +597,69 @@ const titleHtml = foundEntry.title || rawItem?.title?.rendered || "";
     </div>
   </main>
 </SiteLayout>
+
+<style>
+  /* Internal Linking Boxes */
+  .internal-linking {
+    margin: 3rem 0;
+    padding: 0;
+  }
+
+  .internal-linking__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .internal-linking__box {
+    padding: 1.5rem;
+    border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+    border-radius: 12px;
+    background: var(--panel, rgba(0, 0, 0, 0.18));
+    transition: all 0.2s ease;
+  }
+
+  .internal-linking__box:hover {
+    border-color: var(--brand, rgba(34, 197, 94, 0.3));
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .internal-linking__title {
+    margin: 0 0 0.75rem 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .internal-linking__text {
+    margin: 0 0 1rem 0;
+    color: var(--muted, rgba(255, 255, 255, 0.7));
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  .internal-linking__btn {
+    display: inline-block;
+    padding: 0.75rem 1.25rem;
+    background: var(--brand, #22c55e);
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+  }
+
+  .internal-linking__btn:hover {
+    background: var(--brand-hover, #16a34a);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(34, 197, 94, 0.3);
+  }
+
+  @media (max-width: 640px) {
+    .internal-linking__grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

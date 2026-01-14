@@ -8,7 +8,7 @@
  * - page>=2: status 200, robots index,follow, canonical self
  * - Se page eccede il massimo: 404 vero
  */
-import Layout from "../../../../layouts/MigratedLayout.astro";
+import SiteLayout from "../../../../layouts/SiteLayout.astro";
 import CardPost from "../../../../components/CardPost.astro";
 import postsJson from "../../../../../data/wp/out/posts.json";
 import tagsJson from "../../../../../data/wp/out/tags.json";
@@ -42,7 +42,9 @@ const stripHtml = (s: any) =>
     .replace(/\s+/g, " ")
     .trim();
 const postTitle = (p: any) => p?.title?.rendered || p?.title || "";
-const excerpt = (p: any) => stripHtml(p?.excerpt?.rendered || p?.excerpt || "").slice(0, 180);
+import { getExcerpt } from "../../../../lib/utils";
+
+const excerpt = (p: any) => getExcerpt(p?.excerpt, p?.content?.rendered || p?.content, 180);
 const sortDesc = (a: any, b: any) =>
   (Date.parse(b?.date || b?.modified || "") || 0) -
   (Date.parse(a?.date || a?.modified || "") || 0);
@@ -100,15 +102,22 @@ const start = (pageNum - 1) * PER_PAGE;
 const end = start + PER_PAGE;
 const pagePosts = filtered.slice(start, end);
 
-// Metadata
+// Metadata con robots noindex,follow
 const title =
   pageNum > 1
     ? `Tag: ${tag.name} — Pagina ${pageNum} — Canapalandia`
     : `Tag: ${tag.name} — Canapalandia`;
-const canonical = `${Astro.url.origin}/tag/${slug}/page/${pageNum}/`;
+const description = `Articoli con tag "${stripHtml(tag.name)}" — Pagina ${pageNum}`;
+const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/tag/${slug}/page/${pageNum}/`;
+const metadata = {
+  title,
+  description,
+  canonical,
+  robots: { index: false, follow: true },
+};
 ---
 
-<Layout title={title} canonical={canonical}>
+<SiteLayout metadata={metadata}>
   <section class="hero">
     <div class="container hero-inner">
       <p class="kicker">Tag</p>
@@ -154,4 +163,4 @@ const canonical = `${Astro.url.origin}/tag/${slug}/page/${pageNum}/`;
       </a>
     )}
   </nav>
-</Layout>
+</SiteLayout>

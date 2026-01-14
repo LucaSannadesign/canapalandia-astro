@@ -16,7 +16,7 @@ const slug = String(Astro.params.slug ?? "").trim();
 const metadata = {
   title: `Category: ${slug} — Canapalandia`,
   description: "English category archive (legacy).",
-  canonical: `${Astro.url.origin}/en/categoria/${slug}/`,
+  canonical: `${import.meta.env.SITE || "https://canapalandia.com"}/en/categoria/${slug}/`,
   robots: { index: false, follow: true },
 };
 ---

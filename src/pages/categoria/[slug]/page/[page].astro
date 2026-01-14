@@ -12,6 +12,7 @@ export const prerender = false;
 
 import SiteLayout from "../../../../layouts/SiteLayout.astro";
 import { WP_API_BASE } from "@/lib/consts";
+import { getExcerpt } from "../../../../lib/utils";
 
 const slug = String(Astro.params.slug ?? "").trim();
 const pageParam = Astro.params.page;
@@ -108,7 +109,7 @@ const metadata = {
       : `Categoria: ${stripHtml(category.name)}`
     : "Categoria",
   description: category ? stripHtml(category.description || "") : "",
-  canonical: `${Astro.url.origin}/categoria/${slug}/page/${pageNum}/`,
+  canonical: `${import.meta.env.SITE || "https://canapalandia.com"}/categoria/${slug}/page/${pageNum}/`,
   robots: { index: true, follow: true },
 };
 ---
@@ -147,9 +148,12 @@ const metadata = {
                     {new Date(p.date).toLocaleDateString("it-IT")}
                   </p>
                   <h3 class="cardTitle" set:html={p.title.rendered}></h3>
-                  {p.excerpt?.rendered ? (
-                    <p class="cardExcerpt">{stripHtml(p.excerpt.rendered)}</p>
-                  ) : null}
+                  {(() => {
+                    const excerptText = getExcerpt(p.excerpt, p.content?.rendered || p.content, 180);
+                    return excerptText ? (
+                      <p class="cardExcerpt">{excerptText}</p>
+                    ) : null;
+                  })()}
                   <div class="cardCta">Leggi →</div>
                 </div>
               </a>

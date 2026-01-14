@@ -6,6 +6,7 @@
  */
 
 import { getSupabaseServer } from "../supabaseServer";
+import { normalizeKey } from "../utils";
 
 export interface Ribaltata {
   id: number;
@@ -24,13 +25,66 @@ export interface InsertRibaltataData {
 }
 
 /**
- * Inserisce una nuova frase ribaltata
+ * Trova una frase esistente per chiave normalizzata (deduplicazione)
+ */
+export async function findRibaltataByNormalizedKey(
+  fraseOriginale: string,
+): Promise<Ribaltata | null> {
+  const supabase = getSupabaseServer();
+  const normalizedKey = normalizeKey(fraseOriginale);
+
+  // Cerca per frase_originale normalizzata (case-insensitive, whitespace-insensitive)
+  // Nota: Supabase non supporta direttamente ricerca case-insensitive su testo,
+  // quindi recuperiamo tutte le frasi e filtriamo in memoria (per dataset piccoli è OK)
+  // Per dataset grandi, si potrebbe aggiungere una colonna `normalized_key` nel DB
+  
+  const { data, error } = await supabase
+    .from("ribaltatore")
+    .select("id,frase_originale,frase_ribaltata,created_at")
+    .limit(1000); // Limite ragionevole per deduplicazione
+
+  if (error) {
+    console.error("[ribaltatoreRepo] Errore ricerca:", error);
+    return null;
+  }
+
+  // Filtra in memoria per chiave normalizzata
+  const match = (data || []).find((row) => {
+    const rowKey = normalizeKey(row.frase_originale);
+    return rowKey === normalizedKey;
+  });
+
+  if (!match) return null;
+
+  return {
+    id: Number(match.id),
+    frase_originale: match.frase_originale,
+    frase_ribaltata: match.frase_ribaltata,
+    created_at: match.created_at,
+    ip_hash: null,
+    user_id: null,
+  };
+}
+
+/**
+ * Inserisce una nuova frase ribaltata con deduplicazione (upsert logic)
+ * Se esiste già una frase con la stessa chiave normalizzata, ritorna l'ID esistente
  */
 export async function insertRibaltata(
   data: InsertRibaltataData,
 ): Promise<number> {
   const supabase = getSupabaseServer();
 
+  // Deduplicazione: cerca frase esistente con stessa chiave normalizzata
+  const existing = await findRibaltataByNormalizedKey(data.frase_originale);
+  if (existing) {
+    if (import.meta.env.DEV) {
+      console.log(`[ribaltatoreRepo] Frase duplicata trovata (ID: ${existing.id}), ritorno ID esistente`);
+    }
+    return existing.id;
+  }
+
+  // Inserisci nuova frase
   const { data: result, error } = await supabase
     .from("ribaltatore")
     .insert({
@@ -89,7 +143,7 @@ export async function getRibaltataById(id: number): Promise<Ribaltata | null> {
 }
 
 /**
- * Lista frasi ribaltate con paginazione
+ * Lista frasi ribaltate con paginazione e deduplicazione lato UI (fallback)
  */
 export async function listRibaltate(options: {
   page: number;
@@ -117,26 +171,42 @@ export async function listRibaltate(options: {
   }
 
   // Recupera items paginati (ordinati per più recenti)
+  // Recuperiamo più items per compensare eventuali duplicati filtrati
+  const fetchSize = pageSize * 2; // Recupera il doppio per compensare duplicati
   const { data, error } = await supabase
     .from("ribaltatore")
     .select("id,frase_originale,frase_ribaltata,created_at")
     .order("created_at", { ascending: false })
-    .range(offset, offset + pageSize - 1);
+    .range(offset, offset + fetchSize - 1);
 
   if (error) {
     console.error("[ribaltatoreRepo] Errore query:", error);
     throw new Error(`Errore query: ${error.message}`);
   }
 
-  const items: Ribaltata[] = (data || []).map((row) => ({
+  const rawItems: Ribaltata[] = (data || []).map((row) => ({
     id: Number(row.id),
     frase_originale: row.frase_originale,
     frase_ribaltata: row.frase_ribaltata,
     created_at: row.created_at,
   }));
 
+  // Deduplicazione lato UI (fallback): filtra duplicati per chiave normalizzata
+  const seenKeys = new Set<string>();
+  const items: Ribaltata[] = [];
+  
+  for (const item of rawItems) {
+    const key = normalizeKey(item.frase_originale);
+    if (!seenKeys.has(key)) {
+      seenKeys.add(key);
+      items.push(item);
+      // Fermati quando abbiamo abbastanza items unici
+      if (items.length >= pageSize) break;
+    }
+  }
+
   if (import.meta.env.DEV) {
-    console.log(`[ribaltatoreRepo] Record recuperati: ${items.length}`);
+    console.log(`[ribaltatoreRepo] Record recuperati: ${rawItems.length}, Dopo dedup: ${items.length}`);
   }
 
   return {
@@ -144,4 +214,49 @@ export async function listRibaltate(options: {
     totalPages,
     total,
   };
+}
+
+/**
+ * Recupera frasi correlate (escludendo quella corrente)
+ * Usato per sezione "Frasi correlate" nella pagina singola
+ */
+export async function getRelatedRibaltate(
+  excludeId: number,
+  limit: number = 6,
+): Promise<Ribaltata[]> {
+  const supabase = getSupabaseServer();
+
+  const { data, error } = await supabase
+    .from("ribaltatore")
+    .select("id,frase_originale,frase_ribaltata,created_at")
+    .neq("id", excludeId)
+    .order("created_at", { ascending: false })
+    .limit(limit * 2); // Recupera il doppio per compensare duplicati
+
+  if (error) {
+    console.error("[ribaltatoreRepo] Errore query correlate:", error);
+    return [];
+  }
+
+  const rawItems: Ribaltata[] = (data || []).map((row) => ({
+    id: Number(row.id),
+    frase_originale: row.frase_originale,
+    frase_ribaltata: row.frase_ribaltata,
+    created_at: row.created_at,
+  }));
+
+  // Deduplicazione: filtra duplicati per chiave normalizzata
+  const seenKeys = new Set<string>();
+  const items: Ribaltata[] = [];
+  
+  for (const item of rawItems) {
+    const key = normalizeKey(item.frase_originale);
+    if (!seenKeys.has(key)) {
+      seenKeys.add(key);
+      items.push(item);
+      if (items.length >= limit) break;
+    }
+  }
+
+  return items;
 }

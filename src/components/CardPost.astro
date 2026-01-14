@@ -1,5 +1,10 @@
 ---
+import { toPlainText } from "../lib/utils";
+
 const { href, img, date, title, excerpt } = Astro.props;
+
+// Sanitizza excerpt: converte qualsiasi tipo in stringa pulita
+const excerptSafe = toPlainText(excerpt);
 ---
 
 <article class="card post-card">
@@ -20,7 +25,9 @@ const { href, img, date, title, excerpt } = Astro.props;
         <div class="cardBody">
             <p class="cardMeta">{date}</p>
             <h3 class="cardTitle" set:html={title} />
-            <p class="cardExcerpt">{excerpt}</p>
+            {excerptSafe ? (
+                <p class="cardExcerpt">{excerptSafe}</p>
+            ) : null}
             <span class="cardCta">Apri →</span>
         </div>
     </a>

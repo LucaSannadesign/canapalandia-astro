@@ -55,8 +55,74 @@ export function textFromHtml(html: unknown): string {
         .trim();
 }
 
-export function stripHtml(html: string): string {
+export function stripHtml(html: unknown): string {
     return textFromHtml(html);
+}
+
+/**
+ * Converte qualsiasi input in testo pulito (stringa).
+ * Gestisce stringhe, oggetti, null, undefined.
+ * 
+ * @param input - Qualsiasi valore (string, object, null, undefined, ecc.)
+ * @returns Stringa pulita o stringa vuota
+ */
+export function toPlainText(input: unknown): string {
+    // Se è già una stringa, ritorna trim
+    if (typeof input === "string") {
+        return input.trim();
+    }
+    
+    // Se è null o undefined, ritorna vuoto
+    if (input == null) {
+        return "";
+    }
+    
+    // Se è un oggetto, prova a estrarre testo da campi comuni
+    if (typeof input === "object") {
+        // Prova campi comuni in ordine di priorità
+        const candidates = [
+            (input as any)?.rendered,
+            (input as any)?.value,
+            (input as any)?.text,
+            (input as any)?.content,
+            (input as any)?.children,
+            (input as any)?.description,
+        ];
+        
+        for (const candidate of candidates) {
+            if (typeof candidate === "string" && candidate.trim()) {
+                return candidate.trim();
+            }
+            // Se candidate è un array, prova a unire
+            if (Array.isArray(candidate) && candidate.length > 0) {
+                const joined = candidate
+                    .map((item) => toPlainText(item))
+                    .filter(Boolean)
+                    .join(" ");
+                if (joined) return joined;
+            }
+        }
+        
+        // Se ha toString() e non è "[object Object]", prova quello
+        try {
+            const str = String(input);
+            if (str && str !== "[object Object]" && str !== "[object Array]") {
+                return str.trim();
+            }
+        } catch {
+            // Ignora errori
+        }
+        
+        // Ultimo fallback: ritorna vuoto (non JSON.stringify per evitare output verboso)
+        return "";
+    }
+    
+    // Per altri tipi (number, boolean, ecc.), converti a stringa
+    try {
+        return String(input).trim();
+    } catch {
+        return "";
+    }
 }
 
 export function excerptFromHtml(html: unknown, max = 150): string {
@@ -64,6 +130,152 @@ export function excerptFromHtml(html: unknown, max = 150): string {
     if (!t) return "";
     if (t.length <= max) return t;
     return t.slice(0, max).replace(/\s+\S*$/, "").trim() + "…";
+}
+
+/**
+ * Estrae excerpt da qualsiasi sorgente con fallback a content.
+ * 
+ * @param excerpt - Excerpt originale (può essere string, object, null)
+ * @param content - Content HTML per fallback (opzionale)
+ * @param maxLength - Lunghezza massima excerpt (default 180)
+ * @returns Excerpt pulito o fallback da content
+ */
+export function getExcerpt(
+    excerpt: unknown,
+    content?: unknown,
+    maxLength = 180
+): string {
+    // Prova prima l'excerpt
+    const excerptText = toPlainText(excerpt);
+    if (excerptText) {
+        const cleaned = textFromHtml(excerptText);
+        if (cleaned) {
+            return cleaned.length > maxLength
+                ? cleaned.slice(0, maxLength).replace(/\s+\S*$/, "").trim() + "…"
+                : cleaned;
+        }
+    }
+    
+    // Fallback: usa content se disponibile
+    if (content) {
+        const contentText = textFromHtml(content);
+        if (contentText) {
+            return contentText.length > maxLength
+                ? contentText.slice(0, maxLength).replace(/\s+\S*$/, "").trim() + "…"
+                : contentText;
+        }
+    }
+    
+    // Nessun fallback disponibile
+    return "";
+}
+
+/**
+ * Pulisce frasi ribaltate da caratteri escapati e normalizza spazi.
+ * Converte:
+ * - \\" → "
+ * - \\n → spazio (o newline se preferibile)
+ * - Spazi multipli → spazio singolo
+ * 
+ * @param phrase - Frase da pulire (può essere string o unknown)
+ * @param preserveNewlines - Se true, converte \\n in newline reale invece di spazio (default: false)
+ * @returns Frase pulita
+ */
+export function cleanPhrase(phrase: unknown, preserveNewlines = false): string {
+    if (typeof phrase !== "string") {
+        // Se non è stringa, prova toPlainText prima
+        const plain = toPlainText(phrase);
+        if (!plain) return "";
+        phrase = plain;
+    }
+    
+    let cleaned = phrase;
+    
+    // Converti \\" in " (escape doppio backslash + quote)
+    cleaned = cleaned.replace(/\\"/g, '"');
+    
+    // Converti \\n in spazio o newline
+    if (preserveNewlines) {
+        cleaned = cleaned.replace(/\\n/g, '\n');
+    } else {
+        cleaned = cleaned.replace(/\\n/g, ' ');
+    }
+    
+    // Converti altri escape comuni
+    cleaned = cleaned.replace(/\\t/g, ' '); // tab → spazio
+    cleaned = cleaned.replace(/\\r/g, '');  // carriage return → rimosso
+    
+    // Normalizza spazi multipli (ma preserva newline se preserveNewlines)
+    if (preserveNewlines) {
+        // Sostituisci 2+ spazi con uno solo, ma preserva newline
+        cleaned = cleaned.replace(/[ \t]+/g, ' ');
+        // Normalizza newline multiple (max 2 consecutive)
+        cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+    } else {
+        // Sostituisci qualsiasi sequenza di whitespace con uno spazio
+        cleaned = cleaned.replace(/\s+/g, ' ');
+    }
+    
+    return cleaned.trim();
+}
+
+/**
+ * Normalizza una frase per creare una chiave univoca per deduplicazione.
+ * - lowercase
+ * - trim
+ * - collapse whitespace (spazi multipli → spazio singolo)
+ * 
+ * @param phrase - Frase da normalizzare
+ * @returns Chiave normalizzata
+ */
+export function normalizeKey(phrase: string): string {
+    if (!phrase || typeof phrase !== "string") return "";
+    return phrase
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, " "); // Collapse whitespace
+}
+
+/**
+ * Verifica se una frase è indexable secondo criteri SEO.
+ * Una frase è indexable se:
+ * - >= 80 caratteri OR >= 12 parole
+ * - Non vuota
+ * - Non è un placeholder generico
+ * 
+ * @param phrase - Frase da verificare
+ * @returns true se indexable, false altrimenti
+ */
+export function isIndexablePhrase(phrase: string): boolean {
+    if (!phrase || typeof phrase !== "string") return false;
+    
+    const trimmed = phrase.trim();
+    if (trimmed.length === 0) return false;
+    
+    // Criterio 1: >= 80 caratteri
+    if (trimmed.length >= 80) return true;
+    
+    // Criterio 2: >= 12 parole
+    const words = trimmed.split(/\s+/).filter(w => w.length > 0);
+    if (words.length >= 12) return true;
+    
+    // Filtra placeholder comuni (es. "test", "prova", "lorem ipsum", ecc.)
+    const placeholderPatterns = [
+        /^test\s*$/i,
+        /^prova\s*$/i,
+        /^lorem\s+ipsum/i,
+        /^placeholder/i,
+        /^esempio\s*$/i,
+        /^sample\s*$/i,
+        /^demo\s*$/i,
+    ];
+    
+    if (placeholderPatterns.some(pattern => pattern.test(trimmed))) {
+        return false;
+    }
+    
+    // Se non soddisfa criteri minimi, non è indexable
+    return false;
 }
 
 /* ---------------------------

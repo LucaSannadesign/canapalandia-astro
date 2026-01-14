@@ -3,6 +3,7 @@ export const prerender = false;
 
 import MigratedLayout from "../layouts/MigratedLayout.astro";
 import { loadWp } from "../lib/wp";
+import { getExcerpt } from "../lib/utils";
 
 function stripHtml(input: unknown): string {
   if (typeof input !== "string") return "";
@@ -15,11 +16,7 @@ function stripHtml(input: unknown): string {
 }
 
 function excerptFromEntry(e: any, max = 170): string {
-  const raw = e?.excerpt ?? e?.html ?? "";
-  const t = stripHtml(raw);
-  if (!t) return "";
-  if (t.length <= max) return t;
-  return t.slice(0, max).replace(/\s+\S*$/, "").trim() + "…";
+  return getExcerpt(e?.excerpt, e?.html, max);
 }
 
 function timeOf(e: any): number {
@@ -44,6 +41,11 @@ function matchesAllTokens(haystack: string, tokens: string[]): boolean {
 }
 
 const q = (Astro.url.searchParams.get("q") ?? Astro.url.searchParams.get("s") ?? "").trim();
+const hasQuery = Astro.url.searchParams.has("q") || Astro.url.searchParams.has("s");
+
+// SEO: /cerca/ senza query → index,follow, /cerca/?q=... → noindex,follow + canonical /cerca/
+const robots = hasQuery ? "noindex,follow" : "index,follow";
+const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/cerca/`;
 
 const { entries } = await loadWp();
 const list = Array.isArray(entries) ? entries : [];
@@ -67,7 +69,7 @@ const results = tokens.length
   : [];
 ---
 
-<MigratedLayout title="Cerca" description="Cerca tra i contenuti di Canapalandia.">
+<MigratedLayout title="Cerca" description="Cerca tra i contenuti di Canapalandia." robots={robots} canonical={canonical}>
   <section class="container">
     <header class="search-head">
       <h1>Cerca</h1>

@@ -13,6 +13,7 @@
 import type { APIRoute } from "astro";
 import { insertRibaltata } from "@/lib/repositories/ribaltatoreRepo";
 import { checkRateLimit, extractClientIp } from "@/lib/rateLimit";
+import { cleanPhrase } from "@/lib/utils";
 import crypto from "node:crypto";
 
 /**
@@ -197,13 +198,17 @@ export const POST: APIRoute = async ({ request }) => {
 
   // 7. Salva in DB (Supabase)
   let id: number = 0;
+  // Pulisci frasi da caratteri escapati prima di salvare e restituire
+  const fraseOriginalePulita = cleanPhrase(frase);
+  const fraseRibaltataPulita = cleanPhrase(aiResult.ribaltata, true); // Preserva newline
+
   try {
     // Hash IP per privacy (opzionale, non obbligatorio)
     const ipHash = ip ? crypto.createHash("sha256").update(ip).digest("hex") : null;
     
     id = await insertRibaltata({
-      frase_originale: frase,
-      frase_ribaltata: aiResult.ribaltata,
+      frase_originale: fraseOriginalePulita,
+      frase_ribaltata: fraseRibaltataPulita,
       ip_hash: ipHash,
       // user_id: null per ora (opzionale per futuro)
     });
@@ -212,13 +217,13 @@ export const POST: APIRoute = async ({ request }) => {
     // Anche se fallisce il salvataggio, restituisci il risultato (fallback con id=0)
   }
 
-  // 8. Restituisci JSON con schema stabile
+  // 8. Restituisci JSON con schema stabile (frasi già pulite)
   return new Response(
     JSON.stringify({
       ok: true,
       id,
-      originale: frase,
-      ribaltata: aiResult.ribaltata,
+      originale: fraseOriginalePulita,
+      ribaltata: fraseRibaltataPulita,
     }),
     {
       status: 200,

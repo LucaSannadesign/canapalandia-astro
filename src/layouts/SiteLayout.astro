@@ -5,12 +5,105 @@ import Newsletter from "../components/widgets/Newsletter.astro";
 import CookieBanner from "../components/CookieBanner.astro";
 
 const THEME_STORAGE_KEY = "canapalandia_theme";
-const { title, canonical, yoastHeadHtml, shell = true } = Astro.props;
+const { 
+  title: titleProp, 
+  description: descriptionProp,
+  canonical: canonicalProp, 
+  yoastHeadHtml, 
+  shell = true, 
+  robots: robotsProp,
+  metadata 
+} = Astro.props;
 
 const GA4_ID = import.meta.env.PUBLIC_GA4_ID;
 
-// Protezione SEO: noindex per ambienti non-produzione
-const isProduction = Astro.url.origin === "https://canapalandia.com";
+// Supporto metadata object: se presente, usa quello, altrimenti props dirette
+const titleFinal = titleProp ?? metadata?.title ?? "Canapalandia";
+const descriptionFinal = descriptionProp ?? metadata?.description ?? "";
+const canonicalRaw = canonicalProp ?? metadata?.canonical;
+const robotsRaw = robotsProp ?? metadata?.robots;
+
+// Normalizza robots: oggetto -> stringa
+function normalizeRobots(robots: unknown): string {
+  if (typeof robots === "string") return robots;
+  if (robots && typeof robots === "object" && "index" in robots && "follow" in robots) {
+    const r = robots as { index?: boolean; follow?: boolean };
+    const index = r.index === false ? "noindex" : "index";
+    const follow = r.follow === false ? "nofollow" : "follow";
+    return `${index},${follow}`;
+  }
+  return "";
+}
+
+const robotsNormalized = normalizeRobots(robotsRaw);
+
+// Default robots: index,follow
+const robotsDefault = "index,follow";
+
+// Detection production: usa VERCEL_ENV o hostname allowlist
+function isProductionEnvironment(): boolean {
+  // Priorità 1: VERCEL_ENV (più affidabile)
+  const vercelEnv = import.meta.env.VERCEL_ENV;
+  if (vercelEnv === "production") return true;
+  if (vercelEnv === "preview" || vercelEnv === "development") return false;
+  
+  // Priorità 2: Hostname allowlist (fallback se VERCEL_ENV non disponibile)
+  const origin = Astro.url.origin;
+  const hostname = Astro.url.hostname;
+  const productionHostnames = ["canapalandia.com", "www.canapalandia.com"];
+  
+  // Verifica se hostname è nella allowlist
+  if (productionHostnames.includes(hostname)) return true;
+  
+  // Se hostname contiene "vercel.app" o "localhost", non è production
+  if (hostname.includes("vercel.app") || hostname === "localhost" || hostname.startsWith("127.0.0.1")) {
+    return false;
+  }
+  
+  // Default: non production (sicurezza)
+  return false;
+}
+
+const isProduction = isProductionEnvironment();
+
+// Calcola robotsFinal: se non production, forza noindex,nofollow
+const robotsFinal = isProduction 
+  ? (robotsNormalized || robotsDefault)
+  : "noindex,nofollow";
+
+// Normalizza canonical: se relativo, rendilo assoluto
+function normalizeCanonical(canonical: string | undefined): string | undefined {
+  if (!canonical) return undefined;
+  // Se già assoluto (inizia con http:// o https://), ritorna così
+  if (canonical.startsWith("http://") || canonical.startsWith("https://")) {
+    return canonical;
+  }
+  // Se relativo, rendilo assoluto usando SITE o origin
+  const base = import.meta.env.SITE || Astro.url.origin;
+  // Assicura trailing slash se necessario
+  const canonicalPath = canonical.startsWith("/") ? canonical : `/${canonical}`;
+  return `${base}${canonicalPath}`;
+}
+
+// Calcola canonicalFinal: usa canonical fornito, altrimenti SITE + pathname
+const canonicalFinal = canonicalRaw 
+  ? normalizeCanonical(canonicalRaw)
+  : normalizeCanonical(`${import.meta.env.SITE || "https://canapalandia.com"}${Astro.url.pathname}`);
+
+// Pulizia yoastHeadHtml: rimuovi title, canonical, robots duplicati
+function cleanYoastHead(html: string | undefined): string {
+  if (!html) return "";
+  let cleaned = html;
+  // Rimuovi <title>...</title>
+  cleaned = cleaned.replace(/<title[^>]*>[\s\S]*?<\/title>/gi, "");
+  // Rimuovi <link rel="canonical" ...>
+  cleaned = cleaned.replace(/<link[^>]*rel=["']canonical["'][^>]*>/gi, "");
+  // Rimuovi <meta name="robots" ...>
+  cleaned = cleaned.replace(/<meta[^>]*name=["']robots["'][^>]*>/gi, "");
+  return cleaned.trim();
+}
+
+const yoastHeadCleaned = cleanYoastHead(yoastHeadHtml);
 ---
 
 <html lang="it">
@@ -116,17 +209,16 @@ const isProduction = Astro.url.origin === "https://canapalandia.com";
       })();
     </script>
 
-    {
-      yoastHeadHtml ? (
-        <Fragment set:html={yoastHeadHtml} />
-      ) : (
-        <>
-          <title>{title}</title>
-          {canonical ? <link rel="canonical" href={canonical} /> : null}
-          <meta name="robots" content={isProduction ? "index,follow" : "noindex,nofollow"} />
-        </>
-      )
-    }
+    {/* Renderizza SEMPRE title, canonical, robots, description */}
+    <title>{titleFinal}</title>
+    {descriptionFinal ? <meta name="description" content={descriptionFinal} /> : null}
+    {canonicalFinal ? <link rel="canonical" href={canonicalFinal} /> : null}
+    <meta name="robots" content={robotsFinal} />
+    
+    {/* Se c'è yoastHeadHtml, inietta il resto (già ripulito da title/canonical/robots) */}
+    {yoastHeadCleaned ? (
+      <Fragment set:html={yoastHeadCleaned} />
+    ) : null}
 
     <!-- Imposta subito il tema (evita flash) -->
     <script is:inline define:vars={{ THEME_STORAGE_KEY }}>

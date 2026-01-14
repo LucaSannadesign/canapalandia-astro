@@ -31,5 +31,31 @@ export default defineConfig({
     remotePatterns: [{ protocol: "https" }],
   },
 
-  integrations: [sitemap()],
+  integrations: [
+    sitemap({
+      filter: (page) => {
+        // page è una stringa URL completo (es. "https://canapalandia.com/tag/slug/")
+        if (typeof page !== "string") return true;
+        
+        // Estrai pathname dall'URL
+        try {
+          const url = new URL(page);
+          const pathname = url.pathname;
+          
+          // Escludi endpoint tecnici
+          if (pathname.startsWith("/partials/")) return false;
+          // Escludi pagine EN (legacy, noindex)
+          if (pathname.startsWith("/en/")) return false;
+          // Escludi pagine tag (noindex per evitare bloat)
+          if (pathname.startsWith("/tag/")) return false;
+          if (pathname.startsWith("/en/tag/")) return false;
+        } catch {
+          // Se URL non valido, includi per sicurezza
+          return true;
+        }
+        
+        return true;
+      },
+    }),
+  ],
 });

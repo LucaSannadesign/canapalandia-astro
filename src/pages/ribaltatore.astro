@@ -12,7 +12,7 @@
 import SiteLayout from "@/layouts/SiteLayout.astro";
 
 const title = "🧠 Ribalta con l'AI | Canapalandia";
-const canonical = `${Astro.url.origin}/ribaltatore/`;
+const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/ribaltatore/`;
 ---
 
 <SiteLayout title={title} canonical={canonical}>
@@ -431,6 +431,35 @@ const canonical = `${Astro.url.origin}/ribaltatore/`;
     border: 1px solid rgba(239, 68, 68, 0.3);
   }
 
+  .risultato-card__internal-links {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .risultato-card__internal-link {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 16px;
+    background: var(--bg, rgba(0, 0, 0, 0.18));
+    border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+    border-radius: 6px;
+    color: var(--text);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+
+  .risultato-card__internal-link:hover {
+    background: var(--panel, rgba(0, 0, 0, 0.25));
+    border-color: var(--brand, rgba(34, 197, 94, 0.3));
+    transform: translateY(-1px);
+  }
+
   @media (max-width: 767px) {
     .ribaltatore-page {
       margin: 40px auto;
@@ -461,6 +490,15 @@ const canonical = `${Astro.url.origin}/ribaltatore/`;
     }
 
     .risultato-card__link-btn {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .risultato-card__internal-links {
+      flex-direction: column;
+    }
+
+    .risultato-card__internal-link {
       width: 100%;
       justify-content: center;
     }
@@ -517,10 +555,45 @@ const canonical = `${Astro.url.origin}/ribaltatore/`;
       }
     }
 
+    // Pulisce frasi da caratteri escapati (equivalente a cleanPhrase server-side)
+    function cleanPhraseClient(phrase: string, preserveNewlines = false): string {
+      if (typeof phrase !== "string") return "";
+      
+      let cleaned = phrase;
+      
+      // Converti \\" in "
+      cleaned = cleaned.replace(/\\"/g, '"');
+      
+      // Converti \\n in spazio o newline
+      if (preserveNewlines) {
+        cleaned = cleaned.replace(/\\n/g, '\n');
+      } else {
+        cleaned = cleaned.replace(/\\n/g, ' ');
+      }
+      
+      // Converti altri escape comuni
+      cleaned = cleaned.replace(/\\t/g, ' '); // tab → spazio
+      cleaned = cleaned.replace(/\\r/g, '');  // carriage return → rimosso
+      
+      // Normalizza spazi multipli (ma preserva newline se preserveNewlines)
+      if (preserveNewlines) {
+        cleaned = cleaned.replace(/[ \t]+/g, ' ');
+        cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+      } else {
+        cleaned = cleaned.replace(/\s+/g, ' ');
+      }
+      
+      return cleaned.trim();
+    }
+
     // Render risultato HTML (Result Card migliorata)
     function renderRisultato(originale: string, ribaltata: string, id: number | null): string {
-      const testoCondivisibile = getTestoCondivisibile(originale, ribaltata, id);
-      const shareText = getShareText(originale, ribaltata, id);
+      // Pulisci frasi da caratteri escapati prima di renderizzare
+      const originalePulita = cleanPhraseClient(originale);
+      const ribaltataPulita = cleanPhraseClient(ribaltata, true); // Preserva newline per formattazione
+      
+      const testoCondivisibile = getTestoCondivisibile(originalePulita, ribaltataPulita, id);
+      const shareText = getShareText(originalePulita, ribaltataPulita, id);
       // URL assoluto per share (necessario per social)
       const publicUrlAbsolute = id ? `${window.location.origin}/ribaltate-ai/${id}/` : null;
       // Path relativo per link interno "Apri"
@@ -533,8 +606,8 @@ const canonical = `${Astro.url.origin}/ribaltatore/`;
         return div.innerHTML;
       }
 
-      const ribaltataEscaped = escapeHtml(ribaltata);
-      const originaleEscaped = escapeHtml(originale);
+      const ribaltataEscaped = escapeHtml(ribaltataPulita);
+      const originaleEscaped = escapeHtml(originalePulita);
       const testoCondivisibileEscaped = escapeHtml(testoCondivisibile);
 
       return `
@@ -542,7 +615,7 @@ const canonical = `${Astro.url.origin}/ribaltatore/`;
           <h2 class="risultato-card__title">Risposta ribaltata</h2>
           
           <div class="risultato-card__quote">
-            <div class="risultato-card__quote-content">${ribaltataEscaped.replace(/\n/g, "<br>")}</div>
+            <div class="risultato-card__quote-content">${ribaltataEscaped.replace(/\n/g, "<br>").replace(/<br><br>/g, "<br>")}</div>
           </div>
 
           <div class="risultato-card__social-section">
@@ -562,7 +635,7 @@ const canonical = `${Astro.url.origin}/ribaltatore/`;
           ${publicPath ? `
           <div class="risultato-card__link-actions">
             <a href="${publicPath}" class="risultato-card__link-btn">
-              🔗 Apri link pubblico
+              🔗 Apri pagina frase
             </a>
             <button type="button" class="risultato-card__link-btn" id="btn-copia-link" data-url="${publicUrlAbsolute}">
               📋 Copia link
@@ -571,33 +644,42 @@ const canonical = `${Astro.url.origin}/ribaltatore/`;
           </div>
           ` : ""}
 
+          <div class="risultato-card__internal-links">
+            <a href="/frasi-ribaltate/" class="risultato-card__internal-link">
+              📚 Vedi tutte le frasi
+            </a>
+            <a href="/cerca/?q=${encodeURIComponent(originalePulita.split(/\s+/).slice(0, 3).join(" "))}" class="risultato-card__internal-link">
+              🔍 Cerca frasi simili
+            </a>
+          </div>
+
           <div class="risultato-card__actions">
             <div class="risultato-card__share-buttons">
-              <a href="${getShareUrl("whatsapp", originale, ribaltata, id)}" target="_blank" rel="noopener noreferrer" class="risultato-card__share-btn" aria-label="Condividi su WhatsApp">
+              <a href="${getShareUrl("whatsapp", originalePulita, ribaltataPulita, id)}" target="_blank" rel="noopener noreferrer" class="risultato-card__share-btn" aria-label="Condividi su WhatsApp">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                   <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
                 </svg>
                 <span>WhatsApp</span>
               </a>
-              <a href="${getShareUrl("telegram", originale, ribaltata, id)}" target="_blank" rel="noopener noreferrer" class="risultato-card__share-btn" aria-label="Condividi su Telegram">
+              <a href="${getShareUrl("telegram", originalePulita, ribaltataPulita, id)}" target="_blank" rel="noopener noreferrer" class="risultato-card__share-btn" aria-label="Condividi su Telegram">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                   <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161l-1.97 9.272c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295-.002 0-.003 0-.005 0l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.12l-6.87 4.326-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.458c.538-.196 1.006.128.832.941z"/>
                 </svg>
                 <span>Telegram</span>
               </a>
-              <a href="${getShareUrl("twitter", originale, ribaltata, id)}" target="_blank" rel="noopener noreferrer" class="risultato-card__share-btn" aria-label="Condividi su X (Twitter)">
+              <a href="${getShareUrl("twitter", originalePulita, ribaltataPulita, id)}" target="_blank" rel="noopener noreferrer" class="risultato-card__share-btn" aria-label="Condividi su X (Twitter)">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                   <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
                 </svg>
                 <span>X</span>
               </a>
-              <a href="${getShareUrl("facebook", originale, ribaltata, id)}" target="_blank" rel="noopener noreferrer" class="risultato-card__share-btn" aria-label="Condividi su Facebook">
+              <a href="${getShareUrl("facebook", originalePulita, ribaltataPulita, id)}" target="_blank" rel="noopener noreferrer" class="risultato-card__share-btn" aria-label="Condividi su Facebook">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                   <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
                 </svg>
                 <span>Facebook</span>
               </a>
-              <a href="${getShareUrl("linkedin", originale, ribaltata, id)}" target="_blank" rel="noopener noreferrer" class="risultato-card__share-btn" aria-label="Condividi su LinkedIn">
+              <a href="${getShareUrl("linkedin", originalePulita, ribaltataPulita, id)}" target="_blank" rel="noopener noreferrer" class="risultato-card__share-btn" aria-label="Condividi su LinkedIn">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                   <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
                 </svg>
@@ -693,16 +775,21 @@ const canonical = `${Astro.url.origin}/ribaltatore/`;
         }
 
         // Fallback chiavi multiple per ribaltata
-        const ribaltata = data.ribaltata ?? data.frase_ribaltata ?? data.answer ?? data.output ?? data.data?.ribaltata;
+        const ribaltataRaw = data.ribaltata ?? data.frase_ribaltata ?? data.answer ?? data.output ?? data.data?.ribaltata;
         const id = data.id ?? data.data?.id ?? 0;
 
         // Se ribaltata manca, mostra JSON ricevuto
-        if (!ribaltata) {
+        if (!ribaltataRaw) {
           throw new Error(`Risposta non valida: campo ribaltata mancante. JSON ricevuto: ${JSON.stringify(data)}`);
         }
 
+        // Pulisci frasi da caratteri escapati
+        const originaleRaw = data.originale || frase;
+        const ribaltata = cleanPhraseClient(ribaltataRaw, true); // Preserva newline
+        const originale = cleanPhraseClient(originaleRaw);
+
         // Render risultato
-        risultatoDiv.innerHTML = renderRisultato(data.originale || frase, ribaltata, id);
+        risultatoDiv.innerHTML = renderRisultato(originale, ribaltata, id);
 
         // Setup toggle sezione social
         const toggleSocial = document.getElementById("toggle-social");
@@ -721,7 +808,7 @@ const canonical = `${Astro.url.origin}/ribaltatore/`;
         const copyTuttoBtn = document.getElementById("btn-copia-tutto");
         const copyTuttoMsg = document.getElementById("msg-copiato-tutto");
         if (copyTuttoBtn && copyTuttoMsg) {
-          const testoCompleto = getTestoCondivisibile(data.originale || frase, ribaltata, id);
+          const testoCompleto = getTestoCondivisibile(originale, ribaltata, id);
           copyTuttoBtn.addEventListener("click", async () => {
             try {
               await navigator.clipboard.writeText(testoCompleto);

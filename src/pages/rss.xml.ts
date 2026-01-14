@@ -2,6 +2,7 @@ export const prerender = true;
 
 import postsJson from "../../data/wp/out/posts.json";
 import { toParams } from "../lib/wp";
+import { getExcerpt } from "../lib/utils";
 
 // Usa import.meta.env.SITE (configurato in astro.config.mjs) o fallback
 const SITE_URL = import.meta.env.SITE || "https://canapalandia.com";
@@ -62,7 +63,7 @@ export async function GET() {
         const title = stripHtml(p?.title?.rendered || p?.title || "Articolo") || "Articolo";
         const link = absUrl(postHref(p));
         const pubDate = new Date(p?.date || p?.modified || Date.now()).toUTCString();
-        const desc = stripHtml(p?.excerpt?.rendered || p?.excerpt || p?.content?.rendered || "").slice(0, 300);
+        const desc = getExcerpt(p?.excerpt, p?.content?.rendered || p?.content, 300);
 
         return (
           `    <item>\n` +

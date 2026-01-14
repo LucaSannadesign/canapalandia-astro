@@ -31,7 +31,7 @@ if (pageNum === 1) {
 const metadata = {
   title: `Category: ${slug} — Page ${pageNum} — Canapalandia`,
   description: "English category archive (legacy).",
-  canonical: `${Astro.url.origin}/en/categoria/${slug}/page/${pageNum}/`,
+  canonical: `${import.meta.env.SITE || "https://canapalandia.com"}/en/categoria/${slug}/page/${pageNum}/`,
   robots: { index: false, follow: true },
 };
 ---
