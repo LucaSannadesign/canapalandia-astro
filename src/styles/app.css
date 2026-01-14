@@ -43,6 +43,9 @@
 
   --font-sans: "Sora", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial,
     "Apple Color Emoji", "Segoe UI Emoji";
+
+  /* Icon filter per dark mode (inverti icone monocrome) */
+  --icon-filter: invert(1);
 }
 
 html[data-theme="light"] {
@@ -51,6 +54,7 @@ html[data-theme="light"] {
   --bg: #ffffff;
   --text: #0f172a;
   --muted: #475569;
+  --icon-filter: none;
 
   --card-solid: #f1f5f9;
   --panel: #ffffff;
@@ -749,6 +753,44 @@ html[data-theme="light"] .site-footer {
 
 .footer-credits a:hover {
   color: var(--brand);
+}
+
+/* Social links: icone social riusabili */
+.social-links {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.social-links a {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--panel), transparent 30%);
+  border: 1px solid var(--border);
+  opacity: 0.9;
+  transition: transform 0.12s ease, opacity 0.12s ease, background 0.12s ease;
+  text-decoration: none;
+}
+
+.social-links a:hover {
+  opacity: 1;
+  transform: scale(1.06);
+  background: color-mix(in oklab, var(--panel), var(--brand) 8%);
+}
+
+.social-links img {
+  width: 18px;
+  height: 18px;
+  filter: var(--icon-filter, none);
+}
+
+.footer-social {
+  margin-top: 6px;
 }
 
 .footer-copy {
