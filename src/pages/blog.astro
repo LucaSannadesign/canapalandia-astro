@@ -3,6 +3,7 @@ import CardPost from "../components/CardPost.astro";
 import Layout from "../layouts/MigratedLayout.astro";
 import Callout from "../components/editorial/Callout.astro";
 import RibaltatoreCTA from "../components/editorial/RibaltatoreCTA.astro";
+import BlogFilters from "../components/blog/BlogFilters.astro";
 import postsJson from "../../data/wp/out/posts.json";
 import { toParams } from "../lib/wp";
 
@@ -136,24 +137,12 @@ const totalPosts = latest.length; // Totale filtrato
     <div class="container">
       {
         hasEmbeddedTerms && cats.length ? (
-          <nav class="modern-filters" aria-label="Filtri Categorie">
-            <div class="modern-filters__track">
-              <a
-                class={`filter-chip ${!activeCat ? "is-active" : ""}`}
-                href="/blog/"
-              >
-                Tutte
-              </a>
-              {cats.map((c) => (
-                <a
-                  class={`filter-chip ${activeCat === c.slug ? "is-active" : ""}`}
-                  href={`/blog/?cat=${encodeURIComponent(c.slug)}`}
-                >
-                  {c.name}
-                </a>
-              ))}
-            </div>
-          </nav>
+          <BlogFilters
+            items={cats}
+            active={activeCat}
+            baseUrl="/blog/"
+            includeAll={true}
+          />
         ) : (
           <div class="card" style="padding:16px; margin-bottom:16px;">
             <p style="margin:0; color: var(--muted);">

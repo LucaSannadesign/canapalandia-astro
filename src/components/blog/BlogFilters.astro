@@ -1,0 +1,282 @@
+---
+interface Props {
+  items: Array<{ slug: string; name: string }>;
+  active: string | null;
+  baseUrl?: string;
+  includeAll?: boolean;
+}
+
+const {
+  items = [],
+  active = null,
+  baseUrl = "/blog/",
+  includeAll = true,
+} = Astro.props;
+
+const allItems = includeAll
+  ? [{ slug: "", name: "Tutte" }, ...items]
+  : items;
+---
+
+<nav class="blog-filters" aria-label="Filtri Categorie">
+  {/* Desktop: chip orizzontali (md+) */}
+  <div class="blog-filters__desktop">
+    <div class="blog-filters__track">
+      {allItems.map((item) => {
+        const isActive = active === item.slug || (!active && item.slug === "");
+        const href = item.slug ? `${baseUrl}?cat=${encodeURIComponent(item.slug)}` : baseUrl;
+        return (
+          <a
+            class={`filter-chip ${isActive ? "is-active" : ""}`}
+            href={href}
+            aria-current={isActive ? "page" : undefined}
+          >
+            {item.name}
+          </a>
+        );
+      })}
+    </div>
+  </div>
+
+  {/* Mobile: toggle + pannello (<md) */}
+  <div class="blog-filters__mobile">
+    <button
+      type="button"
+      class="blog-filters__toggle"
+      data-filters-toggle
+      aria-expanded="false"
+      aria-controls="blog-filters-panel"
+      aria-label="Mostra filtri categorie"
+    >
+      <svg
+        class="blog-filters__icon"
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+      >
+        <path
+          d="M8 3V13M3 8H13"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
+      </svg>
+      <span>Filtri</span>
+    </button>
+
+    <div
+      id="blog-filters-panel"
+      class="blog-filters__panel"
+      hidden
+      role="region"
+      aria-label="Filtri categorie"
+    >
+      <ul class="blog-filters__list">
+        {allItems.map((item) => {
+          const isActive = active === item.slug || (!active && item.slug === "");
+          const href = item.slug ? `${baseUrl}?cat=${encodeURIComponent(item.slug)}` : baseUrl;
+          return (
+            <li>
+              <a
+                class={`blog-filters__link ${isActive ? "is-active" : ""}`}
+                href={href}
+                aria-current={isActive ? "page" : undefined}
+                data-filter-link
+              >
+                {item.name}
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<style>
+  /* Container principale */
+  .blog-filters {
+    margin: -20px 0 30px;
+    padding: 10px 0;
+  }
+
+  /* Desktop: mantieni sticky solo da md in su (>=768px) */
+  .blog-filters__desktop {
+    display: none; /* Hidden su mobile */
+  }
+
+  @media (min-width: 768px) {
+    .blog-filters__desktop {
+      display: block;
+      position: sticky;
+      top: 70px;
+      z-index: 40;
+      /* Glass effect background per leggibilità su sticky */
+      background: rgba(6, 19, 11, 0.85);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    html[data-theme="light"] .blog-filters__desktop {
+      background: rgba(255, 255, 255, 0.85);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+  }
+
+  /* Mobile: toggle + pannello (visibile solo <768px) */
+  .blog-filters__mobile {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  @media (min-width: 768px) {
+    .blog-filters__mobile {
+      display: none; /* Hidden su desktop */
+    }
+  }
+
+  .blog-filters__track {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 4px var(--pad);
+    scroll-behavior: smooth;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+  }
+
+  .blog-filters__track::-webkit-scrollbar {
+    display: none;
+  }
+
+  .blog-filters__toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--panel);
+    color: var(--text);
+    font-size: 0.94rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .blog-filters__toggle:hover {
+    background: color-mix(in oklab, var(--panel), var(--brand) 8%);
+    border-color: var(--brand);
+  }
+
+  .blog-filters__toggle:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+  }
+
+  .blog-filters__toggle[aria-expanded="true"] .blog-filters__icon {
+    transform: rotate(45deg);
+  }
+
+  .blog-filters__icon {
+    width: 16px;
+    height: 16px;
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  /* Mobile: pannello */
+  .blog-filters__panel {
+    margin-top: 12px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--panel);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .blog-filters__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .blog-filters__link {
+    display: block;
+    padding: 10px 14px;
+    border-radius: 6px;
+    color: var(--text);
+    text-decoration: none;
+    font-size: 0.94rem;
+    transition: all 0.15s ease;
+    border: 1px solid transparent;
+  }
+
+  .blog-filters__link:hover {
+    background: color-mix(in oklab, var(--panel), var(--brand) 8%);
+    color: var(--brand);
+  }
+
+  .blog-filters__link:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+  }
+
+  .blog-filters__link.is-active {
+    background: var(--brand);
+    color: #fff;
+    font-weight: 600;
+    border-color: transparent;
+  }
+
+  .blog-filters__link.is-active:hover {
+    background: var(--brand-2);
+    color: #fff;
+  }
+</style>
+
+<script>
+  (() => {
+    const toggle = document.querySelector('[data-filters-toggle]');
+    const panel = document.getElementById('blog-filters-panel');
+    const filterLinks = document.querySelectorAll('[data-filter-link]');
+
+    if (!toggle || !panel) return;
+
+    // Toggle apertura/chiusura
+    toggle.addEventListener('click', () => {
+      const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
+      const newState = !isExpanded;
+      
+      toggle.setAttribute('aria-expanded', String(newState));
+      panel.hidden = !newState;
+    });
+
+    // Chiudi quando clicco un link filtro
+    filterLinks.forEach((link) => {
+      link.addEventListener('click', () => {
+        toggle.setAttribute('aria-expanded', 'false');
+        panel.hidden = true;
+      });
+    });
+
+    // ESC chiude il pannello
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !panel.hidden) {
+        toggle.setAttribute('aria-expanded', 'false');
+        panel.hidden = true;
+        toggle.focus(); // Ritorna focus al toggle
+      }
+    });
+  })();
+</script>
