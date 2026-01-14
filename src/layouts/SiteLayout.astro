@@ -40,25 +40,30 @@ const robotsNormalized = normalizeRobots(robotsRaw);
 // Default robots: index,follow
 const robotsDefault = "index,follow";
 
-// Detection production: usa VERCEL_ENV o hostname allowlist
+// Detection production: hostname-based (robusto, indipendente da VERCEL_ENV)
 function isProductionEnvironment(): boolean {
-  // Priorità 1: VERCEL_ENV (più affidabile)
+  const hostname = Astro.url.hostname;
+  
+  // PRIORITÀ 1: Blocca preview Vercel e localhost (indipendente da VERCEL_ENV)
+  // Se hostname termina con ".vercel.app" o contiene "vercel.app" => NON production
+  if (hostname.endsWith(".vercel.app") || hostname.includes("vercel.app")) {
+    return false;
+  }
+  // Blocca localhost e 127.0.0.1
+  if (hostname === "localhost" || hostname.startsWith("127.0.0.1")) {
+    return false;
+  }
+  
+  // PRIORITÀ 2: Verifica se hostname è nella allowlist production
+  const productionHostnames = ["canapalandia.com", "www.canapalandia.com"];
+  if (productionHostnames.includes(hostname)) {
+    return true;
+  }
+  
+  // PRIORITÀ 3: Fallback VERCEL_ENV (solo se hostname non è riconosciuto)
   const vercelEnv = import.meta.env.VERCEL_ENV;
   if (vercelEnv === "production") return true;
   if (vercelEnv === "preview" || vercelEnv === "development") return false;
-  
-  // Priorità 2: Hostname allowlist (fallback se VERCEL_ENV non disponibile)
-  const origin = Astro.url.origin;
-  const hostname = Astro.url.hostname;
-  const productionHostnames = ["canapalandia.com", "www.canapalandia.com"];
-  
-  // Verifica se hostname è nella allowlist
-  if (productionHostnames.includes(hostname)) return true;
-  
-  // Se hostname contiene "vercel.app" o "localhost", non è production
-  if (hostname.includes("vercel.app") || hostname === "localhost" || hostname.startsWith("127.0.0.1")) {
-    return false;
-  }
   
   // Default: non production (sicurezza)
   return false;
@@ -66,7 +71,9 @@ function isProductionEnvironment(): boolean {
 
 const isProduction = isProductionEnvironment();
 
-// Calcola robotsFinal: se non production, forza noindex,nofollow
+// Calcola robotsFinal: sempre presente, dinamico in base all'hostname
+// - Preview Vercel (*.vercel.app) e localhost => "noindex,nofollow"
+// - Production (canapalandia.com) => usa robotsNormalized o "index,follow"
 const robotsFinal = isProduction 
   ? (robotsNormalized || robotsDefault)
   : "noindex,nofollow";
