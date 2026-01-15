@@ -1,4 +1,10 @@
 {
+  "rewrites": [
+    {
+      "source": "/wp-content/uploads/:path*",
+      "destination": "https://media.canapalandia.com/uploads/:path*"
+    }
+  ],
   "redirects": [
     {
       "source": "/categoria",
