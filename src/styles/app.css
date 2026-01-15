@@ -338,7 +338,7 @@ main#contenuto {
   top: 0;
   left: 0;
   right: 0;
-  z-index: 1000;
+  z-index: 9999;
   border-bottom: 1px solid transparent;
   background: transparent;
   backdrop-filter: blur(0px);
@@ -423,11 +423,25 @@ main#contenuto {
   }
 }
 
-/* Desktop: header trasparente di default */
-@media (min-width: 900px) {
+/* Desktop (>=1024px): header ALWAYS visible (no overlap on text) */
+@media (min-width: 1024px) {
+  .site-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(6, 19, 11, 0.72);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  /* Se qualche child “copre”/resetta, forza lo stesso sfondo anche sul nav */
+  .site-header .nav {
+    background: inherit;
+    backdrop-filter: inherit;
+    -webkit-backdrop-filter: inherit;
+  }
+
   html[data-theme="light"] .site-header {
-    border-bottom: 1px solid transparent;
-    background: transparent;
+    border-bottom: 1px solid rgba(2, 6, 23, 0.12);
+    background: rgba(255, 255, 255, 0.92);
   }
 }
 
