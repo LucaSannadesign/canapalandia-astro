@@ -390,11 +390,13 @@ main#contenuto {
   }
 
   @media (min-width: 900px) {
-    .site-header.is-scrolled {
+    .site-header.is-scrolled,
+    html.scrolled .site-header {
       background: rgba(10, 12, 14, 0.92);
     }
     
-    html[data-theme="light"] .site-header.is-scrolled {
+    html[data-theme="light"] .site-header.is-scrolled,
+    html[data-theme="light"].scrolled .site-header {
       background: rgba(255, 255, 255, 0.92);
     }
   }
@@ -402,7 +404,8 @@ main#contenuto {
 
 /* Stato scrolled: glass effect + shadow + border (desktop) */
 @media (min-width: 900px) {
-  .site-header.is-scrolled {
+  .site-header.is-scrolled,
+  html.scrolled .site-header {
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     background: rgba(6, 19, 11, 0.55);
     backdrop-filter: blur(12px);
@@ -410,7 +413,8 @@ main#contenuto {
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
   }
 
-  html[data-theme="light"] .site-header.is-scrolled {
+  html[data-theme="light"] .site-header.is-scrolled,
+  html[data-theme="light"].scrolled .site-header {
     border-bottom: 1px solid rgba(2, 6, 23, 0.12);
     background: rgba(255, 255, 255, 0.85);
     box-shadow: 0 2px 12px rgba(2, 6, 23, 0.12);

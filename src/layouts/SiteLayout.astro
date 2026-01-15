@@ -763,7 +763,7 @@ const yoastHeadCleaned = cleanYoastHead(yoastHeadHtml);
         const adbar = document.querySelector("[data-adbar]");
         if (!header) return;
 
-        const SCROLL_THRESHOLD = 12;
+        const SCROLL_THRESHOLD = 10;
         const DIRECTION_THRESHOLD = 4;
         const ADBAR_HIDE_THRESHOLD = 120;
         const ADBAR_SHOW_THRESHOLD = 60;
@@ -777,6 +777,8 @@ const yoastHeadCleaned = cleanYoastHead(yoastHeadHtml);
         const updateHeader = () => {
           const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
           const isScrolled = scrollY > SCROLL_THRESHOLD;
+          // Richiesto: toggle classe su <html> quando scrollY > 10
+          document.documentElement.classList.toggle("scrolled", isScrolled);
           
           // Calcola direzione
           let direction = "none";
