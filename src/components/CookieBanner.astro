@@ -418,6 +418,36 @@
     const closeBtns = prefsPanel.querySelectorAll("[data-cookie-prefs-close]");
     closeBtns.forEach((btn) => btn.addEventListener("click", closePrefs));
 
+    // Supporto: link footer "Gestisci consenso"
+    // - Se non c'è consenso salvato: riapri banner
+    // - Se esiste: apri pannello Preferenze e sincronizza switch
+    window.addEventListener("canapalandia:open-cookie-banner", () => {
+      const current = getConsent();
+
+      if (!current) {
+        banner.setAttribute("aria-hidden", "false");
+        prefsPanel.setAttribute("aria-hidden", "true");
+        return;
+      }
+
+      // Sync toggle stato salvato
+      if (analyticsToggle && analyticsToggle instanceof HTMLInputElement) {
+        analyticsToggle.checked = current?.analytics === true;
+      }
+
+      // Apri preferenze
+      banner.setAttribute("aria-hidden", "true");
+      prefsPanel.setAttribute("aria-hidden", "false");
+    });
+
+    // Nice-to-have: chiudi preferenze con ESC
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape") return;
+      if (prefsPanel.getAttribute("aria-hidden") === "false") {
+        closePrefs();
+      }
+    });
+
     // Salva preferenze
     const saveBtn = prefsPanel.querySelector("[data-cookie-save]");
     if (saveBtn) {
