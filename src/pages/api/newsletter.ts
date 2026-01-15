@@ -41,7 +41,12 @@ export const POST: APIRoute = async ({ request }) => {
         }
 
         // Validazione consenso GDPR
-        if (!consent || consent !== "true") {
+        const consentOk =
+            consent === true ||
+            consent === "true" ||
+            consent === "on" ||
+            consent === "1";
+        if (!consentOk) {
             return new Response(JSON.stringify({ 
                 message: "Devi accettare la Privacy Policy" 
             }), {
