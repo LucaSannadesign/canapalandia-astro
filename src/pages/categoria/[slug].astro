@@ -1,7 +1,7 @@
 ---
 export const prerender = false;
 
-import { getCollection } from "astro:content";
+import { getCollection, type CollectionEntry } from "astro:content";
 import SiteLayout from "../../layouts/SiteLayout.astro";
 import CardPost from "../../components/CardPost.astro";
 
@@ -16,8 +16,12 @@ function formatDate(date: Date): string {
   });
 }
 
+function dateOf(entry: CollectionEntry<"blog">): Date {
+  return entry.data.publishDate ?? entry.data.updatedDate ?? new Date(0);
+}
+
 // Carica tutti i post dalla collection
-let postsAll = [];
+let postsAll: CollectionEntry<"blog">[] = [];
 try {
   postsAll = await getCollection("blog");
 } catch (err) {
@@ -28,18 +32,18 @@ try {
 // Filtra per categoria
 const posts = postsAll
   .filter((p) => (p.data.category || "") === slug)
-  .sort((a, b) => b.data.publishDate.getTime() - a.data.publishDate.getTime());
+  .sort((a, b) => dateOf(b).getTime() - dateOf(a).getTime());
 
 // Estrai nome categoria dal primo post (se disponibile)
 // Oppure usa slug "umanizzato" come fallback
 const categoryName = posts.length > 0 && posts[0].data.category
   ? posts[0].data.category
       .split("-")
-      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
       .join(" ")
   : slug
       .split("-")
-      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
       .join(" ");
 
 const metadata = {
@@ -76,9 +80,9 @@ const metadata = {
         <div class="grid">
           {posts.map((p) => (
             <CardPost
-              href={`/${p.data.slug}/`}
+              href={`/blog/${p.slug}/`}
               img={p.data.coverImage || undefined}
-              date={formatDate(p.data.publishDate)}
+              date={formatDate(dateOf(p))}
               title={p.data.title}
               excerpt={p.data.description}
               category={p.data.category || null}

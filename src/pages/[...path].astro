@@ -57,7 +57,7 @@ type WPItemRaw = {
     "wp:term"?: any[][];
   };
   yoast_head_json?: {
-    og_image?: Array<{ url?: string; src?: string; width?: number; height?: number }>;
+    og_image?: Array<{ url?: string; src?: string; width?: any; height?: any; type?: any }>;
   };
 };
 
@@ -74,6 +74,14 @@ type CardPost = {
   img?: { src: string; alt: string };
   category?: string;
 };
+
+function safeInternalHref(input: unknown): string {
+  if (typeof input !== "string") return "/";
+  const raw = input.trim();
+  if (!raw || raw === "undefined" || raw === "/undefined/") return "/";
+  if (/^(https?:|mailto:|tel:)/i.test(raw)) return raw;
+  return raw.startsWith("/") ? raw : `/${raw}`;
+}
 
 /* ---------------------------
    Resolve requested path
@@ -141,26 +149,29 @@ if (!foundEntry) {
   });
 }
 
+// TS narrowing helper (Astro SSR guard already returned above)
+const entry = foundEntry;
+
 /* ---------------------------
    Get raw WP data for featured image and related posts
 --------------------------- */
-const allItems: WPItemRaw[] = [
+const allItems = [
   ...(Array.isArray(postsJson) ? postsJson : []),
   ...(Array.isArray(pagesJson) ? pagesJson : []),
-];
+] as any[];
 
-const rawItem = allItems.find((item) => item.id === foundEntry.id);
+const rawItem = allItems.find((item) => item.id === entry.id) || null;
 
 /* ---------------------------
    SEO metadata
 --------------------------- */
-const title = foundEntry.title || stripHtml(rawItem?.title?.rendered || "") || "Contenuto";
+const title = entry.title || stripHtml(rawItem?.title?.rendered || "") || "Contenuto";
 const description =
-  foundEntry.excerpt || stripHtml(rawItem?.excerpt?.rendered || "") || "";
+  entry.excerpt || stripHtml(rawItem?.excerpt?.rendered || "") || "";
 
 // Usa il path normalizzato per il canonical, ma aggiungi trailing slash per output
-const canonicalPath = foundEntry.path
-  ? `/${foundEntry.path}/`
+const canonicalPath = entry.path
+  ? `/${entry.path}/`
   : "/";
 
 const metadata = {
@@ -230,9 +241,9 @@ function getWpHeroImage(item: WPItemRaw | null): HeroImage | null {
   }
 
   // Usa featuredImage da WpEntry se disponibile
-  if (foundEntry.featuredImage) {
+  if ((entry as any).featuredImage) {
     return {
-      desktop: foundEntry.featuredImage,
+      desktop: (entry as any).featuredImage,
     };
   }
 
@@ -340,7 +351,7 @@ function findRelatedPosts(currentEntry: WpEntry, currentRaw: WPItemRaw | null): 
   return related;
 }
 
-const relatedPosts: CardPost[] = findRelatedPosts(foundEntry, rawItem);
+const relatedPosts: CardPost[] = findRelatedPosts(entry, rawItem);
 
 /* ---------------------------
    Extract tags for sidebar
@@ -417,8 +428,8 @@ function generateThemeKeyword(item: WPItemRaw | null, entry: WpEntry): string {
   return "";
 }
 
-const seedPhrase = foundEntry.kind === "post" ? generateSeedPhrase(rawItem || null, foundEntry) : "";
-const themeKeyword = foundEntry.kind === "post" ? generateThemeKeyword(rawItem || null, foundEntry) : "";
+const seedPhrase = entry.kind === "post" ? generateSeedPhrase(rawItem || null, entry) : "";
+const themeKeyword = entry.kind === "post" ? generateThemeKeyword(rawItem || null, entry) : "";
 const ribaltatoreUrl = seedPhrase ? `/ribaltatore/?q=${encodeURIComponent(seedPhrase)}` : "/ribaltatore/";
 const cercaUrl = themeKeyword ? `/cerca/?q=${encodeURIComponent(themeKeyword)}` : "/cerca/";
 
@@ -428,21 +439,21 @@ const cercaUrl = themeKeyword ? `/cerca/?q=${encodeURIComponent(themeKeyword)}` 
 // Determina se la sidebar ha contenuti da mostrare
 // Per ora: ShareBar + AdSlot sono sempre presenti per i post
 // Tags sono opzionali
-const hasSidebarContent = foundEntry.kind === "post";
+const hasSidebarContent = entry.kind === "post";
 
 /* ---------------------------
    Post URL and title for ShareBar
 --------------------------- */
 // Usa Astro.url.origin per URL dinamico (adatta a localhost/preview/prod)
 const baseUrl = Astro.url.origin;
-const postUrl = foundEntry.link || `${baseUrl}${canonicalPath}`;
+const postUrl = entry.link || `${baseUrl}${canonicalPath}`;
 const postTitleForShare = title || "";
 
 /* ---------------------------
    Render content
 --------------------------- */
-const contentHtml = foundEntry.html || rawItem?.content?.rendered || "";
-const titleHtml = foundEntry.title || rawItem?.title?.rendered || "";
+const contentHtml = entry.html || rawItem?.content?.rendered || "";
+const titleHtml = entry.title || rawItem?.title?.rendered || "";
 ---
 
 <SiteLayout metadata={metadata}>
@@ -539,7 +550,7 @@ const titleHtml = foundEntry.title || rawItem?.title?.rendered || "";
             <div class="grid">
               {relatedPosts.map((p) => (
                 <article class="post-card">
-                  <a class="cardLink" href={p.href}>
+                  <a class="cardLink" href={safeInternalHref(p.href)}>
                     <div class="thumb">
                       {p.img ? (
                         <img

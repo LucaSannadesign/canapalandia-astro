@@ -6,10 +6,24 @@ const { href, img, date, title, excerpt, category } = Astro.props;
 // Sanitizza excerpt: converte qualsiasi tipo in stringa pulita
 const excerptSafe = toPlainText(excerpt);
 const categoryName = category && typeof category === "string" ? category.trim() : null;
+
+function normalizeHref(input: unknown): string {
+  if (typeof input !== "string") return "/";
+  const raw = input.trim();
+  if (!raw || raw === "undefined" || raw === "/undefined/") return "/";
+
+  // allow absolute links
+  if (/^(https?:|mailto:|tel:)/i.test(raw)) return raw;
+
+  // normalize relative internal links
+  return raw.startsWith("/") ? raw : `/${raw}`;
+}
+
+const safeHref = normalizeHref(href);
 ---
 
 <article class="card post-card">
-    <a class="cardLink" href={href}>
+    <a class="cardLink" href={safeHref}>
         <div class="thumb">
             {
                 img ? (

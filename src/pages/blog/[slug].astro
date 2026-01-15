@@ -1,0 +1,31 @@
+---
+import { getEntryBySlug } from "astro:content";
+import SiteLayout from "../../layouts/SiteLayout.astro";
+
+export const prerender = false;
+
+const slug = String(Astro.params.slug ?? "").trim();
+if (!slug) return new Response(null, { status: 404 });
+
+const entry = await (getEntryBySlug as any)("blog", slug);
+if (!entry) return new Response(null, { status: 404 });
+
+const { Content } = await (entry as any).render();
+
+const metadata = {
+  title: (entry as any).data.title,
+  description: (entry as any).data.description || "",
+  canonical: `${import.meta.env.SITE || "https://canapalandia.com"}/blog/${slug}/`,
+  robots: { index: true, follow: true },
+};
+---
+
+<SiteLayout metadata={metadata}>
+  <main class="container page-shell">
+    <article class="post-main">
+      <h1>{(entry as any).data.title}</h1>
+      <Content />
+    </article>
+  </main>
+</SiteLayout>
+

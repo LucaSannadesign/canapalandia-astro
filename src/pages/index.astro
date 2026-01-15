@@ -1,5 +1,5 @@
 ---
-import { getCollection } from "astro:content";
+import { getCollection, type CollectionEntry } from "astro:content";
 import Layout from "../layouts/MigratedLayout.astro";
 import AdSlot from "../components/AdSlot.astro";
 import CardPost from "../components/CardPost.astro";
@@ -17,8 +17,18 @@ function formatDate(date: Date): string {
   });
 }
 
+function postHref(entry: any): string {
+  const slug = entry?.slug ?? entry?.data?.slug ?? "";
+  if (!slug) throw new Error("Missing slug for post link");
+  return `/blog/${slug}/`;
+}
+
+function dateOf(entry: CollectionEntry<"blog">): Date {
+  return entry.data.publishDate ?? entry.data.updatedDate ?? new Date(0);
+}
+
 // Carica tutti i post dalla collection
-let postsAll = [];
+let postsAll: CollectionEntry<"blog">[] = [];
 try {
   postsAll = await getCollection("blog");
 } catch (err) {
@@ -29,7 +39,11 @@ try {
 // Ordina per publishDate DESC
 const sortedPosts = postsAll
   .slice()
-  .sort((a, b) => b.data.publishDate.getTime() - a.data.publishDate.getTime());
+  .sort(
+    (a, b) =>
+      (b.data.publishDate ?? b.data.updatedDate ?? new Date(0)).getTime() -
+      (a.data.publishDate ?? a.data.updatedDate ?? new Date(0)).getTime(),
+  );
 
 const latestPosts = sortedPosts.slice(0, 6);
 const featured = sortedPosts[0];
@@ -227,7 +241,7 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
       {sortedPosts.length > 0 ? (
         <div class="grid featured">
           {featured ? (
-            <a class="feature-main" href={`/${featured.data.slug}/`}>
+            <a class="feature-main" href={postHref(featured)}>
               <p class="badge">Approfondimento</p>
 
               {featured.data.coverImage ? (
@@ -261,7 +275,7 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
 
           <div class="feature-side">
             {featuredSide.map((p) => (
-              <a class="mini" href={`/${p.data.slug}/`}>
+              <a class="mini" href={postHref(p)}>
                 {p.data.coverImage ? (
                   <img
                     class="mini-img"
@@ -281,7 +295,7 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
 
                 <div class="mini-body">
                   <h3 class="mini-title">{p.data.title}</h3>
-                  <p class="mini-excerpt">{p.data.description.slice(0, 90)}</p>
+                  <p class="mini-excerpt">{(p.data.description || "").slice(0, 90)}</p>
                   <span class="mini-link">Leggi</span>
                 </div>
               </a>
@@ -309,9 +323,9 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
         <div class="grid">
           {latestPosts.map((p) => (
             <CardPost
-              href={`/${p.data.slug}/`}
+              href={postHref(p)}
               img={p.data.coverImage || undefined}
-              date={formatDate(p.data.publishDate)}
+              date={formatDate(dateOf(p))}
               title={p.data.title}
               excerpt={p.data.description}
               category={p.data.category || null}

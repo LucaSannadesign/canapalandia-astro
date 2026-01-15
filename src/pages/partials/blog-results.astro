@@ -1,5 +1,5 @@
 ---
-import { getCollection } from "astro:content";
+import { getCollection, type CollectionEntry } from "astro:content";
 import CardPost from "../../components/CardPost.astro";
 
 export const prerender = false;
@@ -17,8 +17,18 @@ function formatDate(date: Date): string {
   });
 }
 
+function postHref(entry: any): string {
+  const slug = entry?.slug ?? entry?.data?.slug ?? "";
+  if (!slug) throw new Error("Missing slug for post link");
+  return `/blog/${slug}/`;
+}
+
+function dateOf(entry: CollectionEntry<"blog">): Date {
+  return entry.data.publishDate ?? entry.data.updatedDate ?? new Date(0);
+}
+
 // Carica tutti i post dalla collection
-let postsAll = [];
+let postsAll: CollectionEntry<"blog">[] = [];
 try {
   postsAll = await getCollection("blog");
 } catch (err) {
@@ -42,7 +52,7 @@ if (cat) {
 // Ordina per publishDate DESC
 const allSorted = filtered
   .slice()
-  .sort((a, b) => b.data.publishDate.getTime() - a.data.publishDate.getTime());
+  .sort((a, b) => dateOf(b).getTime() - dateOf(a).getTime());
 
 // Paginate
 const start = (page - 1) * PER_PAGE;
@@ -58,9 +68,9 @@ if (!chunk.length) {
 {
   chunk.map((p) => (
     <CardPost
-      href={`/${p.data.slug}/`}
+      href={postHref(p)}
       img={p.data.coverImage || undefined}
-      date={formatDate(p.data.publishDate)}
+      date={formatDate(dateOf(p))}
       title={p.data.title}
       excerpt={p.data.description}
       category={p.data.category || null}
