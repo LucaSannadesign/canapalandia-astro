@@ -202,6 +202,14 @@
         color: var(--brand-2);
     }
 
+    .form-feedback.info {
+        color: var(--muted);
+    }
+
+    html[data-theme="light"] .form-feedback.info {
+        color: var(--muted);
+    }
+
     .form-feedback.error {
         color: #ef4444;
     }
@@ -358,13 +366,19 @@
                 });
 
                 const data = await res.json();
+                // Mostra SEMPRE il messaggio dell'API
+                feedback.textContent = data?.message || "Qualcosa è andato storto. Riprova.";
+
+                if (res.status === 409) {
+                    feedback.className = "form-feedback visible info";
+                    // Non reset: l'utente è già iscritto
+                    return;
+                }
 
                 if (res.ok) {
-                    feedback.textContent = "Grazie per esserti iscritto! Controlla la tua email per confermare.";
                     feedback.className = "form-feedback visible success";
                     form.reset();
                 } else {
-                    feedback.textContent = data.message || "Qualcosa è andato storto. Riprova.";
                     feedback.className = "form-feedback visible error";
                 }
             } catch (err) {

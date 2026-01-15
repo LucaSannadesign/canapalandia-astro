@@ -2,14 +2,14 @@ export const prerender = false; // API route must be server-side
 
 import type { APIRoute } from 'astro';
 
-const BUTTONDOWN_API_URL = "https://buttondown.com/api/emails/embed-subscribe/Canapalandia";
+const BUTTONDOWN_API_URL = "https://api.buttondown.com/v1/subscribers";
 
 export const POST: APIRoute = async ({ request }) => {
     try {
         // Supporta sia JSON che form submissions
         const contentType = request.headers.get("content-type") || "";
         let email: string | null = null;
-        let consent: string | null = null;
+        let consent: string | boolean | null = null;
         let hp: string | null = null;
 
         if (contentType.includes("application/json")) {
@@ -55,13 +55,33 @@ export const POST: APIRoute = async ({ request }) => {
             });
         }
 
-        // POST diretto a Buttondown
+        const apiKey = import.meta.env.BUTTONDOWN_API_KEY;
+        if (!apiKey) {
+            return new Response(JSON.stringify({
+                message: "Config newsletter mancante (BUTTONDOWN_API_KEY)"
+            }), {
+                status: 500,
+                headers: { "Content-Type": "application/json" }
+            });
+        }
+
+        const xff = request.headers.get("x-forwarded-for") || "";
+        const ip_address = xff.split(",")[0]?.trim() || undefined;
+
+        // POST diretto a Buttondown (API ufficiale)
         const response = await fetch(BUTTONDOWN_API_URL, {
             method: "POST",
             headers: {
+                "Authorization": `Token ${apiKey}`,
                 "Content-Type": "application/json",
+                "X-Buttondown-Collision-Behavior": "overwrite",
             },
-            body: JSON.stringify({ email }),
+            body: JSON.stringify({
+                email_address: email,
+                ip_address,
+                tags: ["canapalandia-site"],
+                metadata: { source: "canapalandia-astro" },
+            }),
         });
 
         if (response.ok || response.status === 201) {
@@ -72,21 +92,40 @@ export const POST: APIRoute = async ({ request }) => {
                 headers: { "Content-Type": "application/json" }
             });
         } else {
-            // Buttondown ritorna 400 per email duplicate, 422 per validazione
-            const errorText = await response.text();
-            console.error(`[Newsletter] Buttondown error: ${response.status} - ${errorText}`);
-            
-            if (response.status === 400 || response.status === 422) {
-                return new Response(JSON.stringify({
-                    message: "Email già iscritta o non valida."
-                }), {
+            let errJson: any = null;
+            try {
+                errJson = await response.json();
+            } catch {
+                errJson = null;
+            }
+
+            const code = errJson?.code as string | undefined;
+            const detail = errJson?.detail as string | undefined;
+            console.error(`[Newsletter] Buttondown error: ${response.status} - ${code || "unknown"} - ${detail || ""}`);
+
+            if (code === "email_already_exists" || code === "subscriber_already_exists") {
+                return new Response(JSON.stringify({ message: "Sei già iscritto 🙂" }), {
+                    status: 409,
+                    headers: { "Content-Type": "application/json" }
+                });
+            }
+
+            if (code === "email_invalid" || code === "email_empty") {
+                return new Response(JSON.stringify({ message: "Email non valida" }), {
                     status: 400,
                     headers: { "Content-Type": "application/json" }
                 });
             }
 
+            if (code === "rate_limited") {
+                return new Response(JSON.stringify({ message: "Troppe richieste, riprova tra poco." }), {
+                    status: 429,
+                    headers: { "Content-Type": "application/json" }
+                });
+            }
+
             return new Response(JSON.stringify({
-                message: "Errore durante l'iscrizione. Riprova più tardi."
+                message: "Errore durante l’iscrizione. Riprova più tardi."
             }), {
                 status: 500,
                 headers: { "Content-Type": "application/json" }
