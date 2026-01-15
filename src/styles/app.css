@@ -147,6 +147,8 @@ body {
 html {
   overflow-x: hidden;
   /* Previene scroll orizzontale */
+  /* Mantiene offset corretto per anchor link con header sticky */
+  scroll-padding-top: var(--nav-h);
 }
 
 body {
@@ -289,9 +291,9 @@ a:not(.btn):not(.cardLink):not(.blog-filters__link):not(.filter-chip):not(.tax-c
   padding-inline: max(clamp(12px, 3vw, 24px), env(safe-area-inset-left), env(safe-area-inset-right));
 }
 
-/* Compensazione per header fixed */
+/* Header è sticky: evita gap fisso sopra al contenuto */
 main#contenuto {
-  padding-top: var(--nav-h);
+  padding-top: 0;
 }
 
 /* Gutter per contenuti fuori .container (solo mobile) */
@@ -486,11 +488,23 @@ main#contenuto {
 }
 
 .adbar .container {
-  padding-top: 1rem;
-  padding-bottom: 0.5rem;
+  /* Spaziatura compatta: header -> label -> banner -> contenuto */
+  padding-top: 10px;   /* target: 8–12px sopra l’ads */
+  padding-bottom: 12px; /* target: 12–16px sotto l’ads */
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+/* Override spacing Ads SOLO nella barra sotto-navbar */
+.adbar .adslot-container {
+  margin: 0; /* rimuove il margin 2rem del componente */
+}
+
+.adbar .adslot-label {
+  margin: 0 0 6px; /* target: 6–8px tra label e banner */
+  letter-spacing: 0.12em;
+  line-height: 1.1;
 }
 
 /* Rimuovi padding quando adbar è nascosta */
