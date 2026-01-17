@@ -384,8 +384,12 @@
       acceptBtn.addEventListener("click", () => {
         saveConsent(true);
         banner.setAttribute("aria-hidden", "true");
+        // Aggiorna Google Consent Mode (granted)
+        if (window.canapalandiaUpdateConsent && typeof window.canapalandiaUpdateConsent === "function") {
+          window.canapalandiaUpdateConsent(true);
+        }
         // Trigger evento per GA4
-        window.dispatchEvent(new CustomEvent("canapalandia:cookie-consent", { detail: { analytics: true } }));
+        window.dispatchEvent(new CustomEvent("canapalandia:cookie-consent", { detail: { analytics: true, ads: true } }));
       });
     }
 
@@ -395,7 +399,11 @@
       rejectBtn.addEventListener("click", () => {
         saveConsent(false);
         banner.setAttribute("aria-hidden", "true");
-        window.dispatchEvent(new CustomEvent("canapalandia:cookie-consent", { detail: { analytics: false } }));
+        // Aggiorna Google Consent Mode (denied - permette "Limited ads")
+        if (window.canapalandiaUpdateConsent && typeof window.canapalandiaUpdateConsent === "function") {
+          window.canapalandiaUpdateConsent(false);
+        }
+        window.dispatchEvent(new CustomEvent("canapalandia:cookie-consent", { detail: { analytics: false, ads: false } }));
       });
     }
 
@@ -459,7 +467,11 @@
         saveConsent(analytics);
         banner.setAttribute("aria-hidden", "true");
         closePrefs();
-        window.dispatchEvent(new CustomEvent("canapalandia:cookie-consent", { detail: { analytics } }));
+        // Aggiorna Google Consent Mode
+        if (window.canapalandiaUpdateConsent && typeof window.canapalandiaUpdateConsent === "function") {
+          window.canapalandiaUpdateConsent(analytics);
+        }
+        window.dispatchEvent(new CustomEvent("canapalandia:cookie-consent", { detail: { analytics, ads: analytics } }));
       });
     }
   })();

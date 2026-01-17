@@ -1,9 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
+import sharp from "sharp";
 
 const ROOT = process.cwd();
 const CAL_PATH = path.join(ROOT, "calendar", "posts.json");
 const OUT_DIR = path.join(ROOT, "src", "content", "blog");
+const IMAGES_DIR = path.join(ROOT, "public", "images");
 
 function arg(name) {
   const idx = process.argv.indexOf(name);
@@ -57,14 +59,18 @@ function fmEsc(s) {
 
 function renderFrontmatter(post) {
   const tags = Array.isArray(post.tags) ? post.tags.slice(0, 3) : [];
-  const image = post.image || "/images/cover-default.webp";
+  // Forza image path usando slug: /images/<slug>.webp
+  const image = `/images/${fmEsc(post.slug)}.webp`;
+
+  // Assicura publishDate come stringa ISO tra virgolette (es. "2026-01-17")
+  const publishDateStr = `"${String(post.publishDate || "")}"`;
 
   return (
     `---\n` +
     `title: "${fmEsc(post.title)}"\n` +
     `description: "${fmEsc(post.description)}"\n` +
     `slug: "${fmEsc(post.slug)}"\n` +
-    `publishDate: ${post.publishDate}\n` +
+    `publishDate: ${publishDateStr}\n` +
     `author: "Canapalandia"\n` +
     `category: "${fmEsc(post.category || "Blog")}"\n` +
     `tags: ${JSON.stringify(tags)}\n` +
@@ -190,6 +196,117 @@ async function generateBodyWithOpenAI(post) {
   return ensureCta(body);
 }
 
+// Estrae estratto testuale dal body MDX (primi 700-900 caratteri, senza markdown pesante)
+function extractBodyExcerpt(body) {
+  // Rimuove markdown pesante: heading markers, code blocks, links complessi
+  let cleaned = String(body)
+    .replace(/^#{1,6}\s+/gm, "") // Rimuove heading markers
+    .replace(/```[\s\S]*?```/g, "") // Rimuove code blocks
+    .replace(/`[^`]+`/g, "") // Rimuove inline code
+    .replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1") // Semplifica link a solo testo
+    .replace(/^\s*[-*+]\s+/gm, "") // Rimuove bullet markers
+    .replace(/\n{3,}/g, "\n\n") // Normalizza newline multiple
+    .trim();
+
+  // Prende primi ~800 caratteri, fermandosi a fine parola/frase
+  const maxLen = 800;
+  if (cleaned.length <= maxLen) return cleaned;
+  
+  const excerpt = cleaned.slice(0, maxLen);
+  const lastSpace = excerpt.lastIndexOf(" ");
+  const lastPeriod = excerpt.lastIndexOf(".");
+  const lastBreak = Math.max(lastSpace, lastPeriod);
+  
+  return lastBreak > maxLen * 0.7 ? excerpt.slice(0, lastBreak + 1) : excerpt + "...";
+}
+
+// Genera cover image usando OpenAI Images API
+async function generateCoverImage(post, body) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    console.warn("[auto-post] OPENAI_API_KEY missing, skipping cover generation");
+    return;
+  }
+
+  ensureDir(IMAGES_DIR);
+
+  const imagePath = path.join(IMAGES_DIR, `${post.slug}.webp`);
+
+  // Verifica se esiste già e ha size > 0
+  if (fs.existsSync(imagePath)) {
+    const stats = fs.statSync(imagePath);
+    if (stats.size > 0) {
+      console.log(`[auto-post] SKIP cover (exists): ${path.relative(ROOT, imagePath)} (${stats.size} bytes)`);
+      return;
+    }
+    // Se è 0 byte, rimuovilo e rigenera
+    fs.unlinkSync(imagePath);
+    console.log(`[auto-post] Removing zero-byte cover, regenerating...`);
+  }
+
+  // Estrai estratto dal body per contesto
+  const bodyExcerpt = extractBodyExcerpt(body);
+  const tags = Array.isArray(post.tags) ? post.tags.join(", ") : "";
+  const category = post.category || "Blog";
+
+  // Prompt "art-directed" per cover editoriale
+  const prompt = `Editorial magazine cover illustration. Style: refined, sophisticated, editorial illustration or soft 3D rendering, not a giant leaf. Visual metaphor for "legal/bureaucracy" theme: stamps, folders, balance scales, institutional frames, with discrete botanical accents (subtle hemp leaf motifs). Color palette: dark green (#0a2915, #1a4a2d) + cream/soft gold (#f4e8d1, #e8d5b7). Atmosphere: serious but not gloomy, professional, informative. Clean composition, central subject, ample negative space. NO text in the image, NO words or letters. Subject matter: legal documents, official stamps, balance scales, Italian institutional elements, subtle hemp/cannabis botanical references. Title context: "${post.title}". Description: "${post.description}". Category: ${category}. Tags: ${tags}. Content excerpt: "${bodyExcerpt.substring(0, 400)}".`;
+
+  try {
+    // OpenAI Images API: DALL-E 3
+    const res = await fetch("https://api.openai.com/v1/images/generations", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "dall-e-3",
+        prompt,
+        n: 1,
+        size: "1792x1024", // 16:9 landscape (DALL-E 3 supporta: 1024x1024, 1792x1024, 1024x1792)
+        quality: "hd", // "standard" o "hd"
+        response_format: "url", // Restituisce URL, non b64_json
+      }),
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.warn(`[auto-post] OpenAI Images API error ${res.status}: ${errorText}`);
+      return;
+    }
+
+    const data = await res.json();
+    const imageUrl = data.data?.[0]?.url;
+
+    if (!imageUrl) {
+      console.warn("[auto-post] No image URL in OpenAI response");
+      return;
+    }
+
+    // Download immagine
+    const imageRes = await fetch(imageUrl);
+    if (!imageRes.ok) {
+      console.warn(`[auto-post] Failed to download image: ${imageRes.status}`);
+      return;
+    }
+
+    const imageBuffer = Buffer.from(await imageRes.arrayBuffer());
+
+    // Converti e salva come WebP con sharp (output_compression ~85-92)
+    await sharp(imageBuffer)
+      .resize(1600, 900, { fit: "cover", position: "center" }) // 16:9 ratio
+      .webp({ quality: 88 }) // Compression ~85-92
+      .toFile(imagePath);
+
+    const finalStats = fs.statSync(imagePath);
+    console.log(`[auto-post] GENERATED IMAGE: ${path.relative(ROOT, imagePath)} (bytes: ${finalStats.size})`);
+  } catch (error) {
+    console.warn(`[auto-post] Cover generation failed: ${error.message}`);
+    // Non bloccare il processo se la cover fallisce
+  }
+}
+
 async function main() {
   const dryRun = process.argv.includes("--dry-run");
   const force = process.argv.includes("--force");
@@ -225,9 +342,13 @@ async function main() {
     if (dryRun) {
       console.log(`\n[auto-post] DRY RUN would write: ${path.relative(ROOT, outFile)}\n`);
       console.log(mdx.slice(0, 900) + "\n…\n");
+      // In dry-run non generiamo la cover
     } else {
       fs.writeFileSync(outFile, mdx, "utf8");
       console.log(`[auto-post] WROTE: ${path.relative(ROOT, outFile)}`);
+      
+      // Genera cover image dopo aver scritto il body (per avere estratto)
+      await generateCoverImage(post, body);
     }
   }
 }

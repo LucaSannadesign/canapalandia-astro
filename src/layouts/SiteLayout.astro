@@ -135,6 +135,57 @@ const yoastHeadCleaned = cleanYoastHead(yoastHeadHtml);
       rel="stylesheet"
     />
 
+    <!-- Google Consent Mode v2 - DEVE essere PRIMA di AdSense/GA4 -->
+    <!-- Permette "Limited ads" quando consenso è denied -->
+    <!-- Configura in AdSense UI: Account > Privacy & messaging > EU user consent > Enable "Non-personalized ads" -->
+    <script is:inline>
+      (() => {
+        // Inizializza gtag/Consent Mode con default "denied"
+        window.dataLayer = window.dataLayer || [];
+        window.gtag = window.gtag || function(...args) {
+          window.dataLayer.push(args);
+        };
+        window.gtag("js", new Date());
+        
+        // Imposta default "denied" per permettere "Limited ads" senza consenso
+        window.gtag("consent", "default", {
+          ad_storage: "denied",
+          ad_user_data: "denied",
+          ad_personalization: "denied",
+          analytics_storage: "denied",
+          wait_for_update: 500, // Attendi aggiornamenti consenso fino a 500ms
+        });
+
+        // Funzione globale per aggiornare consenso (chiamata da CookieBanner)
+        window.canapalandiaUpdateConsent = function(granted) {
+          const status = granted ? "granted" : "denied";
+          window.gtag("consent", "update", {
+            ad_storage: status,
+            ad_user_data: status,
+            ad_personalization: status,
+            analytics_storage: status,
+          });
+        };
+
+        // Leggi consenso salvato e aggiorna Consent Mode se presente
+        try {
+          const saved = localStorage.getItem("canapalandia_cookie_consent");
+          if (saved) {
+            const consent = JSON.parse(saved);
+            const granted = consent.analytics === true || consent.ads === true;
+            if (granted) {
+              window.gtag("consent", "update", {
+                ad_storage: "granted",
+                ad_user_data: "granted",
+                ad_personalization: "granted",
+                analytics_storage: "granted",
+              });
+            }
+          }
+        } catch {}
+      })();
+    </script>
+
     <!-- Google Analytics 4 - caricato solo dopo consenso -->
 
     <!-- CMP Script Placeholder -->
@@ -230,7 +281,8 @@ const yoastHeadCleaned = cleanYoastHead(yoastHeadHtml);
       })();
     </script>
 
-    <!-- AdSense Script Global - caricato SOLO dopo consenso esplicito -->
+    <!-- AdSense Script Global - caricato SEMPRE (Consent Mode gestisce Limited ads) -->
+    <!-- IMPORTANTE: AdSense mostrerà "Limited ads" quando consenso è "denied" grazie a Consent Mode -->
     <script is:inline>
       (() => {
         const ADSENSE_CLIENT = "ca-pub-6462363788506395";
@@ -263,7 +315,7 @@ const yoastHeadCleaned = cleanYoastHead(yoastHeadHtml);
           script.onload = () => {
             window.__adsenseLoaded = true;
             if (isDev) {
-              console.log("[AdSense] Script loaded successfully");
+              console.log("[AdSense] Script loaded successfully (Limited ads enabled via Consent Mode)");
             }
             window.dispatchEvent(new CustomEvent("adsense:script-loaded"));
           };
@@ -276,22 +328,19 @@ const yoastHeadCleaned = cleanYoastHead(yoastHeadHtml);
           window.__adsenseLoaded = true; // Set subito per evitare race condition
         };
 
-        // Carica SOLO se c'è consenso esplicito (NON permissivo)
-        if (window.canapalandiaHasAdConsent && window.canapalandiaHasAdConsent()) {
-          loadAdSense();
-        }
+        // Carica AdSense SEMPRE (Consent Mode gestisce consenso denied con "Limited ads")
+        // I segnali di consenso sono già stati impostati da Consent Mode sopra
+        loadAdSense();
 
-        // Ascolta evento consenso cookie (per utenti che accettano dopo)
+        // Ascolta evento consenso cookie per aggiornare (non necessario per caricare script)
         window.addEventListener("canapalandia:cookie-consent", (e) => {
           if (e.detail && (e.detail.ads === true || e.detail.analytics === true)) {
-            // Verifica consenso con funzione globale
-            if (window.canapalandiaHasAdConsent && window.canapalandiaHasAdConsent()) {
-              if (!window.__adsenseLoaded) {
-                loadAdSense();
-              } else {
-                // Script già caricato, emetti evento per componenti in attesa
-                window.dispatchEvent(new CustomEvent("adsense:script-loaded"));
-              }
+            // Consenso accordato: AdSense si aggiorna automaticamente via Consent Mode
+            if (!window.__adsenseLoaded) {
+              loadAdSense();
+            } else {
+              // Script già caricato, emetti evento per componenti in attesa
+              window.dispatchEvent(new CustomEvent("adsense:script-loaded"));
             }
           }
         });
@@ -300,6 +349,7 @@ const yoastHeadCleaned = cleanYoastHead(yoastHeadHtml);
         if (typeof window.__tcfapi !== "undefined") {
           window.__tcfapi("addEventListener", 2, (tcData, success) => {
             if (success && window.canapalandiaHasAdConsent && window.canapalandiaHasAdConsent()) {
+              // Consenso TCF: AdSense si aggiorna via Consent Mode
               if (!window.__adsenseLoaded) {
                 loadAdSense();
               }

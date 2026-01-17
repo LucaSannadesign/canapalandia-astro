@@ -37,41 +37,34 @@ function dateValue(v: Date | string | number | null | undefined): number {
   return Number.isNaN(d.getTime()) ? 0 : d.getTime();
 }
 
-// Helper per risolvere immagine post
-function resolvePostImage(entry: CollectionEntry<"blog">): string {
-  // Prendi entry.data.image || entry.data.coverImage || ""
-  const img: unknown = entry.data.image || entry.data.coverImage || "";
+// Helper per normalizzare URL/path immagine
+function normalizeImgSrc(src: unknown): string {
+  const s = typeof src === "string" ? src.trim() : "";
+  // Se vuota/null: fallback a placeholder
+  if (!s) return "/images/placeholder.svg";
+  // Se URL assoluto (http/https): restituisci invariato
+  if (s.startsWith("http://") || s.startsWith("https://")) return s;
+  // Se inizia con "/": ok (path locale)
+  if (s.startsWith("/")) return s;
+  // Altrimenti: aggiungi "/" davanti (normalizza path relativo)
+  return `/${s}`;
+}
+
+// Helper per normalizzare immagine post
+function normalizeImage(entry: CollectionEntry<"blog">): string {
+  // Leggi entry.data.image o entry.data.coverImage
+  const raw = entry.data.image || entry.data.coverImage || "";
   
-  // Se è un oggetto con .src (ImageMetadata), estrai .src
-  if (img && typeof img === "object" && img !== null && "src" in img) {
-    const srcObj = img as { src?: unknown };
-    // Se .src è una stringa, usa quella
-    if (typeof srcObj.src === "string") {
-      const src = srcObj.src.trim();
-      if (!src) return "";
-      // Se inizia con http:// o https:// -> ritorna così com'è
-      if (/^https?:\/\//i.test(src)) return src;
-      // Se inizia con / -> ritorna così com'è
-      if (src.startsWith("/")) return src;
-      // Altrimenti -> aggiungi / davanti
-      return `/${src}`;
-    }
+  // Supporta sia stringa sia oggetto con .src (ImageMetadata)
+  let srcValue: unknown = raw;
+  
+  if (raw && typeof raw === "object" && raw !== null && "src" in raw) {
+    const srcObj = raw as { src?: unknown };
+    srcValue = srcObj.src;
   }
   
-  // Se è una stringa
-  if (typeof img === "string") {
-    const trimmed = img.trim();
-    // Se stringa vuota -> ritorna ""
-    if (!trimmed) return "";
-    // Se inizia con http:// o https:// -> ritorna così com'è
-    if (/^https?:\/\//i.test(trimmed)) return trimmed;
-    // Se inizia con / -> ritorna così com'è
-    if (trimmed.startsWith("/")) return trimmed;
-    // Altrimenti -> aggiungi / davanti
-    return `/${trimmed}`;
-  }
-  
-  return "";
+  // Applica normalizzazione
+  return normalizeImgSrc(srcValue);
 }
 
 // Carica tutti i post dalla collection
@@ -292,7 +285,7 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
               <p class="badge">Approfondimento</p>
 
               {(() => {
-                const imgSrc = resolvePostImage(featured);
+                const imgSrc = normalizeImage(featured);
                 return imgSrc ? (
                   <img
                     class="feature-img"
@@ -325,7 +318,7 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
 
           <div class="feature-side">
             {featuredSide.map((p) => {
-              const imgSrc = resolvePostImage(p);
+              const imgSrc = normalizeImage(p);
               return (
                 <a class="mini" href={postHref(p)}>
                   {imgSrc ? (
@@ -375,7 +368,7 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
       {latestPosts.length > 0 ? (
         <div class="grid">
           {latestPosts.map((p) => {
-            const imgSrc = resolvePostImage(p);
+            const imgSrc = normalizeImage(p);
             return (
               <CardPost
                 href={postHref(p)}

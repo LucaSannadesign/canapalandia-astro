@@ -11,7 +11,8 @@
     "migrate:wp": "node scripts/migrate-wp-to-content.mjs",
     "mirror:media": "node scripts/mirror-media.mjs",
     "export:db": "node scripts/export-db-to-content.mjs",
-    "export:content": "node scripts/export-db-to-content.mjs"
+    "export:content": "node scripts/export-db-to-content.mjs",
+    "cover": "node scripts/generate-cover.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.6.0",

@@ -1,6 +1,7 @@
 ---
-import { getEntryBySlug } from "astro:content";
+import { getEntryBySlug, getCollection, type CollectionEntry } from "astro:content";
 import SiteLayout from "../../layouts/SiteLayout.astro";
+import CardPost from "../../components/CardPost.astro";
 
 export const prerender = false;
 
@@ -11,6 +12,140 @@ const entry = await (getEntryBySlug as any)("blog", slug);
 if (!entry) return new Response(null, { status: 404 });
 
 const { Content } = await (entry as any).render();
+
+// Helper per normalizzare URL/path immagine
+function normalizeImgSrc(src: unknown): string {
+  const s = typeof src === "string" ? src.trim() : "";
+  if (!s) return "";
+  if (s.startsWith("http://") || s.startsWith("https://")) return s;
+  if (s.startsWith("/")) return s;
+  return `/${s}`;
+}
+
+// Helper per normalizzare immagine post (supporta ImageMetadata objects)
+function normalizeImage(entry: CollectionEntry<"blog">): string {
+  const raw = entry.data.image || entry.data.coverImage || "";
+  let srcValue: unknown = raw;
+  
+  if (raw && typeof raw === "object" && raw !== null && "src" in raw) {
+    const srcObj = raw as { src?: unknown };
+    srcValue = srcObj.src;
+  }
+  
+  return normalizeImgSrc(srcValue);
+}
+
+// Helper per convertire Date/string/number/null/undefined in Date | null
+function toDate(value: Date | string | number | null | undefined): Date | null {
+  if (!value) return null;
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+  const d = new Date(String(value));
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+// Helper per formattare data (accetta Date/string/number/null/undefined)
+function formatDate(value: Date | string | number | null | undefined): string {
+  const d = toDate(value);
+  if (!d) return "";
+  return d.toLocaleDateString("it-IT", { year: "numeric", month: "long", day: "numeric" });
+}
+
+// Helper per generare href post
+function postHref(entry: CollectionEntry<"blog">): string {
+  const entrySlug = entry?.slug ?? entry?.data?.slug ?? "";
+  if (!entrySlug) return "/";
+  return `/blog/${entrySlug}/`;
+}
+
+// Calcola cover image
+const rawCover = (entry as any).data.image || (entry as any).data.coverImage || "";
+const coverSrc = normalizeImgSrc(rawCover);
+
+// Post correlati: logica multi-step (categoria → tag → fallback)
+let relatedPosts: CollectionEntry<"blog">[] = [];
+try {
+  const allPosts = await getCollection("blog");
+  const currentCategory = String((entry as any).data.category || "").trim().toLowerCase();
+  const currentTags = Array.isArray((entry as any).data.tags) 
+    ? (entry as any).data.tags.map((t: unknown) => String(t || "").trim().toLowerCase()).filter(Boolean)
+    : [];
+  
+  // Helper per normalizzare e confrontare tag/categoria
+  const normalizeCategory = (cat: unknown): string => String(cat || "").trim().toLowerCase();
+  const normalizeTags = (tags: unknown): string[] => {
+    if (!Array.isArray(tags)) return [];
+    return tags.map((t: unknown) => String(t || "").trim().toLowerCase()).filter(Boolean);
+  };
+  
+  // Helper per ordinare per data DESC
+  const sortByDate = (posts: CollectionEntry<"blog">[]): CollectionEntry<"blog">[] => {
+    return [...posts].sort((a, b) => {
+      const dateA = toDate(a.data.publishDate ?? a.data.updatedDate);
+      const dateB = toDate(b.data.publishDate ?? b.data.updatedDate);
+      const timeA = dateA ? dateA.getTime() : 0;
+      const timeB = dateB ? dateB.getTime() : 0;
+      return timeB - timeA; // DESC
+    });
+  };
+  
+  // Set per evitare duplicati (usa slug come chiave)
+  const addedSlugs = new Set<string>([slug]); // Escludi sempre il post corrente
+  
+  // STEP 1: Correlati per categoria (priorità massima)
+  if (currentCategory) {
+    const byCategory = allPosts.filter((p) => {
+      const cat = normalizeCategory(p.data.category);
+      return cat === currentCategory && !addedSlugs.has(p.slug);
+    });
+    
+    const sorted = sortByDate(byCategory);
+    for (const p of sorted) {
+      if (relatedPosts.length >= 6) break;
+      relatedPosts.push(p);
+      addedSlugs.add(p.slug);
+    }
+  }
+  
+  // STEP 2: Se non raggiunto target (3), integra per tag
+  if (relatedPosts.length < 3 && currentTags.length > 0) {
+    const byTag = allPosts.filter((p) => {
+      if (addedSlugs.has(p.slug)) return false;
+      const postTags = normalizeTags(p.data.tags);
+      // Match se almeno 1 tag coincide
+      return currentTags.some((tag: string) => postTags.includes(tag));
+    });
+    
+    const sorted = sortByDate(byTag);
+    for (const p of sorted) {
+      if (relatedPosts.length >= 6) break;
+      relatedPosts.push(p);
+      addedSlugs.add(p.slug);
+    }
+  }
+  
+  // STEP 3: Se ancora sotto minimo (2), completa con ultimi post pubblicati (fallback)
+  if (relatedPosts.length < 2) {
+    const fallback = allPosts
+      .filter((p) => !addedSlugs.has(p.slug))
+      .slice();
+    
+    const sorted = sortByDate(fallback);
+    for (const p of sorted) {
+      if (relatedPosts.length >= 6) break;
+      relatedPosts.push(p);
+      addedSlugs.add(p.slug);
+    }
+  }
+  
+  // Limita a max 6
+  relatedPosts = relatedPosts.slice(0, 6);
+} catch (err) {
+  console.warn("[blog/[slug]] Errore nel caricamento post correlati:", err);
+}
+
+const sectionTitle = relatedPosts.length >= 3 ? "Post correlati" : "Leggi anche";
 
 const metadata = {
   title: (entry as any).data.title,
@@ -24,8 +159,114 @@ const metadata = {
   <main class="container page-shell">
     <article class="post-main">
       <h1>{(entry as any).data.title}</h1>
+      
+      {coverSrc ? (
+        <figure class="post-hero">
+          <img
+            class="post-hero__img"
+            src={coverSrc}
+            alt={(entry as any).data.title || ""}
+            loading="eager"
+            decoding="async"
+            referrerpolicy="no-referrer"
+            onerror="this.onerror=null;this.src='/images/placeholder.svg';"
+          />
+        </figure>
+      ) : null}
+      
       <Content />
     </article>
   </main>
+
+  {/* Post correlati - PRIMA del Newsletter */}
+  {relatedPosts.length >= 2 ? (
+    <section class="related-posts">
+      <div class="container">
+        <div class="section-head">
+          <h2>{sectionTitle}</h2>
+        </div>
+        <div class="related-posts__grid">
+          {relatedPosts.map((p) => {
+            const imgSrc = normalizeImage(p);
+            const postDate = toDate(p.data.publishDate ?? p.data.updatedDate);
+            return (
+              <CardPost
+                href={postHref(p)}
+                img={imgSrc || undefined}
+                date={formatDate(postDate)}
+                title={p.data.title}
+                excerpt={p.data.description}
+                category={p.data.category || null}
+              />
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  ) : null}
 </SiteLayout>
+
+<style>
+  .post-hero {
+    width: 100%;
+    border-radius: 16px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.04);
+    /* fallback se immagine tarda */
+    margin: 1.5rem 0 2rem;
+  }
+
+  .post-hero__img {
+    width: 100%;
+    height: clamp(220px, 32vw, 520px);
+    object-fit: cover;
+    object-position: center;
+    display: block;
+  }
+
+  /* Mobile: ancora più compatta */
+  @media (max-width: 640px) {
+    .post-hero__img {
+      height: clamp(180px, 38vw, 320px);
+    }
+  }
+
+  /* Post correlati */
+  .related-posts {
+    margin: 3rem 0;
+    padding: 2.5rem 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .section-head {
+    margin-bottom: 2rem;
+  }
+
+  .section-head h2 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text);
+  }
+
+  .related-posts__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  /* Tablet: 2 colonne */
+  @media (min-width: 640px) {
+    .related-posts__grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  /* Desktop: 3 colonne */
+  @media (min-width: 1024px) {
+    .related-posts__grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+</style>
 

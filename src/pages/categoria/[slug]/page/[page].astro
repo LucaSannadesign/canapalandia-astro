@@ -31,17 +31,35 @@ if (pageNum === 1) {
   return Astro.redirect(`/categoria/${slug}/`, 301);
 }
 
-// Helper per formattare data
-function formatDate(date: Date): string {
-  return date.toLocaleDateString("it-IT", {
-    year: "numeric",
-    month: "long",
-    day: "2-digit",
-  });
+// Helper per formattare data (accetta Date/string/number/null/undefined, non crasha mai)
+const formatDate = (value: Date | string | number | null | undefined): string => {
+  if (!value) return "";
+  const d = value instanceof Date ? value : new Date(String(value));
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("it-IT", { year: "numeric", month: "long", day: "numeric" });
+};
+
+function dateOf(p: any): Date | null {
+  const raw = p?.data?.publishDate ?? p?.data?.updatedDate;
+  if (!raw) return null;
+  const d = raw instanceof Date ? raw : new Date(String(raw));
+  return Number.isNaN(d.getTime()) ? null : d;
 }
 
-function dateOf(p: any): Date {
-  return p?.data?.publishDate ?? p?.data?.updatedDate ?? new Date(0);
+// Helper per ottenere immagine post: usa entry.data.image con fallback a coverImage
+function getPostImage(entry: CollectionEntry<"blog">): string | undefined {
+  const img = entry.data.image || entry.data.coverImage;
+  if (!img || typeof img !== "string" || !img.trim()) return undefined;
+  const trimmed = img.trim();
+  
+  // Se è un URL assoluto (http:// o https://), NON modificarlo
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed; // Restituisci URL assoluto così com'è
+  }
+  
+  // Normalizza path locale: rimuovi "public/" se presente e assicura che inizi con "/"
+  let normalized = trimmed.startsWith("public/") ? trimmed.slice(7) : trimmed;
+  return normalized.startsWith("/") ? normalized : `/${normalized}`;
 }
 
 // Carica tutti i post dalla collection
@@ -56,7 +74,13 @@ try {
 // Filtra per categoria
 const allPosts = postsAll
   .filter((p) => (p.data.category || "") === slug)
-  .sort((a, b) => dateOf(b).getTime() - dateOf(a).getTime());
+  .sort((a, b) => {
+    const da = dateOf(a);
+    const db = dateOf(b);
+    const ta = da ? da.getTime() : 0;
+    const tb = db ? db.getTime() : 0;
+    return tb - ta;
+  });
 
 // Se categoria non esiste (0 post), 404
 if (allPosts.length === 0) {
@@ -116,7 +140,7 @@ const metadata = {
           {pagePosts.map((p) => (
             <CardPost
               href={`/blog/${p.slug}/`}
-              img={p.data.coverImage || undefined}
+              img={getPostImage(p)}
               date={formatDate(dateOf(p))}
               title={p.data.title}
               excerpt={p.data.description}

@@ -8,14 +8,13 @@ export const prerender = false;
 Astro.response.headers.set("X-Robots-Tag", "noindex, nofollow");
 Astro.response.headers.set("Cache-Control", "public, max-age=60");
 
-// Helper per formattare data
-function formatDate(date: Date): string {
-  return date.toLocaleDateString("it-IT", {
-    year: "numeric",
-    month: "long",
-    day: "2-digit",
-  });
-}
+// Helper per formattare data (accetta Date/string/number/null/undefined, non crasha mai)
+const formatDate = (value: Date | string | number | null | undefined): string => {
+  if (!value) return "";
+  const d = value instanceof Date ? value : new Date(String(value));
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("it-IT", { year: "numeric", month: "long", day: "numeric" });
+};
 
 function postHref(entry: any): string {
   const slug = entry?.slug ?? entry?.data?.slug ?? "";
@@ -23,8 +22,27 @@ function postHref(entry: any): string {
   return `/blog/${slug}/`;
 }
 
-function dateOf(entry: CollectionEntry<"blog">): Date {
-  return entry.data.publishDate ?? entry.data.updatedDate ?? new Date(0);
+function dateOf(entry: CollectionEntry<"blog">): Date | null {
+  const raw = entry.data.publishDate ?? entry.data.updatedDate;
+  if (!raw) return null;
+  const d = raw instanceof Date ? raw : new Date(String(raw));
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+// Helper per ottenere immagine post: usa entry.data.image con fallback a coverImage
+function getPostImage(entry: CollectionEntry<"blog">): string | undefined {
+  const img = entry.data.image || entry.data.coverImage;
+  if (!img || typeof img !== "string" || !img.trim()) return undefined;
+  const trimmed = img.trim();
+  
+  // Se è un URL assoluto (http:// o https://), NON modificarlo
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed; // Restituisci URL assoluto così com'è
+  }
+  
+  // Normalizza path locale: rimuovi "public/" se presente e assicura che inizi con "/"
+  let normalized = trimmed.startsWith("public/") ? trimmed.slice(7) : trimmed;
+  return normalized.startsWith("/") ? normalized : `/${normalized}`;
 }
 
 // Carica tutti i post dalla collection
@@ -52,7 +70,13 @@ if (cat) {
 // Ordina per publishDate DESC
 const allSorted = filtered
   .slice()
-  .sort((a, b) => dateOf(b).getTime() - dateOf(a).getTime());
+  .sort((a, b) => {
+    const da = dateOf(a);
+    const db = dateOf(b);
+    const ta = da ? da.getTime() : 0;
+    const tb = db ? db.getTime() : 0;
+    return tb - ta;
+  });
 
 // Paginate
 const start = (page - 1) * PER_PAGE;
@@ -69,7 +93,7 @@ if (!chunk.length) {
   chunk.map((p) => (
     <CardPost
       href={postHref(p)}
-      img={p.data.coverImage || undefined}
+      img={getPostImage(p)}
       date={formatDate(dateOf(p))}
       title={p.data.title}
       excerpt={p.data.description}

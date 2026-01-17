@@ -37,12 +37,25 @@ const isDev = import.meta.env.DEV;
         width: 100%;
         max-width: 970px;
         min-height: 90px;
+        max-height: 140px;
         margin: 2rem 0;
         text-align: center;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
+        overflow: hidden;
+    }
+
+    /* Collassa se vuoto (nessun contenuto all'interno) */
+    .adslot-container:empty,
+    .adslot-container.is-empty {
+        min-height: 0;
+        max-height: 0;
+        margin: 0;
+        padding: 0;
+        opacity: 0;
+        display: none;
     }
 
     .adslot-label {
@@ -56,28 +69,41 @@ const isDev = import.meta.env.DEV;
     .adsbygoogle {
         display: block;
         min-height: 90px;
+        max-height: 140px;
         width: 100%;
+        overflow: hidden;
     }
 
-    /* Responsive: aumenta min-height su mobile */
+    /* Collassa adsbygoogle se vuoto */
+    .adsbygoogle:empty {
+        min-height: 0;
+        max-height: 0;
+        display: none;
+    }
+
+    /* Responsive: min-height più basso su mobile */
     @media (max-width: 767px) {
         .adslot-container {
-            min-height: 100px;
+            min-height: 80px;
+            max-height: 120px;
         }
 
         .adsbygoogle {
-            min-height: 100px;
+            min-height: 80px;
+            max-height: 120px;
         }
     }
 
-    /* Mobile molto piccolo: ancora più spazio */
+    /* Mobile molto piccolo: ancora più compatto */
     @media (max-width: 480px) {
         .adslot-container {
-            min-height: 120px;
+            min-height: 70px;
+            max-height: 110px;
         }
 
         .adsbygoogle {
-            min-height: 120px;
+            min-height: 70px;
+            max-height: 110px;
         }
     }
 </style>
@@ -110,16 +136,8 @@ const isDev = import.meta.env.DEV;
             return;
         }
 
-        // Verifica consenso usando funzione globale CMP-ready
-        const checkConsent = () => {
-            if (window.canapalandiaHasAdConsent && typeof window.canapalandiaHasAdConsent === "function") {
-                return window.canapalandiaHasAdConsent();
-            }
-            // Fallback: se funzione non esiste, ritorna false (NON permissivo)
-            return false;
-        };
-
         // Poll per aspettare che adsbygoogle esista (max 3s, più generoso)
+        // NOTA: Consent Mode gestisce "Limited ads" quando consenso è denied
         const pollForAdSense = (callback, maxAttempts = 30, interval = 100) => {
             let attempts = 0;
             const poll = () => {
@@ -164,7 +182,7 @@ const isDev = import.meta.env.DEV;
                         window.__adsenseInitialized.add(adElement);
                         adElement.dataset.adsInitialized = "1";
                         if (isDev) {
-                            console.log(`[AdSlot ${adSlotId}] AdSense push executed for slot ${adSlotId}`);
+                            console.log(`[AdSlot ${adSlotId}] AdSense push executed (Limited ads enabled via Consent Mode)`);
                         }
                     } catch (err) {
                         console.error(`[AdSlot ${adSlotId}] Error pushing ad:`, err);
@@ -175,13 +193,8 @@ const isDev = import.meta.env.DEV;
             }
         };
 
-        // Funzione principale: inizializza ad se c'è consenso
+        // Funzione principale: inizializza ad sempre (Consent Mode gestisce Limited ads)
         const initAd = () => {
-            if (!checkConsent()) {
-                if (isDev) console.log(`[AdSlot ${adSlotId}] No consent, waiting...`);
-                return;
-            }
-
             if (window.__adsenseLoaded) {
                 // Script già caricato, aspetta che adsbygoogle esista
                 pollForAdSense(pushAd);
@@ -194,41 +207,57 @@ const isDev = import.meta.env.DEV;
             }
         };
 
-        // Inizializza subito se c'è consenso
+        // Inizializza sempre (Consent Mode gestisce consenso via "Limited ads")
         initAd();
 
-        // Ascolta evento consenso cookie (per utenti che accettano dopo)
+        // Ascolta evento consenso cookie (per ricaricare se necessario)
         window.addEventListener("canapalandia:cookie-consent", (e) => {
-            if (e.detail && (e.detail.ads === true || e.detail.analytics === true)) {
-                // Verifica consenso con funzione globale
-                if (checkConsent()) {
-                    // Verifica che non sia già inizializzato
-                    if (!window.__adsenseInitialized.has(adElement) && adElement.dataset.adsInitialized !== "1") {
-                        if (window.__adsenseLoaded) {
-                            pollForAdSense(pushAd);
-                        } else {
-                            window.addEventListener("adsense:script-loaded", () => {
-                                pollForAdSense(pushAd);
-                            }, { once: true });
-                        }
-                    }
+            // Se non è già inizializzato, inizializza
+            if (!window.__adsenseInitialized.has(adElement) && adElement.dataset.adsInitialized !== "1") {
+                if (window.__adsenseLoaded) {
+                    pollForAdSense(pushAd);
+                } else {
+                    window.addEventListener("adsense:script-loaded", () => {
+                        pollForAdSense(pushAd);
+                    }, { once: true });
                 }
             }
         });
 
         // Ascolta evento consenso ads da CMP
         window.addEventListener("canapalandia:ad-consent-granted", () => {
-            if (checkConsent()) {
-                if (!window.__adsenseInitialized.has(adElement) && adElement.dataset.adsInitialized !== "1") {
-                    if (window.__adsenseLoaded) {
+            if (!window.__adsenseInitialized.has(adElement) && adElement.dataset.adsInitialized !== "1") {
+                if (window.__adsenseLoaded) {
+                    pollForAdSense(pushAd);
+                } else {
+                    window.addEventListener("adsense:script-loaded", () => {
                         pollForAdSense(pushAd);
-                    } else {
-                        window.addEventListener("adsense:script-loaded", () => {
-                            pollForAdSense(pushAd);
-                        }, { once: true });
-                    }
+                    }, { once: true });
                 }
             }
         });
+
+        // Collassa container se l'ad non carica o è vuoto (dev/preview)
+        const checkEmpty = () => {
+            // Controlla dopo un timeout se l'ad non ha contenuto
+            setTimeout(() => {
+                if (!container) return;
+                
+                // Se adsbygoogle è vuoto o ha altezza 0
+                const hasContent = adElement.offsetHeight > 20 || adElement.children.length > 0;
+                
+                if (!hasContent && !window.__adsenseLoaded) {
+                    // In dev/preview, collassa se non c'è consenso o script non caricato
+                    if (isDev) {
+                        container.classList.add("is-empty");
+                    }
+                } else {
+                    container.classList.remove("is-empty");
+                }
+            }, 2000); // Controlla dopo 2 secondi
+        };
+
+        // Esegui check dopo init
+        checkEmpty();
     })();
 </script>

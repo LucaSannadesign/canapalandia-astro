@@ -8,14 +8,13 @@ import BlogFilters from "../components/blog/BlogFilters.astro";
 
 export const prerender = false;
 
-// Helper per formattare data
-function formatDate(date: Date): string {
-  return date.toLocaleDateString("it-IT", {
-    year: "numeric",
-    month: "long",
-    day: "2-digit",
-  });
-}
+// Helper per formattare data (accetta Date/string/number/null/undefined, non crasha mai)
+const formatDate = (value: Date | string | number | null | undefined): string => {
+  if (!value) return "";
+  const d = value instanceof Date ? value : new Date(String(value));
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("it-IT", { year: "numeric", month: "long", day: "numeric" });
+};
 
 function postHref(entry: any): string {
   const slug = entry?.slug ?? entry?.data?.slug ?? "";
@@ -23,8 +22,40 @@ function postHref(entry: any): string {
   return `/blog/${slug}/`;
 }
 
-function dateOf(entry: CollectionEntry<"blog">): Date {
-  return entry.data.publishDate ?? entry.data.updatedDate ?? new Date(0);
+function dateOf(entry: CollectionEntry<"blog">): Date | null {
+  const raw = entry.data.publishDate ?? entry.data.updatedDate;
+  if (!raw) return null;
+  const d = raw instanceof Date ? raw : new Date(String(raw));
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+// Helper per normalizzare immagine post (uniformato con index.astro)
+function normalizeImage(entry: CollectionEntry<"blog">): string {
+  // Leggi entry.data.image o entry.data.coverImage
+  const img: unknown = entry.data.image || entry.data.coverImage || "";
+  
+  // Supporta sia stringa sia oggetto con .src (ImageMetadata)
+  let srcValue: string | null = null;
+  
+  if (img && typeof img === "object" && img !== null && "src" in img) {
+    const srcObj = img as { src?: unknown };
+    if (typeof srcObj.src === "string") {
+      srcValue = srcObj.src.trim();
+    }
+  } else if (typeof img === "string") {
+    srcValue = img.trim();
+  }
+  
+  // Se stringa vuota -> ritorna ""
+  if (!srcValue) return "";
+  
+  // Se l'URL è assoluto (http/https) lo restituisce invariato
+  if (/^https?:\/\//i.test(srcValue)) {
+    return srcValue;
+  }
+  
+  // Se è relativo, garantisce che inizi con "/"
+  return srcValue.startsWith("/") ? srcValue : `/${srcValue}`;
 }
 
 // Carica tutti i post dalla collection
@@ -68,7 +99,13 @@ const filteredPosts = activeCat
 // Ordina per publishDate DESC
 const latest = filteredPosts
   .slice()
-  .sort((a, b) => dateOf(b).getTime() - dateOf(a).getTime());
+  .sort((a, b) => {
+    const da = dateOf(a);
+    const db = dateOf(b);
+    const ta = da ? da.getTime() : 0;
+    const tb = db ? db.getTime() : 0;
+    return tb - ta;
+  });
 
 // Pagina iniziale 12 post, poi scroll infinito
 const initialPosts = latest.slice(0, 12);
@@ -124,16 +161,19 @@ const totalPosts = latest.length; // Totale filtrato
         ) : initialPosts.length > 0 ? (
           <>
             <div class="grid" id="blog-grid">
-              {initialPosts.map((p) => (
-                <CardPost
-                  href={postHref(p)}
-                  img={p.data.coverImage || undefined}
-                  date={formatDate(dateOf(p))}
-                  title={p.data.title}
-                  excerpt={p.data.description}
-                  category={p.data.category || null}
-                />
-              ))}
+              {initialPosts.map((p) => {
+                const imgSrc = normalizeImage(p);
+                return (
+                  <CardPost
+                    href={postHref(p)}
+                    img={imgSrc || undefined}
+                    date={formatDate(dateOf(p))}
+                    title={p.data.title}
+                    excerpt={p.data.description}
+                    category={p.data.category || null}
+                  />
+                );
+              })}
             </div>
 
             {/* Sentinel for Infinite Scroll */}

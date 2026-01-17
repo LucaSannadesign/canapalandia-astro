@@ -1017,7 +1017,7 @@ html[data-theme="light"] .site-footer {
 
 .hero {
   position: relative;
-  padding: 90px 0 70px;
+  padding: 40px 0 32px;
 }
 
 .hero-overlay {
@@ -1148,7 +1148,7 @@ html[data-theme="light"] .site-footer {
 }
 
 .section {
-  padding: 56px 0;
+  padding: 32px 0;
 }
 
 .section.alt {
