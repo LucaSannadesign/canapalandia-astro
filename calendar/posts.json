@@ -8,6 +8,16 @@
       "tags": ["normativa cannabis", "cannabis light", "CBD"],
       "image": "/images/cannabis-light-cbd-legale-italia-2026.webp",
       "priority": "normal"
+    },
+    {
+      "title": "Test automazione editoriale (non pubblicare)",
+      "description": "Post di test per verificare la pipeline automatica. Da eliminare dopo il collaudo.",
+      "slug": "test-automation-2026-01-17",
+      "publishDate": "2026-01-17",
+      "category": "Test",
+      "tags": ["test", "automazione", "draft"],
+      "image": "/images/cannabis-light-cbd-legale-italia-2026.webp",
+      "priority": "normal"
     }
   ]
   
