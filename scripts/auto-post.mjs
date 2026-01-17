@@ -168,7 +168,6 @@ async function generateBodyWithOpenAI(post) {
       instructions: INSTRUCTIONS,
       input: buildUserPrompt(post),
       max_output_tokens: maxOut,
-      temperature: 0.7,
     }),
   });
 
