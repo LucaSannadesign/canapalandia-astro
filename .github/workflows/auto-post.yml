@@ -74,7 +74,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           branch: auto-post/$(date +%Y%m%d-%H%M%S)
-          base: staging
+          base: main
           title: 'Auto-post: Generated posts for $(date +%Y-%m-%d)'
           body: |
             Auto-generated post via GitHub Actions.
