@@ -8,14 +8,13 @@ import CardPost from "../components/CardPost.astro";
    Data: Content Collections
 --------------------------- */
 
-// Helper per formattare data
-function formatDate(date: Date): string {
-  return date.toLocaleDateString("it-IT", {
-    year: "numeric",
-    month: "long",
-    day: "2-digit",
-  });
-}
+// Helper per formattare data (accetta Date/string/number/null/undefined, non crasha mai)
+const formatDate = (value: Date | string | number | null | undefined): string => {
+  if (!value) return "";
+  const d = value instanceof Date ? value : new Date(String(value));
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("it-IT", { year: "numeric", month: "long", day: "numeric" });
+};
 
 function postHref(entry: any): string {
   const slug = entry?.slug ?? entry?.data?.slug ?? "";
@@ -23,8 +22,56 @@ function postHref(entry: any): string {
   return `/blog/${slug}/`;
 }
 
-function dateOf(entry: CollectionEntry<"blog">): Date {
-  return entry.data.publishDate ?? entry.data.updatedDate ?? new Date(0);
+function dateOf(entry: CollectionEntry<"blog">): Date | null {
+  const raw = entry.data.publishDate ?? entry.data.updatedDate;
+  if (!raw) return null;
+  const d = raw instanceof Date ? raw : new Date(String(raw));
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+// Helper per convertire Date/string/number/null/undefined in timestamp
+function dateValue(v: Date | string | number | null | undefined): number {
+  if (!v) return 0;
+  if (v instanceof Date) return v.getTime();
+  const d = new Date(String(v));
+  return Number.isNaN(d.getTime()) ? 0 : d.getTime();
+}
+
+// Helper per risolvere immagine post
+function resolvePostImage(entry: CollectionEntry<"blog">): string {
+  // Prendi entry.data.image || entry.data.coverImage || ""
+  const img: unknown = entry.data.image || entry.data.coverImage || "";
+  
+  // Se è un oggetto con .src (ImageMetadata), estrai .src
+  if (img && typeof img === "object" && img !== null && "src" in img) {
+    const srcObj = img as { src?: unknown };
+    // Se .src è una stringa, usa quella
+    if (typeof srcObj.src === "string") {
+      const src = srcObj.src.trim();
+      if (!src) return "";
+      // Se inizia con http:// o https:// -> ritorna così com'è
+      if (/^https?:\/\//i.test(src)) return src;
+      // Se inizia con / -> ritorna così com'è
+      if (src.startsWith("/")) return src;
+      // Altrimenti -> aggiungi / davanti
+      return `/${src}`;
+    }
+  }
+  
+  // Se è una stringa
+  if (typeof img === "string") {
+    const trimmed = img.trim();
+    // Se stringa vuota -> ritorna ""
+    if (!trimmed) return "";
+    // Se inizia con http:// o https:// -> ritorna così com'è
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    // Se inizia con / -> ritorna così com'è
+    if (trimmed.startsWith("/")) return trimmed;
+    // Altrimenti -> aggiungi / davanti
+    return `/${trimmed}`;
+  }
+  
+  return "";
 }
 
 // Carica tutti i post dalla collection
@@ -41,8 +88,8 @@ const sortedPosts = postsAll
   .slice()
   .sort(
     (a, b) =>
-      (b.data.publishDate ?? b.data.updatedDate ?? new Date(0)).getTime() -
-      (a.data.publishDate ?? a.data.updatedDate ?? new Date(0)).getTime(),
+      dateValue(b.data.publishDate ?? b.data.updatedDate) -
+      dateValue(a.data.publishDate ?? a.data.updatedDate),
   );
 
 const latestPosts = sortedPosts.slice(0, 6);
@@ -244,22 +291,25 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
             <a class="feature-main" href={postHref(featured)}>
               <p class="badge">Approfondimento</p>
 
-              {featured.data.coverImage ? (
-                <img
-                  class="feature-img"
-                  src={featured.data.coverImage}
-                  alt={featured.data.coverAlt || featured.data.title}
-                  loading="eager"
-                  decoding="async"
-                  referrerpolicy="no-referrer"
-                  onerror="this.onerror=null;this.src='/images/placeholder.svg';"
-                />
-              ) : (
-                <div
-                  class="feature-img feature-img--placeholder"
-                  aria-hidden="true"
-                />
-              )}
+              {(() => {
+                const imgSrc = resolvePostImage(featured);
+                return imgSrc ? (
+                  <img
+                    class="feature-img"
+                    src={imgSrc}
+                    alt={featured.data.coverAlt || featured.data.title}
+                    loading="eager"
+                    decoding="async"
+                    referrerpolicy="no-referrer"
+                    onerror="this.onerror=null;this.src='/images/placeholder.svg';"
+                  />
+                ) : (
+                  <div
+                    class="feature-img feature-img--placeholder"
+                    aria-hidden="true"
+                  />
+                );
+              })()}
 
               <h3 class="feature-title">{featured.data.title}</h3>
               <p class="feature-excerpt">
@@ -274,24 +324,26 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
           )}
 
           <div class="feature-side">
-            {featuredSide.map((p) => (
-              <a class="mini" href={postHref(p)}>
-                {p.data.coverImage ? (
-                  <img
-                    class="mini-img"
-                    src={p.data.coverImage}
-                    alt={p.data.coverAlt || p.data.title}
-                    loading="lazy"
-                    decoding="async"
-                    referrerpolicy="no-referrer"
-                    onerror="this.onerror=null;this.src='/images/placeholder.svg';"
-                  />
-                ) : (
-                  <div
-                    class="mini-img mini-img--placeholder"
-                    aria-hidden="true"
-                  />
-                )}
+            {featuredSide.map((p) => {
+              const imgSrc = resolvePostImage(p);
+              return (
+                <a class="mini" href={postHref(p)}>
+                  {imgSrc ? (
+                    <img
+                      class="mini-img"
+                      src={imgSrc}
+                      alt={p.data.coverAlt || p.data.title}
+                      loading="lazy"
+                      decoding="async"
+                      referrerpolicy="no-referrer"
+                      onerror="this.onerror=null;this.src='/images/placeholder.svg';"
+                    />
+                  ) : (
+                    <div
+                      class="mini-img mini-img--placeholder"
+                      aria-hidden="true"
+                    />
+                  )}
 
                 <div class="mini-body">
                   <h3 class="mini-title">{p.data.title}</h3>
@@ -299,7 +351,8 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
                   <span class="mini-link">Leggi</span>
                 </div>
               </a>
-            ))}
+            );
+            })}
           </div>
         </div>
       ) : (
@@ -321,16 +374,19 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
 
       {latestPosts.length > 0 ? (
         <div class="grid">
-          {latestPosts.map((p) => (
-            <CardPost
-              href={postHref(p)}
-              img={p.data.coverImage || undefined}
-              date={formatDate(dateOf(p))}
-              title={p.data.title}
-              excerpt={p.data.description}
-              category={p.data.category || null}
-            />
-          ))}
+          {latestPosts.map((p) => {
+            const imgSrc = resolvePostImage(p);
+            return (
+              <CardPost
+                href={postHref(p)}
+                img={imgSrc || undefined}
+                date={formatDate(dateOf(p))}
+                title={p.data.title}
+                excerpt={p.data.description}
+                category={p.data.category || null}
+              />
+            );
+          })}
         </div>
       ) : (
         <div class="card">
