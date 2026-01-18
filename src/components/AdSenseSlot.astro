@@ -1,0 +1,58 @@
+---
+interface Props {
+  slot: string;
+  minWidth?: number;
+  minHeight?: number;
+}
+
+const { slot, minWidth = 300, minHeight = 250 } = Astro.props;
+---
+
+<div class="adsense-slot-container">
+  <ins
+    class="adsbygoogle"
+    data-ad-client="ca-pub-6462363788506395"
+    data-ad-slot={slot}
+    style={`display:block; min-width:${minWidth}px; min-height:${minHeight}px;`}
+  ></ins>
+</div>
+
+<script>
+  (() => {
+    function pushAd() {
+      if (window.adsbygoogle && typeof window.adsbygoogle.push === "function") {
+        try {
+          (window.adsbygoogle = window.adsbygoogle || []).push({});
+        } catch (err) {
+          console.error("[AdSenseSlot] Error pushing ad:", err);
+        }
+      }
+    }
+
+    // Push ad on window load
+    if (document.readyState === "complete") {
+      pushAd();
+    } else {
+      window.addEventListener("load", pushAd);
+    }
+
+    // Push ad on Astro page load (SPA navigation)
+    document.addEventListener("astro:page-load", pushAd);
+  })();
+</script>
+
+<style>
+  .adsense-slot-container {
+    width: 100%;
+    max-width: 360px;
+    margin: 0 auto;
+    text-align: center;
+    overflow: hidden;
+  }
+
+  .adsbygoogle {
+    display: block;
+    width: 100%;
+    overflow: hidden;
+  }
+</style>

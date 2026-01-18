@@ -1479,6 +1479,7 @@ html[data-theme="light"] .cardExcerpt {
 
 .post-sidebar {
   min-width: 0; /* Previene overflow nella griglia */
+  max-width: 360px;
 }
 
 /* Sidebar sections */
@@ -1553,9 +1554,11 @@ html[data-theme="light"] .cardExcerpt {
   margin-top: 0;
 }
 
-/* Reset margin di AdSlot dentro sticky per coerenza */
-.sidebar-ad__sticky :global(.adslot-container) {
+/* Reset margin di AdSlot/AdSenseSlot dentro sticky per coerenza */
+.sidebar-ad__sticky :global(.adslot-container),
+.sidebar-ad__sticky :global(.adsense-slot-container) {
   margin: 0;
+  overflow: hidden;
 }
 
 /* Desktop: se lo schermo è troppo piccolo, riduci la sidebar */

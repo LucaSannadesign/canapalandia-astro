@@ -2,6 +2,7 @@
 import { getEntryBySlug, getCollection, type CollectionEntry } from "astro:content";
 import SiteLayout from "../../layouts/SiteLayout.astro";
 import CardPost from "../../components/CardPost.astro";
+import AdSenseSlot from "../../components/AdSenseSlot.astro";
 
 export const prerender = false;
 
@@ -157,25 +158,36 @@ const metadata = {
 
 <SiteLayout metadata={metadata}>
   <main class="container page-shell">
-    <article class="post-main">
-      <h1>{(entry as any).data.title}</h1>
-      
-      {coverSrc ? (
-        <figure class="post-hero">
-          <img
-            class="post-hero__img"
-            src={coverSrc}
-            alt={(entry as any).data.title || ""}
-            loading="eager"
-            decoding="async"
-            referrerpolicy="no-referrer"
-            onerror="this.onerror=null;this.src='/images/placeholder.svg';"
-          />
-        </figure>
-      ) : null}
-      
-      <Content />
-    </article>
+    <div class="post-layout">
+      <article class="post-main">
+        <h1>{(entry as any).data.title}</h1>
+        
+        {coverSrc ? (
+          <figure class="post-hero">
+            <img
+              class="post-hero__img"
+              src={coverSrc}
+              alt={(entry as any).data.title || ""}
+              loading="eager"
+              decoding="async"
+              referrerpolicy="no-referrer"
+              onerror="this.onerror=null;this.src='/images/placeholder.svg';"
+            />
+          </figure>
+        ) : null}
+        
+        <Content />
+      </article>
+
+      <aside class="post-sidebar">
+        <div class="sidebar-section sidebar-ad__wrapper">
+          <div class="sidebar-ad__sticky">
+            <h3 class="sidebar-title">Pubblicità</h3>
+            <AdSenseSlot slot="1234567890" minWidth={300} minHeight={250} />
+          </div>
+        </div>
+      </aside>
+    </div>
   </main>
 
   {/* Post correlati - PRIMA del Newsletter */}

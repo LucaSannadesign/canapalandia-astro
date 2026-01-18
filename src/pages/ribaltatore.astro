@@ -346,6 +346,39 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/ribalta
     align-items: center;
   }
 
+  /* Sezione Riformula/Ribalta altra */
+  .risultato-card__reformula-section {
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+
+  .risultato-card__action-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 12px 24px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-height: 44px;
+  }
+
+  .risultato-card__action-btn:hover {
+    background: rgba(34, 197, 94, 0.1);
+    border-color: var(--brand);
+    transform: translateY(-1px);
+  }
+
+  .risultato-card__action-btn:active {
+    transform: translateY(0);
+  }
+
   /* Azioni: share buttons (in fondo) */
   .risultato-card__actions {
     margin-top: 16px;
@@ -654,6 +687,19 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/ribalta
           </div>
 
           <div class="risultato-card__actions">
+            ${id ? `
+            <div class="risultato-card__reformula-section">
+              <button type="button" class="risultato-card__action-btn" id="btn-ribalta-altra" aria-label="Ribalta un'altra frase">
+                🔄 Ribalta un'altra frase
+              </button>
+            </div>
+            ` : `
+            <div class="risultato-card__reformula-section">
+              <button type="button" class="risultato-card__action-btn" id="btn-riformula" aria-label="Riformula questa frase">
+                🔄 Riformula
+              </button>
+            </div>
+            `}
             <div class="risultato-card__share-buttons">
               <a href="${getShareUrl("whatsapp", originalePulita, ribaltataPulita, id)}" target="_blank" rel="noopener noreferrer" class="risultato-card__share-btn" aria-label="Condividi su WhatsApp">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -901,6 +947,26 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/ribalta
           shareNativeBtn.addEventListener("click", () => {
             const whatsappUrl = getShareUrl("whatsapp", data.originale || frase, ribaltata, id);
             window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+          });
+        }
+
+        // Setup pulsante "Riformula" (solo se bozza, id === null o id === 0)
+        const btnRiformula = document.getElementById("btn-riformula");
+        if (btnRiformula && (!id || id === 0)) {
+          btnRiformula.addEventListener("click", () => {
+            // Riformula: riesegue submit form (mantiene la stessa frase)
+            form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+          });
+        }
+
+        // Setup pulsante "Ribalta un'altra frase" (solo se pubblicata, id !== null && id !== 0)
+        const btnRibaltaAltra = document.getElementById("btn-ribalta-altra");
+        if (btnRibaltaAltra && id && id !== 0) {
+          btnRibaltaAltra.addEventListener("click", () => {
+            // Reset form: pulisci input e risultato
+            fraseInput.value = "";
+            risultatoDiv.innerHTML = "";
+            fraseInput.focus();
           });
         }
 

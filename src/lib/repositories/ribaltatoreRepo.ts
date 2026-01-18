@@ -7,6 +7,7 @@
 
 import { getSupabaseServer } from "../supabaseServer";
 import { normalizeKey } from "../utils";
+import crypto from "node:crypto";
 
 export interface Ribaltata {
   id: number;
@@ -67,25 +68,46 @@ export async function findRibaltataByNormalizedKey(
 }
 
 /**
+ * Risultato inserimento con token di modifica temporanea
+ */
+export interface InsertRibaltataResult {
+  id: number;
+  editToken: string | null;
+  editExpiresAt: string | null;
+}
+
+/**
  * Inserisce una nuova frase ribaltata con deduplicazione (upsert logic)
- * Se esiste già una frase con la stessa chiave normalizzata, ritorna l'ID esistente
+ * Se esiste già una frase con la stessa chiave normalizzata, ritorna l'ID esistente SENZA token
+ * Se è una nuova frase, genera edit_token e edit_expires_at (60 secondi)
  */
 export async function insertRibaltata(
   data: InsertRibaltataData,
-): Promise<number> {
+): Promise<InsertRibaltataResult> {
   const supabase = getSupabaseServer();
 
   // Deduplicazione: cerca frase esistente con stessa chiave normalizzata
   const existing = await findRibaltataByNormalizedKey(data.frase_originale);
   if (existing) {
     if (import.meta.env.DEV) {
-      console.log(`[ribaltatoreRepo] Frase duplicata trovata (ID: ${existing.id}), ritorno ID esistente`);
+      console.log(`[ribaltatoreRepo] Frase duplicata trovata (ID: ${existing.id}), ritorno ID esistente SENZA token`);
     }
-    return existing.id;
+    // Frase già esistente: NON è "del creatore", quindi NON restituire token
+    return {
+      id: existing.id,
+      editToken: null,
+      editExpiresAt: null,
+    };
   }
 
-  // Inserisci nuova frase
-  const now = new Date().toISOString();
+  // Genera token random per modifica temporanea (64 caratteri hex)
+  const editToken = crypto.randomBytes(32).toString("hex");
+  // Scadenza: 60 secondi da ora
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + 60 * 1000); // +60 secondi
+
+  // Inserisci nuova frase con token
+  const nowISO = now.toISOString();
   const { data: result, error } = await supabase
     .from("ribaltatore")
     .insert({
@@ -93,9 +115,11 @@ export async function insertRibaltata(
       frase_ribaltata: data.frase_ribaltata,
       ip_hash: data.ip_hash || null,
       user_id: data.user_id || null,
-      created_at: now,
+      created_at: nowISO,
+      edit_token: editToken,
+      edit_expires_at: expiresAt.toISOString(),
     })
-    .select("id,created_at")
+    .select("id,created_at,edit_token,edit_expires_at")
     .single();
 
   if (error) {
@@ -109,10 +133,14 @@ export async function insertRibaltata(
 
   const id = Number(result.id);
   if (import.meta.env.DEV) {
-    console.log(`[ribaltatoreRepo] Nuova frase inserita - ID: ${id}, created_at: ${result.created_at}`);
+    console.log(`[ribaltatoreRepo] Nuova frase inserita - ID: ${id}, created_at: ${result.created_at}, edit_token generato`);
   }
 
-  return id;
+  return {
+    id,
+    editToken: result.edit_token || editToken,
+    editExpiresAt: result.edit_expires_at || expiresAt.toISOString(),
+  };
 }
 
 /**
