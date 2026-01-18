@@ -726,7 +726,10 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/ribalta
         formData.append("frase", frase);
         formData.append("email_trap", emailTrap);
 
-        const response = await fetch("/api/ribalta-ai", {
+        // Usa URL assoluto per garantire funzionamento corretto in dev e produzione
+        const apiUrl = new URL("/api/ribalta-ai", window.location.origin).href;
+
+        const response = await fetch(apiUrl, {
           method: "POST",
           body: formData,
         });
@@ -738,6 +741,18 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/ribalta
         // Verifica status HTTP
         if (!response.ok) {
           let errorMessage = `Errore ${response.status}: ${response.statusText}`;
+          
+          // Log dettagli in DEV per debugging
+          const isDev = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+          if (isDev) {
+            console.error(`[ribaltatore] API Error:`, {
+              status: response.status,
+              statusText: response.statusText,
+              url: apiUrl,
+              contentType,
+              body: responseText.slice(0, 500),
+            });
+          }
           
           // Prova a parsare JSON se content-type corretto
           if (contentType.includes("application/json")) {

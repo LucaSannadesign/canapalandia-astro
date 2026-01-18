@@ -19,19 +19,15 @@ import crypto from "node:crypto";
 /**
  * Chiama OpenAI API (chat/completions) come il PHP originale
  */
-async function callOpenAI(frase: string): Promise<{ ok: true; ribaltata: string } | { ok: false; error: string }> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    return { ok: false, error: "OPENAI_API_KEY non configurata." };
-  }
-
+async function callOpenAI(frase: string, apiKey: string): Promise<{ ok: true; ribaltata: string } | { ok: false; error: string }> {
   // Prompt aggiornato: massimo 3 frasi, max 350 caratteri, tono ironico/antiproibizionista
   const prompt = `Agisci come un attivista antiproibizionista e satirico. Ribalta con ironia e intelligenza lo slogan: "${frase}". Massimo 3 frasi, massimo 350 caratteri. Tono ironico e antiproibizionista, senza incitazione a violare leggi.`;
 
-  // Parametri: gpt-3.5-turbo, temperature 0.9, max_tokens limitato
-  const model = process.env.OPENAI_MODEL || "gpt-3.5-turbo";
-  const temperature = parseFloat(process.env.OPENAI_TEMPERATURE || "0.9");
-  const maxTokens = 160; // Limite tecnico per risposte brevi
+  // Parametri: modello e max_tokens da env con fallback
+  // Nota: in Astro, usa import.meta.env per variabili server-side (non PUBLIC_*)
+  const model = import.meta.env.OPENAI_MODEL_DEFAULT || "gpt-5-mini";
+  const temperature = parseFloat(import.meta.env.OPENAI_TEMPERATURE || "0.9");
+  const maxTokens = parseInt(import.meta.env.OPENAI_MAX_OUTPUT_TOKENS || "2000", 10);
 
   try {
     const controller = new AbortController();
@@ -46,8 +42,7 @@ async function callOpenAI(frase: string): Promise<{ ok: true; ribaltata: string 
       body: JSON.stringify({
         model,
         messages: [{ role: "user", content: prompt }],
-        temperature,
-        max_tokens: maxTokens,
+        max_completion_tokens: maxTokens,
       }),
       signal: controller.signal,
     });
@@ -93,6 +88,28 @@ async function callOpenAI(frase: string): Promise<{ ok: true; ribaltata: string 
 }
 
 export const POST: APIRoute = async ({ request }) => {
+  // Verifica OPENAI_API_KEY all'inizio
+  // In Astro, usa import.meta.env per variabili server-side (non PUBLIC_*)
+  // Le variabili senza prefisso PUBLIC_ sono private e disponibili solo server-side
+  const apiKey = import.meta.env.OPENAI_API_KEY;
+  
+  // Log in DEV: verifica presenza key e info server
+  if (import.meta.env.DEV) {
+    const hasKey = Boolean(apiKey);
+    const hostname = request.headers.get("host") || "unknown";
+    console.log(`[ribalta-ai] OPENAI key present? ${hasKey ? "YES" : "NO"} | Host: ${hostname}`);
+  }
+  
+  if (!apiKey) {
+    return new Response(
+      JSON.stringify({ ok: false, error: "OPENAI_API_KEY non configurata." }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
+  }
+
   const contentType = request.headers.get("content-type") || "";
   let frase: string = "";
   let trap: string = "";
@@ -183,8 +200,8 @@ export const POST: APIRoute = async ({ request }) => {
     );
   }
 
-  // 6. Chiama OpenAI
-  const aiResult = await callOpenAI(frase);
+  // 6. Chiama OpenAI (passa apiKey come parametro)
+  const aiResult = await callOpenAI(frase, apiKey);
 
   if (!aiResult.ok) {
     return new Response(

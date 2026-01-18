@@ -85,6 +85,7 @@ export async function insertRibaltata(
   }
 
   // Inserisci nuova frase
+  const now = new Date().toISOString();
   const { data: result, error } = await supabase
     .from("ribaltatore")
     .insert({
@@ -92,9 +93,9 @@ export async function insertRibaltata(
       frase_ribaltata: data.frase_ribaltata,
       ip_hash: data.ip_hash || null,
       user_id: data.user_id || null,
-      created_at: new Date().toISOString(),
+      created_at: now,
     })
-    .select("id")
+    .select("id,created_at")
     .single();
 
   if (error) {
@@ -106,7 +107,12 @@ export async function insertRibaltata(
     throw new Error("Inserimento fallito: id non restituito");
   }
 
-  return Number(result.id);
+  const id = Number(result.id);
+  if (import.meta.env.DEV) {
+    console.log(`[ribaltatoreRepo] Nuova frase inserita - ID: ${id}, created_at: ${result.created_at}`);
+  }
+
+  return id;
 }
 
 /**
@@ -170,43 +176,31 @@ export async function listRibaltate(options: {
     console.log(`[ribaltatoreRepo] Totale record: ${total}, Pagina: ${page}/${totalPages}, Offset: ${offset}`);
   }
 
-  // Recupera items paginati (ordinati per più recenti)
-  // Recuperiamo più items per compensare eventuali duplicati filtrati
-  const fetchSize = pageSize * 2; // Recupera il doppio per compensare duplicati
+  // Query paginata: ordina per created_at DESC (più recenti in alto), usa range() per paginazione
   const { data, error } = await supabase
     .from("ribaltatore")
     .select("id,frase_originale,frase_ribaltata,created_at")
     .order("created_at", { ascending: false })
-    .range(offset, offset + fetchSize - 1);
+    .range(offset, offset + pageSize - 1);
 
   if (error) {
     console.error("[ribaltatoreRepo] Errore query:", error);
     throw new Error(`Errore query: ${error.message}`);
   }
 
-  const rawItems: Ribaltata[] = (data || []).map((row) => ({
+  const items: Ribaltata[] = (data || []).map((row) => ({
     id: Number(row.id),
     frase_originale: row.frase_originale,
     frase_ribaltata: row.frase_ribaltata,
     created_at: row.created_at,
   }));
 
-  // Deduplicazione lato UI (fallback): filtra duplicati per chiave normalizzata
-  const seenKeys = new Set<string>();
-  const items: Ribaltata[] = [];
-  
-  for (const item of rawItems) {
-    const key = normalizeKey(item.frase_originale);
-    if (!seenKeys.has(key)) {
-      seenKeys.add(key);
-      items.push(item);
-      // Fermati quando abbiamo abbastanza items unici
-      if (items.length >= pageSize) break;
-    }
-  }
-
   if (import.meta.env.DEV) {
-    console.log(`[ribaltatoreRepo] Record recuperati: ${rawItems.length}, Dopo dedup: ${items.length}`);
+    console.log(`[ribaltatoreRepo] Record recuperati: ${items.length}, Pagina: ${page}/${totalPages}`);
+    if (items.length > 0) {
+      const first = items[0];
+      console.log(`[ribaltatoreRepo] Primo elemento - ID: ${first.id}, created_at: ${first.created_at}`);
+    }
   }
 
   return {
