@@ -1,0 +1,51 @@
+name: Auto Share Telegram
+
+on:
+  schedule:
+    # Esegui ogni 15 minuti
+    - cron: '*/15 * * * *'
+  workflow_dispatch: # Permette esecuzione manuale
+
+permissions:
+  contents: read # Permessi minimi: solo read per checkout
+
+jobs:
+  share:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Restore cache (state file)
+        uses: actions/cache@v4
+        id: cache-state
+        with:
+          path: .cache/telegram-share.json
+          key: auto-share-cache
+          restore-keys: |
+            auto-share-cache
+
+      - name: Run auto-share script
+        env:
+          RSS_URL: ${{ secrets.RSS_URL }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          STATE_FILE: .cache/telegram-share.json
+        run: |
+          # Crea directory se non esiste (dopo restore cache)
+          mkdir -p .cache
+          node scripts/auto-share-telegram.mjs
+
+      - name: Save cache (state file)
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: .cache/telegram-share.json
+          key: auto-share-cache

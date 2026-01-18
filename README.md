@@ -1,44 +1,31 @@
-# Astro Starter Kit: Minimal
+# Canapalandia Astro
+
+Sito web Canapalandia.com costruito con Astro.
+
+## 🚀 Setup
 
 ```sh
-npm create astro@latest -- --template minimal
+npm install
+npm run dev
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+## 📋 GitHub Actions Secrets
 
-## 🚀 Project Structure
+Per l'automazione di condivisione Telegram, configura i seguenti secrets in GitHub (Settings → Secrets and variables → Actions):
 
-Inside of your Astro project, you'll see the following folders and files:
+- **TELEGRAM_BOT_TOKEN**: Token del bot Telegram (ottieni da @BotFather)
+- **TELEGRAM_CHAT_ID**: Chat ID o username canale (es. `@canapalandia` o `-1001234567890`)
+- **RSS_URL** (opzionale): URL del feed RSS/Atom. Se non fornito, prova automaticamente:
+  - `https://canapalandia.com/rss.xml`
+  - `https://canapalandia.com/feed.xml`
+  - `https://canapalandia.com/feed/`
 
-```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
-```
-
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
-
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
-
-Any static assets, like images, can be placed in the `public/` directory.
+Vedi `.github/TELEGRAM_SETUP.md` per istruzioni dettagliate.
 
 ## 🧞 Commands
 
-All commands are run from the root of the project, from a terminal:
-
 | Command                   | Action                                           |
 | :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
 | `npm run dev`             | Starts local dev server at `localhost:4321`      |
 | `npm run build`           | Build your production site to `./dist/`          |
 | `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
-# canapalandia-astro

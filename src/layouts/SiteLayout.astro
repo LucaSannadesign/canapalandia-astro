@@ -3,6 +3,7 @@ import "../styles/app.css";
 import AdSlot from "../components/AdSlot.astro";
 import Newsletter from "../components/widgets/Newsletter.astro";
 import CookieBanner from "../components/CookieBanner.astro";
+import GATag from "../components/GATag.astro";
 
 const THEME_STORAGE_KEY = "canapalandia_theme";
 const { 
@@ -186,7 +187,8 @@ const yoastHeadCleaned = cleanYoastHead(yoastHeadHtml);
       })();
     </script>
 
-    <!-- Google Analytics 4 - caricato solo dopo consenso -->
+    <!-- Google Analytics 4 -->
+    <GATag />
 
     <!-- CMP Script Placeholder -->
     <!-- CMP script goes here -->
@@ -983,73 +985,6 @@ const yoastHeadCleaned = cleanYoastHead(yoastHeadHtml);
       })();
     </script>
 
-    {GA4_ID ? (
-      <script is:inline define:vars={{ GA4_ID }}>
-        (() => {
-          const STORAGE_KEY = "canapalandia_cookie_consent";
-          const GA_ID = GA4_ID;
-
-          // Flag per evitare doppi caricamenti
-          if (window.__gaLoaded) {
-            return;
-          }
-
-          // Funzione per inizializzare GA4
-          const initGA4 = () => {
-            if (window.__gaLoaded) {
-              return;
-            }
-
-            // Carica script gtag solo se non esiste già
-            if (!document.querySelector(`script[src*="googletagmanager.com/gtag/js?id=${GA_ID}"]`)) {
-              const script = document.createElement("script");
-              script.async = true;
-              script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_ID}`;
-              document.head.appendChild(script);
-            }
-
-            // Inizializza dataLayer e gtag
-            window.dataLayer = window.dataLayer || [];
-            function gtag() {
-              dataLayer.push(arguments);
-            }
-            window.gtag = window.gtag || gtag;
-
-            gtag("js", new Date());
-            gtag("config", GA_ID, {
-              anonymize_ip: true,
-            });
-
-            window.__gaLoaded = true;
-          };
-
-          // Verifica consenso
-          const checkConsent = () => {
-            try {
-              const saved = localStorage.getItem(STORAGE_KEY);
-              if (saved) {
-                const consent = JSON.parse(saved);
-                return consent.analytics === true;
-              }
-            } catch {}
-            return false;
-          };
-
-          // Carica GA4 se c'è già consenso salvato
-          if (checkConsent()) {
-            initGA4();
-          }
-
-          // Ascolta evento consenso cookie
-          window.addEventListener("canapalandia:cookie-consent", (e) => {
-            if (e.detail && e.detail.analytics === true && !window.__gaLoaded) {
-              initGA4();
-            }
-            // Se analytics è false, non fare nulla (GA4 non sarà caricato)
-          });
-      })();
-    </script>
-    ) : null}
 
     <!-- Gestisci consenso link handler -->
     <script is:inline>
