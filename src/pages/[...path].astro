@@ -1,4 +1,11 @@
 ---
+// UPDATED BLOCKS: 
+// - findRelatedPosts(): score-based algorithm (category +10, tag +3, recency bonus)
+// - related section: responsive grid (3/2/1 columns) + min 3 posts condition
+// - sidebar-ad__sticky: position sticky on desktop (>=1024px) with top: 96px
+// - post-hero: max-height constraint for featured image
+// - spacing: reduced margins between sections
+
 import SiteLayout from "../layouts/SiteLayout.astro";
 import AdSlot from "../components/AdSlot.astro";
 import ShareBar from "../components/ShareBar.astro";
@@ -313,42 +320,158 @@ function toCardFromWp(item: WPItemRaw, entry: WpEntry): CardPost {
   };
 }
 
+/* ---------------------------
+   Related posts: Score-based algorithm (category + tag + recency)
+--------------------------- */
+// Estrai e normalizza categorie/tag dal post corrente
+function extractCurrentTaxonomies(currentEntry: WpEntry, currentRaw: WPItemRaw | null): {
+  categories: number[];
+  tags: string[];
+} {
+  const categories: number[] = [];
+  const tags: string[] = [];
+  
+  // Categorie da currentRaw (WP)
+  if (currentRaw?.categories && Array.isArray(currentRaw.categories)) {
+    categories.push(...currentRaw.categories.filter((id) => typeof id === "number"));
+  }
+  
+  // Tag da currentRaw._embedded (WP)
+  if (currentRaw?._embedded) {
+    const embedded = currentRaw._embedded as any;
+    const wpTerm = embedded?.["wp:term"] as any;
+    if (Array.isArray(wpTerm)) {
+      const flat = wpTerm.flat().flat();
+      const tagTerms = flat.filter(
+        (t: any) => t && t.taxonomy === "post_tag" && typeof t.name === "string"
+      );
+      tags.push(...tagTerms.map((t: any) => String(t.name).trim().toLowerCase()).filter(Boolean));
+    }
+  }
+  
+  return { categories, tags };
+}
+
+// Calcola score per un post
+function calculatePostScore(
+  post: any,
+  currentCategories: number[],
+  currentTags: string[],
+  postsJson: any[]
+): { score: number; recency: number } {
+  let score = 0;
+  
+  // +10 per ogni categoria condivisa
+  const postCategories = Array.isArray(post.categories) ? post.categories : [];
+  const commonCategories = currentCategories.filter((catId) => postCategories.includes(catId));
+  score += commonCategories.length * 10;
+  
+  // +3 per ogni tag condiviso
+  const postTags: string[] = [];
+  if (post._embedded) {
+    const embedded = post._embedded as any;
+    const wpTerm = embedded?.["wp:term"] as any;
+    if (Array.isArray(wpTerm)) {
+      const flat = wpTerm.flat().flat();
+      const tagTerms = flat.filter(
+        (t: any) => t && t.taxonomy === "post_tag" && typeof t.name === "string"
+      );
+      postTags.push(...tagTerms.map((t: any) => String(t.name).trim().toLowerCase()).filter(Boolean));
+    }
+  }
+  
+  const commonTags = currentTags.filter((tag) => postTags.includes(tag));
+  score += commonTags.length * 3;
+  
+  // Recency bonus: calcola timestamp dalla data (per ordinamento secondario)
+  const dateStr = post.date || post.modified || "";
+  const recency = dateStr ? Date.parse(String(dateStr)) || 0 : 0;
+  
+  return { score, recency };
+}
+
 function findRelatedPosts(currentEntry: WpEntry, currentRaw: WPItemRaw | null): CardPost[] {
   // Solo per posts, non per pages
-  if (currentEntry.kind !== "post" || !currentRaw?.categories?.length) {
+  if (currentEntry.kind !== "post") {
     return [];
   }
-
-  const currentCategories = currentRaw.categories;
+  
   const currentId = currentEntry.id;
-
-  // Cerca altri posts con almeno una categoria in comune
-  const related: CardPost[] = [];
-  const posts = Array.isArray(postsJson) ? postsJson : [];
-
-  for (const post of posts) {
-    // Salta il post corrente
-    if (post.id === currentId) continue;
-
-    // Controlla se ha categorie in comune
-    const postCategories = post.categories || [];
-    const hasCommonCategory = currentCategories.some((catId) =>
-      postCategories.includes(catId)
-    );
-
-    if (hasCommonCategory) {
-      // Trova l'entry corrispondente
-      const postEntry = entries.find((e) => e.id === post.id && e.kind === "post");
-      if (postEntry) {
-        related.push(toCardFromWp(post, postEntry));
-      }
-    }
-
-    // Limita a 6
-    if (related.length >= 6) break;
+  const { categories: currentCategories, tags: currentTags } = extractCurrentTaxonomies(currentEntry, currentRaw);
+  
+  // Se non ci sono né categorie né tag, usa fallback
+  if (currentCategories.length === 0 && currentTags.length === 0) {
+    // Fallback: ultimi post (escludendo corrente)
+    const posts = Array.isArray(postsJson) ? postsJson : [];
+    const fallback = posts
+      .filter((p) => p.id !== currentId)
+      .sort((a, b) => {
+        const dateA = Date.parse(String(a.date || a.modified || "")) || 0;
+        const dateB = Date.parse(String(b.date || b.modified || "")) || 0;
+        return dateB - dateA;
+      })
+      .slice(0, 6);
+    
+    return fallback
+      .map((post) => {
+        const postEntry = entries.find((e) => e.id === post.id && e.kind === "post");
+        return postEntry ? toCardFromWp(post, postEntry) : null;
+      })
+      .filter((card): card is CardPost => card !== null)
+      .slice(0, 6);
   }
-
-  return related;
+  
+  const posts = Array.isArray(postsJson) ? postsJson : [];
+  
+  // Calcola score per ogni post
+  type ScoredPost = { post: any; entry: WpEntry; score: number; recency: number };
+  const scored: ScoredPost[] = [];
+  
+  for (const post of posts) {
+    if (post.id === currentId) continue;
+    
+    const postEntry = entries.find((e) => e.id === post.id && e.kind === "post");
+    if (!postEntry) continue;
+    
+    const { score, recency } = calculatePostScore(post, currentCategories, currentTags, posts);
+    
+    // Includi anche post senza score (per fallback finale)
+    scored.push({ post, entry: postEntry, score, recency });
+  }
+  
+  // Ordina per score DESC, poi per recency DESC
+  scored.sort((a, b) => {
+    if (a.score !== b.score) return b.score - a.score;
+    return b.recency - a.recency;
+  });
+  
+  // Prendi i migliori (min 3, max 6)
+  const topScored = scored.slice(0, 6);
+  
+  // Se abbiamo meno di 3 con score > 0, completa con i più recenti
+  const withScore = topScored.filter((s) => s.score > 0);
+  if (withScore.length < 3) {
+    // Prendi i più recenti tra quelli senza score o con score basso
+    const remaining = scored
+      .filter((s) => !withScore.includes(s))
+      .sort((a, b) => b.recency - a.recency)
+      .slice(0, 6 - withScore.length);
+    
+    const result = [...withScore, ...remaining]
+      .slice(0, 6)
+      .map((s) => toCardFromWp(s.post, s.entry));
+    
+    // Se ancora sotto 3, completa fino a 3
+    if (result.length < 3 && result.length > 0) {
+      return result; // Accetta anche se meno di 3
+    }
+    
+    return result.slice(0, 6);
+  }
+  
+  return topScored
+    .slice(0, 6)
+    .map((s) => toCardFromWp(s.post, s.entry));
 }
 
 const relatedPosts: CardPost[] = findRelatedPosts(entry, rawItem);
@@ -492,7 +615,7 @@ const titleHtml = entry.title || rawItem?.title?.rendered || "";
         <h1 set:html={titleHtml} />
         <div set:html={contentHtml} />
 
-        <div style="margin: 2rem 0;">
+        <div style="margin: 1.5rem 0;">
           <AdSlot label="Pubblicità" />
         </div>
 
@@ -544,10 +667,10 @@ const titleHtml = entry.title || rawItem?.title?.rendered || "";
           </div>
         </section>
 
-        {relatedPosts?.length ? (
-          <section class="related" aria-label="Post correlati">
-            <h2 class="related__title">Post correlati</h2>
-            <div class="grid">
+        {relatedPosts?.length >= 3 ? (
+          <section class="related" aria-label="Articoli correlati">
+            <h2 class="related__title">Articoli correlati</h2>
+            <div class="related__grid">
               {relatedPosts.map((p) => (
                 <article class="post-card">
                   <a class="cardLink" href={safeInternalHref(p.href)}>
@@ -671,6 +794,116 @@ const titleHtml = entry.title || rawItem?.title?.rendered || "";
   @media (max-width: 640px) {
     .internal-linking__grid {
       grid-template-columns: 1fr;
+    }
+  }
+
+  /* Featured image: limit max-height for large images */
+  .post-hero {
+    margin: 1.5rem 0 1.5rem;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .post-hero img {
+    width: 100%;
+    max-height: clamp(300px, 45vh, 600px);
+    object-fit: cover;
+    object-position: center;
+    display: block;
+  }
+
+  @media (max-width: 768px) {
+    .post-hero {
+      margin: 1rem 0 1rem;
+    }
+
+    .post-hero img {
+      max-height: clamp(200px, 35vh, 400px);
+    }
+  }
+
+  /* Reduce spacing between sections */
+  .post-main .wp-page > div[style*="margin"] {
+    margin: 1.5rem 0 !important;
+  }
+
+  .internal-linking {
+    margin: 2rem 0;
+  }
+
+  .post-cta {
+    margin: 2rem 0;
+  }
+
+  /* Related posts: responsive grid */
+  .related {
+    margin: 2.5rem 0;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+  }
+
+  .related__title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0 0 1.5rem 0;
+    color: var(--text);
+  }
+
+  .related__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  /* Tablet: 2 columns */
+  @media (min-width: 640px) {
+    .related__grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  /* Desktop: 3 columns */
+  @media (min-width: 1024px) {
+    .related__grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  /* Related post card images: consistent sizing */
+  .related .thumb img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    object-position: center;
+  }
+
+  @media (min-width: 640px) {
+    .related .thumb img {
+      height: 220px;
+    }
+  }
+
+  /* Sticky sidebar ADS on desktop */
+  .post-sidebar {
+    position: relative; /* Ensure no overflow:hidden breaks sticky */
+  }
+
+  @media (min-width: 1024px) {
+    .sidebar-ad__sticky {
+      position: sticky;
+      top: 96px;
+      z-index: 10;
+    }
+  }
+
+  /* Reduce vertical spacing for post layout */
+  .post-layout {
+    gap: 2rem;
+  }
+
+  @media (max-width: 1023px) {
+    .post-layout {
+      gap: 1.5rem;
     }
   }
 </style>

@@ -103,14 +103,14 @@ try {
     
     const sorted = sortByDate(byCategory);
     for (const p of sorted) {
-      if (relatedPosts.length >= 6) break;
+      if (relatedPosts.length >= 4) break;
       relatedPosts.push(p);
       addedSlugs.add(p.slug);
     }
   }
   
-  // STEP 2: Se non raggiunto target (3), integra per tag
-  if (relatedPosts.length < 3 && currentTags.length > 0) {
+  // STEP 2: Se non raggiunto target (4), integra per tag
+  if (relatedPosts.length < 4 && currentTags.length > 0) {
     const byTag = allPosts.filter((p) => {
       if (addedSlugs.has(p.slug)) return false;
       const postTags = normalizeTags(p.data.tags);
@@ -120,33 +120,33 @@ try {
     
     const sorted = sortByDate(byTag);
     for (const p of sorted) {
-      if (relatedPosts.length >= 6) break;
+      if (relatedPosts.length >= 4) break;
       relatedPosts.push(p);
       addedSlugs.add(p.slug);
     }
   }
   
-  // STEP 3: Se ancora sotto minimo (2), completa con ultimi post pubblicati (fallback)
-  if (relatedPosts.length < 2) {
+  // STEP 3: Se ancora sotto minimo (3), completa con ultimi post pubblicati (fallback)
+  if (relatedPosts.length < 3) {
     const fallback = allPosts
       .filter((p) => !addedSlugs.has(p.slug))
       .slice();
     
     const sorted = sortByDate(fallback);
     for (const p of sorted) {
-      if (relatedPosts.length >= 6) break;
+      if (relatedPosts.length >= 4) break;
       relatedPosts.push(p);
       addedSlugs.add(p.slug);
     }
   }
   
-  // Limita a max 6
-  relatedPosts = relatedPosts.slice(0, 6);
+  // Limita a max 4 (min 3, max 6 se disponibili: ma preferiamo 4)
+  relatedPosts = relatedPosts.slice(0, 4);
 } catch (err) {
   console.warn("[blog/[slug]] Errore nel caricamento post correlati:", err);
 }
 
-const sectionTitle = relatedPosts.length >= 3 ? "Post correlati" : "Leggi anche";
+const sectionTitle = "Articoli correlati";
 
 const metadata = {
   title: (entry as any).data.title,
@@ -190,8 +190,8 @@ const metadata = {
     </div>
   </main>
 
-  {/* Post correlati - PRIMA del Newsletter */}
-  {relatedPosts.length >= 2 ? (
+  {/* Articoli correlati - PRIMA del Newsletter */}
+  {relatedPosts.length >= 3 ? (
     <section class="related-posts">
       <div class="container">
         <div class="section-head">
