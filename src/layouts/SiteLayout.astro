@@ -16,8 +16,6 @@ const {
   metadata 
 } = Astro.props;
 
-const GA4_ID = import.meta.env.PUBLIC_GA4_ID;
-
 // Supporto metadata object: se presente, usa quello, altrimenti props dirette
 const titleFinal = titleProp ?? metadata?.title ?? "Canapalandia";
 const descriptionFinal = descriptionProp ?? metadata?.description ?? "";
