@@ -215,6 +215,8 @@ export const POST: APIRoute = async ({ request }) => {
 
   // 7. Salva in DB (Supabase)
   let id: number = 0;
+  let editToken: string | null = null;
+  let editExpiresAt: string | null = null;
   // Pulisci frasi da caratteri escapati prima di salvare e restituire
   const fraseOriginalePulita = cleanPhrase(frase);
   const fraseRibaltataPulita = cleanPhrase(aiResult.ribaltata, true); // Preserva newline
@@ -223,24 +225,30 @@ export const POST: APIRoute = async ({ request }) => {
     // Hash IP per privacy (opzionale, non obbligatorio)
     const ipHash = ip ? crypto.createHash("sha256").update(ip).digest("hex") : null;
     
-    id = await insertRibaltata({
+    const insertResult = await insertRibaltata({
       frase_originale: fraseOriginalePulita,
       frase_ribaltata: fraseRibaltataPulita,
       ip_hash: ipHash,
       // user_id: null per ora (opzionale per futuro)
     });
+    
+    id = insertResult.id;
+    editToken = insertResult.editToken;
+    editExpiresAt = insertResult.editExpiresAt;
   } catch (err: any) {
     console.error("[ribalta-ai] Errore salvataggio DB:", err?.message);
     // Anche se fallisce il salvataggio, restituisci il risultato (fallback con id=0)
   }
 
-  // 8. Restituisci JSON con schema stabile (frasi già pulite)
+  // 8. Restituisci JSON con schema stabile (frasi già pulite) + token modifica
   return new Response(
     JSON.stringify({
       ok: true,
       id,
       originale: fraseOriginalePulita,
       ribaltata: fraseRibaltataPulita,
+      editToken: editToken || null,
+      editExpiresAt: editExpiresAt || null,
     }),
     {
       status: 200,

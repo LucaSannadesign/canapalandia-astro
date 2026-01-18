@@ -1539,15 +1539,13 @@ html[data-theme="light"] .cardExcerpt {
   border-bottom: none;
 }
 
+/* Mobile/Tablet: sticky disattivato (comportamento normale) */
 .sidebar-ad__sticky {
-  position: sticky;
-  top: 96px; /* Altezza header + margine */
   padding: 16px;
   border: 1px solid var(--border);
   border-radius: 20px;
   background: var(--panel);
   box-shadow: var(--shadow-soft);
-  z-index: 10;
 }
 
 .sidebar-ad__sticky .sidebar-title {
@@ -1579,11 +1577,16 @@ html[data-theme="light"] .cardExcerpt {
     grid-template-columns: 1fr;
     gap: 36px;
   }
+}
 
-  /* Disattiva sticky su mobile */
+/* Desktop: applica sticky solo su schermi >= 1024px */
+@media (min-width: 1024px) {
   .sidebar-ad__sticky {
-    position: static;
-    top: auto;
+    position: sticky;
+    /* Usa variabile CSS per altezza header + margine (16px) */
+    top: calc(var(--nav-h, 76px) + 16px);
+    align-self: start;
+    z-index: 10;
   }
 }
 
