@@ -24,10 +24,10 @@ jobs:
   generate-post:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout staging branch
+      - name: Checkout main branch
         uses: actions/checkout@v4
         with:
-          ref: staging
+          ref: main
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -59,6 +59,13 @@ jobs:
       - name: Install dependencies
         run: ${{ steps.pkg-mgr.outputs.install }}
 
+      - name: Compute meta
+        id: meta
+        run: |
+          echo "today=$(date -u +%Y-%m-%d)" >> $GITHUB_OUTPUT
+          echo "branch=auto-post/${{ github.run_id }}" >> $GITHUB_OUTPUT
+          echo "iso=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_OUTPUT
+
       - name: Run auto-post script
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -74,16 +81,26 @@ jobs:
           fi
           node scripts/auto-post.mjs $args
 
+      - name: Check if changes
+        id: changes
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Create Pull Request
+        if: steps.changes.outputs.has_changes == 'true'
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          branch: auto-post/$(date +%Y%m%d-%H%M%S)
-          base: staging
-          title: 'Auto-post: Generated posts for $(date +%Y-%m-%d)'
+          branch: ${{ steps.meta.outputs.branch }}
+          base: main
+          title: "Auto-post: Generated posts for ${{ steps.meta.outputs.today }}"
           body: |
             Auto-generated post via GitHub Actions.
 
-            Generated on: $(date -u +%Y-%m-%dT%H:%M:%SZ)
-          commit-message: 'chore: auto-generate posts'
+            Generated on: ${{ steps.meta.outputs.iso }}
+          commit-message: "chore: auto-generate posts"
           delete-branch: true
