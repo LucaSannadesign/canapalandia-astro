@@ -12,5 +12,19 @@
     ],
     "image": "/images/cannabis-light-cbd-legale-italia-2026.webp",
     "priority": "normal"
+  },
+  {
+    "title": "Test automazione editoriale 2 (non pubblicare)",
+    "description": "Secondo test per verificare creazione post + immagine + PR.",
+    "slug": "test-automation-2026-01-19-b",
+    "publishDate": "2026-01-19",
+    "category": "Test",
+    "tags": [
+      "test",
+      "automazione",
+      "draft"
+    ],
+    "image": "/images/test-automation-2026-01-19-b.webp",
+    "priority": "normal"
   }
 ]
