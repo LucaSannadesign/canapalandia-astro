@@ -29,15 +29,16 @@ jobs:
         with:
           ref: main
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
 
       - name: Detect package manager
         id: pkg-mgr
@@ -86,9 +87,16 @@ jobs:
         run: |
           if [ -n "$(git status --porcelain)" ]; then
             echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "has_changes=true"
           else
             echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "has_changes=false"
           fi
+
+      - name: Skip PR creation
+        if: steps.changes.outputs.has_changes == 'false'
+        run: |
+          echo "Skipping PR creation: no changes detected"
 
       - name: Create Pull Request
         if: steps.changes.outputs.has_changes == 'true'
