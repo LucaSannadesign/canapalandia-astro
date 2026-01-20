@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read # Permessi minimi: solo read per checkout
+  actions: write # Necessario per salvare cache
 
 concurrency:
   group: auto-share-telegram
