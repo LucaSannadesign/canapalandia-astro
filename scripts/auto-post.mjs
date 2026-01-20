@@ -307,9 +307,20 @@ async function generateCoverImage(post, body) {
   }
 }
 
+function isTestPost(post) {
+  const category = String(post.category || "").trim().toLowerCase();
+  const tags = Array.isArray(post.tags) ? post.tags.map(t => String(t).toLowerCase()) : [];
+  
+  if (category === "test") return true;
+  if (tags.includes("draft") || tags.includes("test")) return true;
+  
+  return false;
+}
+
 async function main() {
   const dryRun = process.argv.includes("--dry-run");
   const force = process.argv.includes("--force");
+  const allowTest = process.argv.includes("--allow-test");
   const forcedDate = arg("--date"); // YYYY-MM-DD
 
   if (!force && !inRomeWindow()) {
@@ -328,10 +339,34 @@ async function main() {
     return;
   }
 
-  for (const post of due) {
-    const outFile = path.join(OUT_DIR, `${post.slug}.mdx`);
-    if (fs.existsSync(outFile)) {
-      console.log(`[auto-post] SKIP (exists): ${path.relative(ROOT, outFile)}`);
+  // Filtra post di test (a meno di --allow-test)
+  const filtered = allowTest 
+    ? due 
+    : due.filter(p => {
+        if (isTestPost(p)) {
+          console.log(`[auto-post] SKIP (test/draft): ${p.slug} (category: ${p.category}, tags: ${Array.isArray(p.tags) ? p.tags.join(", ") : "none"})`);
+          return false;
+        }
+        return true;
+      });
+
+  if (!filtered.length) {
+    console.log(`[auto-post] No non-test posts due for ${today} (${due.length - filtered.length} test posts filtered).`);
+    return;
+  }
+
+  for (const post of filtered) {
+    // Controllo anti-duplicati: verifica sia .mdx che .md
+    const outFileMdx = path.join(OUT_DIR, `${post.slug}.mdx`);
+    const outFileMd = path.join(OUT_DIR, `${post.slug}.md`);
+    
+    if (fs.existsSync(outFileMdx)) {
+      console.log(`[auto-post] SKIP (exists): ${path.relative(ROOT, outFileMdx)}`);
+      continue;
+    }
+    
+    if (fs.existsSync(outFileMd)) {
+      console.log(`[auto-post] SKIP (exists): ${path.relative(ROOT, outFileMd)}`);
       continue;
     }
 
@@ -340,12 +375,12 @@ async function main() {
     const mdx = frontmatter + body + "\n";
 
     if (dryRun) {
-      console.log(`\n[auto-post] DRY RUN would write: ${path.relative(ROOT, outFile)}\n`);
+      console.log(`\n[auto-post] DRY RUN would write: ${path.relative(ROOT, outFileMdx)}\n`);
       console.log(mdx.slice(0, 900) + "\n…\n");
       // In dry-run non generiamo la cover
     } else {
-      fs.writeFileSync(outFile, mdx, "utf8");
-      console.log(`[auto-post] WROTE: ${path.relative(ROOT, outFile)}`);
+      fs.writeFileSync(outFileMdx, mdx, "utf8");
+      console.log(`[auto-post] WROTE: ${path.relative(ROOT, outFileMdx)}`);
       
       // Genera cover image dopo aver scritto il body (per avere estratto)
       await generateCoverImage(post, body);

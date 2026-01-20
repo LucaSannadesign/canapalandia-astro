@@ -14,6 +14,11 @@ on:
         required: false
         type: boolean
         default: false
+      allow_test:
+        description: 'Allow test posts (category=Test or tags include draft)'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -23,11 +28,23 @@ jobs:
   generate-post:
     runs-on: ubuntu-latest
     steps:
+      - name: Validate GH_PAT token
+        id: validate-token
+        run: |
+          if [ -z "${{ secrets.GH_PAT }}" ]; then
+            echo "::error::GH_PAT secret is missing. Please configure it in GitHub Settings > Secrets and variables > Actions."
+            echo "::error::Create a Personal Access Token (PAT) with 'repo' scope and add it as secret 'GH_PAT'."
+            echo "::error::GitHub Actions cannot create PRs with GITHUB_TOKEN. A PAT is required."
+            exit 1
+          fi
+          echo "token_available=true" >> $GITHUB_OUTPUT
+
       - name: Checkout main branch
         uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 0
+          token: ${{ secrets.GH_PAT }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -80,6 +97,9 @@ jobs:
           if [ "${{ github.event.inputs.force }}" == "true" ]; then
             args="$args --force"
           fi
+          if [ "${{ github.event.inputs.allow_test }}" == "true" ]; then
+            args="$args --allow-test"
+          fi
           node scripts/auto-post.mjs $args
 
       - name: Check if changes
@@ -98,11 +118,11 @@ jobs:
         run: |
           echo "Skipping PR creation: no changes detected"
 
-      - name: Create Pull Request
+      - name: Create Pull Request (DRAFT)
         if: steps.changes.outputs.has_changes == 'true'
         uses: peter-evans/create-pull-request@v6
         with:
-          token: ${{ secrets.REPO_PAT || secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GH_PAT }}
           branch: ${{ steps.meta.outputs.branch }}
           base: main
           draft: true
@@ -110,6 +130,10 @@ jobs:
           body: |
             Auto-generated post via GitHub Actions.
 
+            **⚠️ REVIEW REQUIRED BEFORE MERGE**
+
             Generated on: ${{ steps.meta.outputs.iso }}
+
+            This PR is created as DRAFT to ensure review before merging to main.
           commit-message: "chore: auto-generate posts"
           delete-branch: true
