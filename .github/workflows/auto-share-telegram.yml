@@ -2,12 +2,16 @@ name: Auto Share Telegram
 
 on:
   schedule:
-    # Esegui ogni 15 minuti
-    - cron: '*/15 * * * *'
+    # Esegui ogni 2 ore
+    - cron: '0 */2 * * *'
   workflow_dispatch: # Permette esecuzione manuale
 
 permissions:
   contents: read # Permessi minimi: solo read per checkout
+
+concurrency:
+  group: auto-share-telegram
+  cancel-in-progress: true
 
 jobs:
   share:
@@ -25,7 +29,6 @@ jobs:
 
       - name: Restore cache (state file)
         uses: actions/cache@v4
-        id: cache-state
         with:
           path: .cache/telegram-share.json
           key: auto-share-cache
