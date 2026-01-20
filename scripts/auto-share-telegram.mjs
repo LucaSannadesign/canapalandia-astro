@@ -378,19 +378,23 @@ async function main() {
     // 2. Carica stato precedente
     const previousState = loadState();
     
-    if (previousState) {
-      console.log(`[auto-share] Last shared: "${previousState.title}" (${previousState.lastLink})`);
-      
-      // 3. Deduplicazione: confronta link
-      if (previousState.lastLink === latestPost.link) {
-        console.log("[auto-share] no-op: No new posts");
-        process.exit(0);
-      }
-    } else {
-      console.log("[auto-share] No previous state found (first run - will send and save)");
+    // Se previousState esiste e il link è uguale -> no-op
+    if (previousState && previousState.lastLink === latestPost.link) {
+      console.log("[auto-share] no-op: No new posts");
+      process.exit(0);
     }
-
-    // 4. Nuovo post trovato (o prima esecuzione): invia su Telegram e salva
+    
+    // Se previousState NON esiste -> warm-up: salva baseline senza inviare
+    if (!previousState) {
+      console.log("[auto-share] warm-up: baseline saved, not sending");
+      if (!dryRun) {
+        saveState(latestPost);
+      }
+      process.exit(0);
+    }
+    
+    // Se previousState esiste e il link è diverso -> nuovo post: invia e salva
+    console.log(`[auto-share] Last shared: "${previousState.title}" (${previousState.lastLink})`);
     console.log(`[auto-share] New post detected: "${latestPost.title}"`);
     
     if (dryRun) {
@@ -400,8 +404,6 @@ async function main() {
       console.log(`  Description: ${cleanDescription(latestPost.description)}`);
     } else {
       await sendTelegramMessage(latestPost);
-      
-      // 5. Salva stato
       saveState(latestPost);
     }
 

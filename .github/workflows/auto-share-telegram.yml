@@ -32,9 +32,9 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: .cache/telegram-share.json
-          key: auto-share-cache
+          key: auto-share-cache-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
-            auto-share-cache
+            auto-share-cache-
 
       - name: Run auto-share script
         env:
@@ -52,4 +52,4 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: .cache/telegram-share.json
-          key: auto-share-cache
+          key: auto-share-cache-${{ github.run_id }}-${{ github.run_attempt }}
