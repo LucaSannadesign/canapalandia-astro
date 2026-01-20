@@ -386,10 +386,8 @@ async function main() {
     
     // Se previousState NON esiste -> warm-up: salva baseline senza inviare
     if (!previousState) {
-      console.log("[auto-share] warm-up: baseline saved, not sending");
-      if (!dryRun) {
-        saveState(latestPost);
-      }
+      console.log("[auto-share] warm-up: saving latest as state without sending");
+      saveState(latestPost);
       process.exit(0);
     }
     
