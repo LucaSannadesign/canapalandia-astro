@@ -380,7 +380,7 @@ async function main() {
     
     // CASO 1: Warm-up (prima esecuzione - stato non esiste)
     if (!previousState) {
-      console.log("[auto-share] warm-up: state initialized (no message sent)");
+      console.log("[auto-share] warm-up: state initialized, not sending");
       saveState(latestPost);
       process.exit(0);
     }
