@@ -28,7 +28,7 @@ jobs:
           node-version: '20'
 
       - name: Restore cache (state file)
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: .cache/telegram-share.json
           key: auto-share-cache
