@@ -378,22 +378,22 @@ async function main() {
     // 2. Carica stato precedente
     const previousState = loadState();
     
-    // Se previousState esiste e il link è uguale -> no-op
-    if (previousState && previousState.lastLink === latestPost.link) {
-      console.log("[auto-share] no-op: No new posts");
-      process.exit(0);
-    }
-    
-    // Se previousState NON esiste -> warm-up: salva baseline senza inviare
+    // CASO 1: Warm-up (prima esecuzione - stato non esiste)
     if (!previousState) {
-      console.log("[auto-share] warm-up: saving latest as state without sending");
+      console.log("[auto-share] warm-up: state initialized (no message sent)");
       saveState(latestPost);
       process.exit(0);
     }
     
-    // Se previousState esiste e il link è diverso -> nuovo post: invia e salva
+    // CASO 2: No-op (stesso post già condiviso)
+    if (previousState.lastLink === latestPost.link) {
+      console.log("[auto-share] no-op: No new posts");
+      process.exit(0);
+    }
+    
+    // CASO 3: Nuovo post rilevato (link diverso)
     console.log(`[auto-share] Last shared: "${previousState.title}" (${previousState.lastLink})`);
-    console.log(`[auto-share] New post detected: "${latestPost.title}"`);
+    console.log(`[auto-share] New post detected: "${latestPost.title}" (${latestPost.link})`);
     
     if (dryRun) {
       console.log("[auto-share] DRY RUN: Would send message:");
@@ -402,7 +402,9 @@ async function main() {
       console.log(`  Description: ${cleanDescription(latestPost.description)}`);
     } else {
       await sendTelegramMessage(latestPost);
+      console.log("[auto-share] message sent: Telegram notification delivered");
       saveState(latestPost);
+      console.log("[auto-share] state saved: Latest post state persisted");
     }
 
     console.log("[auto-share] Done.");
