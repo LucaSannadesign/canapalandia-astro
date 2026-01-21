@@ -40,6 +40,12 @@ const robotsNormalized = normalizeRobots(robotsRaw);
 // Default robots: index,follow
 const robotsDefault = "index,follow";
 
+/* ---------------------------
+   Esclusione CTA per pagina sostegno
+--------------------------- */
+// Verifica se siamo sulla pagina "sostieni-la-nostra-causa"
+const isSupportPage = Astro.url.pathname.includes("/sostieni-la-nostra-causa");
+
 // Detection production: hostname-based (robusto, indipendente da VERCEL_ENV)
 function isProductionEnvironment(): boolean {
   const hostname = Astro.url.hostname;
@@ -1023,7 +1029,9 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
           <a href="/frasi-ribaltate/">Frasi Ribaltate</a>
           <a href="/cerca/">Cerca</a>
           <a href="/partner-selezionati/">Partner</a>
-          <a href="/sostieni-la-nostra-causa/">Sostieni</a>
+          {!isSupportPage ? (
+            <a href="/sostieni-la-nostra-causa/">Sostieni</a>
+          ) : null}
           <a href="/rss.xml">RSS</a>
         </nav>
 

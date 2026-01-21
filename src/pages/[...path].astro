@@ -558,6 +558,15 @@ const ribaltatoreUrl = seedPhrase ? `/ribaltatore/?q=${encodeURIComponent(seedPh
 const cercaUrl = themeKeyword ? `/cerca/?q=${encodeURIComponent(themeKeyword)}` : "/cerca/";
 
 /* ---------------------------
+   Esclusione CTA per pagina sostegno
+--------------------------- */
+// Verifica se siamo sulla pagina "sostieni-la-nostra-causa"
+const isSupportPage = entry.path === "sostieni-la-nostra-causa" || 
+                      entry.slug === "sostieni-la-nostra-causa" ||
+                      requestedPath === "sostieni-la-nostra-causa" ||
+                      Astro.url.pathname.includes("/sostieni-la-nostra-causa");
+
+/* ---------------------------
    Sidebar content logic
 --------------------------- */
 // Determina se la sidebar ha contenuti da mostrare
@@ -576,8 +585,28 @@ const postTitleForShare = title || "";
 /* ---------------------------
    Render content
 --------------------------- */
-const contentHtml = entry.html || rawItem?.content?.rendered || "";
+let contentHtml = entry.html || rawItem?.content?.rendered || "";
 const titleHtml = entry.title || rawItem?.title?.rendered || "";
+
+/* ---------------------------
+   Rimuovi CTA dal contenuto se siamo sulla pagina sostegno
+--------------------------- */
+if (isSupportPage && contentHtml) {
+  // Rimuovi blocchi CTA comuni dal contenuto HTML
+  // Pattern: div/section con classi CTA, bottoni di donazione, link mailto per donazioni
+  contentHtml = contentHtml
+    // Rimuovi div/section con classi CTA comuni
+    .replace(/<div[^>]*class="[^"]*\b(cta|donation|support|sostieni|sostegno)[^"]*"[^>]*>[\s\S]*?<\/div>/gi, "")
+    .replace(/<section[^>]*class="[^"]*\b(cta|donation|support|sostieni|sostegno)[^"]*"[^>]*>[\s\S]*?<\/section>/gi, "")
+    // Rimuovi bottoni con testo "Dona", "Sostieni", "Unisciti", "Supporta"
+    .replace(/<a[^>]*href="[^"]*(mailto:|donazione|donate|sostieni|support)[^"]*"[^>]*>[\s\S]*?<\/a>/gi, "")
+    .replace(/<button[^>]*>[\s\S]*?(Dona|Sostieni|Unisciti|Supporta|Fai una donazione)[\s\S]*?<\/button>/gi, "")
+    // Rimuovi heading H2/H3 con testo CTA
+    .replace(/<h[23][^>]*>[\s\S]*?(Unisciti|Sostieni|Dona|Supporta|Fai una donazione)[\s\S]*?<\/h[23]>/gi, "")
+    // Pulisci spazi multipli e righe vuote eccessive
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/\s{3,}/g, " ");
+}
 ---
 
 <SiteLayout metadata={metadata}>
@@ -651,22 +680,24 @@ const titleHtml = entry.title || rawItem?.title?.rendered || "";
           </section>
         ) : null}
 
-        {/* CTA tra post e correlati */}
-        <section class="post-cta" aria-label="Supporta Canapalandia">
-          <h2 class="post-cta__title">Supporta Canapalandia</h2>
-          <p class="post-cta__text">
-            Se questo contenuto ti è stato utile, puoi sostenerci: ci aiuta a
-            mantenere il progetto indipendente e aggiornato.
-          </p>
-          <div class="post-cta__actions">
-            <a class="btn primary" href={SUPPORT_URL}>
-              Sostieni il progetto
-            </a>
-            <a class="btn ghost" href={PARTNER_URL}>
-              Scopri i partner
-            </a>
-          </div>
-        </section>
+        {/* CTA tra post e correlati - Esclusa per pagina sostegno */}
+        {!isSupportPage ? (
+          <section class="post-cta" aria-label="Supporta Canapalandia">
+            <h2 class="post-cta__title">Supporta Canapalandia</h2>
+            <p class="post-cta__text">
+              Se questo contenuto ti è stato utile, puoi sostenerci: ci aiuta a
+              mantenere il progetto indipendente e aggiornato.
+            </p>
+            <div class="post-cta__actions">
+              <a class="btn primary" href={SUPPORT_URL}>
+                Sostieni il progetto
+              </a>
+              <a class="btn ghost" href={PARTNER_URL}>
+                Scopri i partner
+              </a>
+            </div>
+          </section>
+        ) : null}
 
         {relatedPosts?.length >= 3 ? (
           <section class="related" aria-label="Articoli correlati">
