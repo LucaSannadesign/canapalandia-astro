@@ -65,6 +65,8 @@
   
   /* Altezza navbar - aggiornata dinamicamente via JS */
   --nav-h: 76px;
+  /* Offset per sticky sidebar (header + margine) */
+  --post-sticky-top: calc(var(--nav-h, 76px) + 16px);
 
   /* ===== TYPOGRAPHY TOKENS ===== */
   --font-sans: "Sora", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial,
@@ -1011,51 +1013,73 @@ html[data-theme="light"] .site-footer {
   margin-top: 8px;
 }
 
-/* Scroll to top button */
-.footer-scrolltop-wrapper {
-  grid-column: 1 / -1;
+/* Scroll to top button (fixed, bottom-right) */
+.scroll-to-top {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 48px;
+  height: 48px;
   display: flex;
-  justify-content: center;
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid var(--border-subtle);
-}
-
-.footer-scrolltop {
-  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  font-size: 0.875rem;
-  color: var(--muted);
-  text-decoration: none;
-  border: 1px solid var(--border);
-  border-radius: var(--r-sm, 12px);
+  justify-content: center;
   background: var(--panel);
-  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease, transform 0.12s ease;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--text);
+  text-decoration: none;
+  box-shadow: var(--shadow-md);
+  z-index: 1000;
+  transition: opacity 0.3s ease, transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+  opacity: 0.9;
   cursor: pointer;
 }
 
-.footer-scrolltop:hover {
-  color: var(--text);
-  border-color: var(--border-strong);
-  background: color-mix(in oklab, var(--panel), var(--brand) 8%);
-  transform: translateY(-1px);
+.scroll-to-top:hover {
+  opacity: 1;
+  transform: translateY(-2px);
+  background: color-mix(in oklab, var(--panel), var(--brand) 10%);
+  border-color: var(--brand);
+  box-shadow: var(--shadow-lg);
 }
 
-.footer-scrolltop:focus-visible {
+.scroll-to-top:focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: 2px;
+  opacity: 1;
 }
 
-.footer-scrolltop svg {
+.scroll-to-top svg {
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
-  width: 16px;
-  height: 16px;
 }
 
-.footer-scrolltop span {
-  font-weight: 500;
+.scroll-to-top .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Mobile: posizione leggermente diversa */
+@media (max-width: 767px) {
+  .scroll-to-top {
+    bottom: 20px;
+    right: 20px;
+    width: 44px;
+    height: 44px;
+  }
+
+  .scroll-to-top svg {
+    width: 18px;
+    height: 18px;
+  }
 }
 
 /* ------------------------------------------------------------
@@ -1527,6 +1551,9 @@ html[data-theme="light"] .cardExcerpt {
 .post-sidebar {
   min-width: 0; /* Previene overflow nella griglia */
   max-width: 360px;
+  align-self: start; /* IMPORTANTE: permette sticky funzionante in grid */
+  display: flex;
+  flex-direction: column;
 }
 
 /* Sidebar sections */
@@ -1593,6 +1620,7 @@ html[data-theme="light"] .cardExcerpt {
   border-radius: 20px;
   background: var(--panel);
   box-shadow: var(--shadow-soft);
+  min-height: 250px; /* Altezza minima per evitare collasso prima del render ads */
 }
 
 .sidebar-ad__sticky .sidebar-title {
@@ -1603,7 +1631,7 @@ html[data-theme="light"] .cardExcerpt {
 .sidebar-ad__sticky :global(.adslot-container),
 .sidebar-ad__sticky :global(.adsense-slot-container) {
   margin: 0;
-  overflow: hidden;
+  overflow: visible; /* IMPORTANTE: visible per permettere sticky, non hidden */
 }
 
 /* Desktop: se lo schermo è troppo piccolo, riduci la sidebar */
@@ -1618,11 +1646,17 @@ html[data-theme="light"] .cardExcerpt {
   }
 }
 
-/* Tablet/Mobile: sidebar sotto (1 colonna) */
+/* Tablet/Mobile: sidebar sotto (1 colonna) - sticky DISATTIVATO */
 @media (max-width: 1023px) {
   .post-layout {
     grid-template-columns: 1fr;
     gap: 36px;
+  }
+
+  .sidebar-ad__sticky {
+    position: static; /* Disattiva sticky su mobile */
+    top: auto;
+    max-height: none;
   }
 }
 
@@ -1630,10 +1664,13 @@ html[data-theme="light"] .cardExcerpt {
 @media (min-width: 1024px) {
   .sidebar-ad__sticky {
     position: sticky;
-    /* Usa variabile CSS per altezza header + margine (16px) */
-    top: calc(var(--nav-h, 76px) + 16px);
-    align-self: start;
+    /* Offset: usa variabile CSS per coerenza */
+    top: var(--post-sticky-top, 92px);
+    align-self: start; /* IMPORTANTE: allinea in alto per sticky corretto */
     z-index: 10;
+    /* Limita altezza massima per evitare overflow oltre viewport */
+    max-height: calc(100vh - var(--post-sticky-top, 92px) - 16px);
+    overflow: visible; /* Permette ads di renderizzare correttamente */
   }
 }
 

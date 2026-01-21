@@ -884,30 +884,8 @@ const titleHtml = entry.title || rawItem?.title?.rendered || "";
     }
   }
 
-  /* Sticky sidebar ADS on desktop */
-  .post-sidebar {
-    position: relative; /* Ensure no overflow:hidden breaks sticky */
-    min-width: 0; /* Previene overflow nella griglia */
-  }
-
-  /* Fix sidebar wrapper: evita collasso a 102px */
-  .sidebar-ad__wrapper {
-    width: 100%;
-    min-width: 300px; /* IMPORTANTE: evita collasso sotto 300px */
-  }
-
-  .sidebar-ad__sticky {
-    width: 100%;
-    min-width: 300px; /* IMPORTANTE: evita collasso sotto 300px */
-  }
-
-  @media (min-width: 1024px) {
-    .sidebar-ad__sticky {
-      position: sticky;
-      top: 96px;
-      z-index: 10;
-    }
-  }
+  /* Sticky sidebar: gestito globalmente in app.css */
+  /* Rimossi stili duplicati per evitare conflitti */
 
   /* Reduce vertical spacing for post layout */
   .post-layout {

@@ -1036,38 +1036,64 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
         <div class="footer-copy">
           © {new Date().getFullYear()} Canapalandia. Tutti i diritti riservati.
         </div>
-
-        <div class="footer-scrolltop-wrapper">
-          <a href="#top" class="footer-scrolltop" aria-label="Torna in cima alla pagina">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M18 15l-6-6-6 6" />
-            </svg>
-            <span>Top</span>
-          </a>
-        </div>
       </div>
     </footer>
 
-    <!-- Scroll to top button -->
+    <!-- Scroll to top button (fixed, appare dopo scroll) -->
+    <a href="#top" class="scroll-to-top" aria-label="Torna in cima alla pagina" style="display: none;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M18 15l-6-6-6 6" />
+      </svg>
+      <span class="sr-only">Torna in cima</span>
+    </a>
+
+    <!-- Scroll to top script -->
     <script is:inline>
       (() => {
-        const scrollTopBtn = document.querySelector(".footer-scrolltop");
+        const scrollTopBtn = document.querySelector(".scroll-to-top");
         if (!scrollTopBtn) return;
 
+        const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+        // Mostra/nascondi in base a scrollY
+        const updateVisibility = () => {
+          if (window.scrollY > 400) {
+            scrollTopBtn.style.display = "flex";
+          } else {
+            scrollTopBtn.style.display = "none";
+          }
+        };
+
+        // Throttle scroll listener
+        let ticking = false;
+        window.addEventListener("scroll", () => {
+          if (!ticking) {
+            window.requestAnimationFrame(() => {
+              updateVisibility();
+              ticking = false;
+            });
+            ticking = true;
+          }
+        });
+
+        // Click handler
         scrollTopBtn.addEventListener("click", (e) => {
           e.preventDefault();
           const topAnchor = document.getElementById("top");
           window.scrollTo({
             top: 0,
-            behavior: "smooth"
+            behavior: prefersReducedMotion ? "auto" : "smooth"
           });
           // Focus sull'anchor per accessibilità
           if (topAnchor) {
             setTimeout(() => {
               topAnchor.focus();
-            }, 100);
+            }, prefersReducedMotion ? 0 : 100);
           }
         });
+
+        // Inizializza visibilità
+        updateVisibility();
       })();
     </script>
 
