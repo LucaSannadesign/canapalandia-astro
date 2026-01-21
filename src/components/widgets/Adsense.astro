@@ -45,6 +45,9 @@ const PUBLISHER_ID = import.meta.env.PUBLIC_ADSENSE_ID;
         flex-direction: column;
         align-items: center;
         justify-content: center;
+        width: 100%;
+        min-width: 250px; /* Minimum width per AdSense */
+        flex: 1 1 auto; /* Previene shrink in flex containers */
     }
 
     .adsense-label {
@@ -61,72 +64,7 @@ const PUBLISHER_ID = import.meta.env.PUBLIC_ADSENSE_ID;
     }
 </style>
 
-<script define:vars={{ slotId }}>
-    (() => {
-        const container = document.querySelector(`[data-adsense-slot-id="${slotId}"]`);
-        if (!container) return;
-
-        const adSlot = container.querySelector(".adsbygoogle");
-        if (!adSlot) return;
-
-        let pushed = false;
-
-        // Verifica consenso usando funzione globale CMP-ready
-        const checkConsent = () => {
-            if (window.canapalandiaHasAdConsent && typeof window.canapalandiaHasAdConsent === "function") {
-                return window.canapalandiaHasAdConsent();
-            }
-            // Fallback: se funzione non esiste, ritorna false (NON permissivo)
-            return false;
-        };
-
-        const pushAd = () => {
-            if (pushed) return;
-            if (!window.adsbygoogle) {
-                console.warn("[AdSense] Script not loaded yet");
-                return;
-            }
-
-            try {
-                (window.adsbygoogle = window.adsbygoogle || []).push({});
-                pushed = true;
-            } catch (err) {
-                console.error("[AdSense] Error pushing ad:", err);
-            }
-        };
-
-        // Push ad se c'è consenso e script è già caricato
-        if (checkConsent()) {
-            if (window.__adsenseLoaded) {
-                pushAd();
-            } else {
-                // Aspetta che lo script si carichi
-                window.addEventListener("adsense:script-loaded", pushAd, { once: true });
-            }
-        }
-
-        // Ascolta evento consenso cookie
-        window.addEventListener("canapalandia:cookie-consent", (e) => {
-            if (e.detail && (e.detail.ads === true || e.detail.analytics === true) && !pushed) {
-                if (checkConsent()) {
-                    if (window.__adsenseLoaded) {
-                        pushAd();
-                    } else {
-                        window.addEventListener("adsense:script-loaded", pushAd, { once: true });
-                    }
-                }
-            }
-        });
-
-        // Ascolta evento consenso ads da CMP
-        window.addEventListener("canapalandia:ad-consent-granted", () => {
-            if (checkConsent() && !pushed) {
-                if (window.__adsenseLoaded) {
-                    pushAd();
-                } else {
-                    window.addEventListener("adsense:script-loaded", pushAd, { once: true });
-                }
-            }
-        });
-    })();
-</script>
+<!-- 
+  Nota: l'inizializzazione è gestita centralmente da setupAdSense() nel layout.
+  Non fare push diretti qui per evitare doppie inizializzazioni.
+-->

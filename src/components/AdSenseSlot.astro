@@ -8,40 +8,30 @@ interface Props {
 const { slot, minWidth = 300, minHeight = 250 } = Astro.props;
 ---
 
-<div class="adsense-slot-container">
-  <ins
-    class="adsbygoogle"
-    data-ad-client="ca-pub-6462363788506395"
-    data-ad-slot={slot}
-    style={`display:block; min-width:${minWidth}px; min-height:${minHeight}px;`}
-  ></ins>
+<div class="adsense-slot-wrapper">
+  <div class="adsense-slot-container">
+    <ins
+      class="adsbygoogle"
+      data-ad-client="ca-pub-6462363788506395"
+      data-ad-slot={slot}
+      style={`display:block; min-width:${minWidth}px; min-height:${minHeight}px;`}
+    ></ins>
+  </div>
 </div>
 
-<script>
-  (() => {
-    function pushAd() {
-      if (window.adsbygoogle && typeof window.adsbygoogle.push === "function") {
-        try {
-          (window.adsbygoogle = window.adsbygoogle || []).push({});
-        } catch (err) {
-          console.error("[AdSenseSlot] Error pushing ad:", err);
-        }
-      }
-    }
-
-    // Push ad on window load
-    if (document.readyState === "complete") {
-      pushAd();
-    } else {
-      window.addEventListener("load", pushAd);
-    }
-
-    // Push ad on Astro page load (SPA navigation)
-    document.addEventListener("astro:page-load", pushAd);
-  })();
-</script>
+<!-- 
+  Nota: l'inizializzazione è gestita centralmente da setupAdSense() nel layout.
+  Non fare push diretti qui per evitare doppie inizializzazioni.
+-->
 
 <style>
+  .adsense-slot-wrapper {
+    width: 100%;
+    min-width: 250px; /* Minimum width per AdSense */
+    display: block;
+    flex: 1 1 auto; /* Previene shrink in flex containers */
+  }
+
   .adsense-slot-container {
     width: 100%;
     max-width: 360px;

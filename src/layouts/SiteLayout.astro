@@ -4,7 +4,7 @@ import AdSlot from "../components/AdSlot.astro";
 import Newsletter from "../components/widgets/Newsletter.astro";
 import CookieBanner from "../components/CookieBanner.astro";
 import GATag from "../components/GATag.astro";
-import { ADS_SLOT_TOP, ADS_EXCLUDED_ROUTES } from "../lib/consts";
+import { ADS_SLOT_TOP, ADS_EXCLUDED_ROUTES, ADSENSE_CLIENT } from "../lib/consts";
 
 const THEME_STORAGE_KEY = "canapalandia_theme";
 const { 
@@ -288,66 +288,222 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
       })();
     </script>
 
-    <!-- AdSense Script Global - caricato SEMPRE (Consent Mode gestisce Limited ads) -->
+    <!-- AdSense: Setup centralizzato tramite utility -->
     <!-- IMPORTANTE: AdSense mostrerà "Limited ads" quando consenso è "denied" grazie a Consent Mode -->
-    <script is:inline>
+    <script is:inline define:vars={{ clientId: ADSENSE_CLIENT }}>
       (() => {
-        const ADSENSE_CLIENT = "ca-pub-6462363788506395";
-        // Rileva dev mode: localhost o vercel preview
+        // Import inline della utility (compilata da Astro)
+        // Nota: in produzione questo sarà iniettato come codice compilato
+        const ADSENSE_SCRIPT_URL = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js";
+        const MIN_SLOT_WIDTH = 250;
         const isDev = window.location.hostname === "localhost" || window.location.hostname.includes("vercel.app");
 
-        // Funzione per caricare script AdSense (una sola volta)
-        const loadAdSense = () => {
-          // Evita doppio caricamento
+        // ensureAdSenseScriptLoaded
+        async function ensureAdSenseScriptLoaded(clientId) {
           if (window.__adsenseLoaded) {
-            if (isDev) console.log("[AdSense] Script already loaded, skipping");
-            return;
+            if (isDev) console.log("[AdSense] Script already loaded");
+            return Promise.resolve();
           }
 
-          // Verifica che lo script non sia già presente nel DOM
-          if (document.querySelector(`script[src*="googlesyndication.com/pagead/js/adsbygoogle.js"]`)) {
+          const existingScript = document.querySelector(`script[src*="adsbygoogle.js"]`);
+          if (existingScript) {
             if (isDev) console.log("[AdSense] Script tag already exists in DOM");
             window.__adsenseLoaded = true;
             window.dispatchEvent(new CustomEvent("adsense:script-loaded"));
+            return Promise.resolve();
+          }
+
+          return new Promise((resolve, reject) => {
+            const script = document.createElement("script");
+            script.async = true;
+            script.src = `${ADSENSE_SCRIPT_URL}?client=${clientId}`;
+            script.crossOrigin = "anonymous";
+
+            script.onload = () => {
+              window.__adsenseLoaded = true;
+              if (isDev) console.log("[AdSense] Script loaded successfully");
+              window.dispatchEvent(new CustomEvent("adsense:script-loaded"));
+              resolve();
+            };
+
+            script.onerror = () => {
+              console.error("[AdSense] Failed to load script");
+              reject(new Error("AdSense script failed to load"));
+            };
+
+            document.head.appendChild(script);
+            window.__adsenseLoaded = true;
+          });
+        }
+
+        // getContainerWidth
+        function getContainerWidth(element) {
+          let current = element;
+          let width = 0;
+
+          while (current && current !== document.body) {
+            const rect = current.getBoundingClientRect();
+            const computedStyle = window.getComputedStyle(current);
+            
+            if (computedStyle.display === "none" || computedStyle.visibility === "hidden") {
+              current = current.parentElement;
+              continue;
+            }
+
+            if (rect.width > 0) {
+              width = rect.width;
+              break;
+            }
+
+            current = current.parentElement;
+          }
+
+          if (width === 0) {
+            width = window.innerWidth;
+          }
+
+          return width;
+        }
+
+        // initAdSenseSlots
+        function initAdSenseSlots(root = document) {
+          if (!window.adsbygoogle || typeof window.adsbygoogle.push !== "function") {
+            if (isDev) console.log("[initAdSenseSlots] AdSense script not ready yet");
             return;
           }
 
-          // Crea e carica script
-          const script = document.createElement("script");
-          script.async = true;
-          script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`;
-          script.crossOrigin = "anonymous";
+          if (!window.__adsenseInitAttempted) {
+            window.__adsenseInitAttempted = new Set();
+          }
+
+          const adElements = root.querySelectorAll("ins.adsbygoogle");
           
-          // Log quando lo script viene caricato (solo in dev)
-          script.onload = () => {
-            window.__adsenseLoaded = true;
-            if (isDev) {
-              console.log("[AdSense] Script loaded successfully (Limited ads enabled via Consent Mode)");
+          if (adElements.length === 0) {
+            if (isDev) console.log("[initAdSenseSlots] No AdSense slots found");
+            return;
+          }
+
+          let initialized = 0;
+          let skipped = 0;
+          let skippedWidth = 0;
+
+          adElements.forEach((element) => {
+            const status = element.getAttribute("data-adsbygoogle-status");
+            if (status) {
+              if (isDev) {
+                const slot = element.getAttribute("data-ad-slot");
+                console.log(`[initAdSenseSlots] Slot ${slot} already initialized (status: ${status}), skipping`);
+              }
+              skipped++;
+              return;
             }
-            window.dispatchEvent(new CustomEvent("adsense:script-loaded"));
+
+            if (window.__adsenseInitAttempted.has(element)) {
+              if (isDev) {
+                const slot = element.getAttribute("data-ad-slot");
+                console.log(`[initAdSenseSlots] Slot ${slot} already attempted, skipping`);
+              }
+              skipped++;
+              return;
+            }
+
+            const adClient = element.getAttribute("data-ad-client");
+            const adSlot = element.getAttribute("data-ad-slot");
+
+            if (!adClient || !adSlot) {
+              if (isDev) {
+                console.warn("[initAdSenseSlots] Skipping: missing data-ad-client or data-ad-slot");
+              }
+              skipped++;
+              return;
+            }
+
+            const containerWidth = getContainerWidth(element);
+            
+            if (containerWidth < MIN_SLOT_WIDTH) {
+              element.style.display = "none";
+              if (isDev) {
+                console.warn(
+                  `[initAdSenseSlots] Slot ${adSlot} skipped: container too narrow (${Math.round(containerWidth)}px < ${MIN_SLOT_WIDTH}px)`
+                );
+              }
+              skippedWidth++;
+              skipped++;
+              return;
+            }
+
+            try {
+              window.__adsenseInitAttempted.add(element);
+              window.adsbygoogle = window.adsbygoogle || [];
+              window.adsbygoogle.push({});
+              initialized++;
+              if (isDev) {
+                console.log(`[initAdSenseSlots] Initialized slot ${adSlot} (width: ${Math.round(containerWidth)}px)`);
+              }
+            } catch (e) {
+              console.error(`[initAdSenseSlots] Error initializing slot ${adSlot}:`, e);
+              window.__adsenseInitAttempted.delete(element);
+            }
+          });
+
+          if (isDev && (initialized > 0 || skipped > 0)) {
+            console.log(
+              `[initAdSenseSlots] Completed: ${initialized} initialized, ${skipped} skipped` +
+              (skippedWidth > 0 ? ` (${skippedWidth} too narrow)` : "")
+            );
+          }
+        }
+
+        // setupAdSense
+        function setupAdSense(clientId) {
+          ensureAdSenseScriptLoaded(clientId).catch((err) => {
+            console.error("[setupAdSense] Failed to load script:", err);
+          });
+
+          const initWhenReady = () => {
+            if (window.__adsenseLoaded) {
+              initAdSenseSlots();
+            } else {
+              window.addEventListener("adsense:script-loaded", () => {
+                initAdSenseSlots();
+              }, { once: true });
+            }
           };
 
-          script.onerror = () => {
-            console.error("[AdSense] Failed to load script");
-          };
+          if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", initWhenReady);
+          } else {
+            initWhenReady();
+          }
 
-          document.head.appendChild(script);
-          window.__adsenseLoaded = true; // Set subito per evitare race condition
-        };
+          document.addEventListener("astro:page-load", () => {
+            if (isDev) console.log("[setupAdSense] astro:page-load event");
+            setTimeout(() => {
+              initAdSenseSlots();
+            }, 100);
+          });
+
+          document.addEventListener("astro:after-swap", () => {
+            if (isDev) console.log("[setupAdSense] astro:after-swap event");
+            setTimeout(() => {
+              initAdSenseSlots();
+            }, 100);
+          });
+        }
 
         // Carica AdSense SEMPRE (Consent Mode gestisce consenso denied con "Limited ads")
-        // I segnali di consenso sono già stati impostati da Consent Mode sopra
-        loadAdSense();
+        setupAdSense(clientId);
 
-        // Ascolta evento consenso cookie per aggiornare (non necessario per caricare script)
+        // Ascolta evento consenso cookie per aggiornare
         window.addEventListener("canapalandia:cookie-consent", (e) => {
           if (e.detail && (e.detail.ads === true || e.detail.analytics === true)) {
-            // Consenso accordato: AdSense si aggiorna automaticamente via Consent Mode
             if (!window.__adsenseLoaded) {
-              loadAdSense();
+              ensureAdSenseScriptLoaded(clientId).then(() => {
+                initAdSenseSlots();
+              });
             } else {
-              // Script già caricato, emetti evento per componenti in attesa
               window.dispatchEvent(new CustomEvent("adsense:script-loaded"));
+              initAdSenseSlots();
             }
           }
         });
@@ -356,129 +512,16 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
         if (typeof window.__tcfapi !== "undefined") {
           window.__tcfapi("addEventListener", 2, (tcData, success) => {
             if (success && window.canapalandiaHasAdConsent && window.canapalandiaHasAdConsent()) {
-              // Consenso TCF: AdSense si aggiorna via Consent Mode
               if (!window.__adsenseLoaded) {
-                loadAdSense();
-              }
-            }
-          });
-        }
-      })();
-    </script>
-
-    <!-- Funzione globale initAds() per inizializzare AdSense slots in modo sicuro -->
-    <script is:inline>
-      (() => {
-        const isDev = window.location.hostname === "localhost" || window.location.hostname.includes("vercel.app");
-
-        /**
-         * Inizializza tutti gli slot AdSense non ancora inizializzati
-         * Guard robusti per evitare doppie inizializzazioni e errori
-         */
-        window.initAds = function() {
-          // Verifica che AdSense script sia caricato
-          if (!window.adsbygoogle || typeof window.adsbygoogle.push !== "function") {
-            if (isDev) console.log("[initAds] AdSense script not ready yet, skipping");
-            return;
-          }
-
-          // Trova tutti gli elementi ins.adsbygoogle
-          const adElements = document.querySelectorAll("ins.adsbygoogle");
-          if (adElements.length === 0) {
-            if (isDev) console.log("[initAds] No AdSense slots found");
-            return;
-          }
-
-          let initialized = 0;
-          let skipped = 0;
-
-          adElements.forEach((element) => {
-            // Guard 1: Verifica che data-ad-client e data-ad-slot siano presenti
-            const adClient = element.getAttribute("data-ad-client");
-            const adSlot = element.getAttribute("data-ad-slot");
-
-            if (!adClient || !adSlot) {
-              if (isDev) {
-                console.warn("[initAds] Skipping ad element: missing data-ad-client or data-ad-slot", {
-                  hasClient: !!adClient,
-                  hasSlot: !!adSlot,
+                ensureAdSenseScriptLoaded(clientId).then(() => {
+                  initAdSenseSlots();
                 });
+              } else {
+                initAdSenseSlots();
               }
-              skipped++;
-              return;
-            }
-
-            // Guard 2: Verifica che non sia già inizializzato (data-adsbygoogle-status)
-            if (element.getAttribute("data-adsbygoogle-status")) {
-              if (isDev) console.log(`[initAds] Slot ${adSlot} already initialized, skipping`);
-              skipped++;
-              return;
-            }
-
-            // Guard 3: Verifica flag data-ads-initialized
-            if (element.dataset && element.dataset.adsInitialized === "1") {
-              if (isDev) console.log(`[initAds] Slot ${adSlot} already marked as initialized, skipping`);
-              skipped++;
-              return;
-            }
-
-            // Tutti i guard passati: inizializza questo slot
-            try {
-              (window.adsbygoogle = window.adsbygoogle || []).push({});
-              if (element.dataset) {
-                element.dataset.adsInitialized = "1";
-              }
-              initialized++;
-              if (isDev) console.log(`[initAds] Initialized slot ${adSlot}`);
-            } catch (e) {
-              console.error(`[initAds] Error initializing slot ${adSlot}:`, e);
             }
           });
-
-          if (isDev && (initialized > 0 || skipped > 0)) {
-            console.log(`[initAds] Completed: ${initialized} initialized, ${skipped} skipped`);
-          }
-        };
-
-        // Inizializza al primo caricamento pagina
-        if (document.readyState === "loading") {
-          document.addEventListener("DOMContentLoaded", () => {
-            // Attendi che lo script AdSense sia caricato
-            if (window.__adsenseLoaded) {
-              window.initAds();
-            } else {
-              window.addEventListener("adsense:script-loaded", () => {
-                window.initAds();
-              }, { once: true });
-            }
-          });
-        } else {
-          // DOM già caricato
-          if (window.__adsenseLoaded) {
-            window.initAds();
-          } else {
-            window.addEventListener("adsense:script-loaded", () => {
-              window.initAds();
-            }, { once: true });
-          }
         }
-
-        // Supporto navigazione client-side Astro (transitions/after-swap)
-        document.addEventListener("astro:page-load", () => {
-          if (isDev) console.log("[initAds] astro:page-load event, reinitializing ads");
-          // Piccolo delay per assicurarsi che il DOM sia aggiornato
-          setTimeout(() => {
-            window.initAds();
-          }, 100);
-        });
-
-        document.addEventListener("astro:after-swap", () => {
-          if (isDev) console.log("[initAds] astro:after-swap event, reinitializing ads");
-          // Piccolo delay per assicurarsi che il DOM sia aggiornato
-          setTimeout(() => {
-            window.initAds();
-          }, 100);
-        });
       })();
     </script>
 

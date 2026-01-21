@@ -34,16 +34,18 @@ const instanceId =
 ---
 
 {slot && client ? (
-  <div class="adslot-container" data-adslot-instance={instanceId} data-adslot-id={slot}>
-    {label ? <p class="adslot-label">{label}</p> : null}
-    <ins
-      class="adsbygoogle"
-      data-ad-client={client}
-      data-ad-slot={slot}
-      data-ad-format={format}
-      data-full-width-responsive={String(responsive)}
-      style="display:block"
-    ></ins>
+  <div class="adslot-wrapper">
+    <div class="adslot-container" data-adslot-instance={instanceId} data-adslot-id={slot}>
+      {label ? <p class="adslot-label">{label}</p> : null}
+      <ins
+        class="adsbygoogle"
+        data-ad-client={client}
+        data-ad-slot={slot}
+        data-ad-format={format}
+        data-full-width-responsive={String(responsive)}
+        style="display:block"
+      ></ins>
+    </div>
   </div>
 ) : null}
 
@@ -61,7 +63,35 @@ const instanceId =
     window.__adsenseUsedSlots.add(slot);
   }
 
-  // Nota: l'inizializzazione vera e propria sarà gestita da initAds() globale
-  // che viene chiamata su astro:page-load e astro:after-swap
+  // Nota: l'inizializzazione vera e propria sarà gestita da setupAdSense() nel layout
+  // che viene chiamata su DOMContentLoaded, astro:page-load e astro:after-swap
 })();
 </script>
+
+<style>
+  /* Wrapper esterno: garantisce min-width e previene collasso */
+  .adslot-wrapper {
+    width: 100%;
+    min-width: 250px; /* Minimum width per AdSense */
+    display: block;
+    flex: 1 1 auto; /* Previene shrink in flex containers */
+  }
+
+  .adslot-container {
+    width: 100%;
+    display: block;
+  }
+
+  .adslot-label {
+    font-size: 0.75rem;
+    color: var(--muted, rgba(255, 255, 255, 0.6));
+    text-transform: uppercase;
+    margin: 0 0 0.5rem;
+    text-align: center;
+  }
+
+  .adsbygoogle {
+    display: block;
+    width: 100%;
+  }
+</style>
