@@ -56,33 +56,35 @@ const instanceId =
 -->
 
 <style>
-  /* Wrapper esterno: garantisce min-width senza rompere layout */
+  /* Wrapper esterno: garantisce min-width e previene collasso */
   .adslot-wrapper {
     width: 100%;
-    min-width: min(300px, 100%); /* Non forza 300px se container è più stretto */
+    min-width: 300px; /* Minimo 300px per AdSense */
     display: block;
-    flex: 1 1 auto; /* Previene shrink in flex containers */
-    min-height: 100px; /* Altezza minima ragionevole per evitare collasso */
-    flex-shrink: 0; /* IMPORTANTE: previene shrink a 102px in flex/grid */
+    flex: 0 0 auto; /* IMPORTANTE: previene shrink a 102px in flex/grid */
+    min-height: 250px; /* Altezza minima per evitare height 0 in articoli */
   }
 
-  /* Negli articoli, garantisci almeno 300px per slot in-article */
+  /* Negli articoli, garantisci dimensioni minime */
   .post-main .adslot-wrapper,
   article .adslot-wrapper {
-    min-width: min(300px, 100%);
+    min-width: 300px;
+    min-height: 250px;
   }
 
   /* Fix specifico per sidebar: evita collasso a 102px */
   .sidebar-ad__wrapper .adslot-wrapper,
   .sidebar-ad__sticky .adslot-wrapper {
-    min-width: min(300px, 100%);
+    min-width: 300px;
     flex-shrink: 0;
     width: 100%;
+    min-height: 250px;
   }
 
   .adslot-container {
     width: 100%;
     display: block;
+    min-height: 250px; /* Altezza minima sul container per evitare height 0 */
   }
 
   .adslot-label {
