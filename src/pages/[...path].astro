@@ -892,13 +892,13 @@ const titleHtml = entry.title || rawItem?.title?.rendered || "";
 
   /* Fix sidebar wrapper: evita collasso a 102px */
   .sidebar-ad__wrapper {
-    min-width: 0;
     width: 100%;
+    min-width: 300px; /* IMPORTANTE: evita collasso sotto 300px */
   }
 
   .sidebar-ad__sticky {
     width: 100%;
-    min-width: 0;
+    min-width: 300px; /* IMPORTANTE: evita collasso sotto 300px */
   }
 
   @media (min-width: 1024px) {

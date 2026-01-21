@@ -288,19 +288,23 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
       })();
     </script>
 
-    <!-- AdSense: Initializer globale unico -->
-    <!-- IMPORTANTE: AdSense mostrerà "Limited ads" quando consenso è "denied" grazie a Consent Mode -->
+    <!-- AdSense: Initializer globale robusto e minimale -->
     <script is:inline define:vars={{ clientId: ADSENSE_CLIENT }}>
       (() => {
         "use strict";
         
         const ADSENSE_SCRIPT_URL = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js";
-        const MIN_SLOT_WIDTH = 300; // Soglia minima: 300px (250px fallback se necessario)
-        const isDev = window.location.hostname === "localhost" || window.location.hostname.includes("vercel.app");
+        const MIN_SLOT_WIDTH = 300;
+        const RESIZE_TIMEOUT = 8000; // 8s timeout per ResizeObserver
+        const DEBUG = localStorage.getItem("ADS_DEBUG") === "1";
+        
+        // Registro globale WeakSet per tracciare slot inizializzati (evita doppi push)
+        if (!window.__adsenseInitialized) {
+          window.__adsenseInitialized = new WeakSet();
+        }
 
-        // 1) Carica adsbygoogle.js una sola volta (window.__adsenseLoaded guard)
+        // 1) Carica script una sola volta
         if (!window.__adsenseLoaded) {
-          // Verifica se script tag esiste già nel DOM
           const existingScript = document.querySelector(`script[src*="adsbygoogle.js"]`);
           if (!existingScript) {
             const script = document.createElement("script");
@@ -309,203 +313,185 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
             script.crossOrigin = "anonymous";
             script.onload = () => {
               window.__adsenseLoaded = true;
-              if (isDev) console.log("[AdSense] Script loaded successfully");
-              scan(); // Scansiona slot dopo caricamento script
+              if (DEBUG) console.log("[AdSense] Script loaded");
+              scan();
             };
-            script.onerror = () => {
-              console.error("[AdSense] Failed to load script");
-            };
+            script.onerror = () => console.error("[AdSense] Script failed");
             document.head.appendChild(script);
           } else {
             window.__adsenseLoaded = true;
-            if (isDev) console.log("[AdSense] Script tag already exists in DOM");
           }
         }
 
-        // Inizializza un singolo slot AdSense (una sola volta)
+        // 2) initAds: push SOLO se condizioni soddisfatte
         function initAds(el) {
-          // Guard a) el esiste
-          if (!el || !el.classList || !el.classList.contains("adsbygoogle")) {
+          // a) Connesso al DOM
+          if (!el || !el.isConnected || !el.classList?.contains("adsbygoogle")) {
             return false;
           }
 
-          // Guard b) el.dataset.adsInit !== "1" (non già inizializzato)
-          if (el.dataset.adsInit === "1") {
-            if (isDev) {
+          // b) Display non è none
+          const style = window.getComputedStyle(el);
+          if (style.display === "none" || style.visibility === "hidden") {
+            if (DEBUG) {
               const slot = el.getAttribute("data-ad-slot");
-              console.log(`[initAds] Slot ${slot} already initialized, skipping`);
+              console.log(`[initAds] Slot ${slot} hidden (display: ${style.display}), skip`);
             }
             return false;
           }
 
-          // Evita doppi push su ins già 'done'
-          const status = el.getAttribute("data-adsbygoogle-status");
-          if (status === "done") {
-            el.dataset.adsInit = "1";
-            return false;
-          }
-
-          // Guard c) width >= 300
+          // c) width >= 300 E parent width >= 300
           const rect = el.getBoundingClientRect();
           const width = rect.width || el.offsetWidth || 0;
-          if (width < MIN_SLOT_WIDTH) {
-            if (isDev) {
+          const parent = el.parentElement;
+          const parentWidth = parent ? (parent.getBoundingClientRect().width || parent.offsetWidth || 0) : width;
+          
+          if (width < MIN_SLOT_WIDTH || parentWidth < MIN_SLOT_WIDTH) {
+            if (DEBUG) {
               const slot = el.getAttribute("data-ad-slot");
-              console.log(`[initAds] Slot ${slot} width too narrow (${Math.round(width)}px < ${MIN_SLOT_WIDTH}px), skipping`);
+              console.log(`[initAds] Slot ${slot} too narrow (w: ${Math.round(width)}, parent: ${Math.round(parentWidth)}), skip`);
             }
             return false;
           }
 
-          // Verifica che AdSense script sia caricato
-          if (!window.__adsenseLoaded || !window.adsbygoogle || typeof window.adsbygoogle.push !== "function") {
-            if (isDev) console.log("[initAds] AdSense script not ready yet");
+          // d) Non già inizializzato (WeakSet + dataset + status)
+          if (window.__adsenseInitialized.has(el) || el.dataset.adsInit === "1") {
+            if (DEBUG) {
+              const slot = el.getAttribute("data-ad-slot");
+              console.log(`[initAds] Slot ${slot} already in registry, skip`);
+            }
             return false;
           }
 
-          // Tutti i guard passati: esegui push
-          try {
-            // Marca come inizializzato PRIMA del push per evitare race conditions
+          const status = el.getAttribute("data-adsbygoogle-status");
+          if (status === "done" || status === "filled") {
+            window.__adsenseInitialized.add(el);
             el.dataset.adsInit = "1";
+            return false;
+          }
 
-            // Esegui push
+          // Verifica script caricato
+          if (!window.__adsenseLoaded || !window.adsbygoogle?.push) {
+            if (DEBUG) console.log("[initAds] Script not ready");
+            return false;
+          }
+
+          // Push
+          try {
+            window.__adsenseInitialized.add(el);
+            el.dataset.adsInit = "1";
             (window.adsbygoogle = window.adsbygoogle || []).push({});
-
-            if (isDev) {
+            
+            if (DEBUG) {
               const slot = el.getAttribute("data-ad-slot");
-              console.log(`[initAds] Initialized slot ${slot} (width: ${Math.round(width)}px)`);
+              console.log(`[initAds] ✓ Slot ${slot} pushed (w: ${Math.round(width)})`);
             }
-
             return true;
           } catch (e) {
-            // In caso di errore, rimuovi flag per permettere retry
+            window.__adsenseInitialized.delete(el);
             el.dataset.adsInit = "0";
-            const slot = el.getAttribute("data-ad-slot");
-            console.error(`[initAds] Error initializing slot ${slot}:`, e);
+            if (DEBUG) {
+              const slot = el.getAttribute("data-ad-slot");
+              console.error(`[initAds] ✗ Error slot ${slot}:`, e);
+            }
             return false;
           }
         }
 
-        // Scansiona tutti gli slot nel DOM
-        function scan() {
-          if (!window.__adsenseLoaded || !window.adsbygoogle || typeof window.adsbygoogle.push !== "function") {
-            if (isDev) console.log("[scan] AdSense script not ready yet");
-            return;
-          }
-
-          const adElements = document.querySelectorAll("ins.adsbygoogle");
-          
-          if (adElements.length === 0) {
-            if (isDev) console.log("[scan] No AdSense slots found");
-            return;
-          }
-
-          let initialized = 0;
-          let skipped = 0;
-
-          adElements.forEach((el) => {
-            // Setup ResizeObserver per slot non ancora inizializzati
-            if (el.dataset.adsInit !== "1" && el.getAttribute("data-adsbygoogle-status") !== "done") {
-              setupResizeObserver(el);
-            }
-
-            // Prova init immediato
-            const result = initAds(el);
-            if (result) {
-              initialized++;
-            } else {
-              skipped++;
-            }
-          });
-
-          if (isDev && (initialized > 0 || skipped > 0)) {
-            console.log(`[scan] Completed: ${initialized} initialized, ${skipped} skipped`);
-          }
-        }
-
-        // Setup ResizeObserver per un singolo slot (osserva il wrapper, non l'ins)
+        // 3) ResizeObserver con timeout (8s)
         function setupResizeObserver(el) {
-          if (!el || el.dataset.resizeObserverSetup === "1") {
-            return;
-          }
-
+          if (!el || el.dataset.resizeObserverSetup === "1") return;
+          
           el.dataset.resizeObserverSetup = "1";
           const adSlot = el.getAttribute("data-ad-slot");
+          const startTime = Date.now();
+          let timeoutId = setTimeout(() => {
+            resizeObserver.disconnect();
+            delete el.dataset.resizeObserverSetup;
+            if (DEBUG) console.log(`[ResizeObserver] Slot ${adSlot} timeout after 8s`);
+          }, RESIZE_TIMEOUT);
 
-          // ResizeObserver: ritenta quando width diventa >= 300
           const resizeObserver = new ResizeObserver((entries) => {
             for (const entry of entries) {
               const newWidth = entry.contentRect.width;
-
-              // Se width è ora >= 300 e non è ancora stato inizializzato
-              if (
-                newWidth >= MIN_SLOT_WIDTH &&
-                el.dataset.adsInit !== "1" &&
-                el.getAttribute("data-adsbygoogle-status") !== "done"
-              ) {
-                if (isDev) {
-                  console.log(
-                    `[setupResizeObserver] Slot ${adSlot} wrapper now ready (width: ${Math.round(newWidth)}px), retrying init`
-                  );
-                }
-
-                // Disconnect observer dopo init riuscito
+              
+              if (newWidth >= MIN_SLOT_WIDTH && 
+                  el.isConnected &&
+                  !window.__adsenseInitialized.has(el) &&
+                  el.getAttribute("data-adsbygoogle-status") !== "done") {
+                
+                clearTimeout(timeoutId);
                 resizeObserver.disconnect();
                 delete el.dataset.resizeObserverSetup;
-
-                // Tenta init con requestAnimationFrame per layout stabile
+                
+                if (DEBUG) {
+                  console.log(`[ResizeObserver] Slot ${adSlot} ready (w: ${Math.round(newWidth)}), retry`);
+                }
+                
                 requestAnimationFrame(() => {
-                  requestAnimationFrame(() => {
-                    initAds(el);
-                  });
+                  requestAnimationFrame(() => initAds(el));
                 });
                 return;
               }
             }
           });
 
-          // IMPORTANTE: Osserva il wrapper (.adslot-wrapper), non l'ins stesso
           const wrapper = el.closest(".adslot-wrapper");
-          if (wrapper) {
-            resizeObserver.observe(wrapper);
-          } else {
-            // Fallback: osserva parent se wrapper non trovato
-            const container = el.parentElement || el;
-            resizeObserver.observe(container);
+          resizeObserver.observe(wrapper || el.parentElement || el);
+        }
+
+        // 4) scan: solo slot nuovi non gestiti
+        function scan() {
+          if (!window.__adsenseLoaded || !window.adsbygoogle?.push) {
+            if (DEBUG) console.log("[scan] Script not ready");
+            return;
+          }
+
+          const adElements = document.querySelectorAll("ins.adsbygoogle");
+          if (adElements.length === 0) return;
+
+          let initialized = 0;
+          let skipped = 0;
+
+          adElements.forEach((el) => {
+            // Setup observer solo per slot non inizializzati
+            if (!window.__adsenseInitialized.has(el) && 
+                el.dataset.adsInit !== "1" && 
+                el.getAttribute("data-adsbygoogle-status") !== "done") {
+              setupResizeObserver(el);
+            }
+
+            const result = initAds(el);
+            if (result) initialized++;
+            else skipped++;
+          });
+
+          if (DEBUG && (initialized > 0 || skipped > 0)) {
+            console.log(`[scan] ${initialized} init, ${skipped} skip`);
           }
         }
 
-        // MutationObserver: rileva nuovi slot aggiunti al DOM
+        // 5) MutationObserver: solo slot nuovi
         const mutationObserver = new MutationObserver((mutations) => {
-          let hasNewSlots = false;
-
-          mutations.forEach((mutation) => {
-            mutation.addedNodes.forEach((node) => {
-              if (node.nodeType === 1) { // Element node
-                // Verifica se il nodo stesso è uno slot o contiene slot
-                if (node.classList && node.classList.contains("adsbygoogle")) {
-                  hasNewSlots = true;
-                } else if (node.querySelectorAll) {
-                  const slots = node.querySelectorAll("ins.adsbygoogle");
-                  if (slots.length > 0) {
-                    hasNewSlots = true;
-                  }
+          let hasNew = false;
+          mutations.forEach((m) => {
+            m.addedNodes.forEach((node) => {
+              if (node.nodeType === 1) {
+                if (node.classList?.contains("adsbygoogle") || 
+                    node.querySelectorAll?.("ins.adsbygoogle").length > 0) {
+                  hasNew = true;
                 }
               }
             });
           });
-
-          if (hasNewSlots) {
-            if (isDev) console.log("[MutationObserver] New ad slots detected, scanning...");
-            // Piccolo delay per garantire che il DOM sia stabile
-            setTimeout(() => {
-              scan();
-            }, 100);
+          if (hasNew) {
+            if (DEBUG) console.log("[MutationObserver] New slots detected");
+            setTimeout(() => scan(), 100);
           }
         });
 
-        // Avvio: scan su DOMContentLoaded + window load
+        // Avvio
         const startInit = () => {
-          // Carica script se non già caricato
           if (!window.__adsenseLoaded) {
             const existingScript = document.querySelector(`script[src*="adsbygoogle.js"]`);
             if (!existingScript) {
@@ -515,25 +501,17 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
               script.crossOrigin = "anonymous";
               script.onload = () => {
                 window.__adsenseLoaded = true;
-                if (isDev) console.log("[AdSense] Script loaded successfully");
+                if (DEBUG) console.log("[AdSense] Script loaded");
                 scan();
               };
-              script.onerror = () => {
-                console.error("[AdSense] Failed to load script");
-              };
+              script.onerror = () => console.error("[AdSense] Script failed");
               document.head.appendChild(script);
             } else {
               window.__adsenseLoaded = true;
             }
           }
 
-          // Avvia MutationObserver per rilevare nuovi slot
-          mutationObserver.observe(document.documentElement, {
-            childList: true,
-            subtree: true,
-          });
-
-          // Prima scan
+          mutationObserver.observe(document.documentElement, { childList: true, subtree: true });
           scan();
         };
 
@@ -543,47 +521,33 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
           startInit();
         }
 
-        // Scan anche su window load (per slot caricati lazy)
         window.addEventListener("load", () => {
-          if (isDev) console.log("[AdSense] Window load event, scanning...");
+          if (DEBUG) console.log("[AdSense] Window load");
           scan();
         });
 
-        // Supporto Astro view transitions
         document.addEventListener("astro:page-load", () => {
-          if (isDev) console.log("[AdSense] astro:page-load event, scanning...");
-          setTimeout(() => {
-            scan();
-          }, 100);
+          if (DEBUG) console.log("[AdSense] astro:page-load");
+          setTimeout(() => scan(), 100);
         });
 
         document.addEventListener("astro:after-swap", () => {
-          if (isDev) console.log("[AdSense] astro:after-swap event, scanning...");
-          setTimeout(() => {
-            scan();
-          }, 100);
+          if (DEBUG) console.log("[AdSense] astro:after-swap");
+          setTimeout(() => scan(), 100);
         });
 
-        // Ascolta evento consenso cookie
         window.addEventListener("canapalandia:cookie-consent", (e) => {
-          if (e.detail && (e.detail.ads === true || e.detail.analytics === true)) {
-            if (!window.__adsenseLoaded) {
-              startInit();
-            } else {
-              scan();
-            }
+          if (e.detail?.ads || e.detail?.analytics) {
+            if (!window.__adsenseLoaded) startInit();
+            else scan();
           }
         });
 
-        // Ascolta cambiamenti TCF (se CMP è presente)
         if (typeof window.__tcfapi !== "undefined") {
           window.__tcfapi("addEventListener", 2, (tcData, success) => {
-            if (success && window.canapalandiaHasAdConsent && window.canapalandiaHasAdConsent()) {
-              if (!window.__adsenseLoaded) {
-                startInit();
-              } else {
-                scan();
-              }
+            if (success && window.canapalandiaHasAdConsent?.()) {
+              if (!window.__adsenseLoaded) startInit();
+              else scan();
             }
           });
         }
