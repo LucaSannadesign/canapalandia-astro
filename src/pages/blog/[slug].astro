@@ -3,6 +3,9 @@ import { getEntryBySlug, getCollection, type CollectionEntry } from "astro:conte
 import SiteLayout from "../../layouts/SiteLayout.astro";
 import CardPost from "../../components/CardPost.astro";
 import AdSenseSlot from "../../components/AdSenseSlot.astro";
+import PostMeta from "../../components/PostMeta.astro";
+import PostShare from "../../components/PostShare.astro";
+import SupportCTA from "../../components/SupportCTA.astro";
 
 export const prerender = false;
 
@@ -154,6 +157,14 @@ const metadata = {
   canonical: `${import.meta.env.SITE || "https://canapalandia.com"}/blog/${slug}/`,
   robots: { index: true, follow: true },
 };
+
+// URL canonico per condivisione
+const canonicalUrl = metadata.canonical;
+const postTitle = (entry as any).data.title;
+
+// Opzioni frontmatter per disabilitare blocchi
+const showShare = (entry as any).data.showShare !== false; // default: true
+const showSupportCta = (entry as any).data.showSupportCta !== false; // default: true
 ---
 
 <SiteLayout metadata={metadata}>
@@ -161,6 +172,12 @@ const metadata = {
     <div class="post-layout">
       <article class="post-main">
         <h1>{(entry as any).data.title}</h1>
+        
+        <PostMeta
+          publishDate={(entry as any).data.publishDate}
+          updatedDate={(entry as any).data.updatedDate}
+          slug={slug}
+        />
         
         {coverSrc ? (
           <figure class="post-hero">
@@ -177,6 +194,22 @@ const metadata = {
         ) : null}
         
         <Content />
+
+        {/* Separatore */}
+        <hr class="post-separator" aria-hidden="true" />
+
+        {/* Social Share */}
+        <PostShare
+          url={canonicalUrl}
+          title={postTitle}
+          showShare={showShare}
+        />
+
+        {/* CTA Sostienici */}
+        <SupportCTA
+          supportUrl="/sostieni-la-nostra-causa/"
+          showSupportCta={showSupportCta}
+        />
       </article>
 
       <aside class="post-sidebar">
@@ -279,5 +312,13 @@ const metadata = {
     .related-posts__grid {
       grid-template-columns: repeat(3, 1fr);
     }
+  }
+
+  /* Separatore dopo contenuto post */
+  .post-separator {
+    margin: 3rem 0 2.5rem;
+    border: none;
+    border-top: 1px solid var(--border);
+    opacity: 0.5;
   }
 </style>

@@ -1,0 +1,109 @@
+---
+interface Props {
+  supportUrl?: string;
+  showSupportCta?: boolean;
+}
+
+const { supportUrl = "/sostieni-la-nostra-causa/", showSupportCta = true } = Astro.props;
+
+// Se disabilitato via frontmatter, non renderizzare
+if (showSupportCta === false) {
+  return null;
+}
+---
+
+<div class="support-cta">
+  <div class="support-cta__content">
+    <h3 class="support-cta__title">Sostienici</h3>
+    <p class="support-cta__text">
+      Canapalandia è un progetto indipendente che informa su cannabis legale, CBD e normative italiane. 
+      Il tuo sostegno ci permette di continuare a produrre contenuti di qualità, aggiornati e verificati.
+    </p>
+    <a
+      href={supportUrl}
+      class="support-cta__button"
+      aria-label="Sostieni Canapalandia"
+    >
+      Sostieni Canapalandia
+    </a>
+  </div>
+</div>
+
+<style>
+  .support-cta {
+    margin: 2.5rem 0;
+    padding: 2rem;
+    background: linear-gradient(135deg, var(--brand-subtle) 0%, var(--card-bg) 100%);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    text-align: center;
+  }
+
+  .support-cta__content {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .support-cta__title {
+    margin: 0 0 1rem 0;
+    font-size: var(--text-2xl);
+    font-weight: var(--font-bold);
+    color: var(--text);
+  }
+
+  .support-cta__text {
+    margin: 0 0 1.5rem 0;
+    font-size: var(--text-base);
+    line-height: var(--leading-relaxed);
+    color: var(--muted);
+  }
+
+  .support-cta__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.875rem 2rem;
+    background: var(--brand);
+    color: var(--brand-ink);
+    text-decoration: none;
+    font-size: var(--text-base);
+    font-weight: var(--font-semibold);
+    border-radius: var(--r-sm);
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .support-cta__button:hover,
+  .support-cta__button:focus-visible {
+    background: var(--brand-2);
+    color: var(--brand-ink);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+    outline: none;
+  }
+
+  .support-cta__button:active {
+    transform: translateY(0);
+  }
+
+  /* Mobile: padding ridotto */
+  @media (max-width: 640px) {
+    .support-cta {
+      padding: 1.5rem 1rem;
+    }
+
+    .support-cta__title {
+      font-size: var(--text-xl);
+    }
+
+    .support-cta__text {
+      font-size: var(--text-sm);
+    }
+
+    .support-cta__button {
+      padding: 0.75rem 1.5rem;
+      font-size: var(--text-sm);
+      width: 100%;
+    }
+  }
+</style>

@@ -1,0 +1,267 @@
+---
+interface Props {
+  publishDate: Date | string | number | null | undefined;
+  updatedDate?: Date | string | number | null | undefined;
+  slug: string;
+}
+
+const { publishDate, updatedDate, slug } = Astro.props;
+
+// Helper per convertire in Date | null
+function toDate(value: Date | string | number | null | undefined): Date | null {
+  if (!value) return null;
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+  const d = new Date(String(value));
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+// Helper per formattare data
+function formatDate(value: Date | string | number | null | undefined): string {
+  const d = toDate(value);
+  if (!d) return "";
+  return d.toLocaleDateString("it-IT", { year: "numeric", month: "long", day: "numeric" });
+}
+
+// Helper per ottenere datetime ISO (YYYY-MM-DD)
+function getDateTime(value: Date | string | number | null | undefined): string {
+  const d = toDate(value);
+  if (!d) return "";
+  return d.toISOString().split("T")[0];
+}
+
+// Helper per confrontare solo le date (ignora l'orario)
+function isSameDate(date1: Date | null, date2: Date | null): boolean {
+  if (!date1 || !date2) return false;
+  return (
+    date1.getFullYear() === date2.getFullYear() &&
+    date1.getMonth() === date2.getMonth() &&
+    date1.getDate() === date2.getDate()
+  );
+}
+
+// Normalizza le date
+const pubDate = toDate(publishDate);
+const updDate = toDate(updatedDate);
+
+// Mostra "Aggiornato il..." solo se updatedDate esiste ed è diversa da publishDate
+const showUpdated = updDate && pubDate && !isSameDate(pubDate, updDate);
+
+const formattedPublishDate = formatDate(publishDate);
+const publishDateTime = getDateTime(publishDate);
+const formattedUpdatedDate = showUpdated ? formatDate(updatedDate) : "";
+const updatedDateTime = showUpdated ? getDateTime(updatedDate) : "";
+---
+
+<div class="post-meta" itemscope itemtype="https://schema.org/Article">
+  <div class="post-meta__item">
+    <svg
+      class="post-meta__icon"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+      <line x1="16" y1="2" x2="16" y2="6"></line>
+      <line x1="8" y1="2" x2="8" y2="6"></line>
+      <line x1="3" y1="10" x2="21" y2="10"></line>
+    </svg>
+    <time
+      class="post-meta__date"
+      datetime={publishDateTime}
+      itemprop="datePublished"
+    >
+      {formattedPublishDate}
+    </time>
+  </div>
+  
+  {showUpdated ? (
+    <div class="post-meta__item">
+      <svg
+        class="post-meta__icon"
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"></path>
+      </svg>
+      <span class="post-meta__label">Aggiornato il</span>
+      <time
+        class="post-meta__date"
+        datetime={updatedDateTime}
+        itemprop="dateModified"
+      >
+        {formattedUpdatedDate}
+      </time>
+    </div>
+  ) : null}
+  
+  <div class="post-meta__item" id={`post-views-${slug}`}>
+    <svg
+      class="post-meta__icon"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+      <circle cx="12" cy="12" r="3"></circle>
+    </svg>
+    <span class="post-meta__views" aria-live="polite">
+      <span class="post-meta__views-placeholder">—</span> letture
+    </span>
+  </div>
+</div>
+
+<script define:vars={{ slug }}>
+  (() => {
+    "use strict";
+    const container = document.getElementById(`post-views-${slug}`);
+    if (!container) return;
+
+    const viewsEl = container.querySelector(".post-meta__views-placeholder");
+    if (!viewsEl) return;
+
+    // Formatta numero: 1284 -> "1.284" o "1.2k"
+    function formatViews(count) {
+      if (count < 1000) return count.toString();
+      if (count < 10000) {
+        const k = (count / 1000).toFixed(1);
+        return k.endsWith(".0") ? `${Math.floor(count / 1000)}k` : `${k}k`;
+      }
+      // Per numeri grandi, usa separatore migliaia
+      return count.toLocaleString("it-IT");
+    }
+
+    // Carica e aggiorna visite
+    async function loadViews() {
+      try {
+        // Prima legge il conteggio attuale
+        const getRes = await fetch(`/api/pageviews/${slug}`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        if (getRes.ok) {
+          const data = await getRes.json();
+          if (typeof data.views === "number") {
+            viewsEl.textContent = formatViews(data.views);
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn("[PostMeta] Errore caricamento visite:", err);
+      }
+
+      // Se GET fallisce, prova POST per incrementare (solo se non già fatto in questa sessione)
+      const sessionKey = `pageview_${slug}`;
+      if (!sessionStorage.getItem(sessionKey)) {
+        try {
+          const postRes = await fetch(`/api/pageviews/${slug}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+          });
+
+          if (postRes.ok) {
+            const data = await postRes.json();
+            if (typeof data.views === "number") {
+              viewsEl.textContent = formatViews(data.views);
+              sessionStorage.setItem(sessionKey, "1");
+              return;
+            }
+          }
+        } catch (err) {
+          console.warn("[PostMeta] Errore incremento visite:", err);
+        }
+      }
+    }
+
+    // Carica visite dopo che la pagina è caricata (non bloccante)
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", loadViews);
+    } else {
+      // Usa setTimeout per non bloccare il rendering
+      setTimeout(loadViews, 100);
+    }
+  })();
+</script>
+
+<style>
+  .post-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    align-items: center;
+    margin: 1rem 0 1.5rem;
+    padding: 0.75rem 0;
+    color: var(--muted);
+    font-size: var(--text-sm);
+    line-height: var(--leading-normal);
+  }
+
+  .post-meta__item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .post-meta__icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    color: var(--muted);
+    opacity: 0.7;
+  }
+
+  .post-meta__date {
+    color: var(--text);
+    font-weight: var(--font-medium);
+  }
+
+  .post-meta__label {
+    color: var(--muted);
+    font-weight: var(--font-normal);
+  }
+
+  .post-meta__views {
+    color: var(--muted);
+  }
+
+  .post-meta__views-placeholder {
+    color: var(--muted);
+    font-weight: var(--font-medium);
+  }
+
+  /* Mobile: stack verticale se spazio limitato */
+  @media (max-width: 640px) {
+    .post-meta {
+      gap: 1rem;
+      font-size: var(--text-xs);
+    }
+  }
+
+  /* Accessibilità: focus visible */
+  .post-meta__date:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+</style>

@@ -19,6 +19,8 @@ const blog = defineCollection({
     canonical: z.string().optional(),
     homeFeatured: z.boolean().optional(), // Flag per selezione editoriale "In evidenza"
     homeFeaturedRank: z.number().optional(), // Priorità manuale (più basso = più importante)
+    showShare: z.boolean().optional(), // Disabilita sezione share per singolo post
+    showSupportCta: z.boolean().optional(), // Disabilita CTA sostegno per singolo post
   }),
 });
 
