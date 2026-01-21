@@ -49,24 +49,11 @@ const instanceId =
   </div>
 ) : null}
 
-<script is:inline define:vars={{ instanceId, slot, client }}>
-(() => {
-  // Validazione slot duplicati: traccia slot già usati in questa pagina
-  if (!window.__adsenseUsedSlots) {
-    window.__adsenseUsedSlots = new Set();
-  }
-
-  // Se questo slot è già stato usato, logga warning (non bloccare, ma avvisa)
-  if (window.__adsenseUsedSlots.has(slot)) {
-    console.warn(`[AdSlot] WARNING: Slot "${slot}" is used multiple times on this page. Each AdSlot should have a unique slot ID.`);
-  } else {
-    window.__adsenseUsedSlots.add(slot);
-  }
-
-  // Nota: l'inizializzazione vera e propria sarà gestita da setupAdSense() nel layout
-  // che viene chiamata su DOMContentLoaded, astro:page-load e astro:after-swap
-})();
-</script>
+<!-- 
+  Nota: l'inizializzazione è gestita centralmente da initAllSlots() nel layout.
+  Non fare push diretti qui per evitare doppie inizializzazioni.
+  Gli Observer (ResizeObserver + IntersectionObserver) gestiranno l'init quando lo slot è layout-ready.
+-->
 
 <style>
   /* Wrapper esterno: garantisce min-width senza rompere layout */
@@ -76,12 +63,21 @@ const instanceId =
     display: block;
     flex: 1 1 auto; /* Previene shrink in flex containers */
     min-height: 100px; /* Altezza minima ragionevole per evitare collasso */
+    flex-shrink: 0; /* IMPORTANTE: previene shrink a 102px in flex/grid */
   }
 
   /* Negli articoli, garantisci almeno 300px per slot in-article */
   .post-main .adslot-wrapper,
   article .adslot-wrapper {
     min-width: min(300px, 100%);
+  }
+
+  /* Fix specifico per sidebar: evita collasso a 102px */
+  .sidebar-ad__wrapper .adslot-wrapper,
+  .sidebar-ad__sticky .adslot-wrapper {
+    min-width: min(300px, 100%);
+    flex-shrink: 0;
+    width: 100%;
   }
 
   .adslot-container {

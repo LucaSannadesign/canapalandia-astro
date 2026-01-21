@@ -338,7 +338,7 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
           })(clientId);
         }
 
-        // C) Funzione initSlot per inizializzare un singolo slot
+        // C) Funzione initSlot per inizializzare un singolo slot (layout-ready check)
         function initSlot(ins) {
           // Guard 1: Verifica elemento valido
           if (!ins || !ins.classList || !ins.classList.contains("adsbygoogle")) {
@@ -379,15 +379,36 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
             return false;
           }
 
-          // Guard 6: Misura width (getBoundingClientRect o offsetWidth)
+          // Guard 6: Layout-ready check (width, height, visibilità)
           const rect = ins.getBoundingClientRect();
+          const computedStyle = window.getComputedStyle(ins);
           const width = rect.width || ins.offsetWidth || 0;
+          const height = rect.height || ins.offsetHeight || 0;
+          const isVisible = ins.offsetParent !== null && computedStyle.display !== "none";
 
-          if (width < MIN_SLOT_WIDTH) {
+          // Determina min-width in base al contesto (300px per in-article, 250px default)
+          const isInArticle = ins.closest(".post-main, article") !== null;
+          const minWidth = isInArticle ? 300 : MIN_SLOT_WIDTH;
+
+          if (!isVisible) {
+            if (isDev) {
+              console.warn(`[initSlot] Slot ${adSlot} not visible (display: ${computedStyle.display}), skipping`);
+            }
+            return false;
+          }
+
+          if (width < minWidth) {
             if (isDev) {
               console.warn(
-                `[initSlot] Slot ${adSlot} too narrow (${Math.round(width)}px < ${MIN_SLOT_WIDTH}px), skipping`
+                `[initSlot] Slot ${adSlot} too narrow (${Math.round(width)}px < ${minWidth}px), skipping`
               );
+            }
+            return false;
+          }
+
+          if (height <= 0) {
+            if (isDev) {
+              console.warn(`[initSlot] Slot ${adSlot} has no height (${Math.round(height)}px), skipping`);
             }
             return false;
           }
@@ -401,7 +422,9 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
             (window.adsbygoogle = window.adsbygoogle || []).push({});
 
             if (isDev) {
-              console.log(`[initSlot] Initialized slot ${adSlot} (width: ${Math.round(width)}px)`);
+              console.log(
+                `[initSlot] Initialized slot ${adSlot} (width: ${Math.round(width)}px, height: ${Math.round(height)}px)`
+              );
             }
 
             return true;
@@ -413,7 +436,7 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
           }
         }
 
-        // D) Setup Observer per slot: IntersectionObserver + ResizeObserver
+        // D) Setup Observer per slot: ResizeObserver + requestAnimationFrame per layout stabile
         function setupSlotObservers(ins) {
           if (!ins || ins.dataset.observersSetup === "1") {
             return;
@@ -422,14 +445,20 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
           const adSlot = ins.getAttribute("data-ad-slot");
           ins.dataset.observersSetup = "1";
 
-          // IntersectionObserver: inizializza quando entra in viewport
-          const intersectionObserver = new IntersectionObserver((entries) => {
-            for (const entry of entries) {
-              if (entry.isIntersecting) {
-                intersectionObserver.disconnect();
-                delete ins.dataset.intersectionObserver;
-                
-                // Assicura che lo script sia caricato prima di init
+          // Determina min-width in base al contesto
+          const isInArticle = ins.closest(".post-main, article") !== null;
+          const minWidth = isInArticle ? 300 : MIN_SLOT_WIDTH;
+
+          // Helper: verifica layout-ready e tenta init
+          const tryInitWhenReady = () => {
+            // Usa requestAnimationFrame per aspettare layout stabile
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => {
+                // Doppio rAF per garantire layout stabile dopo resize
+                if (ins.dataset.pushed === "1" || ins.getAttribute("data-adsbygoogle-status")) {
+                  return; // Già inizializzato
+                }
+
                 window.__adsenseScriptPromise
                   .then(() => {
                     initSlot(ins);
@@ -437,6 +466,55 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
                   .catch(() => {
                     if (isDev) console.warn(`[setupSlotObservers] Script not loaded for slot ${adSlot}`);
                   });
+              });
+            });
+          };
+
+          // ResizeObserver: ritenta quando width/height diventano validi
+          const resizeObserver = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+              const newWidth = entry.contentRect.width;
+              const newHeight = entry.contentRect.height;
+              
+              // Se dimensioni sono ora sufficienti e non è ancora stato pushed
+              if (
+                newWidth >= minWidth &&
+                newHeight > 0 &&
+                ins.dataset.pushed !== "1" &&
+                !ins.getAttribute("data-adsbygoogle-status")
+              ) {
+                if (isDev) {
+                  console.log(
+                    `[setupSlotObservers] Slot ${adSlot} container now ready (width: ${Math.round(newWidth)}px, height: ${Math.round(newHeight)}px), retrying`
+                  );
+                }
+                
+                // Disconnect observer (non serve più dopo init riuscito)
+                resizeObserver.disconnect();
+                delete ins.dataset.resizeObserver;
+                
+                // Tenta init con layout stabile
+                tryInitWhenReady();
+                return;
+              }
+            }
+          });
+
+          // Osserva il wrapper container (non l'elemento stesso)
+          const wrapper = ins.closest(".adslot-wrapper, .adsense-container, .adsense-slot-wrapper");
+          const container = wrapper || ins.parentElement || ins;
+          resizeObserver.observe(container);
+          ins.dataset.resizeObserver = "1";
+
+          // IntersectionObserver: inizializza quando entra in viewport (opzionale, per lazy loading)
+          const intersectionObserver = new IntersectionObserver((entries) => {
+            for (const entry of entries) {
+              if (entry.isIntersecting) {
+                intersectionObserver.disconnect();
+                delete ins.dataset.intersectionObserver;
+                
+                // Tenta init quando entra in viewport
+                tryInitWhenReady();
               }
             }
           }, {
@@ -445,44 +523,16 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
 
           intersectionObserver.observe(ins);
           ins.dataset.intersectionObserver = "1";
-
-          // ResizeObserver: ritenta quando width aumenta oltre soglia
-          const resizeObserver = new ResizeObserver((entries) => {
-            for (const entry of entries) {
-              const newWidth = entry.contentRect.width;
-              
-              // Se width è ora sufficiente e non è ancora stato pushed
-              if (newWidth >= MIN_SLOT_WIDTH && ins.dataset.pushed !== "1") {
-                if (isDev) {
-                  console.log(
-                    `[setupSlotObservers] Slot ${adSlot} container now wide enough (${Math.round(newWidth)}px), retrying`
-                  );
-                }
-                
-                // Disconnect observer (non serve più)
-                resizeObserver.disconnect();
-                delete ins.dataset.resizeObserver;
-                
-                // Riprova init
-                window.__adsenseScriptPromise
-                  .then(() => {
-                    initSlot(ins);
-                  })
-                  .catch(() => {
-                    if (isDev) console.warn(`[setupSlotObservers] Script not loaded for slot ${adSlot}`);
-                  });
-              }
-            }
-          });
-
-          // Osserva il parent container (o l'elemento stesso)
-          const container = ins.parentElement || ins;
-          resizeObserver.observe(container);
-          ins.dataset.resizeObserver = "1";
         }
 
-        // Inizializza tutti gli slot nel DOM
+        // Inizializza tutti gli slot nel DOM (evita doppio init)
         function initAllSlots(root = document) {
+          // Guard: evita doppio init se già in esecuzione
+          if (window.__adsenseInitInProgress) {
+            if (isDev) console.log("[initAllSlots] Init already in progress, skipping");
+            return;
+          }
+
           const adElements = root.querySelectorAll("ins.adsbygoogle");
           
           if (adElements.length === 0) {
@@ -490,27 +540,41 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
             return;
           }
 
+          window.__adsenseInitInProgress = true;
+
           let initialized = 0;
           let skipped = 0;
 
           adElements.forEach((ins) => {
-            // Setup observers per slot non ancora inizializzati
-            if (ins.dataset.pushed !== "1" && !ins.getAttribute("data-adsbygoogle-status")) {
-              setupSlotObservers(ins);
+            // Skip slot già inizializzati
+            if (ins.dataset.pushed === "1" || ins.getAttribute("data-adsbygoogle-status")) {
+              skipped++;
+              return;
             }
 
-            // Prova init immediato (se script già caricato e width ok)
+            // Setup observers per slot non ancora inizializzati
+            setupSlotObservers(ins);
+
+            // Prova init immediato (se script già caricato e layout-ready)
             if (window.__adsenseLoaded) {
-              const result = initSlot(ins);
-              if (result) {
-                initialized++;
-              } else {
-                skipped++;
-              }
+              // Usa requestAnimationFrame per garantire layout stabile
+              requestAnimationFrame(() => {
+                const result = initSlot(ins);
+                if (result) {
+                  initialized++;
+                } else {
+                  skipped++;
+                }
+              });
             } else {
               skipped++;
             }
           });
+
+          // Reset flag dopo breve delay
+          setTimeout(() => {
+            window.__adsenseInitInProgress = false;
+          }, 50);
 
           if (isDev && (initialized > 0 || skipped > 0)) {
             console.log(
