@@ -86,9 +86,134 @@ const sortedPosts = postsAll
       dateValue(a.data.publishDate ?? a.data.updatedDate),
   );
 
-const latestPosts = sortedPosts.slice(0, 6);
-const featured = sortedPosts[0];
-const featuredSide = sortedPosts.slice(1, 4);
+/* ---------------------------
+   Filtro "recent only" (2025-2026)
+--------------------------- */
+
+// Helper: estrae la data del post (updatedDate o publishDate)
+function getPostDate(post: CollectionEntry<"blog">): Date | null {
+  const raw = post.data.updatedDate ?? post.data.publishDate;
+  if (!raw) return null;
+  const d = raw instanceof Date ? raw : new Date(String(raw));
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+// Helper: estrae lo slug del post
+function getSlug(post: CollectionEntry<"blog">): string {
+  return post.slug ?? post.data.slug ?? "";
+}
+
+// Soglia minima: solo post dal 2025 in poi
+const MIN_DATE = new Date("2025-01-01T00:00:00.000Z");
+
+// Filtra post eligibili (>= 2025-01-01)
+const eligiblePosts = sortedPosts.filter((p) => {
+  const postDate = getPostDate(p);
+  return postDate && postDate >= MIN_DATE;
+});
+
+/* ---------------------------
+   Selezione "In evidenza" (editoriale)
+--------------------------- */
+
+// Helper: seleziona N post unici da un array, escludendo quelli già usati
+function pickUnique(
+  posts: CollectionEntry<"blog">[],
+  usedSet: Set<string>,
+  n: number
+): CollectionEntry<"blog">[] {
+  const result: CollectionEntry<"blog">[] = [];
+  for (const post of posts) {
+    if (result.length >= n) break;
+    const slug = getSlug(post);
+    if (slug && !usedSet.has(slug)) {
+      result.push(post);
+      usedSet.add(slug);
+    }
+  }
+  return result;
+}
+
+// 1) Post con flag editoriale manuale (solo da eligiblePosts)
+const featuredCandidatesManual = eligiblePosts
+  .filter((p) => p.data.homeFeatured === true)
+  .sort((a, b) => {
+    // Ordina per homeFeaturedRank (asc, più basso = più importante), poi per data (desc)
+    const rankA = a.data.homeFeaturedRank ?? 999;
+    const rankB = b.data.homeFeaturedRank ?? 999;
+    if (rankA !== rankB) return rankA - rankB;
+    const dateA = getPostDate(a);
+    const dateB = getPostDate(b);
+    if (!dateA || !dateB) return 0;
+    return dateB.getTime() - dateA.getTime();
+  });
+
+// 2) Fallback automatico: post "hot" (cannabis-news-it, ordinati per data desc)
+const featuredCandidatesAuto = eligiblePosts
+  .filter((p) => {
+    const category = p.data.category;
+    return (
+      category === "cannabis-news-it" &&
+      p.data.homeFeatured !== true // Escludi quelli già manuali
+    );
+  })
+  .sort((a, b) => {
+    const dateA = getPostDate(a);
+    const dateB = getPostDate(b);
+    if (!dateA || !dateB) return 0;
+    return dateB.getTime() - dateA.getTime();
+  });
+
+// 3) Costruisci pool: manuali prima, poi auto (dedup per slug)
+const featuredPool: CollectionEntry<"blog">[] = [];
+const featuredPoolSlugs = new Set<string>();
+for (const post of [...featuredCandidatesManual, ...featuredCandidatesAuto]) {
+  const slug = getSlug(post);
+  if (slug && !featuredPoolSlugs.has(slug)) {
+    featuredPool.push(post);
+    featuredPoolSlugs.add(slug);
+  }
+}
+
+// 4) Seleziona 4 post unici (1 main + 3 side)
+const featuredIds = new Set<string>();
+const featuredMain = pickUnique(featuredPool, featuredIds, 1)[0] || null;
+const featuredSide = pickUnique(featuredPool, featuredIds, 3);
+
+// 5) Se il pool non basta, completa con i più recenti di eligiblePosts (sempre dedup)
+if (featuredIds.size < 4) {
+  const remaining = eligiblePosts
+    .filter((p) => {
+      const slug = getSlug(p);
+      return slug && !featuredIds.has(slug);
+    })
+    .slice(0, 4 - featuredIds.size);
+  
+  if (!featuredMain && remaining.length > 0) {
+    const first = remaining[0];
+    const slug = getSlug(first);
+    if (slug) {
+      featuredIds.add(slug);
+    }
+  }
+  
+  for (const post of remaining) {
+    if (featuredSide.length >= 3) break;
+    const slug = getSlug(post);
+    if (slug && !featuredIds.has(slug)) {
+      featuredSide.push(post);
+      featuredIds.add(slug);
+    }
+  }
+}
+
+// 6) "Ultimi articoli": escludi quelli già in evidenza (solo da eligiblePosts)
+const latestPosts = eligiblePosts
+  .filter((p) => {
+    const slug = getSlug(p);
+    return slug && !featuredIds.has(slug);
+  })
+  .slice(0, 6);
 
 /* ---------------------------
    Mappa icone SVG per categoria
@@ -279,19 +404,19 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
         </p>
       </div>
 
-      {sortedPosts.length > 0 ? (
+      {eligiblePosts.length > 0 ? (
         <div class="grid featured">
-          {featured ? (
-            <a class="feature-main" href={postHref(featured)}>
-              <p class="badge">Approfondimento</p>
+          {featuredMain ? (
+            <a class="feature-main" href={postHref(featuredMain)}>
+              <p class="badge">Tema caldo</p>
 
               {(() => {
-                const imgSrc = normalizeImage(featured);
+                const imgSrc = normalizeImage(featuredMain);
                 return imgSrc ? (
                   <img
                     class="feature-img"
                     src={imgSrc}
-                    alt={featured.data.coverAlt || featured.data.title}
+                    alt={featuredMain.data.coverAlt || featuredMain.data.title}
                     loading="eager"
                     decoding="async"
                     referrerpolicy="no-referrer"
@@ -305,15 +430,19 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
                 );
               })()}
 
-              <h3 class="feature-title">{featured.data.title}</h3>
+              <h3 class="feature-title">{featuredMain.data.title}</h3>
               <p class="feature-excerpt">
-                {featured.data.description}
+                {featuredMain.data.description}
               </p>
               <span class="btn small">Leggi</span>
             </a>
           ) : (
             <div class="feature-main">
-              <p>Selezione in evidenza in arrivo.</p>
+              <p>
+                {eligiblePosts.length === 0
+                  ? "Nessun contenuto recente disponibile (2025-2026)."
+                  : "Selezione in evidenza in arrivo."}
+              </p>
             </div>
           )}
 

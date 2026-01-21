@@ -17,6 +17,8 @@ const blog = defineCollection({
     coverAlt: z.string().optional(),
     image: z.string().optional(), // Alias per coverImage
     canonical: z.string().optional(),
+    homeFeatured: z.boolean().optional(), // Flag per selezione editoriale "In evidenza"
+    homeFeaturedRank: z.number().optional(), // Priorità manuale (più basso = più importante)
   }),
 });
 
