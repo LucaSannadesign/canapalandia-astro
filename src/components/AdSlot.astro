@@ -69,12 +69,19 @@ const instanceId =
 </script>
 
 <style>
-  /* Wrapper esterno: garantisce min-width e previene collasso */
+  /* Wrapper esterno: garantisce min-width senza rompere layout */
   .adslot-wrapper {
     width: 100%;
-    min-width: 250px; /* Minimum width per AdSense */
+    min-width: min(300px, 100%); /* Non forza 300px se container è più stretto */
     display: block;
     flex: 1 1 auto; /* Previene shrink in flex containers */
+    min-height: 100px; /* Altezza minima ragionevole per evitare collasso */
+  }
+
+  /* Negli articoli, garantisci almeno 300px per slot in-article */
+  .post-main .adslot-wrapper,
+  article .adslot-wrapper {
+    min-width: min(300px, 100%);
   }
 
   .adslot-container {
