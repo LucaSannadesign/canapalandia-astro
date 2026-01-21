@@ -9,6 +9,7 @@
 import SiteLayout from "../layouts/SiteLayout.astro";
 import AdSlot from "../components/AdSlot.astro";
 import ShareBar from "../components/ShareBar.astro";
+import { ADS_SLOT_ARTICLE, ADS_SLOT_SIDEBAR } from "../lib/consts";
 import { loadWp, type WpEntry } from "../lib/wp";
 import {
   stripHtml,
@@ -616,7 +617,7 @@ const titleHtml = entry.title || rawItem?.title?.rendered || "";
         <div set:html={contentHtml} />
 
         <div style="margin: 1.5rem 0;">
-          <AdSlot label="Pubblicità" />
+          <AdSlot slot={ADS_SLOT_ARTICLE} label="Pubblicità" />
         </div>
 
         {/* Internal Linking Boxes - Solo per post */}
@@ -723,7 +724,7 @@ const titleHtml = entry.title || rawItem?.title?.rendered || "";
           <div class="sidebar-section sidebar-ad__wrapper">
             <div class="sidebar-ad__sticky">
               <h3 class="sidebar-title">Pubblicità</h3>
-              <AdSlot label="Pubblicità" />
+              <AdSlot slot={ADS_SLOT_SIDEBAR} label="Pubblicità" />
             </div>
           </div>
         </aside>

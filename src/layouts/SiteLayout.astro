@@ -4,6 +4,7 @@ import AdSlot from "../components/AdSlot.astro";
 import Newsletter from "../components/widgets/Newsletter.astro";
 import CookieBanner from "../components/CookieBanner.astro";
 import GATag from "../components/GATag.astro";
+import { ADS_SLOT_TOP, ADS_EXCLUDED_ROUTES } from "../lib/consts";
 
 const THEME_STORAGE_KEY = "canapalandia_theme";
 const { 
@@ -110,6 +111,12 @@ function cleanYoastHead(html: string | undefined): string {
 }
 
 const yoastHeadCleaned = cleanYoastHead(yoastHeadHtml);
+
+// Determina se mostrare ads: escludi route "low-value"
+const currentPath = Astro.url.pathname;
+const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) => 
+  currentPath === route || currentPath.startsWith(route + "/")
+);
 ---
 
 <html lang="it">
@@ -359,6 +366,122 @@ const yoastHeadCleaned = cleanYoastHead(yoastHeadHtml);
       })();
     </script>
 
+    <!-- Funzione globale initAds() per inizializzare AdSense slots in modo sicuro -->
+    <script is:inline>
+      (() => {
+        const isDev = window.location.hostname === "localhost" || window.location.hostname.includes("vercel.app");
+
+        /**
+         * Inizializza tutti gli slot AdSense non ancora inizializzati
+         * Guard robusti per evitare doppie inizializzazioni e errori
+         */
+        window.initAds = function() {
+          // Verifica che AdSense script sia caricato
+          if (!window.adsbygoogle || typeof window.adsbygoogle.push !== "function") {
+            if (isDev) console.log("[initAds] AdSense script not ready yet, skipping");
+            return;
+          }
+
+          // Trova tutti gli elementi ins.adsbygoogle
+          const adElements = document.querySelectorAll("ins.adsbygoogle");
+          if (adElements.length === 0) {
+            if (isDev) console.log("[initAds] No AdSense slots found");
+            return;
+          }
+
+          let initialized = 0;
+          let skipped = 0;
+
+          adElements.forEach((element) => {
+            // Guard 1: Verifica che data-ad-client e data-ad-slot siano presenti
+            const adClient = element.getAttribute("data-ad-client");
+            const adSlot = element.getAttribute("data-ad-slot");
+
+            if (!adClient || !adSlot) {
+              if (isDev) {
+                console.warn("[initAds] Skipping ad element: missing data-ad-client or data-ad-slot", {
+                  hasClient: !!adClient,
+                  hasSlot: !!adSlot,
+                });
+              }
+              skipped++;
+              return;
+            }
+
+            // Guard 2: Verifica che non sia già inizializzato (data-adsbygoogle-status)
+            if (element.getAttribute("data-adsbygoogle-status")) {
+              if (isDev) console.log(`[initAds] Slot ${adSlot} already initialized, skipping`);
+              skipped++;
+              return;
+            }
+
+            // Guard 3: Verifica flag data-ads-initialized
+            if (element.dataset && element.dataset.adsInitialized === "1") {
+              if (isDev) console.log(`[initAds] Slot ${adSlot} already marked as initialized, skipping`);
+              skipped++;
+              return;
+            }
+
+            // Tutti i guard passati: inizializza questo slot
+            try {
+              (window.adsbygoogle = window.adsbygoogle || []).push({});
+              if (element.dataset) {
+                element.dataset.adsInitialized = "1";
+              }
+              initialized++;
+              if (isDev) console.log(`[initAds] Initialized slot ${adSlot}`);
+            } catch (e) {
+              console.error(`[initAds] Error initializing slot ${adSlot}:`, e);
+            }
+          });
+
+          if (isDev && (initialized > 0 || skipped > 0)) {
+            console.log(`[initAds] Completed: ${initialized} initialized, ${skipped} skipped`);
+          }
+        };
+
+        // Inizializza al primo caricamento pagina
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", () => {
+            // Attendi che lo script AdSense sia caricato
+            if (window.__adsenseLoaded) {
+              window.initAds();
+            } else {
+              window.addEventListener("adsense:script-loaded", () => {
+                window.initAds();
+              }, { once: true });
+            }
+          });
+        } else {
+          // DOM già caricato
+          if (window.__adsenseLoaded) {
+            window.initAds();
+          } else {
+            window.addEventListener("adsense:script-loaded", () => {
+              window.initAds();
+            }, { once: true });
+          }
+        }
+
+        // Supporto navigazione client-side Astro (transitions/after-swap)
+        document.addEventListener("astro:page-load", () => {
+          if (isDev) console.log("[initAds] astro:page-load event, reinitializing ads");
+          // Piccolo delay per assicurarsi che il DOM sia aggiornato
+          setTimeout(() => {
+            window.initAds();
+          }, 100);
+        });
+
+        document.addEventListener("astro:after-swap", () => {
+          if (isDev) console.log("[initAds] astro:after-swap event, reinitializing ads");
+          // Piccolo delay per assicurarsi che il DOM sia aggiornato
+          setTimeout(() => {
+            window.initAds();
+          }, 100);
+        });
+      })();
+    </script>
+
     {/* Renderizza SEMPRE title, canonical, robots, description */}
     <title>{titleFinal}</title>
     {descriptionFinal ? <meta name="description" content={descriptionFinal} /> : null}
@@ -521,11 +644,13 @@ const yoastHeadCleaned = cleanYoastHead(yoastHeadHtml);
     </nav>
 
     <!-- AdSense Banner Bar (separato dall'header) -->
-    <div class="adbar" data-adbar>
-      <div class="container">
-        <AdSlot label="Pubblicità" />
+    {shouldShowAds ? (
+      <div class="adbar" data-adbar>
+        <div class="container">
+          <AdSlot slot={ADS_SLOT_TOP} label="Pubblicità" />
+        </div>
       </div>
-    </div>
+    ) : null}
 
     <main id="contenuto">
       {

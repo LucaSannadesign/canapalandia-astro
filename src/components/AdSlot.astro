@@ -1,263 +1,67 @@
 ---
+import { ADSENSE_CLIENT } from "../lib/consts";
+
 interface Props {
-    slot?: string;
-    label?: string;
-    client?: string;
+  slot: string; // REQUIRED: no default, must be provided
+  client?: string;
+  label?: string;
+  format?: string;
+  responsive?: boolean;
 }
 
 const {
-    slot = "7168595886",
-    label,
-    client = "ca-pub-6462363788506395", // Default, può essere override via prop o env
-} = Astro.props;
+  slot,
+  client = ADSENSE_CLIENT,
+  label = "Pubblicità",
+  format = "auto",
+  responsive = true,
+} = Astro.props as Props;
 
-// Usa env se disponibile, altrimenti prop, altrimenti default
-const AD_CLIENT = import.meta.env.PUBLIC_ADSENSE_CLIENT || client;
-const isDev = import.meta.env.DEV;
+// Validazione: slot è obbligatorio
+if (!slot || typeof slot !== "string" || slot.trim() === "") {
+  console.error("[AdSlot] ERROR: 'slot' prop is required and must be a non-empty string");
+  // In produzione, non renderizzare nulla se slot mancante
+}
+
+// Validazione: client è obbligatorio
+if (!client || typeof client !== "string" || client.trim() === "") {
+  console.error("[AdSlot] ERROR: 'client' prop is required and must be a non-empty string");
+}
+
+// id univoco per questa istanza (build-time)
+const instanceId =
+  (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`);
 ---
 
-<div class="adslot-container" data-adslot-id={slot}>
-    {label && (
-        <p class="adslot-label">{label}</p>
-    )}
-
+{slot && client ? (
+  <div class="adslot-container" data-adslot-instance={instanceId} data-adslot-id={slot}>
+    {label ? <p class="adslot-label">{label}</p> : null}
     <ins
-        class="adsbygoogle"
-        data-ad-client={AD_CLIENT}
-        data-ad-slot={slot}
-        data-ad-format="auto"
-        data-full-width-responsive="true"
-        style="display:block"
-    >
-    </ins>
-</div>
+      class="adsbygoogle"
+      data-ad-client={client}
+      data-ad-slot={slot}
+      data-ad-format={format}
+      data-full-width-responsive={String(responsive)}
+      style="display:block"
+    ></ins>
+  </div>
+) : null}
 
-<style>
-    .adslot-container {
-        width: 100%;
-        max-width: 970px;
-        min-height: 90px;
-        max-height: 140px;
-        margin: 2rem 0;
-        text-align: center;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-    }
+<script is:inline define:vars={{ instanceId, slot, client }}>
+(() => {
+  // Validazione slot duplicati: traccia slot già usati in questa pagina
+  if (!window.__adsenseUsedSlots) {
+    window.__adsenseUsedSlots = new Set();
+  }
 
-    /* Collassa se vuoto (nessun contenuto all'interno) */
-    .adslot-container:empty,
-    .adslot-container.is-empty {
-        min-height: 0;
-        max-height: 0;
-        margin: 0;
-        padding: 0;
-        opacity: 0;
-        display: none;
-    }
+  // Se questo slot è già stato usato, logga warning (non bloccare, ma avvisa)
+  if (window.__adsenseUsedSlots.has(slot)) {
+    console.warn(`[AdSlot] WARNING: Slot "${slot}" is used multiple times on this page. Each AdSlot should have a unique slot ID.`);
+  } else {
+    window.__adsenseUsedSlots.add(slot);
+  }
 
-    .adslot-label {
-        font-size: 0.75rem;
-        color: var(--muted);
-        text-transform: uppercase;
-        margin: 0 0 0.5rem;
-        opacity: 0.7;
-    }
-
-    .adsbygoogle {
-        display: block;
-        min-height: 90px;
-        max-height: 140px;
-        width: 100%;
-        overflow: hidden;
-    }
-
-    /* Collassa adsbygoogle se vuoto */
-    .adsbygoogle:empty {
-        min-height: 0;
-        max-height: 0;
-        display: none;
-    }
-
-    /* Responsive: min-height più basso su mobile */
-    @media (max-width: 767px) {
-        .adslot-container {
-            min-height: 80px;
-            max-height: 120px;
-        }
-
-        .adsbygoogle {
-            min-height: 80px;
-            max-height: 120px;
-        }
-    }
-
-    /* Mobile molto piccolo: ancora più compatto */
-    @media (max-width: 480px) {
-        .adslot-container {
-            min-height: 70px;
-            max-height: 110px;
-        }
-
-        .adsbygoogle {
-            min-height: 70px;
-            max-height: 110px;
-        }
-    }
-</style>
-
-<script define:vars={{ slot, isDev }}>
-    (() => {
-        // WeakSet globale per tracciare elementi già inizializzati (evita duplicati)
-        if (!window.__adsenseInitialized) {
-            window.__adsenseInitialized = new WeakSet();
-        }
-
-        const adSlotId = slot;
-
-        // Trova container e elemento ad (solo se nel DOM)
-        const container = document.querySelector(`[data-adslot-id="${adSlotId}"]`);
-        if (!container) {
-            if (isDev) console.warn(`[AdSlot ${adSlotId}] Container not found`);
-            return;
-        }
-
-        const adElement = container.querySelector(".adsbygoogle");
-        if (!adElement) {
-            if (isDev) console.warn(`[AdSlot ${adSlotId}] Ad element not found`);
-            return;
-        }
-
-        // Evita doppio push: controlla WeakSet e dataset flag
-        if (window.__adsenseInitialized.has(adElement) || adElement.dataset.adsInitialized === "1") {
-            if (isDev) console.warn(`[AdSlot ${adSlotId}] Already initialized, skipping`);
-            return;
-        }
-
-        // Poll per aspettare che adsbygoogle esista (max 3s, più generoso)
-        // NOTA: Consent Mode gestisce "Limited ads" quando consenso è denied
-        const pollForAdSense = (callback, maxAttempts = 30, interval = 100) => {
-            let attempts = 0;
-            const poll = () => {
-                if (window.adsbygoogle && typeof window.adsbygoogle.push === "function") {
-                    callback();
-                } else if (attempts < maxAttempts) {
-                    attempts++;
-                    setTimeout(poll, interval);
-                } else {
-                    if (isDev) {
-                        console.warn(`[AdSlot ${adSlotId}] adsbygoogle not loaded after ${maxAttempts * interval}ms`);
-                    }
-                }
-            };
-            poll();
-        };
-
-        // Push ad slot (protetto e idempotente)
-        const pushAd = () => {
-            // Double-check: evita push multipli
-            if (window.__adsenseInitialized.has(adElement) || adElement.dataset.adsInitialized === "1") {
-                return;
-            }
-
-            // Verifica che l'elemento sia ancora nel DOM
-            if (!document.contains(adElement)) {
-                if (isDev) console.warn(`[AdSlot ${adSlotId}] Element removed from DOM`);
-                return;
-            }
-
-            // Verifica che adsbygoogle sia disponibile
-            if (!window.adsbygoogle || typeof window.adsbygoogle.push !== "function") {
-                if (isDev) console.warn(`[AdSlot ${adSlotId}] adsbygoogle.push not available`);
-                return;
-            }
-
-            try {
-                // Usa requestAnimationFrame per assicurarsi che il DOM sia pronto
-                requestAnimationFrame(() => {
-                    try {
-                        (window.adsbygoogle = window.adsbygoogle || []).push({});
-                        window.__adsenseInitialized.add(adElement);
-                        adElement.dataset.adsInitialized = "1";
-                        if (isDev) {
-                            console.log(`[AdSlot ${adSlotId}] AdSense push executed (Limited ads enabled via Consent Mode)`);
-                        }
-                    } catch (err) {
-                        console.error(`[AdSlot ${adSlotId}] Error pushing ad:`, err);
-                    }
-                });
-            } catch (err) {
-                console.error(`[AdSlot ${adSlotId}] Error in pushAd:`, err);
-            }
-        };
-
-        // Funzione principale: inizializza ad sempre (Consent Mode gestisce Limited ads)
-        const initAd = () => {
-            if (window.__adsenseLoaded) {
-                // Script già caricato, aspetta che adsbygoogle esista
-                pollForAdSense(pushAd);
-            } else {
-                // Aspetta che lo script si carichi
-                const handler = () => {
-                    pollForAdSense(pushAd);
-                };
-                window.addEventListener("adsense:script-loaded", handler, { once: true });
-            }
-        };
-
-        // Inizializza sempre (Consent Mode gestisce consenso via "Limited ads")
-        initAd();
-
-        // Ascolta evento consenso cookie (per ricaricare se necessario)
-        window.addEventListener("canapalandia:cookie-consent", (e) => {
-            // Se non è già inizializzato, inizializza
-            if (!window.__adsenseInitialized.has(adElement) && adElement.dataset.adsInitialized !== "1") {
-                if (window.__adsenseLoaded) {
-                    pollForAdSense(pushAd);
-                } else {
-                    window.addEventListener("adsense:script-loaded", () => {
-                        pollForAdSense(pushAd);
-                    }, { once: true });
-                }
-            }
-        });
-
-        // Ascolta evento consenso ads da CMP
-        window.addEventListener("canapalandia:ad-consent-granted", () => {
-            if (!window.__adsenseInitialized.has(adElement) && adElement.dataset.adsInitialized !== "1") {
-                if (window.__adsenseLoaded) {
-                    pollForAdSense(pushAd);
-                } else {
-                    window.addEventListener("adsense:script-loaded", () => {
-                        pollForAdSense(pushAd);
-                    }, { once: true });
-                }
-            }
-        });
-
-        // Collassa container se l'ad non carica o è vuoto (dev/preview)
-        const checkEmpty = () => {
-            // Controlla dopo un timeout se l'ad non ha contenuto
-            setTimeout(() => {
-                if (!container) return;
-                
-                // Se adsbygoogle è vuoto o ha altezza 0
-                const hasContent = adElement.offsetHeight > 20 || adElement.children.length > 0;
-                
-                if (!hasContent && !window.__adsenseLoaded) {
-                    // In dev/preview, collassa se non c'è consenso o script non caricato
-                    if (isDev) {
-                        container.classList.add("is-empty");
-                    }
-                } else {
-                    container.classList.remove("is-empty");
-                }
-            }, 2000); // Controlla dopo 2 secondi
-        };
-
-        // Esegui check dopo init
-        checkEmpty();
-    })();
+  // Nota: l'inizializzazione vera e propria sarà gestita da initAds() globale
+  // che viene chiamata su astro:page-load e astro:after-swap
+})();
 </script>

@@ -3,6 +3,7 @@ import { getCollection, type CollectionEntry } from "astro:content";
 import Layout from "../layouts/MigratedLayout.astro";
 import AdSlot from "../components/AdSlot.astro";
 import CardPost from "../components/CardPost.astro";
+import { ADS_SLOT_HOME } from "../lib/consts";
 
 /* ---------------------------
    Data: Content Collections
@@ -265,7 +266,7 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
   </section>
 
   <div class="container">
-    <AdSlot label="Pubblicità" />
+    <AdSlot slot={ADS_SLOT_HOME} label="Pubblicità" />
   </div>
 
   <section id="in-evidenza" class="section alt">
