@@ -1011,6 +1011,53 @@ html[data-theme="light"] .site-footer {
   margin-top: 8px;
 }
 
+/* Scroll to top button */
+.footer-scrolltop-wrapper {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.footer-scrolltop {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 0.875rem;
+  color: var(--muted);
+  text-decoration: none;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm, 12px);
+  background: var(--panel);
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease, transform 0.12s ease;
+  cursor: pointer;
+}
+
+.footer-scrolltop:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+  background: color-mix(in oklab, var(--panel), var(--brand) 8%);
+  transform: translateY(-1px);
+}
+
+.footer-scrolltop:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.footer-scrolltop svg {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+
+.footer-scrolltop span {
+  font-weight: 500;
+}
+
 /* ------------------------------------------------------------
    Home sections (riuso classi già presenti in index.astro)
 ------------------------------------------------------------ */
