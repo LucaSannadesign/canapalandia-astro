@@ -2,10 +2,14 @@
 interface Props {
   publishDate: Date | string | number | null | undefined;
   updatedDate?: Date | string | number | null | undefined;
-  slug: string;
+  slug: string; // Mantenuto per compatibilità futura (pageviews)
 }
 
 const { publishDate, updatedDate, slug } = Astro.props;
+
+// TODO: Reintrodurre pageviews quando il tracking sarà stabile
+// Feature flag suggerito: SHOW_PAGEVIEWS (env/config) o showPageviews (frontmatter)
+// const SHOW_PAGEVIEWS = false; // Configurazione futura
 
 // Helper per convertire in Date | null
 function toDate(value: Date | string | number | null | undefined): Date | null {
@@ -109,100 +113,32 @@ const updatedDateTime = showUpdated ? getDateTime(updatedDate) : "";
     </div>
   ) : null}
   
+  {/* TODO: Reintrodurre pageviews quando il tracking sarà stabile
+      Blocco rimosso temporaneamente per inaffidabilità dei dati.
+      Per riattivare:
+      1. Scommentare il blocco HTML qui sotto
+      2. Scommentare lo script define:vars={{ slug }}
+      3. Verificare che l'endpoint /api/pageviews/[slug] funzioni correttamente
+      4. Testare il caricamento asincrono delle visite
+  */}
+  {/* 
   <div class="post-meta__item" id={`post-views-${slug}`}>
-    <svg
-      class="post-meta__icon"
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-      <circle cx="12" cy="12" r="3"></circle>
-    </svg>
+    <svg class="post-meta__icon" ... aria-hidden="true">...</svg>
     <span class="post-meta__views" aria-live="polite">
       <span class="post-meta__views-placeholder">—</span> letture
     </span>
   </div>
+  */}
 </div>
 
+{/* TODO: Script per pageviews - da riattivare quando il tracking sarà stabile
 <script define:vars={{ slug }}>
   (() => {
     "use strict";
-    const container = document.getElementById(`post-views-${slug}`);
-    if (!container) return;
-
-    const viewsEl = container.querySelector(".post-meta__views-placeholder");
-    if (!viewsEl) return;
-
-    // Formatta numero: 1284 -> "1.284" o "1.2k"
-    function formatViews(count) {
-      if (count < 1000) return count.toString();
-      if (count < 10000) {
-        const k = (count / 1000).toFixed(1);
-        return k.endsWith(".0") ? `${Math.floor(count / 1000)}k` : `${k}k`;
-      }
-      // Per numeri grandi, usa separatore migliaia
-      return count.toLocaleString("it-IT");
-    }
-
-    // Carica e aggiorna visite
-    async function loadViews() {
-      try {
-        // Prima legge il conteggio attuale
-        const getRes = await fetch(`/api/pageviews/${slug}`, {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-        });
-
-        if (getRes.ok) {
-          const data = await getRes.json();
-          if (typeof data.views === "number") {
-            viewsEl.textContent = formatViews(data.views);
-            return;
-          }
-        }
-      } catch (err) {
-        console.warn("[PostMeta] Errore caricamento visite:", err);
-      }
-
-      // Se GET fallisce, prova POST per incrementare (solo se non già fatto in questa sessione)
-      const sessionKey = `pageview_${slug}`;
-      if (!sessionStorage.getItem(sessionKey)) {
-        try {
-          const postRes = await fetch(`/api/pageviews/${slug}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-          });
-
-          if (postRes.ok) {
-            const data = await postRes.json();
-            if (typeof data.views === "number") {
-              viewsEl.textContent = formatViews(data.views);
-              sessionStorage.setItem(sessionKey, "1");
-              return;
-            }
-          }
-        } catch (err) {
-          console.warn("[PostMeta] Errore incremento visite:", err);
-        }
-      }
-    }
-
-    // Carica visite dopo che la pagina è caricata (non bloccante)
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", loadViews);
-    } else {
-      // Usa setTimeout per non bloccare il rendering
-      setTimeout(loadViews, 100);
-    }
+    // ... codice per caricare pageviews da /api/pageviews/${slug}
   })();
 </script>
+*/}
 
 <style>
   .post-meta {
@@ -241,6 +177,7 @@ const updatedDateTime = showUpdated ? getDateTime(updatedDate) : "";
     font-weight: var(--font-normal);
   }
 
+  /* TODO: CSS per pageviews - da riattivare quando il tracking sarà stabile
   .post-meta__views {
     color: var(--muted);
   }
@@ -249,6 +186,7 @@ const updatedDateTime = showUpdated ? getDateTime(updatedDate) : "";
     color: var(--muted);
     font-weight: var(--font-medium);
   }
+  */
 
   /* Mobile: stack verticale se spazio limitato */
   @media (max-width: 640px) {
