@@ -298,6 +298,19 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
         const RESIZE_TIMEOUT = 8000; // 8s timeout per ResizeObserver
         const DEBUG = localStorage.getItem("ADS_DEBUG") === "1";
         
+        // Verifica dominio: avvisa se siamo su preview Vercel (403 attesi)
+        const hostname = window.location.hostname;
+        const isProduction = hostname === "canapalandia.com" || hostname === "www.canapalandia.com";
+        const isVercelPreview = hostname.includes(".vercel.app");
+        
+        if (isVercelPreview) {
+          console.warn(
+            "[AdSense] Running on Vercel preview domain. " +
+            "403 errors are expected until ads.txt is crawled on production domain (canapalandia.com). " +
+            "Ads will not display on preview URLs."
+          );
+        }
+        
         // Registro globale WeakSet per tracciare slot inizializzati (evita doppi push)
         if (!window.__adsenseInitialized) {
           window.__adsenseInitialized = new WeakSet();
@@ -625,7 +638,7 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
           }
         });
 
-        // Avvio
+        // Avvio: tutto dentro window.load per garantire risorse pronte
         const startInit = () => {
           if (!window.__adsenseLoaded) {
             const existingScript = document.querySelector(`script[src*="adsbygoogle.js"]`);
@@ -639,7 +652,12 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
                 if (DEBUG) console.log("[AdSense] Script loaded");
                 scan();
               };
-              script.onerror = () => console.error("[AdSense] Script failed");
+              script.onerror = () => {
+                console.error("[AdSense] Script failed to load");
+                if (isVercelPreview) {
+                  console.warn("[AdSense] This is expected on Vercel preview domains. Ads require production domain.");
+                }
+              };
               document.head.appendChild(script);
             } else {
               window.__adsenseLoaded = true;
@@ -660,15 +678,10 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
           }, 5000);
         };
 
-        if (document.readyState === "loading") {
-          document.addEventListener("DOMContentLoaded", startInit);
-        } else {
-          startInit();
-        }
-
+        // Avvolgi tutto in window.load per garantire che tutte le risorse siano pronte
         window.addEventListener("load", () => {
-          if (DEBUG) console.log("[AdSense] Window load");
-          scan();
+          if (DEBUG) console.log("[AdSense] Window load - starting initialization");
+          startInit();
         });
 
         document.addEventListener("astro:page-load", () => {
