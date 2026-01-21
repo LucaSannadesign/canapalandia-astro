@@ -331,38 +331,60 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
           }
 
           // b) Display non è none
-          const style = window.getComputedStyle(el);
-          if (style.display === "none" || style.visibility === "hidden") {
-            if (DEBUG) {
-              const slot = el.getAttribute("data-ad-slot");
-              console.log(`[initAds] Slot ${slot} hidden (display: ${style.display}), skip`);
+          let style;
+          try {
+            style = window.getComputedStyle(el);
+            if (style.display === "none" || style.visibility === "hidden") {
+              if (DEBUG) {
+                const slot = el.getAttribute("data-ad-slot");
+                console.log(`[initAds] Slot ${slot} hidden (display: ${style.display}), skip`);
+              }
+              return false;
             }
+          } catch (e) {
+            if (DEBUG) console.warn("[initAds] Error getting computed style:", e);
             return false;
           }
 
-          // c) width >= 300 E parent width >= 300 E in viewport (o almeno visibile)
-          const rect = el.getBoundingClientRect();
-          const width = rect.width || el.offsetWidth || 0;
-          const height = rect.height || el.offsetHeight || 0;
-          const parent = el.parentElement;
-          const parentWidth = parent ? (parent.getBoundingClientRect().width || parent.offsetWidth || 0) : width;
+          // c) Verifica dimensioni con try/catch (elemento potrebbe essere rimosso)
+          let rect, width, height, parent, parentWidth;
+          try {
+            rect = el.getBoundingClientRect();
+            width = rect.width || el.offsetWidth || 0;
+            height = rect.height || el.offsetHeight || 0;
+            parent = el.parentElement;
+            
+            if (parent && parent.isConnected) {
+              try {
+                const parentRect = parent.getBoundingClientRect();
+                parentWidth = parentRect.width || parent.offsetWidth || 0;
+              } catch (e) {
+                parentWidth = width;
+              }
+            } else {
+              parentWidth = width;
+            }
+          } catch (e) {
+            if (DEBUG) console.warn("[initAds] Error getting bounding rect:", e);
+            return false;
+          }
           
-          // Verifica dimensioni valide
-          if (width < MIN_SLOT_WIDTH || parentWidth < MIN_SLOT_WIDTH || width === 0 || height === 0) {
+          // Logica: permette init se parentWidth >= 300 anche se width/height sono 0
+          // (AdSense spesso inizializza a 0x0 e poi espande)
+          if (parentWidth < MIN_SLOT_WIDTH) {
             if (DEBUG) {
               const slot = el.getAttribute("data-ad-slot");
-              console.log(`[initAds] Slot ${slot} invalid size (w: ${Math.round(width)}, h: ${Math.round(height)}, parent: ${Math.round(parentWidth)}), skip`);
+              console.log(`[initAds] Slot ${slot} parent too narrow (${Math.round(parentWidth)}px < ${MIN_SLOT_WIDTH}px), skip`);
             }
             return false;
           }
 
-          // Verifica che sia almeno parzialmente visibile (non completamente fuori viewport)
-          const isInViewport = rect.top < window.innerHeight && rect.bottom > 0 && 
-                               rect.left < window.innerWidth && rect.right > 0;
-          if (!isInViewport && rect.width === 0 && rect.height === 0) {
+          // Se width/height sono 0 ma parentWidth è valido, permette init (AdSense espanderà)
+          // Blocca solo se width è > 0 ma < MIN_SLOT_WIDTH (slot troppo stretto)
+          if (width > 0 && width < MIN_SLOT_WIDTH) {
             if (DEBUG) {
               const slot = el.getAttribute("data-ad-slot");
-              console.log(`[initAds] Slot ${slot} out of viewport and zero-size, skip`);
+              console.log(`[initAds] Slot ${slot} too narrow (${Math.round(width)}px < ${MIN_SLOT_WIDTH}px), skip`);
             }
             return false;
           }
@@ -397,22 +419,28 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
             
             // Verifica dopo push se lo slot è ancora valido (con delay per permettere render)
             setTimeout(() => {
-              const status = el.getAttribute("data-adsbygoogle-status");
-              if (status === "done" || status === "filled") {
-                const checkRect = el.getBoundingClientRect();
-                const checkWidth = checkRect.width || el.offsetWidth || 0;
-                const checkHeight = checkRect.height || el.offsetHeight || 0;
+              try {
+                if (!el.isConnected) return;
                 
-                if (checkWidth === 0 || checkHeight === 0) {
-                  const wrapper = el.closest(".adslot-wrapper");
-                  if (wrapper) {
-                    wrapper.style.display = "none";
-                    if (DEBUG) {
-                      const slot = el.getAttribute("data-ad-slot");
-                      console.log(`[initAds] Slot ${slot} became 0x0 after push, hidden`);
+                const status = el.getAttribute("data-adsbygoogle-status");
+                if (status === "done" || status === "filled") {
+                  const checkRect = el.getBoundingClientRect();
+                  const checkWidth = checkRect.width || el.offsetWidth || 0;
+                  const checkHeight = checkRect.height || el.offsetHeight || 0;
+                  
+                  if (checkWidth === 0 || checkHeight === 0) {
+                    const wrapper = el.closest(".adslot-wrapper");
+                    if (wrapper) {
+                      wrapper.style.display = "none";
+                      if (DEBUG) {
+                        const slot = el.getAttribute("data-ad-slot");
+                        console.log(`[initAds] Slot ${slot} became 0x0 after push, hidden`);
+                      }
                     }
                   }
                 }
+              } catch (e) {
+                if (DEBUG) console.warn("[initAds] Error in post-push check:", e);
               }
             }, 2000); // 2s delay per permettere ad AdSense di renderizzare
             
@@ -476,25 +504,35 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
 
         // 4) Verifica e nascondi slot fantasma (status="done" ma 0x0)
         function hideZeroSizeSlots() {
-          document.querySelectorAll("ins.adsbygoogle").forEach((el) => {
-            const status = el.getAttribute("data-adsbygoogle-status");
-            if (status === "done" || status === "filled") {
-              const rect = el.getBoundingClientRect();
-              const width = rect.width || el.offsetWidth || 0;
-              const height = rect.height || el.offsetHeight || 0;
-              
-              if (width === 0 || height === 0) {
-                const wrapper = el.closest(".adslot-wrapper");
-                if (wrapper) {
-                  wrapper.style.display = "none";
-                  if (DEBUG) {
-                    const slot = el.getAttribute("data-ad-slot");
-                    console.log(`[hideZeroSizeSlots] Hidden slot ${slot} (0x0 but status=${status})`);
+          try {
+            document.querySelectorAll("ins.adsbygoogle").forEach((el) => {
+              try {
+                if (!el.isConnected) return;
+                
+                const status = el.getAttribute("data-adsbygoogle-status");
+                if (status === "done" || status === "filled") {
+                  const rect = el.getBoundingClientRect();
+                  const width = rect.width || el.offsetWidth || 0;
+                  const height = rect.height || el.offsetHeight || 0;
+                  
+                  if (width === 0 || height === 0) {
+                    const wrapper = el.closest(".adslot-wrapper");
+                    if (wrapper) {
+                      wrapper.style.display = "none";
+                      if (DEBUG) {
+                        const slot = el.getAttribute("data-ad-slot");
+                        console.log(`[hideZeroSizeSlots] Hidden slot ${slot} (0x0 but status=${status})`);
+                      }
+                    }
                   }
                 }
+              } catch (e) {
+                if (DEBUG) console.warn("[hideZeroSizeSlots] Error checking slot:", e);
               }
-            }
-          });
+            });
+          } catch (e) {
+            if (DEBUG) console.warn("[hideZeroSizeSlots] Error:", e);
+          }
         }
 
         // 5) scan: solo slot nuovi non gestiti
@@ -556,18 +594,24 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
                   statusChanged = true;
                   // Verifica immediatamente se è 0x0
                   requestAnimationFrame(() => {
-                    const rect = target.getBoundingClientRect();
-                    const width = rect.width || target.offsetWidth || 0;
-                    const height = rect.height || target.offsetHeight || 0;
-                    if (width === 0 || height === 0) {
-                      const wrapper = target.closest(".adslot-wrapper");
-                      if (wrapper) {
-                        wrapper.style.display = "none";
-                        if (DEBUG) {
-                          const slot = target.getAttribute("data-ad-slot");
-                          console.log(`[MutationObserver] Slot ${slot} status=${status} but 0x0, hidden`);
+                    try {
+                      if (!target.isConnected) return;
+                      
+                      const rect = target.getBoundingClientRect();
+                      const width = rect.width || target.offsetWidth || 0;
+                      const height = rect.height || target.offsetHeight || 0;
+                      if (width === 0 || height === 0) {
+                        const wrapper = target.closest(".adslot-wrapper");
+                        if (wrapper) {
+                          wrapper.style.display = "none";
+                          if (DEBUG) {
+                            const slot = target.getAttribute("data-ad-slot");
+                            console.log(`[MutationObserver] Slot ${slot} status=${status} but 0x0, hidden`);
+                          }
                         }
                       }
+                    } catch (e) {
+                      if (DEBUG) console.warn("[MutationObserver] Error checking status change:", e);
                     }
                   });
                 }
