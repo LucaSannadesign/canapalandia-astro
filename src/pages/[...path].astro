@@ -887,6 +887,18 @@ const titleHtml = entry.title || rawItem?.title?.rendered || "";
   /* Sticky sidebar ADS on desktop */
   .post-sidebar {
     position: relative; /* Ensure no overflow:hidden breaks sticky */
+    min-width: 0; /* Previene overflow nella griglia */
+  }
+
+  /* Fix sidebar wrapper: evita collasso a 102px */
+  .sidebar-ad__wrapper {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .sidebar-ad__sticky {
+    width: 100%;
+    min-width: 0;
   }
 
   @media (min-width: 1024px) {
