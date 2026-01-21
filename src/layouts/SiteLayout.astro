@@ -340,16 +340,29 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
             return false;
           }
 
-          // c) width >= 300 E parent width >= 300
+          // c) width >= 300 E parent width >= 300 E in viewport (o almeno visibile)
           const rect = el.getBoundingClientRect();
           const width = rect.width || el.offsetWidth || 0;
+          const height = rect.height || el.offsetHeight || 0;
           const parent = el.parentElement;
           const parentWidth = parent ? (parent.getBoundingClientRect().width || parent.offsetWidth || 0) : width;
           
-          if (width < MIN_SLOT_WIDTH || parentWidth < MIN_SLOT_WIDTH) {
+          // Verifica dimensioni valide
+          if (width < MIN_SLOT_WIDTH || parentWidth < MIN_SLOT_WIDTH || width === 0 || height === 0) {
             if (DEBUG) {
               const slot = el.getAttribute("data-ad-slot");
-              console.log(`[initAds] Slot ${slot} too narrow (w: ${Math.round(width)}, parent: ${Math.round(parentWidth)}), skip`);
+              console.log(`[initAds] Slot ${slot} invalid size (w: ${Math.round(width)}, h: ${Math.round(height)}, parent: ${Math.round(parentWidth)}), skip`);
+            }
+            return false;
+          }
+
+          // Verifica che sia almeno parzialmente visibile (non completamente fuori viewport)
+          const isInViewport = rect.top < window.innerHeight && rect.bottom > 0 && 
+                               rect.left < window.innerWidth && rect.right > 0;
+          if (!isInViewport && rect.width === 0 && rect.height === 0) {
+            if (DEBUG) {
+              const slot = el.getAttribute("data-ad-slot");
+              console.log(`[initAds] Slot ${slot} out of viewport and zero-size, skip`);
             }
             return false;
           }
@@ -382,9 +395,30 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
             el.dataset.adsInit = "1";
             (window.adsbygoogle = window.adsbygoogle || []).push({});
             
+            // Verifica dopo push se lo slot è ancora valido (con delay per permettere render)
+            setTimeout(() => {
+              const status = el.getAttribute("data-adsbygoogle-status");
+              if (status === "done" || status === "filled") {
+                const checkRect = el.getBoundingClientRect();
+                const checkWidth = checkRect.width || el.offsetWidth || 0;
+                const checkHeight = checkRect.height || el.offsetHeight || 0;
+                
+                if (checkWidth === 0 || checkHeight === 0) {
+                  const wrapper = el.closest(".adslot-wrapper");
+                  if (wrapper) {
+                    wrapper.style.display = "none";
+                    if (DEBUG) {
+                      const slot = el.getAttribute("data-ad-slot");
+                      console.log(`[initAds] Slot ${slot} became 0x0 after push, hidden`);
+                    }
+                  }
+                }
+              }
+            }, 2000); // 2s delay per permettere ad AdSense di renderizzare
+            
             if (DEBUG) {
               const slot = el.getAttribute("data-ad-slot");
-              console.log(`[initAds] ✓ Slot ${slot} pushed (w: ${Math.round(width)})`);
+              console.log(`[initAds] ✓ Slot ${slot} pushed (w: ${Math.round(width)}, h: ${Math.round(height)})`);
             }
             return true;
           } catch (e) {
@@ -440,7 +474,30 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
           resizeObserver.observe(wrapper || el.parentElement || el);
         }
 
-        // 4) scan: solo slot nuovi non gestiti
+        // 4) Verifica e nascondi slot fantasma (status="done" ma 0x0)
+        function hideZeroSizeSlots() {
+          document.querySelectorAll("ins.adsbygoogle").forEach((el) => {
+            const status = el.getAttribute("data-adsbygoogle-status");
+            if (status === "done" || status === "filled") {
+              const rect = el.getBoundingClientRect();
+              const width = rect.width || el.offsetWidth || 0;
+              const height = rect.height || el.offsetHeight || 0;
+              
+              if (width === 0 || height === 0) {
+                const wrapper = el.closest(".adslot-wrapper");
+                if (wrapper) {
+                  wrapper.style.display = "none";
+                  if (DEBUG) {
+                    const slot = el.getAttribute("data-ad-slot");
+                    console.log(`[hideZeroSizeSlots] Hidden slot ${slot} (0x0 but status=${status})`);
+                  }
+                }
+              }
+            }
+          });
+        }
+
+        // 5) scan: solo slot nuovi non gestiti
         function scan() {
           if (!window.__adsenseLoaded || !window.adsbygoogle?.push) {
             if (DEBUG) console.log("[scan] Script not ready");
@@ -466,15 +523,21 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
             else skipped++;
           });
 
+          // Verifica slot fantasma dopo scan
+          hideZeroSizeSlots();
+
           if (DEBUG && (initialized > 0 || skipped > 0)) {
             console.log(`[scan] ${initialized} init, ${skipped} skip`);
           }
         }
 
-        // 5) MutationObserver: solo slot nuovi
+        // 6) MutationObserver: slot nuovi + monitora cambiamenti status
         const mutationObserver = new MutationObserver((mutations) => {
           let hasNew = false;
+          let statusChanged = false;
+          
           mutations.forEach((m) => {
+            // Nuovi slot aggiunti
             m.addedNodes.forEach((node) => {
               if (node.nodeType === 1) {
                 if (node.classList?.contains("adsbygoogle") || 
@@ -483,7 +546,35 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
                 }
               }
             });
+            
+            // Cambiamenti attributi (status)
+            if (m.type === "attributes" && m.attributeName === "data-adsbygoogle-status") {
+              const target = m.target;
+              if (target.classList?.contains("adsbygoogle")) {
+                const status = target.getAttribute("data-adsbygoogle-status");
+                if (status === "done" || status === "filled") {
+                  statusChanged = true;
+                  // Verifica immediatamente se è 0x0
+                  requestAnimationFrame(() => {
+                    const rect = target.getBoundingClientRect();
+                    const width = rect.width || target.offsetWidth || 0;
+                    const height = rect.height || target.offsetHeight || 0;
+                    if (width === 0 || height === 0) {
+                      const wrapper = target.closest(".adslot-wrapper");
+                      if (wrapper) {
+                        wrapper.style.display = "none";
+                        if (DEBUG) {
+                          const slot = target.getAttribute("data-ad-slot");
+                          console.log(`[MutationObserver] Slot ${slot} status=${status} but 0x0, hidden`);
+                        }
+                      }
+                    }
+                  });
+                }
+              }
+            }
           });
+          
           if (hasNew) {
             if (DEBUG) console.log("[MutationObserver] New slots detected");
             setTimeout(() => scan(), 100);
@@ -511,8 +602,18 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
             }
           }
 
-          mutationObserver.observe(document.documentElement, { childList: true, subtree: true });
+          mutationObserver.observe(document.documentElement, { 
+            childList: true, 
+            subtree: true,
+            attributes: true,
+            attributeFilter: ["data-adsbygoogle-status"]
+          });
           scan();
+          
+          // Verifica slot fantasma periodicamente (ogni 5s)
+          setInterval(() => {
+            hideZeroSizeSlots();
+          }, 5000);
         };
 
         if (document.readyState === "loading") {
@@ -533,7 +634,11 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
 
         document.addEventListener("astro:after-swap", () => {
           if (DEBUG) console.log("[AdSense] astro:after-swap");
-          setTimeout(() => scan(), 100);
+          setTimeout(() => {
+            scan();
+            // Verifica slot fantasma dopo navigazione
+            setTimeout(() => hideZeroSizeSlots(), 3000);
+          }, 100);
         });
 
         window.addEventListener("canapalandia:cookie-consent", (e) => {
