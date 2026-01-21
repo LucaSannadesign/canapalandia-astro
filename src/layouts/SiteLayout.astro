@@ -403,18 +403,24 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
           }
 
           // d) Non già inizializzato (WeakSet + dataset + status)
+          // IMPORTANTE: controlla PRIMA se lo slot ha già status (evita doppi push)
+          const status = el.getAttribute("data-adsbygoogle-status");
+          if (status) {
+            // Se ha già uno status (done, filled, o qualsiasi altro), NON fare push
+            window.__adsenseInitialized.add(el);
+            el.dataset.adsInit = "1";
+            if (DEBUG) {
+              const slot = el.getAttribute("data-ad-slot");
+              console.log(`[initAds] Slot ${slot} already has status="${status}", skip push`);
+            }
+            return false;
+          }
+
           if (window.__adsenseInitialized.has(el) || el.dataset.adsInit === "1") {
             if (DEBUG) {
               const slot = el.getAttribute("data-ad-slot");
               console.log(`[initAds] Slot ${slot} already in registry, skip`);
             }
-            return false;
-          }
-
-          const status = el.getAttribute("data-adsbygoogle-status");
-          if (status === "done" || status === "filled") {
-            window.__adsenseInitialized.add(el);
-            el.dataset.adsInit = "1";
             return false;
           }
 
