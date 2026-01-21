@@ -324,8 +324,19 @@ async function main() {
   const forcedDate = arg("--date"); // YYYY-MM-DD
 
   if (!force && !inRomeWindow()) {
-    console.log("[auto-post] Outside Rome window 10:30–11:00. Skipping.");
+    const now = new Date().toLocaleString("it-IT", { timeZone: "Europe/Rome" });
+    console.warn("[auto-post] ⚠️  Outside Rome time window (10:30–11:00). Skipping.");
+    console.warn(`[auto-post] Current Rome time: ${now}`);
+    console.warn("[auto-post] To bypass this check, run with --force flag:");
+    console.warn("[auto-post]   node scripts/auto-post.mjs --force");
+    console.warn("[auto-post] Or use workflow_dispatch with 'force: true' input.");
     return;
+  }
+  
+  if (force) {
+    const now = new Date().toLocaleString("it-IT", { timeZone: "Europe/Rome" });
+    console.log(`[auto-post] ✓ Force mode enabled (bypassing time window check)`);
+    console.log(`[auto-post] Current Rome time: ${now}`);
   }
 
   ensureDir(OUT_DIR);
