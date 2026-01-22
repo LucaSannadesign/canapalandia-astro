@@ -45,6 +45,17 @@
       "source": "/frasi-ribaltate",
       "destination": "/frasi-ribaltate/",
       "permanent": true
-    }
+    },
+  
+    {
+      "source": "/cannabis-light-corte-giustizia-ue",
+      "destination": "/blog/cannabis-light-corte-giustizia-ue",
+      "permanent": true
+    },
+     {
+      "source": "/cannabis-light-corte-giustizia-ue/",
+      "destination": "/blog/cannabis-light-corte-giustizia-ue/",
+      "permanent": true
+}
   ]
 }
