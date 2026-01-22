@@ -1,8 +1,6 @@
 name: Auto Post Generation
 
 on:
-  schedule:
-    - cron: '35 9 * * *'
   workflow_dispatch:
     inputs:
       date:
@@ -31,26 +29,17 @@ jobs:
       - name: Validate GH_PAT token
         id: validate-token
         run: |
-          # Verifica che GH_PAT sia configurato
-          # Nota: GitHub Actions maschera i secrets nei log, quindi non possiamo verificare direttamente il valore
-          # Verifichiamo invece se il secret è definito usando un test indiretto
           TOKEN_CHECK="${{ secrets.GH_PAT }}"
-          
-          # Se il secret non è configurato, GitHub Actions lo lascia vuoto
-          # Usiamo un test che verifica se la stringa è vuota o contiene solo spazi
           if [ -z "${TOKEN_CHECK}" ] || [ "${TOKEN_CHECK}" = "" ]; then
             echo "::error::GH_PAT secret is missing or empty."
-            echo "::error::"
             echo "::error::Please configure it in:"
             echo "::error::  GitHub Settings > Secrets and variables > Actions > Repository secrets"
-            echo "::error::"
-            echo "::error::Create a Personal Access Token (PAT) with 'repo' scope, or"
-            echo "::error::use a fine-grained PAT with 'Contents: Read and write' and 'Pull requests: Write' permissions."
-            echo "::error::"
-            echo "::error::Add the token as a repository secret named 'GH_PAT'."
+            echo "::error::Create a PAT with 'repo' scope, or fine-grained with:"
+            echo "::error::  Contents: Read and write"
+            echo "::error::  Pull requests: Write"
+            echo "::error::Add it as repository secret named 'GH_PAT'."
             exit 1
           fi
-          
           echo "token_valid=true" >> $GITHUB_OUTPUT
           echo "✓ GH_PAT token is configured"
 
@@ -105,31 +94,26 @@ jobs:
           OPENAI_MODEL_DEFAULT: ${{ vars.OPENAI_MODEL_DEFAULT || 'gpt-5-mini' }}
           OPENAI_MAX_OUTPUT_TOKENS: ${{ vars.OPENAI_MAX_OUTPUT_TOKENS || '7000' }}
         run: |
-          # Costruisci argomenti basati sugli input del workflow
           args=""
-          
-          # --date: data specifica (YYYY-MM-DD)
+
           if [ -n "${{ github.event.inputs.date }}" ]; then
             args="$args --date ${{ github.event.inputs.date }}"
             echo "→ Using custom date: ${{ github.event.inputs.date }}"
           fi
-          
-          # --force: bypass finestra oraria Rome (10:30-11:00)
+
           if [ "${{ github.event.inputs.force }}" == "true" ]; then
             args="$args --force"
-            echo "→ Force mode enabled: bypassing Rome time window check"
+            echo "→ Force mode enabled"
           else
             echo "→ Normal mode: will check Rome time window (10:30-11:00)"
-            echo "→ To bypass time window, use workflow_dispatch with 'force: true'"
+            echo "→ To bypass time window, set 'force: true'"
           fi
-          
-          # --allow-test: permette post di test/draft
+
           if [ "${{ github.event.inputs.allow_test }}" == "true" ]; then
             args="$args --allow-test"
             echo "→ Allow test posts enabled"
           fi
-          
-          # Esegui lo script
+
           echo "→ Running: node scripts/auto-post.mjs $args"
           node scripts/auto-post.mjs $args
 
