@@ -1,1 +1,30 @@
-[]
+[
+  {
+    "publishDate": "2026-01-23",
+    "title": "CBD nel 2026: come leggere COA, etichette e claim senza farsi fregare",
+    "slug": "cbd-2026-leggere-coa-etichette-claim",
+    "category": "Attualità",
+    "tags": [
+      "cbd",
+      "qualità",
+      "sicurezza"
+    ],
+    "focusKeyword": "certificati COA CBD",
+    "intent": "informazionale",
+    "status": "ready"
+  },
+  {
+    "publishDate": "2026-01-27",
+    "title": "CBD e controlli: come orientarsi tra norme, etichette e responsabilità del consumatore",
+    "slug": "cbd-controlli-norme-etichette-responsabilita-consumatore",
+    "category": "Normativa",
+    "tags": [
+      "cbd",
+      "normativa",
+      "controlli"
+    ],
+    "focusKeyword": "controlli CBD Italia",
+    "intent": "informazionale",
+    "status": "ready"
+  }
+]

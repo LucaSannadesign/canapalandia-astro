@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { execSync } from "node:child_process";
 import sharp from "sharp";
 
 const ROOT = process.cwd();
@@ -361,12 +362,20 @@ async function main() {
         return true;
       });
 
+  if (!allowTest && filtered.length < due.length) {
+    const testCount = due.length - filtered.length;
+    console.error(`[auto-post] ERROR: ${testCount} test/draft posts detected and allow_test=false. Failing pipeline.`);
+    process.exit(1);
+  }
+
   if (!filtered.length) {
     console.log(`[auto-post] No non-test posts due for ${today} (${due.length - filtered.length} test posts filtered).`);
     return;
   }
 
-  for (const post of filtered) {
+  for (const post of filtered.slice(0, 1)) {
+    console.log(`[auto-post] Limiting to 1 post per run.`);
+
     // Controllo anti-duplicati: verifica sia .mdx che .md
     const outFileMdx = path.join(OUT_DIR, `${post.slug}.mdx`);
     const outFileMd = path.join(OUT_DIR, `${post.slug}.md`);
@@ -380,6 +389,34 @@ async function main() {
       console.log(`[auto-post] SKIP (exists): ${path.relative(ROOT, outFileMd)}`);
       continue;
     }
+
+    // Generate post-meta.json for sitemap guard
+    const tmpDir = path.join(ROOT, "tmp");
+    ensureDir(tmpDir);
+    const metaPath = path.join(tmpDir, "post-meta.json");
+    const focusKeyword = post.focusKeyword || post.title; // fallback to title if no focusKeyword
+    const meta = {
+      title: post.title,
+      slug: `/blog/${post.slug}`, // assuming blog prefix
+      focusKeyword
+    };
+    fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2), "utf8");
+    console.log(`[auto-post] Generated meta: ${path.relative(ROOT, metaPath)}`);
+
+    // Run sitemap guard (online)
+    const siteUrl = process.env.SITE_URL || "https://canapalandia.com";
+    const sitemapUrl = process.env.SITEMAP_URL || (siteUrl.replace(/\/+$/, "") + "/sitemap-index.xml");
+    console.log(`[auto-post] Running sitemap guard...`);
+    try {
+      execSync(`node scripts/sitemap-guard.mjs`, {
+        stdio: "inherit",
+        env: { ...process.env, SITE_URL: siteUrl, SITEMAP_URL: sitemapUrl, POST_META_PATH: metaPath }
+      });
+    } catch (e) {
+      console.error("[auto-post] ERROR: Sitemap guard failed. Aborting post generation.");
+      process.exit(1);
+    }
+
 
     const frontmatter = renderFrontmatter(post);
     const body = await generateBodyWithOpenAI(post);

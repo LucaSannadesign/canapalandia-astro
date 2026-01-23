@@ -1,6 +1,9 @@
 name: Auto Post Generation
 
 on:
+  schedule:
+    - cron: '30 8 * * 2'  # Martedì 08:30 UTC (10:30 Rome)
+    - cron: '30 8 * * 5'  # Venerdì 08:30 UTC (10:30 Rome)
   workflow_dispatch:
     inputs:
       date:
@@ -117,6 +120,13 @@ jobs:
           echo "→ Running: node scripts/auto-post.mjs $args"
           node scripts/auto-post.mjs $args
 
+      - name: Sitemap guard (online)
+        env:
+          SITE_URL: https://canapalandia.com
+          SITEMAP_URL: https://canapalandia.com/sitemap-index.xml
+          POST_META_PATH: ./tmp/post-meta.json
+        run: node scripts/sitemap-guard.mjs
+
       - name: Check if changes
         id: changes
         run: |
@@ -152,3 +162,21 @@ jobs:
             This PR is created as DRAFT to ensure review before merging to main.
           commit-message: "chore: auto-generate posts"
           delete-branch: true
+
+      - name: Enforce PR is DRAFT
+        if: steps.changes.outputs.has_changes == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          PR_URL="${{ steps.create-pr.outputs.pull-request-url }}"
+          if [ -z "$PR_URL" ]; then
+            echo "::error::No PR URL found"
+            exit 1
+          fi
+          # Check if draft
+          IS_DRAFT=$(gh pr view "$PR_URL" --json isDraft -q .isDraft)
+          if [ "$IS_DRAFT" != "true" ]; then
+            echo "::error::PR must be DRAFT but isDraft=$IS_DRAFT"
+            exit 1
+          fi
+          echo "✓ PR is correctly set as DRAFT"
