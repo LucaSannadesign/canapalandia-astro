@@ -44,6 +44,20 @@ function sortPostsDesc(a: any, b: any) {
   return db - da;
 }
 
+// Helper per normalizzare slug (rimuove slash iniziali/finali)
+function normalizeSlug(slug: string | undefined | null): string {
+  if (!slug) return "";
+  return String(slug).trim().replace(/^\/+|\/+$/g, "");
+}
+
+// Helper per costruire URL canonica post blog Astro
+function buildCanonicalUrl(slug: string): string {
+  const normalizedSlug = normalizeSlug(slug);
+  if (!normalizedSlug) return "";
+  const canonicalPath = `/blog/${normalizedSlug}/`;
+  return new URL(canonicalPath, SITE_URL).toString();
+}
+
 // Helper per convertire post Astro in formato compatibile RSS
 function astroPostToRssItem(entry: any) {
   const slug = entry?.slug ?? entry?.data?.slug ?? "";
@@ -71,21 +85,18 @@ function astroPostToRssItem(entry: any) {
     dateStr = String(publishDate);
   }
   
+  // Costruisci URL canonica: https://canapalandia.com/blog/<slug>/
+  const canonicalUrl = buildCanonicalUrl(slug);
+  if (!canonicalUrl) return null;
+  
   return {
     title,
     description,
     date: dateStr,
-    link: `${SITE_URL}/blog/${slug}/`,
+    canonicalUrl, // URL canonica assoluta
     slug,
     isAstro: true, // Flag per distinguere da WP
   };
-}
-
-// Helper per href post Astro
-function astroPostHref(post: any) {
-  const slug = post?.slug ?? post?.data?.slug ?? "";
-  if (!slug) return "/";
-  return `/blog/${slug}/`;
 }
 
 export async function GET() {
@@ -123,7 +134,8 @@ export async function GET() {
         // Gestisci post Astro vs WordPress
         if (p.isAstro) {
           const title = stripHtml(p.title || "Articolo") || "Articolo";
-          const link = absUrl(astroPostHref(p));
+          // Usa canonicalUrl già costruita (assoluta con trailing slash)
+          const link = p.canonicalUrl;
           const pubDate = new Date(p.date || Date.now()).toUTCString();
           const desc = stripHtml(p.description || "");
 
@@ -137,7 +149,8 @@ export async function GET() {
             `    </item>\n`
           );
         } else {
-          // Post WordPress (legacy)
+          // Post WordPress (legacy) - mantieni comportamento esistente
+          // Nota: questi potrebbero puntare a path diversi da /blog/
           const title = stripHtml(p?.title?.rendered || p?.title || "Articolo") || "Articolo";
           const link = absUrl(postHref(p));
           const pubDate = new Date(p?.date || p?.modified || Date.now()).toUTCString();
