@@ -23,6 +23,24 @@ function romeDateISO() {
   return fmt.format(new Date()); // YYYY-MM-DD
 }
 
+function romeTimeISO() {
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Rome",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+  return fmt.format(new Date()).replace(",", "T") + "+01:00"; // Approssimato, ma sufficiente per log
+}
+
+function utcTimeISO() {
+  return new Date().toISOString();
+}
+
 function romeMinutes() {
   const parts = new Intl.DateTimeFormat("en-GB", {
     timeZone: "Europe/Rome",
@@ -318,37 +336,108 @@ function isTestPost(post) {
   return false;
 }
 
+// Verifica se esiste già un post generato per una data specifica
+function checkDateAlreadyUsed(targetDate) {
+  const posts = loadCalendar();
+  const dueForDate = posts.filter(p => String(p.publishDate) === targetDate);
+  
+  for (const post of dueForDate) {
+    const outFileMdx = path.join(OUT_DIR, `${post.slug}.mdx`);
+    const outFileMd = path.join(OUT_DIR, `${post.slug}.md`);
+    
+    if (fs.existsSync(outFileMdx) || fs.existsSync(outFileMd)) {
+      return { used: true, slug: post.slug, file: fs.existsSync(outFileMdx) ? outFileMdx : outFileMd };
+    }
+  }
+  
+  return { used: false };
+}
+
+// Verifica se slug esiste già in src/content/blog/ o in data/wp/out/pages.json
+function checkSlugExists(slug) {
+  // Controlla in src/content/blog/
+  const outFileMdx = path.join(OUT_DIR, `${slug}.mdx`);
+  const outFileMd = path.join(OUT_DIR, `${slug}.md`);
+  if (fs.existsSync(outFileMdx) || fs.existsSync(outFileMd)) {
+    return { exists: true, location: "src/content/blog", file: fs.existsSync(outFileMdx) ? outFileMdx : outFileMd };
+  }
+  
+  // Controlla in data/wp/out/pages.json (se esiste)
+  const wpPagesPath = path.join(ROOT, "data", "wp", "out", "pages.json");
+  if (fs.existsSync(wpPagesPath)) {
+    try {
+      const wpPages = JSON.parse(fs.readFileSync(wpPagesPath, "utf8"));
+      if (Array.isArray(wpPages)) {
+        const found = wpPages.find(p => {
+          const pSlug = p?.slug || p?.post_name || "";
+          return pSlug === slug || pSlug === slug.replace(/^\/+|\/+$/g, "");
+        });
+        if (found) {
+          return { exists: true, location: "data/wp/out/pages.json" };
+        }
+      }
+    } catch (e) {
+      // Ignora errori di parsing
+    }
+  }
+  
+  return { exists: false };
+}
+
 async function main() {
   const dryRun = process.argv.includes("--dry-run");
   const force = process.argv.includes("--force");
   const allowTest = process.argv.includes("--allow-test");
   const forcedDate = arg("--date"); // YYYY-MM-DD
 
+  // Log iniziale con tutte le info richieste
+  const romeNow = romeTimeISO();
+  const utcNow = utcTimeISO();
+  const mode = force ? "force" : "normal";
+  const targetDate = forcedDate || romeDateISO();
+  const windowStatus = inRomeWindow() ? "inside" : "outside";
+  
+  console.log("[auto-post] ========================================");
+  console.log(`[auto-post] Rome now: ${romeNow}`);
+  console.log(`[auto-post] UTC now: ${utcNow}`);
+  console.log(`[auto-post] Mode: ${mode}`);
+  console.log(`[auto-post] Target date: ${targetDate}`);
+  console.log(`[auto-post] Window status: ${windowStatus}`);
+  console.log("[auto-post] ========================================");
+
   if (!force && !inRomeWindow()) {
-    const now = new Date().toLocaleString("it-IT", { timeZone: "Europe/Rome" });
-    console.warn("[auto-post] ⚠️  Outside Rome time window (10:30–11:00). Skipping.");
-    console.warn(`[auto-post] Current Rome time: ${now}`);
-    console.warn("[auto-post] To bypass this check, run with --force flag:");
-    console.warn("[auto-post]   node scripts/auto-post.mjs --force");
-    console.warn("[auto-post] Or use workflow_dispatch with 'force: true' input.");
-    return;
+    console.log("[auto-post] SKIP_TIME_WINDOW: Outside Rome time window (10:30–11:00). Skipping.");
+    console.log(`[auto-post] Current Rome time: ${new Date().toLocaleString("it-IT", { timeZone: "Europe/Rome" })}`);
+    console.log("[auto-post] To bypass this check, run with --force flag:");
+    console.log("[auto-post]   node scripts/auto-post.mjs --force");
+    console.log("[auto-post] Or use workflow_dispatch with 'force: true' input.");
+    process.exit(0);
   }
   
   if (force) {
-    const now = new Date().toLocaleString("it-IT", { timeZone: "Europe/Rome" });
     console.log(`[auto-post] ✓ Force mode enabled (bypassing time window check)`);
-    console.log(`[auto-post] Current Rome time: ${now}`);
+    console.log(`[auto-post] Current Rome time: ${new Date().toLocaleString("it-IT", { timeZone: "Europe/Rome" })}`);
   }
 
   ensureDir(OUT_DIR);
 
   const today = forcedDate || romeDateISO();
+  
+  // Idempotenza: verifica se esiste già un post per questa data
+  const dateCheck = checkDateAlreadyUsed(today);
+  if (dateCheck.used) {
+    console.log(`[auto-post] SKIP_DUPLICATE: Already generated post for ${today}`);
+    console.log(`[auto-post] Existing file: ${path.relative(ROOT, dateCheck.file)}`);
+    console.log(`[auto-post] Slug: ${dateCheck.slug}`);
+    process.exit(0);
+  }
+
   const posts = loadCalendar();
   const due = posts.filter(p => String(p.publishDate) === today);
 
   if (!due.length) {
-    console.log(`[auto-post] No posts due for ${today}.`);
-    return;
+    console.log(`[auto-post] SKIP_NO_SLOT: No posts due for ${today}.`);
+    process.exit(0);
   }
 
   // Filtra post di test (a meno di --allow-test)
@@ -376,18 +465,29 @@ async function main() {
   for (const post of filtered.slice(0, 1)) {
     console.log(`[auto-post] Limiting to 1 post per run.`);
 
+    // Controllo anti-duplicati: verifica slug esistente
+    const slugCheck = checkSlugExists(post.slug);
+    if (slugCheck.exists) {
+      console.log(`[auto-post] SKIP_DUPLICATE: Slug already exists: ${post.slug}`);
+      console.log(`[auto-post] Location: ${slugCheck.location}`);
+      if (slugCheck.file) {
+        console.log(`[auto-post] Existing file: ${path.relative(ROOT, slugCheck.file)}`);
+      }
+      process.exit(0);
+    }
+    
     // Controllo anti-duplicati: verifica sia .mdx che .md
     const outFileMdx = path.join(OUT_DIR, `${post.slug}.mdx`);
     const outFileMd = path.join(OUT_DIR, `${post.slug}.md`);
     
     if (fs.existsSync(outFileMdx)) {
-      console.log(`[auto-post] SKIP (exists): ${path.relative(ROOT, outFileMdx)}`);
-      continue;
+      console.log(`[auto-post] SKIP_DUPLICATE: File exists: ${path.relative(ROOT, outFileMdx)}`);
+      process.exit(0);
     }
     
     if (fs.existsSync(outFileMd)) {
-      console.log(`[auto-post] SKIP (exists): ${path.relative(ROOT, outFileMd)}`);
-      continue;
+      console.log(`[auto-post] SKIP_DUPLICATE: File exists: ${path.relative(ROOT, outFileMd)}`);
+      process.exit(0);
     }
 
     // Generate post-meta.json for sitemap guard
@@ -395,10 +495,20 @@ async function main() {
     ensureDir(tmpDir);
     const metaPath = path.join(tmpDir, "post-meta.json");
     const focusKeyword = post.focusKeyword || post.title; // fallback to title if no focusKeyword
+    const canonical = `${process.env.SITE_URL || "https://canapalandia.com"}/blog/${post.slug}/`;
+    const rssUrl = `${process.env.SITE_URL || "https://canapalandia.com"}/rss.xml`;
+    const reason = post.reason || "calendar"; // "topic" o "calendar"
+    
     const meta = {
+      slug: post.slug,
       title: post.title,
-      slug: `/blog/${post.slug}`, // assuming blog prefix
-      focusKeyword
+      publishDate: post.publishDate, // Data Roma (YYYY-MM-DD)
+      canonical,
+      rssUrl,
+      reason,
+      focusKeyword,
+      // Slug completo per sitemap guard (deve essere /blog/slug)
+      slugForGuard: `/blog/${post.slug}`,
     };
     fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2), "utf8");
     console.log(`[auto-post] Generated meta: ${path.relative(ROOT, metaPath)}`);
@@ -425,10 +535,12 @@ async function main() {
     if (dryRun) {
       console.log(`\n[auto-post] DRY RUN would write: ${path.relative(ROOT, outFileMdx)}\n`);
       console.log(mdx.slice(0, 900) + "\n…\n");
+      console.log(`[auto-post] OK_GENERATED slug=${post.slug} (dry-run)`);
       // In dry-run non generiamo la cover
     } else {
       fs.writeFileSync(outFileMdx, mdx, "utf8");
       console.log(`[auto-post] WROTE: ${path.relative(ROOT, outFileMdx)}`);
+      console.log(`[auto-post] OK_GENERATED slug=${post.slug}`);
       
       // Genera cover image dopo aver scritto il body (per avere estratto)
       await generateCoverImage(post, body);

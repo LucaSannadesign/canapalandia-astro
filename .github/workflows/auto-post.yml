@@ -2,8 +2,12 @@ name: Auto Post Generation
 
 on:
   schedule:
-    - cron: '30 8 * * 2'  # Martedì 08:30 UTC (10:30 Rome)
-    - cron: '30 8 * * 5'  # Venerdì 08:30 UTC (10:30 Rome)
+    # Martedì: due cron per gestire DST (UTC+1 vs UTC+2)
+    - cron: '30 8 * * 2'  # Martedì 08:30 UTC (10:30 Rome quando UTC+2)
+    - cron: '30 9 * * 2'  # Martedì 09:30 UTC (10:30 Rome quando UTC+1)
+    # Venerdì: due cron per gestire DST (UTC+1 vs UTC+2)
+    - cron: '30 8 * * 5'  # Venerdì 08:30 UTC (10:30 Rome quando UTC+2)
+    - cron: '30 9 * * 5'  # Venerdì 09:30 UTC (10:30 Rome quando UTC+1)
   workflow_dispatch:
     inputs:
       date:
@@ -119,6 +123,16 @@ jobs:
 
           echo "→ Running: node scripts/auto-post.mjs $args"
           node scripts/auto-post.mjs $args
+
+      - name: Show post-meta.json (if generated)
+        if: always()
+        run: |
+          if [ -f "tmp/post-meta.json" ]; then
+            echo "📋 Post metadata:"
+            cat tmp/post-meta.json
+          else
+            echo "ℹ️  No post-meta.json generated (script skipped or no post created)"
+          fi
 
       - name: Sitemap guard (online)
         env:
