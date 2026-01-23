@@ -14,7 +14,11 @@ const {
   yoastHeadHtml, 
   shell = true, 
   robots: robotsProp,
-  metadata 
+  metadata,
+  ogImage: ogImageProp,
+  ogType: ogTypeProp,
+  ogSiteName: ogSiteNameProp,
+  twitterCard: twitterCardProp,
 } = Astro.props;
 
 // Supporto metadata object: se presente, usa quello, altrimenti props dirette
@@ -117,6 +121,48 @@ function cleanYoastHead(html: string | undefined): string {
 }
 
 const yoastHeadCleaned = cleanYoastHead(yoastHeadHtml);
+
+// Base site URL
+const SITE_URL = import.meta.env.SITE || "https://canapalandia.com";
+
+// Helper per normalizzare og:image (preferisce JPG/PNG su WEBP per Telegram)
+function normalizeOgImage(imagePath: string | undefined | null): string {
+  if (!imagePath) {
+    // Fallback: usa logo come default OG image
+    return `${SITE_URL}/images/logo-canapalandia_1024.webp`;
+  }
+  
+  // Se già assoluto, ritorna così
+  if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
+    return imagePath;
+  }
+  
+  // Normalizza path relativo
+  const normalizedPath = imagePath.startsWith("/") ? imagePath : `/${imagePath}`;
+  
+  // Se è .webp, prova a convertire in .jpg (Telegram preferisce JPG/PNG)
+  if (normalizedPath.endsWith(".webp")) {
+    const jpgPath = normalizedPath.replace(/\.webp$/, ".jpg");
+    // Nota: non possiamo verificare se il file esiste a build-time,
+    // ma Telegram accetterà il 404 e userà il fallback, quindi proviamo JPG prima
+    // Se non esiste, il server restituirà 404 e Telegram userà il fallback
+    return `${SITE_URL}${jpgPath}`;
+  }
+  
+  return `${SITE_URL}${normalizedPath}`;
+}
+
+// Calcola valori OG/Twitter
+const ogType = ogTypeProp ?? metadata?.ogType ?? "website";
+const ogSiteName = ogSiteNameProp ?? metadata?.ogSiteName ?? "Canapalandia";
+const ogTitle = titleFinal;
+const ogDescription = descriptionFinal || "";
+const ogUrl = canonicalFinal || `${SITE_URL}${Astro.url.pathname}`;
+const ogImage = normalizeOgImage(ogImageProp ?? metadata?.ogImage);
+const twitterCard = twitterCardProp ?? metadata?.twitterCard ?? "summary_large_image";
+const twitterTitle = ogTitle;
+const twitterDescription = ogDescription;
+const twitterImage = ogImage;
 
 // Determina se mostrare ads: escludi route "low-value"
 const currentPath = Astro.url.pathname;
@@ -733,6 +779,20 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
     {descriptionFinal ? <meta name="description" content={descriptionFinal} /> : null}
     {canonicalFinal ? <link rel="canonical" href={canonicalFinal} /> : null}
     <meta name="robots" content={robotsFinal} />
+    
+    {/* OpenGraph meta tags */}
+    <meta property="og:type" content={ogType} />
+    <meta property="og:site_name" content={ogSiteName} />
+    <meta property="og:title" content={ogTitle} />
+    {ogDescription ? <meta property="og:description" content={ogDescription} /> : null}
+    <meta property="og:url" content={ogUrl} />
+    <meta property="og:image" content={ogImage} />
+    
+    {/* Twitter Card meta tags */}
+    <meta name="twitter:card" content={twitterCard} />
+    <meta name="twitter:title" content={twitterTitle} />
+    {twitterDescription ? <meta name="twitter:description" content={twitterDescription} /> : null}
+    <meta name="twitter:image" content={twitterImage} />
     
     {/* Se c'è yoastHeadHtml, inietta il resto (già ripulito da title/canonical/robots) */}
     {yoastHeadCleaned ? (

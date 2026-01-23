@@ -151,11 +151,19 @@ try {
 
 const sectionTitle = "Articoli correlati";
 
+// Calcola og:image dal post (coverImage o image)
+const postImage = normalizeImage(entry);
+const SITE_URL = import.meta.env.SITE || "https://canapalandia.com";
+
 const metadata = {
   title: (entry as any).data.title,
   description: (entry as any).data.description || "",
-  canonical: `${import.meta.env.SITE || "https://canapalandia.com"}/blog/${slug}/`,
+  canonical: `${SITE_URL}/blog/${slug}/`,
   robots: { index: true, follow: true },
+  ogType: "article",
+  ogSiteName: "Canapalandia",
+  ogImage: postImage || undefined, // Se vuoto, SiteLayout userà fallback
+  twitterCard: "summary_large_image",
 };
 
 // URL canonico per condivisione
