@@ -67,58 +67,50 @@ const apiUrl = reactionsApiUrl(slug);
     if (!slugAttr) return;
 
     // Helper inline per costruire URL API con slash finale
-    function reactionsUrl(slug: string): string {
+    function reactionsUrl(slug) {
       const normalized = slug.replace(/^\/+|\/+$/g, "");
       return `/api/reactions/${encodeURIComponent(normalized)}/`;
     }
 
     const apiUrl = reactionsUrl(slugAttr);
 
-    const buttons = Array.from(reactionsEl.querySelectorAll('.reaction-btn')) as HTMLButtonElement[];
-    let counts: { up: number; love: number; laugh: number; fire: number } = { up: 0, love: 0, laugh: 0, fire: 0 };
+    const buttons = Array.from(reactionsEl.querySelectorAll('.reaction-btn'));
+    let counts = { up: 0, love: 0, laugh: 0, fire: 0 };
     let isLoading = false;
 
     // Mappa nomi componente -> nomi API
-    const reactionMap: Record<string, string> = {
+    const reactionMap = {
       up: "like",
       love: "heart",
       laugh: "laugh",
       fire: "fire",
     };
 
-    // Mappa nomi API -> nomi componente
-    const apiToComponentMap: Record<string, string> = {
-      like: "up",
-      heart: "love",
-      laugh: "laugh",
-      fire: "fire",
-    };
-
     // Funzione per ottenere chiave localStorage
-    function getStorageKey(reaction: string): string {
+    function getStorageKey(reaction) {
       return `reaction:${slugAttr}:${reaction}`;
     }
 
     // Verifica se già votato per una reazione
-    function hasVoted(reaction: string): boolean {
+    function hasVoted(reaction) {
       return localStorage.getItem(getStorageKey(reaction)) === "1";
     }
 
     // Segna come votato
-    function markAsVoted(reaction: string): void {
+    function markAsVoted(reaction) {
       localStorage.setItem(getStorageKey(reaction), "1");
     }
 
     // Aggiorna UI con contatori
-    function updateCounts(newCounts: { up: number; love: number; laugh: number; fire: number }): void {
+    function updateCounts(newCounts) {
       counts = newCounts;
       buttons.forEach((btn) => {
         const reaction = btn.getAttribute("data-reaction");
         if (!reaction) return;
         
-        const countEl = btn.querySelector(`.reaction-count[data-count="${reaction}"]`) as HTMLElement | null;
+        const countEl = btn.querySelector(`.reaction-count[data-count="${reaction}"]`);
         if (countEl) {
-          countEl.textContent = String(counts[reaction as keyof typeof counts] || 0);
+          countEl.textContent = String(counts[reaction] || 0);
         }
         
         // Aggiorna stato disabled
@@ -133,7 +125,7 @@ const apiUrl = reactionsApiUrl(slug);
     }
 
     // Carica contatori iniziali
-    async function loadCounts(): Promise<void> {
+    async function loadCounts() {
       try {
         const response = await fetch(apiUrl, {
           method: "GET",
@@ -141,7 +133,13 @@ const apiUrl = reactionsApiUrl(slug);
         });
 
         if (!response.ok) {
-          console.warn("[Reactions] Failed to load counts");
+          if (response.status === 404) {
+            console.warn("[Reactions] Endpoint not found, using default counts");
+            updateCounts({ up: 0, love: 0, laugh: 0, fire: 0 });
+          } else {
+            console.warn("[Reactions] Failed to load counts:", response.status, response.statusText);
+            updateCounts({ up: 0, love: 0, laugh: 0, fire: 0 });
+          }
           return;
         }
 
@@ -156,15 +154,17 @@ const apiUrl = reactionsApiUrl(slug);
         });
       } catch (err) {
         console.error("[Reactions] Error loading counts:", err);
+        // Fallback a zero in caso di errore
+        updateCounts({ up: 0, love: 0, laugh: 0, fire: 0 });
       }
     }
 
     // Invia reazione
-    async function sendReaction(reaction: string): Promise<void> {
+    async function sendReaction(reaction) {
       if (isLoading || hasVoted(reaction) || !reactionsEl) return;
 
       isLoading = true;
-      const btn = reactionsEl.querySelector(`.reaction-btn[data-reaction="${reaction}"]`) as HTMLButtonElement | null;
+      const btn = reactionsEl.querySelector(`.reaction-btn[data-reaction="${reaction}"]`);
       if (btn) {
         btn.disabled = true;
         btn.classList.add("reaction-btn--loading");
@@ -181,7 +181,14 @@ const apiUrl = reactionsApiUrl(slug);
         });
 
         if (!response.ok) {
-          throw new Error("Failed to send reaction");
+          if (response.status === 404) {
+            console.error("[Reactions] Endpoint not found:", apiUrl);
+          } else if (response.status >= 500) {
+            console.error("[Reactions] Server error:", response.status);
+          } else {
+            console.error("[Reactions] Request failed:", response.status, response.statusText);
+          }
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
 
         const data = await response.json();
