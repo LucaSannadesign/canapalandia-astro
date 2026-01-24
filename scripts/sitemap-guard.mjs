@@ -84,10 +84,13 @@ function fail(msg, details = {}) {
 const metaRaw = fs.readFileSync(POST_META_PATH, "utf8");
 const meta = JSON.parse(metaRaw);
 
-const { slug, focusKeyword, title } = meta;
+// Supporta sia slug che slugForGuard (per compatibilità)
+const slug = meta.slugForGuard || meta.slug || "";
+const focusKeyword = meta.focusKeyword || meta.title || "";
+const title = meta.title || "";
 
 if (!slug || !focusKeyword || !title) {
-  fail("post-meta missing required fields: slug, focusKeyword, title");
+  fail("post-meta missing required fields: slug (or slugForGuard), focusKeyword, title");
 }
 
 // Stop test/draft

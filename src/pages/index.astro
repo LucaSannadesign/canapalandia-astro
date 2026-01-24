@@ -327,33 +327,28 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
     <div class="hero-overlay" aria-hidden="true"></div>
 
     <div class="container hero-inner">
-      <p class="kicker">Cannabis legale • CBD • Canapa industriale</p>
+      <p class="kicker">Guida legale aggiornata • Italia</p>
 
       <h1>
-        Cannabis light e CBD in Italia: guida chiara e legale
+        CBD e cannabis light in Italia: guida legale aggiornata
       </h1>
 
       <p class="lead">
-        Normative, sentenze e filiera spiegate senza sensazionalismo. Fonti e contesto, sempre.
+        Norme, sentenze e filiera spiegate con fonti e contesto. Informazione chiara, senza allarmismi.
       </p>
 
       <div class="hero-cta">
-        <a class="btn primary" href="/#percorsi">Inizia dalla guida legale</a>
-        <a class="btn ghost" href="/#ultimi">Leggi le ultime notizie</a>
+        <a class="btn primary" href="/#percorsi">Leggi la guida legale</a>
+        <a class="btn ghost" href="/#ultimi">Ultime notizie</a>
       </div>
 
-      <div class="hero-links">
-        <a class="hero-link" href="/blog/">Vai al blog</a>
-        <span aria-hidden="true">·</span>
-        <a class="hero-link" href="/cerca/">Cerca un argomento</a>
+      <div class="chips">
+        <span>Focus Italia</span>
+        <span>•</span>
+        <span>Fonti verificate</span>
+        <span>•</span>
+        <span>Aggiornato</span>
       </div>
-
-      <ul class="trust" aria-label="Punti chiave">
-        <li>Focus Italia</li>
-        <li>Fonti e contesto</li>
-        <li>Aggiornato</li>
-        <li>No promozione illegalità</li>
-      </ul>
     </div>
   </section>
 
@@ -516,42 +511,40 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
           <p>Contenuti in importazione. Torna presto!</p>
         </div>
       )}
-
-      <div class="section-cta">
-        <a class="btn ghost" href="/blog/">Vai al blog</a>
-      </div>
     </div>
   </section>
 
   <section class="section alt">
     <div class="container">
-      <div class="section-head">
-        <h2>Ribaltatore AI</h2>
-        <p class="section-lead">
-          Scrivi una frase proibizionista e ottieni una risposta ironica e antiproibizionista, pronta da copiare e condividere.
-        </p>
-      </div>
-      <div class="section-cta">
-        <a class="btn primary" href="/ribaltatore/">Prova il Ribaltatore</a>
-        <a class="btn ghost" href="/frasi-ribaltate/">Leggi le migliori</a>
-      </div>
-    </div>
-  </section>
-
-  <section class="section">
-    <div class="container support">
-      <div>
-        <h2>Supporta Canapalandia</h2>
-        <p class="section-lead">
-          Se trovi utile il progetto, puoi sostenerlo o scoprire i partner
-          selezionati.
-        </p>
-      </div>
-      <div class="support-cta">
-        <a class="btn primary" href="/sostieni-la-nostra-causa/"
-          >Sostieni il progetto</a
-        >
-        <a class="btn ghost" href="/partner-selezionati/">Scopri i partner</a>
+      <div class="grid gap-6 lg:grid-cols-2">
+        <!-- Card Ribaltatore AI -->
+        <div class="rounded-3xl border border-white/10 bg-white/5 p-6 md:p-8">
+          <h2>Ribaltatore AI</h2>
+          <p class="section-lead">
+            Scrivi una frase proibizionista e ottieni una risposta ironica e antiproibizionista, pronta da copiare e condividere.
+          </p>
+          <div class="flex flex-wrap gap-3 pt-2">
+            <a class="inline-flex items-center justify-center rounded-full bg-emerald-500 px-5 py-3 font-semibold text-black hover:bg-emerald-400 transition" href="/ribaltatore-ai">Prova il Ribaltatore</a>
+            <a class="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 px-5 py-3 font-semibold text-white hover:bg-white/10 transition" href="/frasi-ribaltate">Leggi le migliori</a>
+          </div>
+          <div class="mt-5 w-full overflow-hidden rounded-2xl border border-white/10 bg-black/20 h-[220px] md:h-[300px] lg:h-[350px]">
+            <img src="/images/home/ribaltatore-ai-banner.webp" alt="Ribaltatore AI in azione" loading="lazy" decoding="async" class="h-full w-full object-cover" />
+          </div>
+        </div>
+        <!-- Card Supporta Canapalandia -->
+        <div class="rounded-3xl border border-white/10 bg-white/5 p-6 md:p-8">
+          <h2>Supporta Canapalandia</h2>
+          <p class="section-lead">
+            Se trovi utile il progetto, puoi sostenerlo o scoprire i partner selezionati.
+          </p>
+          <div class="flex flex-wrap gap-3 pt-2">
+            <a class="inline-flex items-center justify-center rounded-full bg-emerald-500 px-5 py-3 font-semibold text-black hover:bg-emerald-400 transition" href="/sostieni-la-nostra-causa">Sostieni il progetto</a>
+            <a class="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 px-5 py-3 font-semibold text-white hover:bg-white/10 transition" href="/partner">Scopri i partner</a>
+          </div>
+          <div class="mt-5 w-full overflow-hidden rounded-2xl border border-white/10 bg-black/20 h-[220px] md:h-[300px] lg:h-[350px]">
+            <img src="/images/home/supporta-canapalandia-banner.webp" alt="Supporta Canapalandia progetto" loading="lazy" decoding="async" class="h-full w-full object-cover object-[70%_35%]" />
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -571,6 +564,30 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
     .hero-link {
       text-decoration: underline;
       text-underline-offset: 3px;
+    }
+
+    .hero-cta {
+      margin-top: 24px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .chips {
+      margin-top: 12px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: flex-start;
+      flex-wrap: wrap;
+      opacity: 0.9;
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+    .chips span {
+      font-weight: var(--font-medium);
     }
 
     /* Percorsi tematici: rollover elegante */
