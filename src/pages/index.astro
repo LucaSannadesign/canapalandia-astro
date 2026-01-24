@@ -3,6 +3,7 @@ import { getCollection, type CollectionEntry } from "astro:content";
 import Layout from "../layouts/MigratedLayout.astro";
 import AdSlot from "../components/AdSlot.astro";
 import CardPost from "../components/CardPost.astro";
+import HomeActionCards from "../components/HomeActionCards.astro";
 import { ADS_SLOT_HOME } from "../lib/consts";
 
 /* ---------------------------
@@ -514,40 +515,8 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
     </div>
   </section>
 
-  <section class="section alt">
-    <div class="container">
-      <div class="grid gap-6 lg:grid-cols-2">
-        <!-- Card Ribaltatore AI -->
-        <div class="rounded-3xl border border-white/10 bg-white/5 p-6 md:p-8">
-          <h2>Ribaltatore AI</h2>
-          <p class="section-lead">
-            Scrivi una frase proibizionista e ottieni una risposta ironica e antiproibizionista, pronta da copiare e condividere.
-          </p>
-          <div class="flex flex-wrap gap-3 pt-2">
-            <a class="inline-flex items-center justify-center rounded-full bg-emerald-500 px-5 py-3 font-semibold text-black hover:bg-emerald-400 transition" href="/ribaltatore-ai">Prova il Ribaltatore</a>
-            <a class="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 px-5 py-3 font-semibold text-white hover:bg-white/10 transition" href="/frasi-ribaltate">Leggi le migliori</a>
-          </div>
-          <div class="mt-5 w-full overflow-hidden rounded-2xl border border-white/10 bg-black/20 h-[220px] md:h-[300px] lg:h-[350px]">
-            <img src="/images/home/ribaltatore-ai-banner.webp" alt="Ribaltatore AI in azione" loading="lazy" decoding="async" class="h-full w-full object-cover" />
-          </div>
-        </div>
-        <!-- Card Supporta Canapalandia -->
-        <div class="rounded-3xl border border-white/10 bg-white/5 p-6 md:p-8">
-          <h2>Supporta Canapalandia</h2>
-          <p class="section-lead">
-            Se trovi utile il progetto, puoi sostenerlo o scoprire i partner selezionati.
-          </p>
-          <div class="flex flex-wrap gap-3 pt-2">
-            <a class="inline-flex items-center justify-center rounded-full bg-emerald-500 px-5 py-3 font-semibold text-black hover:bg-emerald-400 transition" href="/sostieni-la-nostra-causa">Sostieni il progetto</a>
-            <a class="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 px-5 py-3 font-semibold text-white hover:bg-white/10 transition" href="/partner">Scopri i partner</a>
-          </div>
-          <div class="mt-5 w-full overflow-hidden rounded-2xl border border-white/10 bg-black/20 h-[220px] md:h-[300px] lg:h-[350px]">
-            <img src="/images/home/supporta-canapalandia-banner.webp" alt="Supporta Canapalandia progetto" loading="lazy" decoding="async" class="h-full w-full object-cover object-[70%_35%]" />
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+  <!-- Sezione 2 card: Ribaltatore + Supporta -->
+  <HomeActionCards />
 
   <style>
     /* Hero links discreti */
