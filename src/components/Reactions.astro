@@ -5,10 +5,10 @@ interface Props {
 
 const { slug } = Astro.props;
 
-// URL API per questo post (usa .json per compatibilità)
+// URL API per questo post (con slash finale)
 function reactionsApiUrl(s: string): string {
   const normalized = s.replace(/^\/+|\/+$/g, "");
-  return `/api/reactions/${encodeURIComponent(normalized)}.json`;
+  return `/api/reactions/${encodeURIComponent(normalized)}/`;
 }
 
 const apiUrl = reactionsApiUrl(slug);
@@ -66,10 +66,10 @@ const apiUrl = reactionsApiUrl(slug);
     const slugAttr = reactionsEl.getAttribute('data-slug');
     if (!slugAttr) return;
 
-    // Helper inline per costruire URL API con .json
+    // Helper inline per costruire URL API con slash finale
     function reactionsUrl(slug: string): string {
       const normalized = slug.replace(/^\/+|\/+$/g, "");
-      return `/api/reactions/${encodeURIComponent(normalized)}.json`;
+      return `/api/reactions/${encodeURIComponent(normalized)}/`;
     }
 
     const apiUrl = reactionsUrl(slugAttr);
@@ -177,7 +177,7 @@ const apiUrl = reactionsApiUrl(slug);
         const response = await fetch(apiUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ type: apiReactionType }),
+          body: JSON.stringify({ reaction: apiReactionType }),
         });
 
         if (!response.ok) {
