@@ -2,6 +2,13 @@
 
 Sistema di reazioni (👍 ❤️ 😂 🔥) per i post del blog con contatori condivisi persistenti su Supabase.
 
+## Endpoint API
+
+**Endpoint pubblico**: `/api/reactions/<slug>` (senza `.json`)
+
+- **GET**: Recupera contatori per un post
+- **POST**: Incrementa una reazione (normalizza "likes"/"like" -> "up")
+
 ## Setup
 
 ### 1. Eseguire lo schema SQL
@@ -24,9 +31,10 @@ Assicurarsi che siano configurate:
 
 ### 3. Componenti
 
-- **API Endpoint**: `src/pages/api/reactions/[slug].json.ts`
+- **API Endpoint**: `src/pages/api/reactions/[slug].ts`
   - GET: ritorna contatori per un post
   - POST: incrementa una reazione (chiama RPC)
+  - Normalizza "likes"/"like" -> "up" automaticamente
 
 - **Componente**: `src/components/Reactions.astro`
   - Props: `slug` (string)
@@ -59,3 +67,27 @@ Gli utenti possono:
 - I contatori sono persistenti e condivisi tra tutti gli utenti
 - Il localStorage previene doppi voti solo lato client (non è una protezione server-side)
 - Per protezione server-side avanzata, implementare rate limiting o autenticazione
+
+## Test locale
+
+```bash
+# Avvia server dev
+pnpm dev
+
+# Test GET
+curl -i -X GET "http://localhost:4321/api/reactions/test-slug" \
+  -H "Content-Type: application/json"
+
+# Test POST con normalizzazione "likes" -> "up"
+curl -i -X POST "http://localhost:4321/api/reactions/test-slug" \
+  -H "Content-Type: application/json" \
+  -d '{"reaction":"likes"}'
+
+# Test POST con IPv6
+curl -i -X POST "http://[::1]:4321/api/reactions/test-slug" \
+  -H "Content-Type: application/json" \
+  -d '{"reaction":"likes"}'
+```
+
+**Valori reazioni validi**: `up`, `love`, `laugh`, `fire`  
+**Alias supportati**: `likes`/`like` -> `up`

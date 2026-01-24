@@ -6,7 +6,7 @@ interface Props {
 const { slug } = Astro.props;
 
 // URL API per questo post
-const apiUrl = `/api/reactions/${slug}.json`;
+const apiUrl = `/api/reactions/${slug}`;
 ---
 
 <div class="reactions" data-slug={slug}>
@@ -61,7 +61,7 @@ const apiUrl = `/api/reactions/${slug}.json`;
     const slugAttr = reactionsEl.getAttribute('data-slug');
     if (!slugAttr) return;
 
-    const apiUrl = `/api/reactions/${slugAttr}.json`;
+    const apiUrl = `/api/reactions/${slugAttr}`;
 
     const buttons = Array.from(reactionsEl.querySelectorAll('.reaction-btn')) as HTMLButtonElement[];
     let counts: { up: number; love: number; laugh: number; fire: number } = { up: 0, love: 0, laugh: 0, fire: 0 };
@@ -132,7 +132,7 @@ const apiUrl = `/api/reactions/${slug}.json`;
 
     // Invia reazione
     async function sendReaction(reaction: string): Promise<void> {
-      if (isLoading || hasVoted(reaction)) return;
+      if (isLoading || hasVoted(reaction) || !reactionsEl) return;
 
       isLoading = true;
       const btn = reactionsEl.querySelector(`.reaction-btn[data-reaction="${reaction}"]`) as HTMLButtonElement | null;

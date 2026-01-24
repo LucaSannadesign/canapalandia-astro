@@ -4,7 +4,7 @@
  * GET: ritorna i contatori delle reazioni per un post
  * POST: incrementa una reazione (atomico via RPC)
  * 
- * Route: /api/reactions/[slug].json
+ * Route: /api/reactions/[slug]
  */
 
 import type { APIRoute } from "astro";
@@ -13,13 +13,53 @@ import { getSupabaseServer } from "@/lib/supabaseServer";
 // API route must be server-side
 export const prerender = false;
 
-export const GET: APIRoute = async ({ params, request }) => {
+// Valori reazioni consentiti (coerenti con DB)
+const VALID_REACTIONS = ["up", "love", "laugh", "fire"] as const;
+type ValidReaction = typeof VALID_REACTIONS[number];
+
+/**
+ * Normalizza il valore della reazione:
+ * - trim + lowercase
+ * - mappa "likes" -> "up"
+ * - mappa "like" -> "up"
+ */
+function normalizeReaction(input: string): string | null {
+  const normalized = input.trim().toLowerCase();
+  
+  // Mappa alias comuni
+  if (normalized === "likes" || normalized === "like") {
+    return "up";
+  }
+  
+  // Verifica se è un valore valido
+  if (VALID_REACTIONS.includes(normalized as ValidReaction)) {
+    return normalized;
+  }
+  
+  return null;
+}
+
+// Logging solo in dev
+const isDev = import.meta.env.DEV;
+function log(...args: unknown[]) {
+  if (isDev) {
+    console.log("[reactions]", ...args);
+  }
+}
+
+function logError(...args: unknown[]) {
+  if (isDev) {
+    console.error("[reactions]", ...args);
+  }
+}
+
+export const GET: APIRoute = async ({ params }) => {
   const slug = params.slug;
   
-  console.log(`[reactions] GET /api/reactions/${slug}.json`);
+  log(`GET /api/reactions/${slug}`);
   
   if (!slug || typeof slug !== "string") {
-    console.error("[reactions] GET: Slug mancante o non valido", { slug, params });
+    logError("GET: Slug mancante o non valido", { slug, params });
     return new Response(
       JSON.stringify({ error: "Slug mancante" }),
       { 
@@ -39,7 +79,7 @@ export const GET: APIRoute = async ({ params, request }) => {
       .single();
 
     if (error && error.code !== "PGRST116") { // PGRST116 = no rows returned
-      console.error("[reactions] GET: Error fetching from Supabase:", error);
+      logError("GET: Error fetching from Supabase:", error);
       return new Response(
         JSON.stringify({ error: "Errore nel recupero reazioni" }),
         { 
@@ -76,7 +116,7 @@ export const GET: APIRoute = async ({ params, request }) => {
       }
     );
   } catch (err) {
-    console.error("[reactions] GET: Unexpected error:", err);
+    logError("GET: Unexpected error:", err);
     return new Response(
       JSON.stringify({ error: "Errore interno", details: err instanceof Error ? err.message : String(err) }),
       { 
@@ -90,10 +130,10 @@ export const GET: APIRoute = async ({ params, request }) => {
 export const POST: APIRoute = async ({ params, request }) => {
   const slug = params.slug;
   
-  console.log(`[reactions] POST /api/reactions/${slug}.json`);
+  log(`POST /api/reactions/${slug}`);
   
   if (!slug || typeof slug !== "string") {
-    console.error("[reactions] POST: Slug mancante o non valido", { slug, params });
+    logError("POST: Slug mancante o non valido", { slug, params });
     return new Response(
       JSON.stringify({ error: "Slug mancante" }),
       { 
@@ -105,21 +145,42 @@ export const POST: APIRoute = async ({ params, request }) => {
 
   try {
     const body = await request.json();
-    const { reaction } = body;
+    const { reaction: rawReaction } = body;
 
-    console.log(`[reactions] POST: reaction="${reaction}" for slug="${slug}"`);
-
-    // Valida reazione
-    if (!reaction || !["up", "love", "laugh", "fire"].includes(reaction)) {
-      console.error("[reactions] POST: Reazione non valida", { reaction, slug });
+    if (!rawReaction || typeof rawReaction !== "string") {
+      logError("POST: Reazione mancante o non valida", { reaction: rawReaction, slug });
       return new Response(
-        JSON.stringify({ error: "Reazione non valida", received: reaction }),
+        JSON.stringify({ error: "Reazione mancante", received: rawReaction }),
         { 
           status: 400,
           headers: { "Content-Type": "application/json" }
         }
       );
     }
+
+    // Normalizza reazione
+    const reaction = normalizeReaction(rawReaction);
+    
+    if (!reaction) {
+      logError("POST: Reazione non valida", { 
+        received: rawReaction, 
+        slug,
+        validReactions: VALID_REACTIONS 
+      });
+      return new Response(
+        JSON.stringify({ 
+          error: "Reazione non valida", 
+          received: rawReaction,
+          validReactions: VALID_REACTIONS 
+        }),
+        { 
+          status: 400,
+          headers: { "Content-Type": "application/json" }
+        }
+      );
+    }
+
+    log(`POST: reaction="${reaction}" (normalized from "${rawReaction}") for slug="${slug}"`);
 
     const supabase = getSupabaseServer();
 
@@ -130,7 +191,7 @@ export const POST: APIRoute = async ({ params, request }) => {
     });
 
     if (error) {
-      console.error("[reactions] POST: RPC error:", error);
+      logError("POST: RPC error:", error);
       return new Response(
         JSON.stringify({ error: "Errore nell'incremento reazione", details: error.message }),
         { 
@@ -141,6 +202,7 @@ export const POST: APIRoute = async ({ params, request }) => {
     }
 
     if (!data || data.length === 0) {
+      logError("POST: Nessun dato ritornato da RPC", { slug, reaction });
       return new Response(
         JSON.stringify({ error: "Nessun dato ritornato" }),
         { 
@@ -169,7 +231,7 @@ export const POST: APIRoute = async ({ params, request }) => {
       }
     );
   } catch (err) {
-    console.error("[reactions] POST: Unexpected error:", err);
+    logError("POST: Unexpected error:", err);
     return new Response(
       JSON.stringify({ error: "Errore interno", details: err instanceof Error ? err.message : String(err) }),
       { 
