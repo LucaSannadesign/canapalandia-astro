@@ -3,15 +3,23 @@
  * 
  * GET: ritorna i contatori delle reazioni per un post
  * POST: incrementa una reazione (atomico via RPC)
+ * 
+ * Route: /api/reactions/[slug].json
  */
 
 import type { APIRoute } from "astro";
 import { getSupabaseServer } from "@/lib/supabaseServer";
 
-export const GET: APIRoute = async ({ params }) => {
+// API route must be server-side
+export const prerender = false;
+
+export const GET: APIRoute = async ({ params, request }) => {
   const slug = params.slug;
   
+  console.log(`[reactions] GET /api/reactions/${slug}.json`);
+  
   if (!slug || typeof slug !== "string") {
+    console.error("[reactions] GET: Slug mancante o non valido", { slug, params });
     return new Response(
       JSON.stringify({ error: "Slug mancante" }),
       { 
@@ -31,7 +39,7 @@ export const GET: APIRoute = async ({ params }) => {
       .single();
 
     if (error && error.code !== "PGRST116") { // PGRST116 = no rows returned
-      console.error("[reactions] Error fetching:", error);
+      console.error("[reactions] GET: Error fetching from Supabase:", error);
       return new Response(
         JSON.stringify({ error: "Errore nel recupero reazioni" }),
         { 
@@ -68,9 +76,9 @@ export const GET: APIRoute = async ({ params }) => {
       }
     );
   } catch (err) {
-    console.error("[reactions] Unexpected error:", err);
+    console.error("[reactions] GET: Unexpected error:", err);
     return new Response(
-      JSON.stringify({ error: "Errore interno" }),
+      JSON.stringify({ error: "Errore interno", details: err instanceof Error ? err.message : String(err) }),
       { 
         status: 500,
         headers: { "Content-Type": "application/json" }
@@ -82,7 +90,10 @@ export const GET: APIRoute = async ({ params }) => {
 export const POST: APIRoute = async ({ params, request }) => {
   const slug = params.slug;
   
+  console.log(`[reactions] POST /api/reactions/${slug}.json`);
+  
   if (!slug || typeof slug !== "string") {
+    console.error("[reactions] POST: Slug mancante o non valido", { slug, params });
     return new Response(
       JSON.stringify({ error: "Slug mancante" }),
       { 
@@ -96,10 +107,13 @@ export const POST: APIRoute = async ({ params, request }) => {
     const body = await request.json();
     const { reaction } = body;
 
+    console.log(`[reactions] POST: reaction="${reaction}" for slug="${slug}"`);
+
     // Valida reazione
     if (!reaction || !["up", "love", "laugh", "fire"].includes(reaction)) {
+      console.error("[reactions] POST: Reazione non valida", { reaction, slug });
       return new Response(
-        JSON.stringify({ error: "Reazione non valida" }),
+        JSON.stringify({ error: "Reazione non valida", received: reaction }),
         { 
           status: 400,
           headers: { "Content-Type": "application/json" }
@@ -116,9 +130,9 @@ export const POST: APIRoute = async ({ params, request }) => {
     });
 
     if (error) {
-      console.error("[reactions] RPC error:", error);
+      console.error("[reactions] POST: RPC error:", error);
       return new Response(
-        JSON.stringify({ error: "Errore nell'incremento reazione" }),
+        JSON.stringify({ error: "Errore nell'incremento reazione", details: error.message }),
         { 
           status: 500,
           headers: { "Content-Type": "application/json" }
@@ -155,13 +169,24 @@ export const POST: APIRoute = async ({ params, request }) => {
       }
     );
   } catch (err) {
-    console.error("[reactions] Unexpected error:", err);
+    console.error("[reactions] POST: Unexpected error:", err);
     return new Response(
-      JSON.stringify({ error: "Errore interno" }),
+      JSON.stringify({ error: "Errore interno", details: err instanceof Error ? err.message : String(err) }),
       { 
         status: 500,
         headers: { "Content-Type": "application/json" }
       }
     );
   }
+};
+
+// Support OPTIONS for CORS if needed
+export const OPTIONS: APIRoute = async () => {
+  return new Response(null, {
+    status: 204,
+    headers: {
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+    },
+  });
 };
