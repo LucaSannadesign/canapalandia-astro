@@ -245,6 +245,10 @@ small, .text-sm {
 }
 
 /* ===== LINK STYLES (Editorial Refined) ===== */
+a, a:hover, a:focus {
+  text-decoration: none;
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -253,17 +257,12 @@ a {
 
 a:not(.btn):not(.cardLink):not(.blog-filters__link):not(.filter-chip):not(.tax-chip) {
   color: var(--text);
-  text-decoration: underline;
-  text-underline-offset: 4px;
-  text-decoration-thickness: 1px;
-  text-decoration-color: var(--border-subtle);
-  transition: color 0.2s ease, text-decoration-color 0.2s ease;
+  text-decoration: none;
+  transition: color 0.2s ease;
 }
 
 a:not(.btn):not(.cardLink):not(.blog-filters__link):not(.filter-chip):not(.tax-chip):hover {
   color: var(--brand);
-  text-decoration-color: var(--brand);
-  text-decoration-thickness: 1.5px;
 }
 
 a:not(.btn):not(.cardLink):not(.blog-filters__link):not(.filter-chip):not(.tax-chip):focus-visible {
@@ -3054,4 +3053,9 @@ html[data-theme="light"] .filter-chip:hover {
 .filter-chip.is-active:hover {
   background: var(--brand-2);
   box-shadow: var(--shadow-brand);
+}
+
+/* CTA Pill buttons */
+.cta-pill {
+  @apply inline-flex items-center justify-center px-5 py-2.5 rounded-full border border-white/15 bg-white/5 text-white/90 text-sm font-semibold transition hover:bg-white/10 hover:border-white/30 hover:text-white focus:ring-2 focus:ring-emerald-400/40 focus:outline-none;
 }

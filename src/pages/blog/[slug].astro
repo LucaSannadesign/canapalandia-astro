@@ -6,6 +6,7 @@ import AdSenseSlot from "../../components/AdSenseSlot.astro";
 import PostMeta from "../../components/PostMeta.astro";
 import PostShare from "../../components/PostShare.astro";
 import SupportCTA from "../../components/SupportCTA.astro";
+import Reactions from "../../components/Reactions.astro";
 
 export const prerender = false;
 
@@ -205,6 +206,9 @@ const showSupportCta = (entry as any).data.showSupportCta !== false; // default:
 
         {/* Separatore */}
         <hr class="post-separator" aria-hidden="true" />
+
+        {/* Reazioni */}
+        <Reactions slug={slug} />
 
         {/* Social Share */}
         <PostShare

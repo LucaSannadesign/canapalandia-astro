@@ -1,0 +1,281 @@
+---
+interface Props {
+  slug: string;
+}
+
+const { slug } = Astro.props;
+
+// URL API per questo post
+const apiUrl = `/api/reactions/${slug}.json`;
+---
+
+<div class="reactions" data-slug={slug}>
+  <div class="reactions__grid">
+    <button
+      type="button"
+      class="reaction-btn"
+      data-reaction="up"
+      aria-label="Mi piace"
+    >
+      <span class="reaction-icon">👍</span>
+      <span class="reaction-count" data-count="up">0</span>
+    </button>
+    
+    <button
+      type="button"
+      class="reaction-btn"
+      data-reaction="love"
+      aria-label="Amo"
+    >
+      <span class="reaction-icon">❤️</span>
+      <span class="reaction-count" data-count="love">0</span>
+    </button>
+    
+    <button
+      type="button"
+      class="reaction-btn"
+      data-reaction="laugh"
+      aria-label="Divertente"
+    >
+      <span class="reaction-icon">😂</span>
+      <span class="reaction-count" data-count="laugh">0</span>
+    </button>
+    
+    <button
+      type="button"
+      class="reaction-btn"
+      data-reaction="fire"
+      aria-label="Fuoco"
+    >
+      <span class="reaction-icon">🔥</span>
+      <span class="reaction-count" data-count="fire">0</span>
+    </button>
+  </div>
+</div>
+
+<script>
+  (function() {
+    const reactionsEl = document.querySelector('.reactions[data-slug]');
+    if (!reactionsEl) return;
+
+    const slugAttr = reactionsEl.getAttribute('data-slug');
+    if (!slugAttr) return;
+
+    const apiUrl = `/api/reactions/${slugAttr}.json`;
+
+    const buttons = Array.from(reactionsEl.querySelectorAll('.reaction-btn')) as HTMLButtonElement[];
+    let counts: { up: number; love: number; laugh: number; fire: number } = { up: 0, love: 0, laugh: 0, fire: 0 };
+    let isLoading = false;
+
+    // Funzione per ottenere chiave localStorage
+    function getStorageKey(reaction: string): string {
+      return `reaction:${slugAttr}:${reaction}`;
+    }
+
+    // Verifica se già votato per una reazione
+    function hasVoted(reaction: string): boolean {
+      return localStorage.getItem(getStorageKey(reaction)) === "1";
+    }
+
+    // Segna come votato
+    function markAsVoted(reaction: string): void {
+      localStorage.setItem(getStorageKey(reaction), "1");
+    }
+
+    // Aggiorna UI con contatori
+    function updateCounts(newCounts: { up: number; love: number; laugh: number; fire: number }): void {
+      counts = newCounts;
+      buttons.forEach((btn) => {
+        const reaction = btn.getAttribute("data-reaction");
+        if (!reaction) return;
+        
+        const countEl = btn.querySelector(`.reaction-count[data-count="${reaction}"]`) as HTMLElement | null;
+        if (countEl) {
+          countEl.textContent = String(counts[reaction as keyof typeof counts] || 0);
+        }
+        
+        // Aggiorna stato disabled
+        if (hasVoted(reaction)) {
+          btn.disabled = true;
+          btn.classList.add("reaction-btn--voted");
+        } else {
+          btn.disabled = false;
+          btn.classList.remove("reaction-btn--voted");
+        }
+      });
+    }
+
+    // Carica contatori iniziali
+    async function loadCounts(): Promise<void> {
+      try {
+        const response = await fetch(apiUrl, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        if (!response.ok) {
+          console.warn("[Reactions] Failed to load counts");
+          return;
+        }
+
+        const data = await response.json();
+        updateCounts({
+          up: data.up || 0,
+          love: data.love || 0,
+          laugh: data.laugh || 0,
+          fire: data.fire || 0,
+        });
+      } catch (err) {
+        console.error("[Reactions] Error loading counts:", err);
+      }
+    }
+
+    // Invia reazione
+    async function sendReaction(reaction: string): Promise<void> {
+      if (isLoading || hasVoted(reaction)) return;
+
+      isLoading = true;
+      const btn = reactionsEl.querySelector(`.reaction-btn[data-reaction="${reaction}"]`) as HTMLButtonElement | null;
+      if (btn) {
+        btn.disabled = true;
+        btn.classList.add("reaction-btn--loading");
+      }
+
+      try {
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reaction }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to send reaction");
+        }
+
+        const data = await response.json();
+        updateCounts({
+          up: data.up || 0,
+          love: data.love || 0,
+          laugh: data.laugh || 0,
+          fire: data.fire || 0,
+        });
+
+        // Segna come votato
+        markAsVoted(reaction);
+      } catch (err) {
+        console.error("[Reactions] Error sending reaction:", err);
+        if (btn) {
+          btn.disabled = false;
+          btn.classList.remove("reaction-btn--loading");
+        }
+      } finally {
+        isLoading = false;
+      }
+    }
+
+    // Event listeners
+    buttons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const reaction = btn.getAttribute("data-reaction");
+        if (reaction && !hasVoted(reaction)) {
+          sendReaction(reaction);
+        }
+      });
+    });
+
+    // Carica contatori al load
+    loadCounts();
+  })();
+</script>
+
+<style>
+  .reactions {
+    margin: 2.5rem 0;
+    padding: 1.5rem 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .reactions__grid {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .reaction-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 2rem;
+    color: var(--text, #e8f5ec);
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+  }
+
+  .reaction-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+
+  .reaction-btn:focus-visible {
+    outline: 2px solid rgba(34, 197, 94, 0.5);
+    outline-offset: 2px;
+  }
+
+  .reaction-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .reaction-btn--voted {
+    background: rgba(34, 197, 94, 0.1);
+    border-color: rgba(34, 197, 94, 0.3);
+  }
+
+  .reaction-btn--loading {
+    opacity: 0.7;
+    cursor: wait;
+  }
+
+  .reaction-icon {
+    font-size: 1.25rem;
+    line-height: 1;
+  }
+
+  .reaction-count {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--muted, #a8c1b2);
+    min-width: 1.5rem;
+    text-align: center;
+  }
+
+  .reaction-btn--voted .reaction-count {
+    color: var(--brand, #22c55e);
+  }
+
+  @media (max-width: 640px) {
+    .reactions__grid {
+      gap: 0.75rem;
+    }
+
+    .reaction-btn {
+      padding: 0.625rem 1rem;
+      font-size: 0.9rem;
+    }
+
+    .reaction-icon {
+      font-size: 1.1rem;
+    }
+  }
+</style>

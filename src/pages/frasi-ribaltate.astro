@@ -10,6 +10,7 @@
  * - Controlli paginazione (Prev/Next + indicazione pagina)
  */
 import SiteLayout from "@/layouts/SiteLayout.astro";
+import ShareButtons from "@/components/ShareButtons.astro";
 import { listRibaltate } from "@/lib/repositories/ribaltatoreRepo";
 import { cleanPhrase } from "@/lib/utils";
 
@@ -47,6 +48,7 @@ try {
 
 const title = "🧠 Frasi Ribaltate | Canapalandia";
 const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/frasi-ribaltate/`;
+const SITE = Astro.site?.origin ?? "https://canapalandia.com";
 ---
 
 <SiteLayout title={title} canonical={canonical}>
@@ -70,7 +72,7 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/frasi-r
           </div>
         ) : items.length > 0 ? (
           <>
-            {items.map((frase) => {
+            {items.map((frase, index) => {
               const url = `/ribaltate-ai/${frase.id}/`;
               
               // Pulisci frasi da caratteri escapati
@@ -82,8 +84,14 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/frasi-r
               const anteprima = righe.slice(0, 3).join(" ").slice(0, 200);
               const mostraAnteprima = fraseRibaltata.length > 200 || righe.length > 3;
               
+              // Anchor ID: usa frase.id se disponibile, altrimenti index
+              const anchorId = frase.id ? `r-${frase.id}` : `r-${index + 1}`;
+              
+              // URL assoluto con anchor per condivisione
+              const shareUrl = `${SITE}/frasi-ribaltate/#${anchorId}`;
+              
               return (
-                <article class="frasi-card">
+                <article id={anchorId} class="frasi-card">
                   <div class="frasi-card__header">
                     <p class="frasi-card__meta">
                       {new Date(frase.created_at).toLocaleDateString("it-IT", {
@@ -104,24 +112,13 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/frasi-r
                     </p>
                   </div>
 
+                  {/* Pulsanti di condivisione */}
+                  <ShareButtons url={shareUrl} text={fraseRibaltata} />
+
                   <div class="frasi-card__actions">
                     <a href={url} class="frasi-card__link-btn">
                       Apri →
                     </a>
-                    <button
-                      type="button"
-                      class="frasi-card__share-compact"
-                      onclick={`shareFrase(${frase.id}, "${encodeURIComponent(url)}", "${encodeURIComponent(fraseRibaltata)}")`}
-                      aria-label="Condividi"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <circle cx="18" cy="5" r="3"></circle>
-                        <circle cx="6" cy="12" r="3"></circle>
-                        <circle cx="18" cy="19" r="3"></circle>
-                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-                      </svg>
-                    </button>
                   </div>
                 </article>
               );
@@ -272,31 +269,6 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/frasi-r
     transform: translateY(-1px);
   }
 
-  .frasi-card__share-compact {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    padding: 0;
-    background: transparent;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--text);
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  .frasi-card__share-compact:hover {
-    background: rgba(34, 197, 94, 0.1);
-    border-color: var(--brand);
-  }
-
-  .frasi-card__share-compact svg {
-    width: 16px;
-    height: 16px;
-  }
-
   .frasi-pagination {
     text-align: center;
     margin-top: 40px;
@@ -408,33 +380,3 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/frasi-r
   }
 </style>
 
-<script>
-  // Funzione share compatta (menu o navigator.share)
-  (globalThis as any).shareFrase = async function (id: number, url: string, text: string) {
-    const decodedUrl = decodeURIComponent(url);
-    const decodedText = decodeURIComponent(text);
-    
-    // Costruisci URL assoluto per i social (necessario)
-    const absoluteUrl = decodedUrl.startsWith("http") 
-      ? decodedUrl 
-      : `${window.location.origin}${decodedUrl.startsWith("/") ? "" : "/"}${decodedUrl}`;
-    
-    // Se navigator.share disponibile (mobile), usalo
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: "Ribaltatore AI",
-          text: decodedText,
-          url: absoluteUrl,
-        });
-        return;
-      } catch (err: any) {
-        if (err.name === "AbortError") return; // Utente ha annullato
-      }
-    }
-    
-    // Fallback: apri WhatsApp
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`${decodedText}\n🔗 ${absoluteUrl}`)}`;
-    window.open(whatsappUrl, "_blank", "noopener,noreferrer");
-  };
-</script>

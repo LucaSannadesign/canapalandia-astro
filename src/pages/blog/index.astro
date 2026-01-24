@@ -1,0 +1,661 @@
+---
+import { getCollection, type CollectionEntry } from "astro:content";
+import CardPost from "../../components/CardPost.astro";
+import Layout from "../../layouts/MigratedLayout.astro";
+import AdSlot from "../../components/AdSlot.astro";
+import { ADS_SLOT_BLOG_BOTTOM } from "../../lib/consts";
+
+// Paginazione statica: pagina 1 è sempre prerenderizzata
+
+// Helper per formattare data
+const formatDate = (value: Date | string | number | null | undefined): string => {
+  if (!value) return "";
+  const d = value instanceof Date ? value : new Date(String(value));
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("it-IT", { year: "numeric", month: "long", day: "numeric" });
+};
+
+function postHref(entry: CollectionEntry<"blog">): string {
+  const slug = entry?.slug ?? entry?.data?.slug ?? "";
+  if (!slug) throw new Error("Missing slug for post link");
+  return `/blog/${slug}/`;
+}
+
+function dateOf(entry: CollectionEntry<"blog">): Date | null {
+  const raw = entry.data.updatedDate ?? entry.data.publishDate;
+  if (!raw) return null;
+  const d = raw instanceof Date ? raw : new Date(String(raw));
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+// Helper per normalizzare immagine post
+function normalizeImage(entry: CollectionEntry<"blog">): string {
+  const img: unknown = entry.data.image || entry.data.coverImage || "";
+  
+  let srcValue: string | null = null;
+  
+  if (img && typeof img === "object" && img !== null && "src" in img) {
+    const srcObj = img as { src?: unknown };
+    if (typeof srcObj.src === "string") {
+      srcValue = srcObj.src.trim();
+    }
+  } else if (typeof img === "string") {
+    srcValue = img.trim();
+  }
+  
+  if (!srcValue) return "";
+  
+  if (/^https?:\/\//i.test(srcValue)) {
+    return srcValue;
+  }
+  
+  return srcValue.startsWith("/") ? srcValue : `/${srcValue}`;
+}
+
+// Filtro per post italiani
+function isItalianPost(entry: CollectionEntry<"blog">): boolean {
+  const data = entry.data as any;
+  
+  // Se esiste data.lang, escludi "en"
+  if (data.lang !== undefined) {
+    return data.lang === "it";
+  }
+  
+  // Se esiste data.locale, escludi "en"
+  if (data.locale !== undefined) {
+    return data.locale === "it";
+  }
+  
+  // Altrimenti escludi tutti i post con slug che inizia con "en/"
+  const slug = entry.slug || "";
+  return !slug.startsWith("en/");
+}
+
+// Carica tutti i post dalla collection
+let postsAll: CollectionEntry<"blog">[] = [];
+try {
+  postsAll = await getCollection("blog");
+} catch (err) {
+  console.warn("[blog/index] Nessun contenuto trovato in Content Collections");
+}
+
+// Filtra solo post italiani
+const italianPosts = postsAll.filter(isItalianPost);
+
+// Ordina per publishDate (fallback updatedDate) DESC
+const sortedPosts = italianPosts
+  .slice()
+  .sort((a, b) => {
+    const da = a.data.publishDate ?? a.data.updatedDate;
+    const db = b.data.publishDate ?? b.data.updatedDate;
+    const ta = da ? (da instanceof Date ? da.getTime() : new Date(da).getTime()) : 0;
+    const tb = db ? (db instanceof Date ? db.getTime() : new Date(db).getTime()) : 0;
+    return tb - ta;
+  });
+
+// Paginazione: 10 post per pagina
+const PAGE_SIZE = 10;
+const totalPosts = sortedPosts.length;
+const totalPages = Math.ceil(totalPosts / PAGE_SIZE);
+
+// Pagina 1: mostra i primi 10 post
+const pagePosts = sortedPosts.slice(0, PAGE_SIZE);
+
+// Indice post per ricerca client-side
+const postsIndex = sortedPosts.map((p) => ({
+  href: postHref(p),
+  title: p.data.title ?? "",
+  description: p.data.description ?? "",
+  category: p.data.category ?? "",
+  tags: Array.isArray(p.data.tags) ? p.data.tags : [],
+  date: formatDate(dateOf(p)),
+  img: normalizeImage(p),
+}));
+
+// Estrai categorie dai post italiani
+type CategoryData = {
+  slug: string;
+  name: string;
+  count: number;
+};
+
+const categoryMap = new Map<string, CategoryData>();
+for (const post of italianPosts) {
+  const cat = post.data.category;
+  if (cat && typeof cat === "string" && cat.trim()) {
+    const slug = cat.trim();
+    const existing = categoryMap.get(slug);
+    categoryMap.set(slug, {
+      slug,
+      name: slug.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" "),
+      count: (existing?.count || 0) + 1,
+    });
+  }
+}
+
+// Ordine di priorità categorie
+const categoryPriority = [
+  "normative-aspetti-legali",
+  "cannabis-news-it",
+  "cbd",
+  "salute-benessere",
+  "guide-tutorial",
+  "coltivazione-legale",
+  "canapa-e-ambiente",
+  "partner-e-affiliazioni",
+];
+
+// Ordina categorie per priorità (max 8)
+const mainCategories: CategoryData[] = [];
+for (const slug of categoryPriority) {
+  const cat = categoryMap.get(slug);
+  if (cat && cat.count > 0) {
+    mainCategories.push(cat);
+  }
+  if (mainCategories.length >= 8) break;
+}
+
+// Helper per icona categoria
+function getCategoryIcon(slug: string): string {
+  const iconMap: Record<string, string> = {
+    "normative-aspetti-legali": `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 3v18M6 7h12M7 7l-3 6h6l-3-6zM17 7l-3 6h6l-3-6zM6 21h12"></path>
+    </svg>`,
+    "salute-benessere": `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"></path>
+    </svg>`,
+    "cannabis-news-it": `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+      <path d="M8 8h8M8 12h8M8 16h6"></path>
+    </svg>`,
+    "coltivazione-legale": `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 2v4M4.93 4.93l2.83 2.83M2 12h4M4.93 19.07l2.83-2.83M12 22v-4M19.07 19.07l-2.83-2.83M22 12h-4M19.07 4.93l-2.83 2.83M12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6 6 6 0 0 1-6-6 6 6 0 0 1 6-6z"></path>
+    </svg>`,
+    "guide-tutorial": `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
+      <path d="M9 10h6M9 14h4"></path>
+    </svg>`,
+    "partner-e-affiliazioni": `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+      <circle cx="9" cy="7" r="4"></circle>
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path>
+    </svg>`,
+    "canapa-e-ambiente": `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+    </svg>`,
+    "cbd": `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 2s7 7 7 13a7 7 0 0 1-14 0c0-6 7-13 7-13zM9.5 14.5c1 1.2 4 1.2 5 0"></path>
+    </svg>`,
+  };
+  return iconMap[slug] || `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+  </svg>`;
+}
+
+const title = "Blog — Canapalandia";
+const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/blog/`;
+---
+
+<Layout title={title} canonical={canonical}>
+  <section class="hero">
+    <div class="container hero-inner">
+      <p class="kicker">Blog</p>
+      <h1>Articoli e guide</h1>
+      <p class="lead">Articoli in italiano su cannabis light, CBD e canapa legale in Italia.</p>
+    </div>
+  </section>
+
+  {/* Sezione Percorsi del Blog */}
+  {mainCategories.length > 0 && (
+    <section class="section">
+      <div class="container">
+        <div class="section-head">
+          <h2>Percorsi del Blog</h2>
+          <p class="section-lead">
+            Scegli un'area tematica e vai dritto al punto.
+          </p>
+        </div>
+
+        <div class="grid cards">
+          {mainCategories.map((cat) => (
+            <a class="card card--topic" href={`/categoria/${cat.slug}/`}>
+              <span class="card-icon" aria-hidden="true" set:html={getCategoryIcon(cat.slug)}></span>
+              <div class="card--topic__content">
+                <div class="card--topic__header">
+                  <h3>{cat.name}</h3>
+                  {cat.count > 0 ? (
+                    <span class="card--topic__count">{cat.count}</span>
+                  ) : null}
+                </div>
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <section class="section">
+    <div class="container">
+      {pagePosts.length > 0 ? (
+        <>
+          <div class="grid" id="postsGrid">
+            {pagePosts.map((p) => {
+              const imgSrc = normalizeImage(p);
+              return (
+                <CardPost
+                  href={postHref(p)}
+                  img={imgSrc || undefined}
+                  date={formatDate(dateOf(p))}
+                  title={p.data.title}
+                  excerpt={p.data.description}
+                  category={p.data.category || null}
+                />
+              );
+            })}
+          </div>
+
+          {/* Bottone "Carica altri" se ci sono più pagine */}
+          {totalPages > 1 && (
+            <div style="margin-top: 2rem; text-align: center;">
+              <a href="/blog/page/2/" class="btn">
+                Carica altri
+              </a>
+            </div>
+          )}
+
+          {/* Form di ricerca */}
+          <form id="blogSearch" class="blog-search" role="search" style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border);">
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; max-width: 600px; margin: 0 auto;">
+              <label for="searchInput" class="sr-only">Cerca articoli</label>
+              <input
+                type="text"
+                id="searchInput"
+                name="q"
+                placeholder="Cerca articoli per titolo, descrizione, categoria o tag..."
+                class="blog-search__input"
+                autocomplete="off"
+                aria-label="Cerca articoli"
+              />
+              <button type="submit" class="btn">
+                Cerca
+              </button>
+              <button type="button" id="resetSearch" class="btn btn-ghost" style="display: none;">
+                Reset
+              </button>
+            </div>
+            <p id="searchStatus" aria-live="polite" aria-atomic="true" class="blog-search__status"></p>
+          </form>
+
+          {/* Banner AdSense */}
+          <div style="margin-top: 3rem; padding-top: 2rem;">
+            <AdSlot slot={ADS_SLOT_BLOG_BOTTOM} label="Pubblicità" />
+          </div>
+
+          {/* Container risultati ricerca (sostituisce la lista normale quando attiva) */}
+          <div id="searchResults" class="blog-search__results" style="display: none;">
+            <div class="grid" id="searchResultsGrid"></div>
+            <div id="searchLoadMore" style="margin-top: 2rem; text-align: center; display: none;">
+              <button type="button" class="btn" id="loadMoreSearch">
+                Carica altri risultati
+              </button>
+            </div>
+          </div>
+        </>
+      ) : (
+        <div class="card" style="padding:18px;">
+          <h2 style="margin:0 0 6px;">Nessun post trovato</h2>
+          <p style="margin:0; color: var(--muted);">
+            I contenuti sono in fase di importazione. Torna presto!
+          </p>
+        </div>
+      )}
+    </div>
+  </section>
+</Layout>
+
+<!-- Indice post serializzato per ricerca client-side -->
+<script type="module" define:vars={{ postsIndex }}>
+  const ALL = postsIndex;
+  const PAGE_SIZE = 10;
+  
+  const form = document.getElementById("blogSearch");
+  const input = document.getElementById("searchInput");
+  const resetBtn = document.getElementById("resetSearch");
+  const statusEl = document.getElementById("searchStatus");
+  const resultsEl = document.getElementById("searchResults");
+  const resultsGrid = document.getElementById("searchResultsGrid");
+  const postsGrid = document.getElementById("postsGrid");
+  const loadMoreBtn = document.getElementById("loadMoreSearch");
+  const loadMoreContainer = document.getElementById("searchLoadMore");
+  
+  let currentQuery = "";
+  let filteredResults = [];
+  let displayedCount = 0;
+  let searchTimeout = null;
+  
+  // Funzione di ricerca
+  function searchPosts(query) {
+    if (!query.trim()) return [];
+    
+    const q = query.toLowerCase().trim();
+    return ALL.filter((post) => {
+      const titleMatch = post.title.toLowerCase().includes(q);
+      const descMatch = (post.description || "").toLowerCase().includes(q);
+      const catMatch = (post.category || "").toLowerCase().includes(q);
+      const tagsMatch = post.tags.some((tag) => tag.toLowerCase().includes(q));
+      return titleMatch || descMatch || catMatch || tagsMatch;
+    });
+  }
+  
+  // Renderizza risultati
+  function renderResults(results, start = 0, append = false) {
+    const end = start + PAGE_SIZE;
+    const slice = results.slice(start, end);
+    
+    if (!append) {
+      resultsGrid.innerHTML = "";
+      displayedCount = 0;
+    }
+    
+    slice.forEach((post) => {
+      const card = document.createElement("article");
+      card.className = "card post-card";
+      card.innerHTML = `
+        <a href="${post.href}" class="cardLink">
+          ${post.img ? `
+          <div class="thumb">
+            <img src="${post.img}" alt="${escapeHtml(post.title)}" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='/images/placeholder.svg';" />
+          </div>
+          ` : ""}
+          <div class="cardBody">
+            <p class="cardMeta">${escapeHtml(post.date)}</p>
+            ${post.category ? `<span class="badge badge--cat">${escapeHtml(post.category)}</span>` : ""}
+            <h3 class="card-title clamp-2">${escapeHtml(post.title)}</h3>
+            ${post.description ? `<p class="card-excerpt clamp-3">${escapeHtml(post.description)}</p>` : ""}
+            <div class="card-footer">
+              <span class="card-read">Leggi →</span>
+            </div>
+          </div>
+        </a>
+      `;
+      resultsGrid.appendChild(card);
+    });
+    
+    displayedCount += slice.length;
+    
+    // Mostra/nascondi "Carica altri"
+    if (displayedCount < results.length) {
+      loadMoreContainer.style.display = "block";
+    } else {
+      loadMoreContainer.style.display = "none";
+    }
+  }
+  
+  // Escape HTML
+  function escapeHtml(text) {
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+  }
+  
+  // Aggiorna status
+  function updateStatus(count, query) {
+    if (!query.trim()) {
+      statusEl.textContent = "";
+      return;
+    }
+    if (count === 0) {
+      statusEl.textContent = `Nessun risultato per "${query}"`;
+    } else {
+      statusEl.textContent = `Trovati ${count} risultato${count === 1 ? "" : "i"} per "${query}"`;
+    }
+  }
+  
+  // Reset ricerca
+  function resetSearch() {
+    currentQuery = "";
+    filteredResults = [];
+    displayedCount = 0;
+    input.value = "";
+    statusEl.textContent = "";
+    resultsEl.style.display = "none";
+    postsGrid.style.display = "grid";
+    resetBtn.style.display = "none";
+    loadMoreContainer.style.display = "none";
+  }
+  
+  // Handler ricerca (con debounce)
+  function handleSearch(query) {
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+    
+    searchTimeout = window.setTimeout(() => {
+      if (!query.trim()) {
+        resetSearch();
+        return;
+      }
+      
+      currentQuery = query;
+      filteredResults = searchPosts(query);
+      updateStatus(filteredResults.length, query);
+      
+      if (filteredResults.length > 0) {
+        resultsEl.style.display = "block";
+        postsGrid.style.display = "none";
+        resetBtn.style.display = "inline-flex";
+        renderResults(filteredResults, 0, false);
+      } else {
+        resultsEl.style.display = "block";
+        postsGrid.style.display = "none";
+        resetBtn.style.display = "inline-flex";
+        resultsGrid.innerHTML = '<div class="card" style="padding:18px;"><p>Nessun risultato trovato.</p></div>';
+      }
+    }, 200);
+  }
+  
+  // Event listeners
+  form?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const query = input?.value || "";
+    handleSearch(query);
+  });
+  
+  input?.addEventListener("input", (e) => {
+    const query = e.target.value || "";
+    handleSearch(query);
+  });
+  
+  resetBtn?.addEventListener("click", () => {
+    resetSearch();
+  });
+  
+  loadMoreBtn?.addEventListener("click", () => {
+    if (filteredResults.length > displayedCount) {
+      renderResults(filteredResults, displayedCount, true);
+    }
+  });
+</script>
+
+<style>
+  .blog-search {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .blog-search__input {
+    flex: 1;
+    min-width: 200px;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    background: var(--panel);
+    color: var(--text);
+    transition: border-color 0.2s ease;
+  }
+
+  .blog-search__input:focus {
+    outline: none;
+    border-color: var(--brand);
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+  }
+
+  .blog-search__status {
+    margin-top: 1rem;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.9rem;
+    min-height: 1.5rem;
+  }
+
+  .blog-search__results {
+    margin-top: 2rem;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  @media (max-width: 767px) {
+    .blog-search > div {
+      flex-direction: column;
+    }
+
+    .blog-search__input {
+      width: 100%;
+    }
+  }
+</style>
+
+<style>
+  /* Stili per card categorie blog */
+  .section .grid.cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .section .grid.cards .card--topic {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.5rem;
+    text-decoration: none;
+    transition:
+      transform 0.18s ease,
+      box-shadow 0.18s ease,
+      border-color 0.18s ease,
+      background 0.18s ease;
+    will-change: transform;
+  }
+
+  .section .grid.cards .card--topic::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: var(--r, 0.75rem);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.18s ease;
+    background:
+      radial-gradient(
+        700px 220px at 20% 15%,
+        rgba(34, 197, 94, 0.14),
+        transparent 55%
+      ),
+      linear-gradient(135deg, rgba(255, 255, 255, 0.06), transparent 40%);
+  }
+
+  .section .grid.cards .card--topic:hover {
+    transform: translateY(-3px);
+    border-color: rgba(34, 197, 94, 0.3);
+    box-shadow:
+      0 14px 38px rgba(0, 0, 0, 0.28),
+      0 0 0 1px rgba(34, 197, 94, 0.1);
+  }
+
+  .section .grid.cards .card--topic:hover::after {
+    opacity: 1;
+  }
+
+  .section .card--topic .card-icon {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    color: var(--brand, #22c55e);
+    transition:
+      transform 0.18s ease,
+      background 0.18s ease,
+      border-color 0.18s ease,
+      box-shadow 0.18s ease;
+  }
+
+  .section .grid.cards .card--topic:hover .card-icon {
+    transform: translateY(-1px);
+    background: rgba(34, 197, 94, 0.16);
+    border-color: rgba(34, 197, 94, 0.28);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.18);
+  }
+
+  .section .card--topic__content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .section .card--topic__header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .section .card--topic__header h3 {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text, #e8f5ec);
+    flex: 1;
+    min-width: 0;
+  }
+
+  .section .card--topic__count {
+    flex-shrink: 0;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--muted, #a8c1b2);
+    background: rgba(34, 197, 94, 0.1);
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+  }
+
+  .section .grid.cards .card--topic:focus-visible {
+    outline: 2px solid rgba(34, 197, 94, 0.55);
+    outline-offset: 4px;
+  }
+
+  @media (max-width: 767px) {
+    .section .grid.cards {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+  }
+</style>

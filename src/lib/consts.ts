@@ -10,6 +10,7 @@ export const ADS_SLOT_TOP = "7168595886"; // Top bar / adbar
 export const ADS_SLOT_ARTICLE = "7168595886"; // In-article (TODO: sostituire con slot reale)
 export const ADS_SLOT_SIDEBAR = "7168595886"; // Sidebar (TODO: sostituire con slot reale)
 export const ADS_SLOT_HOME = "7168595886"; // Homepage
+export const ADS_SLOT_BLOG_BOTTOM = "7168595886"; // Blog list bottom (TODO: sostituire con slot reale)
 
 // Routes dove NON mostrare ads (low-value pages)
 export const ADS_EXCLUDED_ROUTES = ["/cerca/", "/cerca"];
