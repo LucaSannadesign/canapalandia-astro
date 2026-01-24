@@ -14,3 +14,8 @@ export const ADS_SLOT_BLOG_BOTTOM = "7168595886"; // Blog list bottom (TODO: sos
 
 // Routes dove NON mostrare ads (low-value pages)
 export const ADS_EXCLUDED_ROUTES = ["/cerca/", "/cerca"];
+
+// Feature flags
+export const FEATURES = {
+  REACTIONS: false, // Disattiva temporaneamente il sistema Reactions
+} as const;

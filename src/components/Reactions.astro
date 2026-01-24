@@ -1,9 +1,16 @@
 ---
+import { FEATURES } from "../lib/consts";
+
 interface Props {
   slug: string;
 }
 
 const { slug } = Astro.props;
+
+// Se il feature flag è disattivato, non renderizzare nulla
+if (!FEATURES.REACTIONS) {
+  return null;
+}
 
 // URL API per questo post (con slash finale)
 function reactionsApiUrl(s: string): string {
@@ -60,6 +67,8 @@ const apiUrl = reactionsApiUrl(slug);
 
 <script>
   (function() {
+    // Se FEATURES.REACTIONS è false, il componente ritorna null e questo script non viene eseguito
+    // Questo controllo è ridondante ma serve come sicurezza extra
     const reactionsEl = document.querySelector('.reactions[data-slug]');
     if (!reactionsEl) return;
 
