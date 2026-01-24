@@ -2,126 +2,180 @@
  * API endpoint per reazioni post blog
  * 
  * GET: ritorna i contatori delle reazioni per un post
- * POST: incrementa una reazione (atomico via RPC)
+ * POST: incrementa/decrementa una reazione
  * 
  * Route: /api/reactions/[slug]
  */
 
 import type { APIRoute } from "astro";
-import { getSupabaseServer } from "@/lib/supabaseServer";
+import { promises as fs } from "node:fs";
+import { join } from "node:path";
 
 // API route must be server-side
 export const prerender = false;
 
-// Valori reazioni consentiti (coerenti con DB)
-const VALID_REACTIONS = ["up", "love", "laugh", "fire"] as const;
-type ValidReaction = typeof VALID_REACTIONS[number];
+// Valori reazioni consentiti
+const VALID_REACTION_TYPES = ["like", "heart", "fire", "laugh"] as const;
+type ReactionType = typeof VALID_REACTION_TYPES[number];
+
+interface ReactionCounts {
+  like: number;
+  heart: number;
+  fire: number;
+  laugh: number;
+}
+
+interface ReactionData {
+  slug: string;
+  counts: ReactionCounts;
+  updatedAt: string;
+}
 
 /**
- * Normalizza il valore della reazione:
- * - trim + lowercase
- * - mappa "likes" -> "up"
- * - mappa "like" -> "up"
+ * Sanitizza lo slug per uso come nome file
  */
-function normalizeReaction(input: string): string | null {
-  const normalized = input.trim().toLowerCase();
-  
-  // Mappa alias comuni
-  if (normalized === "likes" || normalized === "like") {
-    return "up";
+function sanitizeSlug(slug: string): string {
+  return slug
+    .toLowerCase()
+    .replace(/[^a-z0-9-_]/g, "_")
+    .replace(/_+/g, "_");
+}
+
+/**
+ * Ottiene il percorso del file per la persistenza
+ */
+function getReactionsFilePath(slug: string): string {
+  const safeSlug = sanitizeSlug(slug);
+  return join(process.cwd(), "data", "reactions", `${safeSlug}.json`);
+}
+
+/**
+ * Legge i contatori da file (solo in DEV)
+ */
+async function readReactionsFromFile(slug: string): Promise<ReactionCounts | null> {
+  if (import.meta.env.PROD) {
+    return null;
   }
-  
-  // Verifica se è un valore valido
-  if (VALID_REACTIONS.includes(normalized as ValidReaction)) {
-    return normalized;
+
+  try {
+    const filePath = getReactionsFilePath(slug);
+    const content = await fs.readFile(filePath, "utf-8");
+    const data: ReactionData = JSON.parse(content);
+    return data.counts;
+  } catch (err) {
+    // File non esiste o errore di lettura -> ritorna null
+    return null;
   }
-  
+}
+
+/**
+ * Scrive i contatori su file (solo in DEV)
+ */
+async function writeReactionsToFile(slug: string, counts: ReactionCounts): Promise<boolean> {
+  if (import.meta.env.PROD) {
+    return false;
+  }
+
+  try {
+    const filePath = getReactionsFilePath(slug);
+    const dirPath = join(process.cwd(), "data", "reactions");
+    
+    // Crea directory se non esiste
+    await fs.mkdir(dirPath, { recursive: true });
+
+    const data: ReactionData = {
+      slug,
+      counts,
+      updatedAt: new Date().toISOString(),
+    };
+
+    await fs.writeFile(filePath, JSON.stringify(data, null, 2), "utf-8");
+    return true;
+  } catch (err) {
+    console.error("[reactions] Error writing to file:", err);
+    return false;
+  }
+}
+
+/**
+ * Inizializza contatori a zero
+ */
+function getInitialCounts(): ReactionCounts {
+  return {
+    like: 0,
+    heart: 0,
+    fire: 0,
+    laugh: 0,
+  };
+}
+
+/**
+ * Valida e normalizza il delta
+ */
+function validateDelta(delta: unknown): number | null {
+  if (typeof delta !== "number") {
+    return null;
+  }
+
+  // Range consentito: -10..10 escluso 0
+  if (delta >= -10 && delta <= 10 && delta !== 0 && Number.isInteger(delta)) {
+    return delta;
+  }
+
   return null;
 }
 
-// Logging solo in dev
-const isDev = import.meta.env.DEV;
-function log(...args: unknown[]) {
-  if (isDev) {
-    console.log("[reactions]", ...args);
-  }
+/**
+ * Applica delta ai contatori mantenendo minimo 0
+ */
+function applyDelta(counts: ReactionCounts, type: ReactionType, delta: number): ReactionCounts {
+  const newCounts = { ...counts };
+  const current = newCounts[type];
+  const newValue = Math.max(0, current + delta);
+  newCounts[type] = newValue;
+  return newCounts;
 }
 
-function logError(...args: unknown[]) {
-  if (isDev) {
-    console.error("[reactions]", ...args);
-  }
-}
+const JSON_HEADERS = {
+  "Content-Type": "application/json; charset=utf-8",
+  "Cache-Control": "no-store",
+  "X-Robots-Tag": "noindex,nofollow",
+} as const;
 
 export const GET: APIRoute = async ({ params }) => {
   const slug = params.slug;
-  
-  log(`GET /api/reactions/${slug}`);
-  
+
   if (!slug || typeof slug !== "string") {
-    logError("GET: Slug mancante o non valido", { slug, params });
     return new Response(
-      JSON.stringify({ error: "Slug mancante" }),
-      { 
+      JSON.stringify({ ok: false, error: "Slug mancante" }),
+      {
         status: 400,
-        headers: { "Content-Type": "application/json" }
+        headers: JSON_HEADERS,
       }
     );
   }
 
   try {
-    const supabase = getSupabaseServer();
-    
-    const { data, error } = await supabase
-      .from("post_reactions")
-      .select("slug, up, love, laugh, fire, updated_at")
-      .eq("slug", slug)
-      .single();
+    // Leggi da file (solo in DEV)
+    const counts = await readReactionsFromFile(slug) || getInitialCounts();
 
-    if (error && error.code !== "PGRST116") { // PGRST116 = no rows returned
-      logError("GET: Error fetching from Supabase:", error);
-      return new Response(
-        JSON.stringify({ error: "Errore nel recupero reazioni" }),
-        { 
-          status: 500,
-          headers: { "Content-Type": "application/json" }
-        }
-      );
-    }
-
-    // Se non esiste, ritorna contatori a zero
-    const counts = data || {
+    const response: ReactionData = {
       slug,
-      up: 0,
-      love: 0,
-      laugh: 0,
-      fire: 0,
-      updated_at: null,
+      counts,
+      updatedAt: new Date().toISOString(),
     };
 
-    return new Response(
-      JSON.stringify({
-        slug: counts.slug,
-        up: counts.up || 0,
-        love: counts.love || 0,
-        laugh: counts.laugh || 0,
-        fire: counts.fire || 0,
-      }),
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-          "Cache-Control": "no-store, no-cache, must-revalidate",
-        },
-      }
-    );
+    return new Response(JSON.stringify(response), {
+      status: 200,
+      headers: JSON_HEADERS,
+    });
   } catch (err) {
-    logError("GET: Unexpected error:", err);
+    console.error("[reactions] GET error:", err);
     return new Response(
-      JSON.stringify({ error: "Errore interno", details: err instanceof Error ? err.message : String(err) }),
-      { 
+      JSON.stringify({ ok: false, error: "Errore interno" }),
+      {
         status: 500,
-        headers: { "Content-Type": "application/json" }
+        headers: JSON_HEADERS,
       }
     );
   }
@@ -129,126 +183,92 @@ export const GET: APIRoute = async ({ params }) => {
 
 export const POST: APIRoute = async ({ params, request }) => {
   const slug = params.slug;
-  
-  log(`POST /api/reactions/${slug}`);
-  
+
   if (!slug || typeof slug !== "string") {
-    logError("POST: Slug mancante o non valido", { slug, params });
     return new Response(
-      JSON.stringify({ error: "Slug mancante" }),
-      { 
+      JSON.stringify({ ok: false, error: "Slug mancante" }),
+      {
         status: 400,
-        headers: { "Content-Type": "application/json" }
+        headers: JSON_HEADERS,
       }
     );
   }
 
   try {
-    const body = await request.json();
-    const { reaction: rawReaction } = body;
-
-    if (!rawReaction || typeof rawReaction !== "string") {
-      logError("POST: Reazione mancante o non valida", { reaction: rawReaction, slug });
+    // Parse JSON body
+    let body: { type?: unknown; delta?: unknown };
+    try {
+      body = await request.json();
+    } catch (err) {
       return new Response(
-        JSON.stringify({ error: "Reazione mancante", received: rawReaction }),
-        { 
+        JSON.stringify({ ok: false, error: "Invalid JSON" }),
+        {
           status: 400,
-          headers: { "Content-Type": "application/json" }
+          headers: JSON_HEADERS,
         }
       );
     }
 
-    // Normalizza reazione
-    const reaction = normalizeReaction(rawReaction);
-    
-    if (!reaction) {
-      logError("POST: Reazione non valida", { 
-        received: rawReaction, 
-        slug,
-        validReactions: VALID_REACTIONS 
-      });
+    // Valida type
+    const { type, delta: rawDelta } = body;
+    if (!type || typeof type !== "string" || !VALID_REACTION_TYPES.includes(type as ReactionType)) {
       return new Response(
-        JSON.stringify({ 
-          error: "Reazione non valida", 
-          received: rawReaction,
-          validReactions: VALID_REACTIONS 
-        }),
-        { 
+        JSON.stringify({ ok: false, error: "Invalid reaction type" }),
+        {
           status: 400,
-          headers: { "Content-Type": "application/json" }
+          headers: JSON_HEADERS,
         }
       );
     }
 
-    log(`POST: reaction="${reaction}" (normalized from "${rawReaction}") for slug="${slug}"`);
+    const reactionType = type as ReactionType;
 
-    const supabase = getSupabaseServer();
-
-    // Chiama funzione RPC per incremento atomico
-    const { data, error } = await supabase.rpc("increment_post_reaction", {
-      p_slug: slug,
-      p_reaction: reaction,
-    });
-
-    if (error) {
-      logError("POST: RPC error:", error);
+    // Valida e normalizza delta
+    const delta = rawDelta === undefined ? 1 : validateDelta(rawDelta);
+    if (delta === null) {
       return new Response(
-        JSON.stringify({ error: "Errore nell'incremento reazione", details: error.message }),
-        { 
-          status: 500,
-          headers: { "Content-Type": "application/json" }
+        JSON.stringify({ ok: false, error: "Invalid delta" }),
+        {
+          status: 400,
+          headers: JSON_HEADERS,
         }
       );
     }
 
-    if (!data || data.length === 0) {
-      logError("POST: Nessun dato ritornato da RPC", { slug, reaction });
-      return new Response(
-        JSON.stringify({ error: "Nessun dato ritornato" }),
-        { 
-          status: 500,
-          headers: { "Content-Type": "application/json" }
-        }
-      );
-    }
+    // Leggi contatori attuali
+    const currentCounts = await readReactionsFromFile(slug) || getInitialCounts();
 
-    const result = data[0];
+    // Applica delta
+    const newCounts = applyDelta(currentCounts, reactionType, delta);
+
+    // Persisti (solo in DEV)
+    const persisted = await writeReactionsToFile(slug, newCounts);
+
+    const responseData: ReactionData = {
+      slug,
+      counts: newCounts,
+      updatedAt: new Date().toISOString(),
+    };
 
     return new Response(
       JSON.stringify({
-        slug: result.slug,
-        up: result.up || 0,
-        love: result.love || 0,
-        laugh: result.laugh || 0,
-        fire: result.fire || 0,
+        ok: true,
+        persisted,
+        data: responseData,
       }),
       {
         status: 200,
-        headers: {
-          "Content-Type": "application/json",
-          "Cache-Control": "no-store, no-cache, must-revalidate",
-        },
+        headers: JSON_HEADERS,
       }
     );
   } catch (err) {
-    logError("POST: Unexpected error:", err);
+    console.error("[reactions] POST error:", err);
     return new Response(
-      JSON.stringify({ error: "Errore interno", details: err instanceof Error ? err.message : String(err) }),
-      { 
+      JSON.stringify({ ok: false, error: "Errore interno" }),
+      {
         status: 500,
-        headers: { "Content-Type": "application/json" }
+        headers: JSON_HEADERS,
       }
     );
   }
-};
-
-// Support OPTIONS for CORS if needed
-export const OPTIONS: APIRoute = async () => {
-  return new Response(null, {
-    status: 204,
-    headers: {
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-    },
-  });
 };

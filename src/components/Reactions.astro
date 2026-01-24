@@ -1,12 +1,14 @@
 ---
+import { reactionsUrl } from "../lib/reactions";
+
 interface Props {
   slug: string;
 }
 
 const { slug } = Astro.props;
 
-// URL API per questo post
-const apiUrl = `/api/reactions/${slug}`;
+// URL API per questo post (normalizzato con helper)
+const apiUrl = reactionsUrl(slug);
 ---
 
 <div class="reactions" data-slug={slug}>
@@ -61,7 +63,13 @@ const apiUrl = `/api/reactions/${slug}`;
     const slugAttr = reactionsEl.getAttribute('data-slug');
     if (!slugAttr) return;
 
-    const apiUrl = `/api/reactions/${slugAttr}`;
+    // Helper inline per normalizzare URL (replica logica di reactionsUrl)
+    function reactionsUrl(slug: string): string {
+      const normalized = slug.replace(/^\/+|\/+$/g, "");
+      return `/api/reactions/${normalized}/`;
+    }
+
+    const apiUrl = reactionsUrl(slugAttr);
 
     const buttons = Array.from(reactionsEl.querySelectorAll('.reaction-btn')) as HTMLButtonElement[];
     let counts: { up: number; love: number; laugh: number; fire: number } = { up: 0, love: 0, laugh: 0, fire: 0 };
