@@ -196,7 +196,7 @@ export const POST: APIRoute = async ({ params, request }) => {
 
   try {
     // Parse JSON body
-    let body: { type?: unknown; delta?: unknown };
+    let body: { type?: unknown; reaction?: unknown; delta?: unknown };
     try {
       body = await request.json();
     } catch (err) {
@@ -209,9 +209,11 @@ export const POST: APIRoute = async ({ params, request }) => {
       );
     }
 
-    // Valida type
-    const { type, delta: rawDelta } = body;
-    if (!type || typeof type !== "string" || !VALID_REACTION_TYPES.includes(type as ReactionType)) {
+    // Valida che esista reaction o type (alias)
+    const { type, reaction, delta: rawDelta } = body;
+    const reactionValue = type || reaction;
+    
+    if (!reactionValue || typeof reactionValue !== "string" || !VALID_REACTION_TYPES.includes(reactionValue as ReactionType)) {
       return new Response(
         JSON.stringify({ ok: false, error: "Invalid reaction type" }),
         {
@@ -221,7 +223,7 @@ export const POST: APIRoute = async ({ params, request }) => {
       );
     }
 
-    const reactionType = type as ReactionType;
+    const reactionType = reactionValue as ReactionType;
 
     // Valida e normalizza delta
     const delta = rawDelta === undefined ? 1 : validateDelta(rawDelta);

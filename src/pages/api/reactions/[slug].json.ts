@@ -7,4 +7,7 @@
  * Route: /api/reactions/[slug].json
  */
 
+// API route must be server-side
+export const prerender = false;
+
 export { GET, POST } from "./[slug].ts";

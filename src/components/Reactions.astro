@@ -1,14 +1,17 @@
 ---
-import { reactionsUrl } from "../lib/reactions";
-
 interface Props {
   slug: string;
 }
 
 const { slug } = Astro.props;
 
-// URL API per questo post (normalizzato con helper)
-const apiUrl = reactionsUrl(slug);
+// URL API per questo post (usa .json per compatibilità)
+function reactionsApiUrl(s: string): string {
+  const normalized = s.replace(/^\/+|\/+$/g, "");
+  return `/api/reactions/${encodeURIComponent(normalized)}.json`;
+}
+
+const apiUrl = reactionsApiUrl(slug);
 ---
 
 <div class="reactions" data-slug={slug}>
@@ -63,10 +66,10 @@ const apiUrl = reactionsUrl(slug);
     const slugAttr = reactionsEl.getAttribute('data-slug');
     if (!slugAttr) return;
 
-    // Helper inline per normalizzare URL (replica logica di reactionsUrl)
+    // Helper inline per costruire URL API con .json
     function reactionsUrl(slug: string): string {
       const normalized = slug.replace(/^\/+|\/+$/g, "");
-      return `/api/reactions/${normalized}/`;
+      return `/api/reactions/${encodeURIComponent(normalized)}.json`;
     }
 
     const apiUrl = reactionsUrl(slugAttr);
@@ -74,6 +77,22 @@ const apiUrl = reactionsUrl(slug);
     const buttons = Array.from(reactionsEl.querySelectorAll('.reaction-btn')) as HTMLButtonElement[];
     let counts: { up: number; love: number; laugh: number; fire: number } = { up: 0, love: 0, laugh: 0, fire: 0 };
     let isLoading = false;
+
+    // Mappa nomi componente -> nomi API
+    const reactionMap: Record<string, string> = {
+      up: "like",
+      love: "heart",
+      laugh: "laugh",
+      fire: "fire",
+    };
+
+    // Mappa nomi API -> nomi componente
+    const apiToComponentMap: Record<string, string> = {
+      like: "up",
+      heart: "love",
+      laugh: "laugh",
+      fire: "fire",
+    };
 
     // Funzione per ottenere chiave localStorage
     function getStorageKey(reaction: string): string {
@@ -127,11 +146,13 @@ const apiUrl = reactionsUrl(slug);
         }
 
         const data = await response.json();
+        // Mappa da API (like, heart, fire, laugh) a componente (up, love, fire, laugh)
+        const apiCounts = data.counts || data;
         updateCounts({
-          up: data.up || 0,
-          love: data.love || 0,
-          laugh: data.laugh || 0,
-          fire: data.fire || 0,
+          up: apiCounts.like || apiCounts.up || 0,
+          love: apiCounts.heart || apiCounts.love || 0,
+          laugh: apiCounts.laugh || 0,
+          fire: apiCounts.fire || 0,
         });
       } catch (err) {
         console.error("[Reactions] Error loading counts:", err);
@@ -150,10 +171,13 @@ const apiUrl = reactionsUrl(slug);
       }
 
       try {
+        // Mappa nome componente -> nome API
+        const apiReactionType = reactionMap[reaction] || reaction;
+        
         const response = await fetch(apiUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ reaction }),
+          body: JSON.stringify({ type: apiReactionType }),
         });
 
         if (!response.ok) {
@@ -161,11 +185,13 @@ const apiUrl = reactionsUrl(slug);
         }
 
         const data = await response.json();
+        // Mappa da API response (data.data.counts) a componente
+        const apiCounts = data.data?.counts || data.counts || data;
         updateCounts({
-          up: data.up || 0,
-          love: data.love || 0,
-          laugh: data.laugh || 0,
-          fire: data.fire || 0,
+          up: apiCounts.like || apiCounts.up || 0,
+          love: apiCounts.heart || apiCounts.love || 0,
+          laugh: apiCounts.laugh || 0,
+          fire: apiCounts.fire || 0,
         });
 
         // Segna come votato
