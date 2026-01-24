@@ -86,24 +86,66 @@ const apiUrl = reactionsApiUrl(slug);
       fire: "fire",
     };
 
-    // Funzione per ottenere chiave localStorage
-    function getStorageKey(reaction) {
-      return `reaction:${slugAttr}:${reaction}`;
+    // Key localStorage per persistenza voti
+    const STORAGE_KEY = "cpd:reactions:v1";
+
+    // Legge tutti i voti salvati
+    function getStoredVotes() {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        return stored ? JSON.parse(stored) : {};
+      } catch (err) {
+        console.warn("[Reactions] Error reading localStorage:", err);
+        return {};
+      }
     }
 
-    // Verifica se già votato per una reazione
-    function hasVoted(reaction) {
-      return localStorage.getItem(getStorageKey(reaction)) === "1";
+    // Salva voto per uno slug
+    function saveVote(slug, reaction) {
+      try {
+        const votes = getStoredVotes();
+        votes[slug] = {
+          reaction: reaction,
+          ts: Date.now(),
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(votes));
+      } catch (err) {
+        console.error("[Reactions] Error saving vote:", err);
+      }
     }
 
-    // Segna come votato
-    function markAsVoted(reaction) {
-      localStorage.setItem(getStorageKey(reaction), "1");
+    // Ottiene voto salvato per uno slug
+    function getStoredVote(slug) {
+      const votes = getStoredVotes();
+      return votes[slug] || null;
     }
 
-    // Aggiorna UI con contatori
+    // Verifica se esiste già un voto per questo slug
+    function hasVotedForSlug(slug) {
+      return getStoredVote(slug) !== null;
+    }
+
+    // Ottiene la reazione votata per questo slug (nome componente)
+    function getVotedReaction(slug) {
+      const vote = getStoredVote(slug);
+      if (!vote) return null;
+      
+      // Mappa da API (like, heart, fire, laugh) a componente (up, love, fire, laugh)
+      const apiToComponent = {
+        like: "up",
+        heart: "love",
+        laugh: "laugh",
+        fire: "fire",
+      };
+      
+      return apiToComponent[vote.reaction] || vote.reaction;
+    }
+
+    // Aggiorna UI con contatori e stato votato
     function updateCounts(newCounts) {
       counts = newCounts;
+      const votedReaction = getVotedReaction(slugAttr);
+      
       buttons.forEach((btn) => {
         const reaction = btn.getAttribute("data-reaction");
         if (!reaction) return;
@@ -113,11 +155,19 @@ const apiUrl = reactionsApiUrl(slug);
           countEl.textContent = String(counts[reaction] || 0);
         }
         
-        // Aggiorna stato disabled
-        if (hasVoted(reaction)) {
-          btn.disabled = true;
-          btn.classList.add("reaction-btn--voted");
+        // Se esiste voto salvato per questo slug, disabilita tutte tranne quella votata
+        if (hasVotedForSlug(slugAttr)) {
+          if (reaction === votedReaction) {
+            // Evidenzia la reazione votata
+            btn.disabled = false; // Mantieni cliccabile per feedback visivo
+            btn.classList.add("reaction-btn--voted");
+          } else {
+            // Disabilita le altre
+            btn.disabled = true;
+            btn.classList.remove("reaction-btn--voted");
+          }
         } else {
+          // Nessun voto salvato, tutte abilitate
           btn.disabled = false;
           btn.classList.remove("reaction-btn--voted");
         }
@@ -159,9 +209,34 @@ const apiUrl = reactionsApiUrl(slug);
       }
     }
 
+    // Applica stato votato all'avvio (prima del loadCounts)
+    function applyStoredVote() {
+      if (hasVotedForSlug(slugAttr)) {
+        const votedReaction = getVotedReaction(slugAttr);
+        if (votedReaction) {
+          buttons.forEach((btn) => {
+            const reaction = btn.getAttribute("data-reaction");
+            if (!reaction) return;
+            
+            if (reaction === votedReaction) {
+              btn.classList.add("reaction-btn--voted");
+            } else {
+              btn.disabled = true;
+            }
+          });
+        }
+      }
+    }
+
     // Invia reazione
     async function sendReaction(reaction) {
-      if (isLoading || hasVoted(reaction) || !reactionsEl) return;
+      // Controlla se esiste già un voto per questo slug
+      if (hasVotedForSlug(slugAttr)) {
+        console.log("[Reactions] already voted");
+        return;
+      }
+
+      if (isLoading || !reactionsEl) return;
 
       isLoading = true;
       const btn = reactionsEl.querySelector(`.reaction-btn[data-reaction="${reaction}"]`);
@@ -201,8 +276,16 @@ const apiUrl = reactionsApiUrl(slug);
           fire: apiCounts.fire || 0,
         });
 
-        // Segna come votato
-        markAsVoted(reaction);
+        // Salva voto in localStorage (nome API)
+        saveVote(slugAttr, apiReactionType);
+        
+        // Disabilita tutte le altre reazioni
+        buttons.forEach((b) => {
+          const r = b.getAttribute("data-reaction");
+          if (r && r !== reaction) {
+            b.disabled = true;
+          }
+        });
       } catch (err) {
         console.error("[Reactions] Error sending reaction:", err);
         if (btn) {
@@ -218,13 +301,14 @@ const apiUrl = reactionsApiUrl(slug);
     buttons.forEach((btn) => {
       btn.addEventListener("click", () => {
         const reaction = btn.getAttribute("data-reaction");
-        if (reaction && !hasVoted(reaction)) {
+        if (reaction) {
           sendReaction(reaction);
         }
       });
     });
 
-    // Carica contatori al load
+    // Inizializzazione: applica voto salvato e carica counts
+    applyStoredVote();
     loadCounts();
   })();
 </script>
