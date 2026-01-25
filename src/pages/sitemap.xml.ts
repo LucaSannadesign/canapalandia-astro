@@ -69,13 +69,20 @@ export const GET: APIRoute = async () => {
     // Escludi entry senza path valido
     if (!entry.path || entry.path.trim() === "") continue;
     
-    // Escludi route tecniche
+    // Escludi route tecniche e tassonomie
     if (
       entry.path.startsWith("tag/") ||
+      entry.path.startsWith("categoria/") ||
+      entry.path.startsWith("autore/") ||
       entry.path.startsWith("en/tag/") ||
+      entry.path.startsWith("en/categoria/") ||
+      entry.path.startsWith("en/autore/") ||
+      entry.path.startsWith("en/author/") ||
       entry.path.startsWith("partials/") ||
       entry.path.startsWith("en/") ||
-      entry.path.includes("/partials/")
+      entry.path.includes("/partials/") ||
+      entry.path.startsWith("go/") ||
+      entry.path === "partner-selezionati"
     ) {
       continue;
     }

@@ -88,6 +88,7 @@ async function callOpenAI(frase: string, apiKey: string): Promise<{ ok: true; ri
 }
 
 export const POST: APIRoute = async ({ request }) => {
+  try {
   // Verifica OPENAI_API_KEY all'inizio
   // In Astro, usa import.meta.env per variabili server-side (non PUBLIC_*)
   // Le variabili senza prefisso PUBLIC_ sono private e disponibili solo server-side
@@ -255,4 +256,15 @@ export const POST: APIRoute = async ({ request }) => {
       headers: { "Content-Type": "application/json" },
     },
   );
+  } catch (err: any) {
+    // Catch globale per errori inattesi (non dovrebbero mai verificarsi, ma meglio essere sicuri)
+    console.error("[ribalta-ai] Errore inatteso:", err?.message || String(err));
+    return new Response(
+      JSON.stringify({ ok: false, error: "Errore interno del server" }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
+  }
 };

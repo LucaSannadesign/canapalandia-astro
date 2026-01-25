@@ -52,10 +52,25 @@
       "destination": "/blog/cannabis-light-corte-giustizia-ue",
       "permanent": true
     },
-     {
+    {
       "source": "/cannabis-light-corte-giustizia-ue/",
       "destination": "/blog/cannabis-light-corte-giustizia-ue/",
       "permanent": true
-}
+    },
+    {
+      "source": "/partner-selezionati",
+      "destination": "/blog/",
+      "permanent": false
+    },
+    {
+      "source": "/partner-selezionati/:path*",
+      "destination": "/blog/",
+      "permanent": false
+    },
+    {
+      "source": "/go/:path*",
+      "destination": "/blog/",
+      "permanent": false
+    }
   ]
 }

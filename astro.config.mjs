@@ -51,9 +51,17 @@ export default defineConfig({
           if (pathname.startsWith("/partials/")) return false;
           // Escludi pagine EN (legacy, noindex)
           if (pathname.startsWith("/en/")) return false;
-          // Escludi pagine tag (noindex per evitare bloat)
+          // Escludi pagine tassonomia (noindex per evitare crawl bloat)
           if (pathname.startsWith("/tag/")) return false;
+          if (pathname.startsWith("/categoria/")) return false;
+          if (pathname.startsWith("/autore/")) return false;
           if (pathname.startsWith("/en/tag/")) return false;
+          if (pathname.startsWith("/en/categoria/")) return false;
+          if (pathname.startsWith("/en/autore/")) return false;
+          if (pathname.startsWith("/en/author/")) return false;
+          // Escludi /partner-selezionati/ e /go/* (disattivati temporaneamente)
+          if (pathname.startsWith("/partner-selezionati")) return false;
+          if (pathname.startsWith("/go/")) return false;
         } catch {
           // Se URL non valido, includi per sicurezza
           return true;

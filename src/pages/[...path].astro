@@ -26,7 +26,8 @@ import tagsJson from "../../data/wp/out/tags.json";
 /* ========= Config CTA (cambia qui se il link è diverso) ========= */
 // Assicura che i link siano sempre assoluti (iniziano con /)
 const SUPPORT_URL = "/sostieni-la-nostra-causa/"; // <-- se nel tuo sito è diverso, modifica SOLO questa riga
-const PARTNER_URL = "/partner-selezionati/"; // opzionale: se hai pagina partner
+// const PARTNER_URL = "/partner-selezionati/"; // Disattivato temporaneamente
+const PARTNER_URL = "/blog/"; // Redirect a blog
 
 /* ---------------------------
    Utils
@@ -145,6 +146,34 @@ function findEntryByPath(pathToFind: string): WpEntry | null {
   }
 
   return null;
+}
+
+// Blocca temporaneamente /partner-selezionati/ e /go/*
+if (targetPathForMatch === "partner-selezionati" || targetPathForMatch.startsWith("go/")) {
+  return new Response(null, {
+    status: 404,
+    statusText: "Not Found",
+  });
+}
+
+// Gestione query params tecnici (mailpoet, captcha, etc.)
+// Rimuovi solo parametri tecnici che causano URL duplicati in GSC
+const url = Astro.url;
+// Solo parametri tecnici/problematici, NON rimuovere utm_* o ref (tracking legittimo)
+const techParams = ["mailpoet_page", "captcha", "wpnonce", "_wpnonce", "action", "doing_wp_cron"];
+const hasTechParam = techParams.some((param) => url.searchParams.has(param));
+
+// Se ci sono query params tecnici su pagine migrate, rimuovili con redirect 301
+if (hasTechParam && targetPathForMatch) {
+  // Rimuovi solo i parametri tecnici, mantieni gli altri (es. utm_*, ref)
+  const cleanUrl = new URL(url);
+  techParams.forEach((param) => cleanUrl.searchParams.delete(param));
+  // Se non ci sono più query params, rimuovi il ?
+  if (cleanUrl.search === "?") {
+    cleanUrl.search = "";
+  }
+  // Redirect 301 permanente per consolidare URL in GSC
+  return Astro.redirect(cleanUrl.pathname + cleanUrl.search, 301);
 }
 
 const foundEntry = findEntryByPath(targetPathForMatch);

@@ -48,8 +48,9 @@ export const GET: APIRoute = async ({ params }) => {
     });
   } catch (err) {
     console.error("[pageviews] Errore lettura:", err);
-    return new Response(JSON.stringify({ error: "Errore server" }), {
-      status: 500,
+    // Fallback: ritorna 0 views invece di 500 per evitare errori in GSC
+    return new Response(JSON.stringify({ slug, views: 0 }), {
+      status: 200,
       headers: { "Content-Type": "application/json" },
     });
   }
@@ -81,8 +82,9 @@ export const POST: APIRoute = async ({ params, request, clientAddress }) => {
         headers: { "Content-Type": "application/json" },
       });
     } catch {
-      return new Response(JSON.stringify({ error: "Errore server" }), {
-        status: 500,
+      // Fallback: ritorna 0 views invece di 500
+      return new Response(JSON.stringify({ slug, views: 0 }), {
+        status: 200,
         headers: { "Content-Type": "application/json" },
       });
     }
@@ -101,9 +103,20 @@ export const POST: APIRoute = async ({ params, request, clientAddress }) => {
     });
   } catch (err) {
     console.error("[pageviews] Errore incremento:", err);
-    return new Response(JSON.stringify({ error: "Errore server" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    // Fallback: ritorna il conteggio attuale (se disponibile) invece di 500
+    try {
+      const data = await readPageviews();
+      const views = data[slug] || 0;
+      return new Response(JSON.stringify({ slug, views }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch {
+      // Se anche il fallback fallisce, ritorna 0
+      return new Response(JSON.stringify({ slug, views: 0 }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
   }
 };
