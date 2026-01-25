@@ -9,6 +9,7 @@
 import SiteLayout from "../layouts/SiteLayout.astro";
 import AdSlot from "../components/AdSlot.astro";
 import ShareBar from "../components/ShareBar.astro";
+import BlogSidebar from "../components/blog/BlogSidebar.astro";
 import { ADS_SLOT_ARTICLE, ADS_SLOT_SIDEBAR } from "../lib/consts";
 import { loadWp, type WpEntry } from "../lib/wp";
 import {
@@ -781,12 +782,7 @@ if (isSupportPage && contentHtml) {
             </div>
           ) : null}
 
-          <div class="sidebar-section sidebar-ad__wrapper">
-            <div class="sidebar-ad__sticky">
-              <h3 class="sidebar-title">Pubblicità</h3>
-              <AdSlot slot={ADS_SLOT_SIDEBAR} label="Pubblicità" />
-            </div>
-          </div>
+          <BlogSidebar />
         </aside>
       ) : null}
     </div>

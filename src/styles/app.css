@@ -41,6 +41,12 @@
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.35);
   --shadow-brand: 0 8px 24px rgba(34, 197, 94, 0.35);
 
+  /* ===== HEADER TOKENS ===== */
+  --header-bg: rgba(6, 19, 11, 0.72);
+  --header-border: rgba(255, 255, 255, 0.08);
+  --header-text: var(--text);
+  --header-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+
   /* ===== RADIUS TOKENS ===== */
   --radius: 16px;
   --r: 16px;
@@ -135,6 +141,12 @@ html[data-theme="light"] {
   --brand-subtle: rgba(22, 163, 74, 0.12);
   --brand-ink: #05210f;
   --accent: var(--brand);
+
+  /* ===== HEADER TOKENS ===== */
+  --header-bg: rgba(255, 255, 255, 0.92);
+  --header-border: rgba(2, 6, 23, 0.12);
+  --header-text: var(--text);
+  --header-shadow: 0 2px 12px rgba(2, 6, 23, 0.12);
 }
 
 * {
@@ -357,17 +369,11 @@ main#contenuto {
 /* Mobile: navbar sempre con sfondo semitrasparente per leggibilità */
 @media (max-width: 899px) {
   .site-header {
-    background: rgba(6, 19, 11, 0.75);
+    background: var(--header-bg);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  }
-
-  html[data-theme="light"] .site-header {
-    background: rgba(255, 255, 255, 0.85);
-    border-bottom: 1px solid rgba(2, 6, 23, 0.12);
-    box-shadow: 0 2px 8px rgba(2, 6, 23, 0.1);
+    border-bottom: 1px solid var(--header-border);
+    box-shadow: var(--header-shadow);
   }
 }
 
@@ -384,23 +390,14 @@ main#contenuto {
 @supports not (backdrop-filter: blur(10px)) {
   @media (max-width: 899px) {
     .site-header {
-      background: rgba(6, 19, 11, 0.92);
-    }
-
-    html[data-theme="light"] .site-header {
-      background: rgba(255, 255, 255, 0.92);
+      background: var(--header-bg);
     }
   }
 
   @media (min-width: 900px) {
     .site-header.is-scrolled,
     html.scrolled .site-header {
-      background: rgba(10, 12, 14, 0.92);
-    }
-    
-    html[data-theme="light"] .site-header.is-scrolled,
-    html[data-theme="light"].scrolled .site-header {
-      background: rgba(255, 255, 255, 0.92);
+      background: var(--header-bg);
     }
   }
 }
@@ -409,26 +406,19 @@ main#contenuto {
 @media (min-width: 900px) {
   .site-header.is-scrolled,
   html.scrolled .site-header {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(6, 19, 11, 0.55);
+    border-bottom: 1px solid var(--header-border);
+    background: var(--header-bg);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
-  }
-
-  html[data-theme="light"] .site-header.is-scrolled,
-  html[data-theme="light"].scrolled .site-header {
-    border-bottom: 1px solid rgba(2, 6, 23, 0.12);
-    background: rgba(255, 255, 255, 0.85);
-    box-shadow: 0 2px 12px rgba(2, 6, 23, 0.12);
+    box-shadow: var(--header-shadow);
   }
 }
 
 /* Desktop (>=1024px): header ALWAYS visible (no overlap on text) */
 @media (min-width: 1024px) {
   .site-header {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(6, 19, 11, 0.72);
+    border-bottom: 1px solid var(--header-border);
+    background: var(--header-bg);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
   }
@@ -440,26 +430,17 @@ main#contenuto {
     -webkit-backdrop-filter: inherit;
   }
 
-  html[data-theme="light"] .site-header {
-    border-bottom: 1px solid rgba(2, 6, 23, 0.12);
-    background: rgba(255, 255, 255, 0.92);
-  }
+
 }
 
 /* Mobile: stato scrolled mantiene lo stesso sfondo (già definito sopra) */
 @media (max-width: 899px) {
   .site-header.is-scrolled {
     /* Mantiene lo stesso sfondo già definito per mobile */
-    background: rgba(6, 19, 11, 0.85);
+    background: var(--header-bg);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
-  }
-
-  html[data-theme="light"] .site-header.is-scrolled {
-    background: rgba(255, 255, 255, 0.92);
-    border-bottom: 1px solid rgba(2, 6, 23, 0.15);
-    box-shadow: 0 2px 12px rgba(2, 6, 23, 0.15);
+    box-shadow: var(--header-shadow);
   }
 }
 

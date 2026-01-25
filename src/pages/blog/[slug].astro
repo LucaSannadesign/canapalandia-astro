@@ -7,6 +7,7 @@ import PostMeta from "../../components/PostMeta.astro";
 import PostShare from "../../components/PostShare.astro";
 import SupportCTA from "../../components/SupportCTA.astro";
 import Reactions from "../../components/Reactions.astro";
+import BlogSidebar from "../../components/blog/BlogSidebar.astro";
 import { FEATURES } from "../../lib/consts";
 
 export const prerender = false;
@@ -226,12 +227,7 @@ const showSupportCta = (entry as any).data.showSupportCta !== false; // default:
       </article>
 
       <aside class="post-sidebar">
-        <div class="sidebar-section sidebar-ad__wrapper">
-          <div class="sidebar-ad__sticky">
-            <h3 class="sidebar-title">Pubblicità</h3>
-            <AdSenseSlot slot="1234567890" minWidth={300} minHeight={250} />
-          </div>
-        </div>
+        <BlogSidebar />
       </aside>
     </div>
   </main>

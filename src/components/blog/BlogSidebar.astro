@@ -1,0 +1,114 @@
+---
+import { getCollection } from 'astro:content';
+
+const posts = await getCollection('blog');
+
+// Sort posts by publishDate descending
+const sortedPosts = posts
+  .filter(post => !post.data.draft)
+  .sort((a, b) => {
+    const dateA = new Date(a.data.publishDate || a.data.date || a.data.pubDate || '1970-01-01');
+    const dateB = new Date(b.data.publishDate || b.data.date || b.data.pubDate || '1970-01-01');
+    return dateB.getTime() - dateA.getTime();
+  });
+
+// Recenti: ultimi 8
+const recentPosts = sortedPosts.slice(0, 8);
+
+// Featured: max 5
+const featuredPosts = sortedPosts.filter(post => post.data.featured).slice(0, 5);
+
+// Categorie: conta occorrenze
+const categoryCount = sortedPosts.reduce((acc, post) => {
+  const cat = post.data.category || 'Senza categoria';
+  acc[cat] = (acc[cat] || 0) + 1;
+  return acc;
+}, {} as Record<string, number>);
+
+const sortedCategories = Object.entries(categoryCount)
+  .sort(([, a], [, b]) => b - a)
+  .slice(0, 10); // top 10
+
+// Tag: conta occorrenze
+const tagCount = sortedPosts.reduce((acc, post) => {
+  const tags = post.data.tags || [];
+  tags.forEach(tag => {
+    acc[tag] = (acc[tag] || 0) + 1;
+  });
+  return acc;
+}, {} as Record<string, number>);
+
+const sortedTags = Object.entries(tagCount)
+  .sort(([, a], [, b]) => b - a)
+  .slice(0, 10); // top 10
+---
+
+<aside aria-label="Sidebar del blog" class="sidebar-sticky">
+  <!-- Recenti -->
+  <div class="sidebar-section">
+    <h3 class="sidebar-title">Articoli recenti</h3>
+    <ul class="sidebar-list">
+      {recentPosts.map(post => (
+        <li>
+          <a href={`/blog/${post.slug}/`} class="sidebar-link">
+            {post.data.title}
+          </a>
+        </li>
+      ))}
+    </ul>
+  </div>
+
+  <!-- In evidenza -->
+  {featuredPosts.length > 0 && (
+    <div class="sidebar-section">
+      <h3 class="sidebar-title">In evidenza</h3>
+      <ul class="sidebar-list">
+        {featuredPosts.map(post => (
+          <li>
+            <a href={`/blog/${post.slug}/`} class="sidebar-link">
+              {post.data.title}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )}
+
+  <!-- Categorie -->
+  <div class="sidebar-section">
+    <h3 class="sidebar-title">Categorie</h3>
+    <ul class="sidebar-list">
+      {sortedCategories.map(([category, count]) => (
+        <li>
+          <a href={`/blog/?category=${encodeURIComponent(category)}`} class="sidebar-link">
+            {category} ({count})
+          </a>
+        </li>
+      ))}
+    </ul>
+  </div>
+
+  <!-- Tag -->
+  <div class="sidebar-section">
+    <h3 class="sidebar-title">Tag popolari</h3>
+    <ul class="sidebar-list">
+      {sortedTags.map(([tag, count]) => (
+        <li>
+          <a href={`/blog/?tag=${encodeURIComponent(tag)}`} class="sidebar-link">
+            {tag} ({count})
+          </a>
+        </li>
+      ))}
+    </ul>
+  </div>
+
+  <!-- Link utili -->
+  <div class="sidebar-section">
+    <h3 class="sidebar-title">Link utili</h3>
+    <ul class="sidebar-list">
+      <li><a href="/rss.xml" class="sidebar-link">RSS</a></li>
+      <li><a href="/mappa-del-sito/" class="sidebar-link">Mappa del sito</a></li>
+      <li><a href="/sostieni-la-nostra-causa/" class="sidebar-link">Sostieni Canapalandia</a></li>
+    </ul>
+  </div>
+</aside>
