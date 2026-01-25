@@ -71,6 +71,16 @@
       "source": "/go/:path*",
       "destination": "/blog/",
       "permanent": false
+    },
+    {
+      "source": "/partner",
+      "destination": "/blog/",
+      "permanent": false
+    },
+    {
+      "source": "/partner/:path*",
+      "destination": "/blog/",
+      "permanent": false
     }
   ]
 }
