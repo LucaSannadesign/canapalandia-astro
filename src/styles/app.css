@@ -1654,6 +1654,19 @@ html[data-theme="light"] .cardExcerpt {
   }
 }
 
+/* Post-end Ad */
+.post-end-ad {
+  margin-top: 32px;
+  margin-bottom: 0;
+  text-align: center;
+  max-width: 100%;
+}
+
+.post-end-ad :global(.adslot-container) {
+  margin: 0 auto;
+  max-width: 728px; /* Standard banner size */
+}
+
 /* ------------------------------------------------------------
    Editorial / Prose typography scope: .wp-page
    Migliora leggibilità e ritmo editoriale senza toccare UI globale

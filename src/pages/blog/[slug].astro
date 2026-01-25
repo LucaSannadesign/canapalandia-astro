@@ -3,12 +3,13 @@ import { getEntryBySlug, getCollection, type CollectionEntry } from "astro:conte
 import SiteLayout from "../../layouts/SiteLayout.astro";
 import CardPost from "../../components/CardPost.astro";
 import AdSenseSlot from "../../components/AdSenseSlot.astro";
+import AdSlot from "../../components/AdSlot.astro";
 import PostMeta from "../../components/PostMeta.astro";
 import PostShare from "../../components/PostShare.astro";
 import SupportCTA from "../../components/SupportCTA.astro";
 import Reactions from "../../components/Reactions.astro";
 import BlogSidebar from "../../components/blog/BlogSidebar.astro";
-import { FEATURES } from "../../lib/consts";
+import { FEATURES, ADS_SLOT_ARTICLE } from "../../lib/consts";
 
 export const prerender = false;
 
@@ -218,6 +219,11 @@ const showSupportCta = (entry as any).data.showSupportCta !== false; // default:
           title={postTitle}
           showShare={showShare}
         />
+
+        {/* Post-end Ad */}
+        <div class="post-end-ad" aria-label="Pubblicità">
+          <AdSlot slot={ADS_SLOT_ARTICLE} label="Pubblicità" />
+        </div>
 
         {/* CTA Sostienici */}
         <SupportCTA
