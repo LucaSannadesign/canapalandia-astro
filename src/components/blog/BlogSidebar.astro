@@ -12,8 +12,8 @@ const sortedPosts = posts
     return dateB.getTime() - dateA.getTime();
   });
 
-// Recenti: ultimi 8
-const recentPosts = sortedPosts.slice(0, 8);
+// Recenti: ultimi 5
+const recentPosts = sortedPosts.slice(0, 5);
 
 // Featured: max 5
 const featuredPosts = sortedPosts.filter(post => post.data.featured).slice(0, 5);
@@ -47,10 +47,10 @@ const sortedTags = Object.entries(tagCount)
   <!-- Recenti -->
   <div class="sidebar-section">
     <h3 class="sidebar-title">Articoli recenti</h3>
-    <ul class="sidebar-list">
+    <ul class="sidebar-list recent-posts">
       {recentPosts.map(post => (
-        <li>
-          <a href={`/blog/${post.slug}/`} class="sidebar-link">
+        <li class="py-[10px]">
+          <a href={`/blog/${post.slug}/`} class="sidebar-link block leading-snug">
             {post.data.title}
           </a>
         </li>
@@ -77,10 +77,10 @@ const sortedTags = Object.entries(tagCount)
   <!-- Categorie -->
   <div class="sidebar-section">
     <h3 class="sidebar-title">Categorie</h3>
-    <ul class="sidebar-list">
+    <ul class="sidebar-list sidebar-categories">
       {sortedCategories.map(([category, count]) => (
-        <li>
-          <a href={`/blog/?category=${encodeURIComponent(category)}`} class="sidebar-link">
+        <li class="py-[12px]">
+          <a href={`/blog/?category=${encodeURIComponent(category)}`} class="sidebar-link block leading-snug">
             {category} ({count})
           </a>
         </li>
