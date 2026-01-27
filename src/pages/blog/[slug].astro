@@ -34,12 +34,12 @@ function normalizeImgSrc(src: unknown): string {
 function normalizeImage(entry: CollectionEntry<"blog">): string {
   const raw = entry.data.image || entry.data.coverImage || "";
   let srcValue: unknown = raw;
-  
+
   if (raw && typeof raw === "object" && raw !== null && "src" in raw) {
     const srcObj = raw as { src?: unknown };
     srcValue = srcObj.src;
   }
-  
+
   return normalizeImgSrc(srcValue);
 }
 
@@ -76,17 +76,17 @@ let relatedPosts: CollectionEntry<"blog">[] = [];
 try {
   const allPosts = await getCollection("blog");
   const currentCategory = String((entry as any).data.category || "").trim().toLowerCase();
-  const currentTags = Array.isArray((entry as any).data.tags) 
+  const currentTags = Array.isArray((entry as any).data.tags)
     ? (entry as any).data.tags.map((t: unknown) => String(t || "").trim().toLowerCase()).filter(Boolean)
     : [];
-  
+
   // Helper per normalizzare e confrontare tag/categoria
   const normalizeCategory = (cat: unknown): string => String(cat || "").trim().toLowerCase();
   const normalizeTags = (tags: unknown): string[] => {
     if (!Array.isArray(tags)) return [];
     return tags.map((t: unknown) => String(t || "").trim().toLowerCase()).filter(Boolean);
   };
-  
+
   // Helper per ordinare per data DESC
   const sortByDate = (posts: CollectionEntry<"blog">[]): CollectionEntry<"blog">[] => {
     return [...posts].sort((a, b) => {
@@ -97,17 +97,17 @@ try {
       return timeB - timeA; // DESC
     });
   };
-  
+
   // Set per evitare duplicati (usa slug come chiave)
   const addedSlugs = new Set<string>([slug]); // Escludi sempre il post corrente
-  
+
   // STEP 1: Correlati per categoria (priorità massima)
   if (currentCategory) {
     const byCategory = allPosts.filter((p) => {
       const cat = normalizeCategory(p.data.category);
       return cat === currentCategory && !addedSlugs.has(p.slug);
     });
-    
+
     const sorted = sortByDate(byCategory);
     for (const p of sorted) {
       if (relatedPosts.length >= 4) break;
@@ -115,16 +115,15 @@ try {
       addedSlugs.add(p.slug);
     }
   }
-  
+
   // STEP 2: Se non raggiunto target (4), integra per tag
   if (relatedPosts.length < 4 && currentTags.length > 0) {
     const byTag = allPosts.filter((p) => {
       if (addedSlugs.has(p.slug)) return false;
       const postTags = normalizeTags(p.data.tags);
-      // Match se almeno 1 tag coincide
       return currentTags.some((tag: string) => postTags.includes(tag));
     });
-    
+
     const sorted = sortByDate(byTag);
     for (const p of sorted) {
       if (relatedPosts.length >= 4) break;
@@ -132,12 +131,11 @@ try {
       addedSlugs.add(p.slug);
     }
   }
-  
+
   // STEP 3: Se ancora sotto minimo (3), completa con ultimi post pubblicati (fallback)
   if (relatedPosts.length < 3) {
-    const fallback = allPosts
-      .filter((p) => !addedSlugs.has(p.slug))
-      .slice();
+    const fallback = allPosts.filter((p) => !addedSlugs.has(p.slug)).slice();
+   
     
     const sorted = sortByDate(fallback);
     for (const p of sorted) {
@@ -146,8 +144,7 @@ try {
       addedSlugs.add(p.slug);
     }
   }
-  
-  // Limita a max 4 (min 3, max 6 se disponibili: ma preferiamo 4)
+
   relatedPosts = relatedPosts.slice(0, 4);
 } catch (err) {
   console.warn("[blog/[slug]] Errore nel caricamento post correlati:", err);
@@ -166,7 +163,7 @@ const metadata = {
   robots: { index: true, follow: true },
   ogType: "article",
   ogSiteName: "Canapalandia",
-  ogImage: postImage || undefined, // Se vuoto, SiteLayout userà fallback
+  ogImage: postImage || undefined,
   twitterCard: "summary_large_image",
 };
 
@@ -184,13 +181,13 @@ const showSupportCta = (entry as any).data.showSupportCta !== false; // default:
     <div class="post-layout">
       <article class="post-main">
         <h1>{(entry as any).data.title}</h1>
-        
+
         <PostMeta
           publishDate={(entry as any).data.publishDate}
           updatedDate={(entry as any).data.updatedDate}
           slug={slug}
         />
-        
+
         {coverSrc ? (
           <figure class="post-hero">
             <img
@@ -204,8 +201,11 @@ const showSupportCta = (entry as any).data.showSupportCta !== false; // default:
             />
           </figure>
         ) : null}
-        
-        <Content />
+
+        {/* Contenuto articolo (SCOPED) */}
+        <div class="post-content" data-post-content>
+          <Content />
+        </div>
 
         {/* Separatore */}
         <hr class="post-separator" aria-hidden="true" />
@@ -214,11 +214,7 @@ const showSupportCta = (entry as any).data.showSupportCta !== false; // default:
         {FEATURES.REACTIONS && <Reactions slug={slug} />}
 
         {/* Social Share */}
-        <PostShare
-          url={canonicalUrl}
-          title={postTitle}
-          showShare={showShare}
-        />
+        <PostShare url={canonicalUrl} title={postTitle} showShare={showShare} />
 
         {/* Post-end Ad */}
         <div class="post-end-ad" aria-label="Pubblicità">
@@ -226,10 +222,7 @@ const showSupportCta = (entry as any).data.showSupportCta !== false; // default:
         </div>
 
         {/* CTA Sostienici */}
-        <SupportCTA
-          supportUrl="/sostieni-la-nostra-causa/"
-          showSupportCta={showSupportCta}
-        />
+        <SupportCTA supportUrl="/sostieni-la-nostra-causa/" showSupportCta={showSupportCta} />
       </article>
 
       <aside class="post-sidebar">
@@ -272,7 +265,6 @@ const showSupportCta = (entry as any).data.showSupportCta !== false; // default:
     border-radius: 16px;
     overflow: hidden;
     background: rgba(255, 255, 255, 0.04);
-    /* fallback se immagine tarda */
     margin: 1.5rem 0 2rem;
   }
 
@@ -284,11 +276,112 @@ const showSupportCta = (entry as any).data.showSupportCta !== false; // default:
     display: block;
   }
 
-  /* Mobile: ancora più compatta */
   @media (max-width: 640px) {
     .post-hero__img {
       height: clamp(180px, 38vw, 320px);
     }
+  }
+
+  /* Separatore dopo contenuto post */
+  .post-separator {
+    margin: 3rem 0 2.5rem;
+    border: none;
+    border-top: 1px solid var(--border);
+    opacity: 0.5;
+  }
+
+  /* =========================================================
+     BLOG POST — TYPOGRAPHY (solo contenuto articolo)
+     Scope: .post-main .post-content
+     ========================================================= */
+
+  .post-main .post-content {
+    line-height: 1.75;
+    font-size: clamp(1rem, 0.25vw + 0.95rem, 1.08rem);
+    max-width: 72ch; /* leggibilità */
+  }
+
+  /* Spazio verticale consistente tra blocchi */
+  .post-main .post-content > * + * {
+    margin-top: 1.05rem;
+  }
+
+  /* Paragrafi: più aria sotto */
+  .post-main .post-content p {
+    margin: 0 0 1.55rem;
+  }
+
+  /* Titoli: più spazio sopra (capitoli), meno sotto */
+  .post-main .post-content h2 {
+    margin: 2.2rem 0 0.9rem;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    scroll-margin-top: 96px;
+  }
+
+  .post-main .post-content h3 {
+    margin: 1.6rem 0 0.75rem;
+    line-height: 1.25;
+    scroll-margin-top: 96px;
+  }
+
+  /* Titolo seguito da testo/lista: avvicina leggermente */
+  .post-main .post-content h2 + p,
+  .post-main .post-content h2 + ul,
+  .post-main .post-content h2 + ol,
+  .post-main .post-content h3 + p,
+  .post-main .post-content h3 + ul,
+  .post-main .post-content h3 + ol {
+    margin-top: 0.35rem;
+  }
+
+  /* Liste: più respirazione e indent corretto */
+  .post-main .post-content ul,
+  .post-main .post-content ol {
+    margin: 0 0 1.1rem;
+    padding-left: 1.25rem;
+  }
+
+  .post-main .post-content li {
+    margin: 0.35rem 0;
+  }
+
+  .post-main .post-content li > p {
+    margin: 0.55rem 0;
+  }
+
+  /* Blockquote (se presenti) */
+  .post-main .post-content blockquote {
+    margin: 1.2rem 0;
+    padding: 0.85rem 1rem;
+    border-left: 3px solid var(--border);
+  }
+
+  /* FAQ <details>: spaziatura e leggibilità */
+  .post-main .post-content details {
+    margin: 0.9rem 0;
+    padding: 0.15rem 0;
+  }
+
+  .post-main .post-content summary {
+    cursor: pointer;
+    line-height: 1.35;
+  }
+
+  .post-main .post-content details[open] > summary {
+    margin-bottom: 0.55rem;
+  }
+
+  .post-main .post-content details p {
+    margin-bottom: 0.9rem;
+  }
+
+  /* HR dentro contenuto (se usato nel markdown) */
+  .post-main .post-content hr {
+    margin: 1.6rem 0;
+    border: none;
+    border-top: 1px solid var(--border);
+    opacity: 0.5;
   }
 
   /* Post correlati */
@@ -315,25 +408,15 @@ const showSupportCta = (entry as any).data.showSupportCta !== false; // default:
     gap: 1.5rem;
   }
 
-  /* Tablet: 2 colonne */
   @media (min-width: 640px) {
     .related-posts__grid {
       grid-template-columns: repeat(2, 1fr);
     }
   }
 
-  /* Desktop: 3 colonne */
   @media (min-width: 1024px) {
     .related-posts__grid {
       grid-template-columns: repeat(3, 1fr);
     }
-  }
-
-  /* Separatore dopo contenuto post */
-  .post-separator {
-    margin: 3rem 0 2.5rem;
-    border: none;
-    border-top: 1px solid var(--border);
-    opacity: 0.5;
   }
 </style>
