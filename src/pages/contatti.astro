@@ -25,12 +25,12 @@ const sent = Astro.url.searchParams.get("sent") === "1";
         </div>
       ) : null}
 
-      <div class="contact-grid">
-        <div class="contact-stack">
-          <div class="contact-card">
-            <h2 class="contact-title">Invia un messaggio</h2>
+      <section class="contact-shell">
+        <div class="contact-grid">
+          <div class="contact-form-card card">
+            <h2>Invia un messaggio</h2>
 
-          <form class="contact-form" method="POST" action={FORMSPREE_ACTION}>
+            <form class="contact-form" method="POST" action={FORMSPREE_ACTION}>
             {/* Anti-spam honeypot (lasciare vuoto) */}
             <input class="hp" type="text" name="_gotcha" tabindex="-1" autocomplete="off" aria-hidden="true" />
 
@@ -74,117 +74,113 @@ const sent = Astro.url.searchParams.get("sent") === "1";
               <a class="btn ghost" href="/">Torna alla home</a>
             </div>
 
-            <p class="form-note">
-              Per segnalazioni: inserisci il link dell’articolo e una descrizione breve dell’errore.
-            </p>
-          </form>
-          <div class="contact-divider"></div>
+              <p class="form-note">
+                Per segnalazioni: inserisci il link dell'articolo e una descrizione breve dell'errore.
+              </p>
+            </form>
+          </div>
+
+          <aside>
+            <div class="contact-sidebar-widgets">
+              <div class="card">
+                <h2>Info</h2>
+                <ul class="contact-list">
+                  <li><strong>Temi:</strong> CBD, canapa industriale, normativa, attualità</li>
+                  <li><strong>Partnership:</strong> trasparenti e dichiarate</li>
+                </ul>
+              </div>
+
+              <div class="card">
+                <h2>Tempi</h2>
+                <p class="contact-muted">
+                  In genere rispondiamo entro 24–72 ore (in base al carico editoriale).
+                </p>
+              </div>
+
+              <div class="card">
+                <h2>Seguici</h2>
+                <p class="contact-muted">
+                  Resta aggiornato su normative, novità e contenuti esclusivi.
+                </p>
+                <nav class="social-links" aria-label="Canali social">
+                  <a
+                    href="https://www.facebook.com/canapalandia.official"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Facebook Canapalandia"
+                  >
+                    <img
+                      src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/facebook.svg"
+                      alt=""
+                      aria-hidden="true"
+                    />
+                  </a>
+                  <a
+                    href="https://www.instagram.com/canapalandia/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Instagram Canapalandia"
+                  >
+                    <img
+                      src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/instagram.svg"
+                      alt=""
+                      aria-hidden="true"
+                    />
+                  </a>
+                  <a
+                    href="https://www.youtube.com/@canapalandia"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="YouTube Canapalandia"
+                  >
+                    <img
+                      src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/youtube.svg"
+                      alt=""
+                      aria-hidden="true"
+                    />
+                  </a>
+                  <a
+                    href="https://www.linkedin.com/company/canapalandia/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="LinkedIn Canapalandia"
+                  >
+                    <img
+                      src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/linkedin.svg"
+                      alt=""
+                      aria-hidden="true"
+                    />
+                  </a>
+                  <a
+                    href="https://t.me/Canapalandia"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Telegram Canapalandia"
+                  >
+                    <img
+                      src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/telegram.svg"
+                      alt=""
+                      aria-hidden="true"
+                    />
+                  </a>
+                  <a
+                    href="https://wa.me/393403223494"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="WhatsApp Canapalandia"
+                  >
+                    <img
+                      src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/whatsapp.svg"
+                      alt=""
+                      aria-hidden="true"
+                    />
+                  </a>
+                </nav>
+              </div>
+            </div>
+          </aside>
         </div>
-        <aside class="contact-aside">
-          <div class="contact-sidebar-widgets">
-            <div class="contact-card">
-              <h2 class="contact-title">Info</h2>
-            <ul class="contact-list">
-              <li><strong>Temi:</strong> CBD, canapa industriale, normativa, attualità</li>
-              <li><strong>Partnership:</strong> trasparenti e dichiarate</li>
-            </ul>
-          </div>
-
-          <div class="contact-divider"></div>
-
-          <div class="contact-card">
-            <h2 class="contact-title">Tempi</h2>
-            <p class="contact-muted">
-              In genere rispondiamo entro 24–72 ore (in base al carico editoriale).
-            </p>
-          </div>
-
-          <div class="contact-divider"></div>
-
-          <div class="contact-card">
-            <h2 class="contact-title">Seguici</h2>
-            <p class="contact-muted">
-              Resta aggiornato su normative, novità e contenuti esclusivi.
-            </p>
-            <nav class="social-links" aria-label="Canali social">
-              <a
-                href="https://www.facebook.com/canapalandia.official"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Facebook Canapalandia"
-              >
-                <img
-                  src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/facebook.svg"
-                  alt=""
-                  aria-hidden="true"
-                />
-              </a>
-              <a
-                href="https://www.instagram.com/canapalandia/"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Instagram Canapalandia"
-              >
-                <img
-                  src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/instagram.svg"
-                  alt=""
-                  aria-hidden="true"
-                />
-              </a>
-              <a
-                href="https://www.youtube.com/@canapalandia"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="YouTube Canapalandia"
-              >
-                <img
-                  src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/youtube.svg"
-                  alt=""
-                  aria-hidden="true"
-                />
-              </a>
-              <a
-                href="https://www.linkedin.com/company/canapalandia/"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="LinkedIn Canapalandia"
-              >
-                <img
-                  src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/linkedin.svg"
-                  alt=""
-                  aria-hidden="true"
-                />
-              </a>
-              <a
-                href="https://t.me/Canapalandia"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Telegram Canapalandia"
-              >
-                <img
-                  src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/telegram.svg"
-                  alt=""
-                  aria-hidden="true"
-                />
-              </a>
-              <a
-                href="https://wa.me/393403223494"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="WhatsApp Canapalandia"
-              >
-                <img
-                  src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/whatsapp.svg"
-                  alt=""
-                  aria-hidden="true"
-                />
-              </a>
-            </nav>
-          </div>
-          </div>
-        </aside>
-        </div>
-      </div>
+      </section>
     </div>
   </section>
 </Layout>
