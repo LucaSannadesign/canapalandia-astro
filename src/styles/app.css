@@ -2587,6 +2587,18 @@ html[data-theme="light"] .scroll-top {
   align-items: start;
 }
 
+.contact-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.contact-divider {
+  border-top: 1px solid var(--border);
+  opacity: 0.4;
+  margin: 0;
+}
+
 .contact-card {
   background: var(--panel);
   border: 1px solid var(--border);
@@ -2687,6 +2699,10 @@ html[data-theme="light"] .field textarea {
 @media (max-width: 900px) {
   .contact-grid {
     grid-template-columns: 1fr;
+  }
+  
+  .contact-stack {
+    row-gap: 2.5rem;
   }
 }
 

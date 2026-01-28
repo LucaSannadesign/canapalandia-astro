@@ -26,8 +26,9 @@ const sent = Astro.url.searchParams.get("sent") === "1";
       ) : null}
 
       <div class="contact-grid">
-        <div class="contact-card">
-          <h2 class="contact-title">Invia un messaggio</h2>
+        <div class="contact-stack">
+          <div class="contact-card">
+            <h2 class="contact-title">Invia un messaggio</h2>
 
           <form class="contact-form" method="POST" action={FORMSPREE_ACTION}>
             {/* Anti-spam honeypot (lasciare vuoto) */}
@@ -78,7 +79,7 @@ const sent = Astro.url.searchParams.get("sent") === "1";
             </p>
           </form>
         </div>
-
+        <div class="contact-divider"></div>
         <aside class="contact-aside">
           <div class="contact-card">
             <h2 class="contact-title">Info</h2>
@@ -88,12 +89,16 @@ const sent = Astro.url.searchParams.get("sent") === "1";
             </ul>
           </div>
 
+          <div class="contact-divider"></div>
+
           <div class="contact-card">
             <h2 class="contact-title">Tempi</h2>
             <p class="contact-muted">
               In genere rispondiamo entro 24–72 ore (in base al carico editoriale).
             </p>
           </div>
+
+          <div class="contact-divider"></div>
 
           <div class="contact-card">
             <h2 class="contact-title">Seguici</h2>
@@ -176,6 +181,7 @@ const sent = Astro.url.searchParams.get("sent") === "1";
             </nav>
           </div>
         </aside>
+        </div>
       </div>
     </div>
   </section>
