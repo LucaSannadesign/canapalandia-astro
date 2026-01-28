@@ -2582,9 +2582,16 @@ html[data-theme="light"] .scroll-top {
 /* Contatti */
 .contact-grid {
   display: grid;
-  grid-template-columns: 1.35fr .65fr;
-  gap: 18px;
+  grid-template-columns: 1fr;
+  gap: 2rem;
   align-items: start;
+}
+
+@media (min-width: 1024px) {
+  .contact-grid {
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 24px;
+  }
 }
 
 .contact-stack {
@@ -2596,7 +2603,7 @@ html[data-theme="light"] .scroll-top {
 .contact-sidebar-widgets {
   display: flex;
   flex-direction: column;
-  gap: 1.2rem;
+  gap: 16px;
 }
 
 .contact-sidebar-widgets > * {
@@ -2704,16 +2711,6 @@ html[data-theme="light"] .field textarea {
 
 .notice.success {
   color: var(--text);
-}
-
-@media (max-width: 900px) {
-  .contact-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .contact-stack {
-    row-gap: 2.5rem;
-  }
 }
 
 .post-hero {
