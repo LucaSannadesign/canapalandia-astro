@@ -1,0 +1,121 @@
+---
+export const prerender = false;
+
+import { getCollection, type CollectionEntry } from "astro:content";
+import SiteLayout from "../../layouts/SiteLayout.astro";
+import Breadcrumbs from "../../components/Breadcrumbs.astro";
+import CardPost from "../../components/CardPost.astro";
+
+const tag = String(Astro.params.tag ?? "").trim();
+
+// Helper per formattare data
+const formatDate = (value: Date | string | number | null | undefined): string => {
+  if (!value) return "";
+  const d = value instanceof Date ? value : new Date(String(value));
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("it-IT", { year: "numeric", month: "long", day: "numeric" });
+};
+
+function dateOf(entry: CollectionEntry<"blog">): Date | null {
+  const raw = entry.data.publishDate ?? entry.data.updatedDate;
+  if (!raw) return null;
+  const d = raw instanceof Date ? raw : new Date(String(raw));
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+// Helper per ottenere immagine post
+function getPostImage(entry: CollectionEntry<"blog">): string | undefined {
+  const img = entry.data.image || entry.data.coverImage;
+  if (!img || typeof img !== "string" || !img.trim()) return undefined;
+  const trimmed = img.trim();
+  
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+  
+  let normalized = trimmed.startsWith("public/") ? trimmed.slice(7) : trimmed;
+  return normalized.startsWith("/") ? normalized : `/${normalized}`;
+}
+
+// Carica tutti i post
+let postsAll: CollectionEntry<"blog">[] = [];
+try {
+  postsAll = await getCollection("blog");
+} catch (err) {
+  console.warn("[tag] Nessun contenuto trovato in Content Collections");
+}
+
+// Filtra per tag (case-insensitive)
+const tagLower = tag.toLowerCase();
+const posts = postsAll
+  .filter((p) => {
+    const tags = p.data.tags || [];
+    return tags.some((t) => t.toLowerCase() === tagLower);
+  })
+  .sort((a, b) => {
+    const da = dateOf(a);
+    const db = dateOf(b);
+    const ta = da ? da.getTime() : 0;
+    const tb = db ? db.getTime() : 0;
+    return tb - ta;
+  });
+
+// Estrai nome tag dal primo post o decodifica lo slug
+const tagName = posts.length > 0
+  ? posts.find((p) => {
+      const tags = p.data.tags || [];
+      return tags.some((t) => t.toLowerCase() === tagLower);
+    })?.data.tags?.find((t) => t.toLowerCase() === tagLower)
+  : decodeURIComponent(tag).replace(/-/g, " ");
+
+const metadata = {
+  title: `Tag: ${tagName || tag} | Canapalandia`,
+  description: `Articoli Canapalandia filtrati per il tag "${tagName || tag}".`,
+  canonical: `/tag/${tag}/`,
+  robots: { index: true, follow: true },
+};
+---
+
+<SiteLayout metadata={metadata}>
+  <main class="container page-shell">
+    {posts.length === 0 ? (
+      <div class="card">
+        <h1>Nessun articolo trovato</h1>
+        <p>Nessun articolo trovato per questo tag.</p>
+        <p>
+          <a href="/blog/">Torna al blog</a>
+        </p>
+      </div>
+    ) : (
+      <>
+        <Breadcrumbs
+          items={[
+            { label: "Home", href: "/" },
+            { label: "Blog", href: "/blog/" },
+            { label: tagName || tag, isCurrent: true },
+          ]}
+        />
+
+        <div class="section-head">
+          <h1>Tag: {tagName || tag}</h1>
+          <p class="section-lead">
+            {posts.length} {posts.length === 1 ? "articolo" : "articoli"}
+          </p>
+        </div>
+
+        <div class="grid">
+          {posts.map((p) => (
+            <CardPost
+              href={`/blog/${p.slug}/`}
+              img={getPostImage(p)}
+              date={formatDate(dateOf(p))}
+              title={p.data.title}
+              excerpt={p.data.description}
+              category={p.data.category || null}
+            />
+          ))}
+        </div>
+      </>
+    )}
+  </main>
+</SiteLayout>
