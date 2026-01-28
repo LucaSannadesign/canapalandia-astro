@@ -1,0 +1,166 @@
+---
+/**
+ * Route di paginazione tag: /tag/[slug]/page/[page]/
+ * Compatibilità WordPress: assorbe URL storici /tag/slug/page/2/, ecc.
+ * 
+ * Requisiti:
+ * - page=1 canonicalizza a /tag/[slug]/ (redirect 301)
+ * - page>=2: status 200, robots index,follow, canonical self
+ * - Se page eccede il massimo: 404 vero
+ */
+import SiteLayout from "../../../../layouts/SiteLayout.astro";
+import CardPost from "../../../../components/CardPost.astro";
+import postsJson from "../../../../../data/wp/out/posts.json";
+import tagsJson from "../../../../../data/wp/out/tags.json";
+import { toParams } from "../../../../lib/wp";
+
+export const prerender = false;
+
+const slug = String(Astro.params.slug ?? "").trim();
+const pageParam = Astro.params.page;
+const pageNum = pageParam ? parseInt(pageParam, 10) : 1;
+
+// Validazione: page deve essere intero >= 1
+if (isNaN(pageNum) || pageNum < 1) {
+  return new Response(null, {
+    status: 404,
+    statusText: "Not Found",
+  });
+}
+
+// page=1 canonicalizza a /tag/[slug]/
+if (pageNum === 1) {
+  return Astro.redirect(`/tag/${slug}/`, 301);
+}
+
+// Helpers
+const posts = Array.isArray(postsJson) ? postsJson : [];
+const tags = Array.isArray(tagsJson) ? tagsJson : [];
+const stripHtml = (s: any) =>
+  String(s || "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+const postTitle = (p: any) => p?.title?.rendered || p?.title || "";
+import { getExcerpt } from "../../../../lib/utils";
+
+const excerpt = (p: any) => getExcerpt(p?.excerpt, p?.content?.rendered || p?.content, 180);
+const sortDesc = (a: any, b: any) =>
+  (Date.parse(b?.date || b?.modified || "") || 0) -
+  (Date.parse(a?.date || a?.modified || "") || 0);
+const og = (p: any) =>
+  p?.yoast_head_json?.og_image?.[0]?.url ||
+  p?.yoast_head_json?.og_image?.[0]?.src ||
+  "";
+const href = (p: any) => {
+  const url = p?.yoast_head_json?.canonical || p?.link || p?.slug || "";
+  const path = toParams(url);
+  return path ? `/${path}/` : "/";
+};
+const fmt = (iso: any) =>
+  iso
+    ? new Date(iso).toLocaleDateString("it-IT", {
+        year: "numeric",
+        month: "long",
+        day: "2-digit",
+      })
+    : "";
+
+// Trova tag per slug
+const tag = tags.find((t) => String(t?.slug || "") === slug);
+const tagId = tag?.id;
+
+// Se tag non esiste, 404
+if (!tag || !tagId) {
+  return new Response(null, {
+    status: 404,
+    statusText: "Not Found",
+  });
+}
+
+// Filtra post per tag
+const filtered = posts
+  .filter((p) => Array.isArray(p?.tags) && p.tags.includes(tagId))
+  .slice()
+  .sort(sortDesc);
+
+// Paginazione: 12 post per pagina
+const PER_PAGE = 12;
+const totalPosts = filtered.length;
+const totalPages = Math.ceil(totalPosts / PER_PAGE);
+
+// Se la pagina richiesta eccede il massimo, 404
+if (pageNum > totalPages) {
+  return new Response(null, {
+    status: 404,
+    statusText: "Not Found",
+  });
+}
+
+// Calcola slice per questa pagina
+const start = (pageNum - 1) * PER_PAGE;
+const end = start + PER_PAGE;
+const pagePosts = filtered.slice(start, end);
+
+// Metadata con robots noindex,follow
+const title =
+  pageNum > 1
+    ? `Tag: ${tag.name} — Pagina ${pageNum} — Canapalandia`
+    : `Tag: ${tag.name} — Canapalandia`;
+const description = `Articoli con tag "${stripHtml(tag.name)}" — Pagina ${pageNum}`;
+const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/tag/${slug}/page/${pageNum}/`;
+const metadata = {
+  title,
+  description,
+  canonical,
+  robots: { index: false, follow: true },
+};
+---
+
+<SiteLayout metadata={metadata}>
+  <section class="hero">
+    <div class="container hero-inner">
+      <p class="kicker">Tag</p>
+      <h1>{tag.name}</h1>
+      <p class="lead">Pagina {pageNum} di {totalPages}</p>
+    </div>
+  </section>
+
+  {pagePosts.length > 0 ? (
+    <div class="grid">
+      {pagePosts.map((p: any) => (
+        <CardPost
+          href={href(p)}
+          img={og(p)}
+          date={fmt(p?.date || p?.modified)}
+          title={postTitle(p)}
+          excerpt={excerpt(p)}
+        />
+      ))}
+    </div>
+  ) : (
+    <div class="card">
+      <p>Nessun post trovato per questo tag.</p>
+    </div>
+  )}
+
+  {/* Paginazione */}
+  <nav class="pagination" aria-label="Paginazione">
+    {pageNum > 1 && (
+      <a
+        href={pageNum === 2 ? `/tag/${slug}/` : `/tag/${slug}/page/${pageNum - 1}/`}
+        class="btn"
+      >
+        « Pagina precedente
+      </a>
+    )}
+    <span class="pagination-info">
+      Pagina {pageNum} di {totalPages}
+    </span>
+    {pageNum < totalPages && (
+      <a href={`/tag/${slug}/page/${pageNum + 1}/`} class="btn">
+        Pagina successiva »
+      </a>
+    )}
+  </nav>
+</SiteLayout>
