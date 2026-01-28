@@ -26,5 +26,19 @@
     "focusKeyword": "controlli CBD Italia",
     "intent": "informazionale",
     "status": "ready"
+  },
+  {
+    "publishDate": "2026-01-28",
+    "title": "TITOLO PROVVISORIO (da rifinire)",
+    "slug": "post-del-2026-01-28",
+    "category": "Attualità",
+    "tags": [
+      "cannabis",
+      "normativa",
+      "italia"
+    ],
+    "focusKeyword": "cannabis italia 2026",
+    "intent": "informazionale",
+    "status": "ready"
   }
 ]
