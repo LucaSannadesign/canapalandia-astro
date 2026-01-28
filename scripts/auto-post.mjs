@@ -421,22 +421,20 @@ async function main() {
 
   ensureDir(OUT_DIR);
 
-  const today = forcedDate || romeDateISO();
-  
   // Idempotenza: verifica se esiste già un post per questa data
-  const dateCheck = checkDateAlreadyUsed(today);
+  const dateCheck = checkDateAlreadyUsed(targetDate);
   if (dateCheck.used) {
-    console.log(`[auto-post] SKIP_DUPLICATE: Already generated post for ${today}`);
+    console.log(`[auto-post] SKIP_DUPLICATE: Already generated post for ${targetDate}`);
     console.log(`[auto-post] Existing file: ${path.relative(ROOT, dateCheck.file)}`);
     console.log(`[auto-post] Slug: ${dateCheck.slug}`);
     process.exit(0);
   }
 
   const posts = loadCalendar();
-  const due = posts.filter(p => String(p.publishDate) === today);
+  const due = posts.filter(p => String(p.publishDate) === targetDate);
 
   if (!due.length) {
-    console.log(`[auto-post] SKIP_NO_SLOT: No posts due for ${today}.`);
+    console.log(`[auto-post] SKIP_NO_SLOT: No posts due for ${targetDate}.`);
     process.exit(0);
   }
 
@@ -458,7 +456,7 @@ async function main() {
   }
 
   if (!filtered.length) {
-    console.log(`[auto-post] No non-test posts due for ${today} (${due.length - filtered.length} test posts filtered).`);
+    console.log(`[auto-post] No non-test posts due for ${targetDate} (${due.length - filtered.length} test posts filtered).`);
     return;
   }
 
