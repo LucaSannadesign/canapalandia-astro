@@ -92,13 +92,23 @@ const sortedTags = Object.entries(tagCount)
   <div class="sidebar-section">
     <h3 class="sidebar-title">Tag popolari</h3>
     <ul class="sidebar-list">
-      {sortedTags.map(([tag, count]) => (
-        <li>
-          <a href={`/blog/?tag=${encodeURIComponent(tag)}`} class="sidebar-link">
-            {tag} ({count})
-          </a>
-        </li>
-      ))}
+      {sortedTags.map(([tag, count]) => {
+        // Slugify: lowercase, trim, spazi->-, rimozione caratteri non url-safe
+        const tagSlug = tag
+          .toLowerCase()
+          .trim()
+          .replace(/\s+/g, '-')
+          .replace(/[^a-z0-9-]/g, '')
+          .replace(/--+/g, '-')
+          .replace(/^-+|-+$/g, '');
+        return (
+          <li>
+            <a href={`/tag/${tagSlug}/`} class="sidebar-link">
+              {tag} ({count})
+            </a>
+          </li>
+        );
+      })}
     </ul>
   </div>
 
