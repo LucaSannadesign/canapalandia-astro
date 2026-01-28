@@ -1,5 +1,6 @@
 ---
 import SiteLayout from "../../layouts/SiteLayout.astro";
+import Breadcrumbs from "../../components/Breadcrumbs.astro";
 import postsJson from "../../../data/wp/out/posts.json";
 import tagsJson from "../../../data/wp/out/tags.json";
 import { toParams } from "../../lib/wp";
@@ -57,6 +58,15 @@ const metadata = {
       </section>
     ) : (
       <>
+        <Breadcrumbs
+          items={[
+            { label: "Home", href: "/" },
+            { label: "Blog", href: "/blog/" },
+            { label: "Tag", href: "/tag/" },
+            { label: stripHtml(tag.name), isCurrent: true },
+          ]}
+        />
+
         <div class="section-head">
           <h1>Tag: {stripHtml(tag.name)}</h1>
           <p class="section-lead">{filtered.length} {filtered.length === 1 ? "articolo" : "articoli"}</p>

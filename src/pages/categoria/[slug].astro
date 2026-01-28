@@ -3,6 +3,7 @@ export const prerender = false;
 
 import { getCollection, type CollectionEntry } from "astro:content";
 import SiteLayout from "../../layouts/SiteLayout.astro";
+import Breadcrumbs from "../../components/Breadcrumbs.astro";
 import CardPost from "../../components/CardPost.astro";
 
 const slug = String(Astro.params.slug ?? "").trim();
@@ -94,6 +95,15 @@ const metadata = {
       </div>
     ) : (
       <>
+        <Breadcrumbs
+          items={[
+            { label: "Home", href: "/" },
+            { label: "Blog", href: "/blog/" },
+            { label: "Categoria", href: "/blog/" },
+            { label: categoryName, isCurrent: true },
+          ]}
+        />
+
         <div class="section-head">
           <h1>Categoria: {categoryName}</h1>
           <p class="section-lead">
