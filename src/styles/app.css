@@ -2593,6 +2593,16 @@ html[data-theme="light"] .scroll-top {
   gap: 2rem;
 }
 
+.contact-sidebar-widgets {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.contact-sidebar-widgets > * {
+  margin: 0;
+}
+
 .contact-divider {
   border-top: 1px solid var(--border);
   opacity: 0.4;
