@@ -2,8 +2,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { execSync } from "node:child_process";
 import sharp from "sharp";
+import dotenv from "dotenv";
 
 const ROOT = process.cwd();
+dotenv.config({ path: path.join(ROOT, ".env") });
+dotenv.config({ path: path.join(ROOT, ".env.local") });
 const CAL_PATH = path.join(ROOT, "calendar", "posts.json");
 const OUT_DIR = path.join(ROOT, "src", "content", "blog");
 const IMAGES_DIR = path.join(ROOT, "public", "images");
@@ -76,10 +79,57 @@ function fmEsc(s) {
   return String(s ?? "").replace(/"/g, '\\"');
 }
 
+function isGenericSlug(slug, publishDate) {
+  const normalized = String(slug ?? "").trim().toLowerCase();
+  const date = String(publishDate ?? "").trim();
+  if (!normalized) return true;
+  if (date && (normalized === `post-del-${date}` || normalized === `post-${date}`)) return true;
+  if (/^(bozza|draft|placeholder)(-|$)/.test(normalized)) return true;
+  return false;
+}
+
+function slugifyTitle(title, publishDate) {
+  const raw = String(title ?? "post").trim().toLowerCase();
+  const date = String(publishDate ?? "").trim() || romeDateISO();
+  const suffix = `-${date}`;
+  const maxLen = 80;
+  const baseMax = Math.max(1, maxLen - suffix.length);
+
+  let base = raw
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  if (!base) base = "post";
+  if (base.length > baseMax) base = base.slice(0, baseMax).replace(/-+$/g, "");
+
+  return `${base}${suffix}`;
+}
+
+function ensurePostSlug(post) {
+  const current = String(post.slug ?? "").trim();
+  if (isGenericSlug(current, post.publishDate)) {
+    const generated = slugifyTitle(post.title, post.publishDate);
+    if (generated !== current) {
+      console.log(`[auto-post] AUTO_SLUG: "${current || "(empty)"}" -> "${generated}"`);
+    }
+    post.slug = generated;
+  }
+  return post.slug;
+}
+
 function renderFrontmatter(post) {
   const tags = Array.isArray(post.tags) ? post.tags.slice(0, 3) : [];
+  const siteUrl = process.env.SITE_URL || "https://canapalandia.com";
+  const canonical = `${siteUrl.replace(/\/+$/, "")}/blog/${post.slug}/`;
   // Forza image path usando slug: /images/<slug>.webp
   const image = `/images/${fmEsc(post.slug)}.webp`;
+
+  const description = post.description && String(post.description).trim()
+    ? post.description
+    : `${post.title} • ${post.category || "Blog"} • ${tags.join(", ")}`;
+  const focusKeyword = post.focusKeyword || post.title;
 
   // Assicura publishDate come stringa ISO tra virgolette (es. "2026-01-17")
   const publishDateStr = `"${String(post.publishDate || "")}"`;
@@ -87,15 +137,55 @@ function renderFrontmatter(post) {
   return (
     `---\n` +
     `title: "${fmEsc(post.title)}"\n` +
-    `description: "${fmEsc(post.description)}"\n` +
+    `description: "${fmEsc(description)}"\n` +
     `slug: "${fmEsc(post.slug)}"\n` +
     `publishDate: ${publishDateStr}\n` +
     `author: "Canapalandia"\n` +
     `category: "${fmEsc(post.category || "Blog")}"\n` +
     `tags: ${JSON.stringify(tags)}\n` +
     `image: "${fmEsc(image)}"\n` +
+    `focusKeyword: "${fmEsc(focusKeyword)}"\n` +
+    `canonical: "${fmEsc(canonical)}"\n` +
+    `robots: "index,follow"\n` +
+    `ogTitle: "${fmEsc(post.title)}"\n` +
+    `ogDescription: "${fmEsc(description)}"\n` +
+    `ogImage: "${fmEsc(image)}"\n` +
+    `twitterCard: "summary_large_image"\n` +
+    `twitterTitle: "${fmEsc(post.title)}"\n` +
+    `twitterDescription: "${fmEsc(description)}"\n` +
+    `twitterImage: "${fmEsc(image)}"\n` +
     `---\n\n`
   );
+}
+
+function buildJsonLd(post) {
+  const tags = Array.isArray(post.tags) ? post.tags.slice(0, 3) : [];
+  const siteUrl = process.env.SITE_URL || "https://canapalandia.com";
+  const canonical = `${siteUrl.replace(/\/+$/, "")}/blog/${post.slug}/`;
+  const image = `/images/${fmEsc(post.slug)}.webp`;
+  const absoluteImageUrl = `${siteUrl.replace(/\/+$/, "")}${image}`;
+  const description = post.description && String(post.description).trim()
+    ? post.description
+    : `${post.title} • ${post.category || "Blog"} • ${tags.join(", ")}`;
+
+  const json = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: post.title,
+    description,
+    image: [absoluteImageUrl],
+    author: { "@type": "Organization", name: "Canapalandia", url: siteUrl },
+    datePublished: post.publishDate,
+    dateModified: post.publishDate,
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": canonical,
+    },
+    keywords: tags.join(", "),
+    publisher: { "@type": "Organization", name: "Canapalandia", url: siteUrl },
+  };
+
+  return `<script type="application/ld+json">${JSON.stringify(json)}</script>`;
 }
 
 const INSTRUCTIONS = `
@@ -176,7 +266,10 @@ Per leggere le migliori uscite della community, cerca l’**Archivio frasi**.
 
 async function generateBodyWithOpenAI(post) {
   const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error("OPENAI_API_KEY missing");
+  if (!apiKey) {
+    console.warn("[auto-post] OPENAI_API_KEY missing, fallback body.");
+    return "Bozza in attesa di generazione AI\n";
+  }
 
   const model = process.env.OPENAI_MODEL_DEFAULT || "gpt-5-mini";
   const maxOut = Number(process.env.OPENAI_MAX_OUTPUT_TOKENS || "7000");
@@ -342,8 +435,9 @@ function checkDateAlreadyUsed(targetDate) {
   const dueForDate = posts.filter(p => String(p.publishDate) === targetDate);
   
   for (const post of dueForDate) {
-    const outFileMdx = path.join(OUT_DIR, `${post.slug}.mdx`);
-    const outFileMd = path.join(OUT_DIR, `${post.slug}.md`);
+    const slug = ensurePostSlug(post);
+    const outFileMdx = path.join(OUT_DIR, `${slug}.mdx`);
+    const outFileMd = path.join(OUT_DIR, `${slug}.md`);
     
     if (fs.existsSync(outFileMdx) || fs.existsSync(outFileMd)) {
       return { used: true, slug: post.slug, file: fs.existsSync(outFileMdx) ? outFileMdx : outFileMd };
@@ -463,6 +557,8 @@ async function main() {
   for (const post of filtered.slice(0, 1)) {
     console.log(`[auto-post] Limiting to 1 post per run.`);
 
+    ensurePostSlug(post);
+
     // Controllo anti-duplicati: verifica slug esistente
     const slugCheck = checkSlugExists(post.slug);
     if (slugCheck.exists) {
@@ -527,8 +623,9 @@ async function main() {
 
 
     const frontmatter = renderFrontmatter(post);
+    const jsonLdBlock = buildJsonLd(post);
     const body = await generateBodyWithOpenAI(post);
-    const mdx = frontmatter + body + "\n";
+    const mdx = frontmatter + jsonLdBlock + "\n\n" + body + "\n";
 
     if (dryRun) {
       console.log(`\n[auto-post] DRY RUN would write: ${path.relative(ROOT, outFileMdx)}\n`);
