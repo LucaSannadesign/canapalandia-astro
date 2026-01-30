@@ -101,6 +101,11 @@ jobs:
           OPENAI_MODEL_DEFAULT: ${{ vars.OPENAI_MODEL_DEFAULT || 'gpt-5-mini' }}
           OPENAI_MAX_OUTPUT_TOKENS: ${{ vars.OPENAI_MAX_OUTPUT_TOKENS || '7000' }}
         run: |
+          if [ -z "${OPENAI_API_KEY}" ]; then
+            echo "::error::OPENAI_API_KEY secret is missing or empty."
+            echo "::error::Please configure it in GitHub Secrets."
+            exit 1
+          fi
           args=""
 
           if [ -n "${{ github.event.inputs.date }}" ]; then
@@ -121,6 +126,7 @@ jobs:
             echo "→ Allow test posts enabled"
           fi
 
+          echo "→ Flags: date='${{ github.event.inputs.date }}' force='${{ github.event.inputs.force }}' allow_test='${{ github.event.inputs.allow_test }}'"
           echo "→ Running: node scripts/auto-post.mjs $args"
           node scripts/auto-post.mjs $args
 

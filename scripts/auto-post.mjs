@@ -80,13 +80,30 @@ function fmEsc(s) {
 }
 
 const MAX_SLUG_LENGTH = 80;
+const IT_STOPWORDS = new Set([
+  "a", "ad", "al", "allo", "ai", "agli", "all", "alla", "alle",
+  "da", "dal", "dallo", "dai", "dagli", "dall", "dalla", "dalle",
+  "di", "del", "dello", "dei", "degli", "dell", "della", "delle",
+  "in", "nel", "nello", "nei", "negli", "nell", "nella", "nelle",
+  "su", "sul", "sullo", "sui", "sugli", "sull", "sulla", "sulle",
+  "per", "tra", "fra", "con", "e", "ed", "o", "od", "ma", "che",
+  "il", "lo", "la", "i", "gli", "le", "un", "uno", "una",
+]);
 
 function slugifyTitle(title) {
   const raw = String(title ?? "post").trim().toLowerCase();
-  let slug = raw
+  const normalized = raw
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+
+  const tokens = normalized
+    .split(/\s+/)
+    .filter(Boolean)
+    .filter(token => !IT_STOPWORDS.has(token));
+
+  let slug = tokens.join("-")
     .replace(/-+/g, "-")
     .replace(/^-+|-+$/g, "");
 
@@ -101,6 +118,18 @@ function buildSlugFromTitle(title, publishDate) {
   return `${base}-${date}`;
 }
 
+function isPlaceholderSlug(slug) {
+  const value = String(slug ?? "").trim();
+  return !value || /^post-del-\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+function resolvePostSlug(post) {
+  if (isPlaceholderSlug(post.slug)) {
+    return buildSlugFromTitle(post.title, post.publishDate);
+  }
+  return String(post.slug).trim();
+}
+
 function renderFrontmatter(post) {
   const tags = Array.isArray(post.tags) ? post.tags.slice(0, 3) : [];
   const siteUrl = process.env.SITE_URL || "https://canapalandia.com";
@@ -112,7 +141,6 @@ function renderFrontmatter(post) {
     ? post.description
     : `${post.title} • ${post.category || "Blog"} • ${tags.join(", ")}`;
   const focusKeyword = post.focusKeyword || post.title;
-  const jsonLd = buildJsonLdObject(post);
 
   // Assicura publishDate come stringa ISO tra virgolette (es. "2026-01-17")
   const publishDateStr = `"${String(post.publishDate || "")}"`;
@@ -137,12 +165,11 @@ function renderFrontmatter(post) {
     `twitterTitle: "${fmEsc(post.title)}"\n` +
     `twitterDescription: "${fmEsc(description)}"\n` +
     `twitterImage: "${fmEsc(image)}"\n` +
-    `jsonLd: "${fmEsc(JSON.stringify(jsonLd))}"\n` +
     `---\n\n`
   );
 }
 
-function buildJsonLdObject(post) {
+function buildJsonLdScript(post) {
   const tags = Array.isArray(post.tags) ? post.tags.slice(0, 3) : [];
   const siteUrl = process.env.SITE_URL || "https://canapalandia.com";
   const canonical = `${siteUrl.replace(/\/+$/, "")}/blog/${post.slug}/`;
@@ -180,7 +207,7 @@ function buildJsonLdObject(post) {
 
   const json = {
     "@context": "https://schema.org",
-    "@type": "BlogPosting",
+    "@type": "Article",
     headline: post.title,
     description,
     image: [absoluteImageUrl],
@@ -192,12 +219,13 @@ function buildJsonLdObject(post) {
       "@id": canonical,
     },
     keywords,
+    about: post.category || "Blog",
     publisher: { "@type": "Organization", name: "Canapalandia", url: siteUrl },
     inLanguage: "it-IT",
     breadcrumb,
   };
 
-  return json;
+  return `<script type="application/ld+json">${JSON.stringify(json)}</script>`;
 }
 
 const INSTRUCTIONS = `
@@ -453,7 +481,7 @@ function checkDateAlreadyUsed(targetDate) {
   const dueForDate = posts.filter(p => String(p.publishDate) === targetDate);
   
   for (const post of dueForDate) {
-    const slug = buildSlugFromTitle(post.title, post.publishDate);
+    const slug = resolvePostSlug(post);
     const outFileMdx = path.join(OUT_DIR, `${slug}.mdx`);
     const outFileMd = path.join(OUT_DIR, `${slug}.md`);
     
@@ -496,12 +524,6 @@ function checkSlugExists(slug) {
   return { exists: false };
 }
 
-function isScheduleDay(dateStr) {
-  const date = new Date(`${dateStr}T12:00:00+01:00`);
-  const day = date.getUTCDay();
-  return day === 2 || day === 5; // Tuesday or Friday
-}
-
 async function main() {
   const dryRun = process.argv.includes("--dry-run");
   const force = process.argv.includes("--force");
@@ -523,6 +545,20 @@ async function main() {
   console.log(`[auto-post] Window status: ${windowStatus}`);
   console.log("[auto-post] ========================================");
 
+  ensureDir(OUT_DIR);
+
+  const posts = loadCalendar();
+  const due = posts.filter(p => String(p.publishDate) === targetDate);
+
+  if (!due.length) {
+    console.error(`[auto-post] ERROR: No slot in calendar/posts.json for ${targetDate}.`);
+    console.error("[auto-post] ACTION: aggiungi entry in calendar/posts.json");
+    process.exit(1);
+  }
+
+  const slotSlug = resolvePostSlug(due[0]);
+  console.log(`[auto-post] SLOT_FOUND: date=${targetDate} title="${due[0].title}" slug="${slotSlug}"`);
+
   if (!force && !inRomeWindow()) {
     console.log("[auto-post] SKIP_TIME_WINDOW: Outside Rome time window (10:30–11:00). Skipping.");
     console.log(`[auto-post] Current Rome time: ${new Date().toLocaleString("it-IT", { timeZone: "Europe/Rome" })}`);
@@ -535,17 +571,6 @@ async function main() {
   if (force) {
     console.log(`[auto-post] ✓ Force mode enabled (bypassing time window check)`);
     console.log(`[auto-post] Current Rome time: ${new Date().toLocaleString("it-IT", { timeZone: "Europe/Rome" })}`);
-  }
-
-  ensureDir(OUT_DIR);
-
-  const posts = loadCalendar();
-  const due = posts.filter(p => String(p.publishDate) === targetDate);
-
-  if (!due.length) {
-    console.error(`[auto-post] ERROR: No slot in calendar/posts.json for ${targetDate}.`);
-    console.error("[auto-post] ACTION: aggiungi entry in calendar/posts.json");
-    process.exit(1);
   }
 
   return await handleSelectedPosts(due, {
@@ -591,7 +616,11 @@ async function handleSelectedPosts(posts, { dryRun, allowTest, targetDate } = {}
   for (const post of filtered.slice(0, 1)) {
     console.log(`[auto-post] Limiting to 1 post per run.`);
 
-    post.slug = buildSlugFromTitle(post.title, post.publishDate);
+    const resolvedSlug = resolvePostSlug(post);
+    if (resolvedSlug !== post.slug) {
+      console.log(`[auto-post] AUTO_SLUG: "${post.slug || "(empty)"}" -> "${resolvedSlug}"`);
+    }
+    post.slug = resolvedSlug;
     console.log(`[auto-post] Processing: title="${post.title}" slug="${post.slug}" date="${post.publishDate}"`);
 
     // Controllo anti-duplicati: verifica slug esistente
@@ -653,13 +682,19 @@ async function handleSelectedPosts(posts, { dryRun, allowTest, targetDate } = {}
       });
     } catch (e) {
       console.error("[auto-post] ERROR: Sitemap guard failed. Aborting post generation.");
+      console.error(`[auto-post] Sitemap URL: ${sitemapUrl}`);
+      console.error(`[auto-post] Slug: ${post.slug}`);
+      if (e?.message) {
+        console.error(`[auto-post] Reason: ${e.message}`);
+      }
       process.exit(1);
     }
 
 
     const frontmatter = renderFrontmatter(post);
+    const jsonLdScript = buildJsonLdScript(post);
     const body = await generateBodyWithOpenAI(post, { dryRun });
-    const mdx = frontmatter + body + "\n";
+    const mdx = frontmatter + jsonLdScript + "\n\n" + body + "\n";
 
     if (dryRun) {
       console.log(`\n[auto-post] DRY RUN would write: ${path.relative(ROOT, outFileMdx)}\n`);
