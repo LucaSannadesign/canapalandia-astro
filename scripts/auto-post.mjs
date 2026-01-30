@@ -6,7 +6,7 @@ import dotenv from "dotenv";
 
 const ROOT = process.cwd();
 dotenv.config({ path: path.join(ROOT, ".env") });
-dotenv.config({ path: path.join(ROOT, ".env.local") });
+dotenv.config({ path: path.join(ROOT, ".env.local"), override: true });
 const CAL_PATH = path.join(ROOT, "calendar", "posts.json");
 const OUT_DIR = path.join(ROOT, "src", "content", "blog");
 const IMAGES_DIR = path.join(ROOT, "public", "images");
@@ -79,44 +79,26 @@ function fmEsc(s) {
   return String(s ?? "").replace(/"/g, '\\"');
 }
 
-function isGenericSlug(slug, publishDate) {
-  const normalized = String(slug ?? "").trim().toLowerCase();
-  const date = String(publishDate ?? "").trim();
-  if (!normalized) return true;
-  if (date && (normalized === `post-del-${date}` || normalized === `post-${date}`)) return true;
-  if (/^(bozza|draft|placeholder)(-|$)/.test(normalized)) return true;
-  return false;
-}
+const MAX_SLUG_LENGTH = 80;
 
-function slugifyTitle(title, publishDate) {
+function slugifyTitle(title) {
   const raw = String(title ?? "post").trim().toLowerCase();
-  const date = String(publishDate ?? "").trim() || romeDateISO();
-  const suffix = `-${date}`;
-  const maxLen = 80;
-  const baseMax = Math.max(1, maxLen - suffix.length);
-
-  let base = raw
+  let slug = raw
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, "-")
+    .replace(/-+/g, "-")
     .replace(/^-+|-+$/g, "");
 
-  if (!base) base = "post";
-  if (base.length > baseMax) base = base.slice(0, baseMax).replace(/-+$/g, "");
-
-  return `${base}${suffix}`;
+  if (!slug) slug = "post";
+  if (slug.length > MAX_SLUG_LENGTH) slug = slug.slice(0, MAX_SLUG_LENGTH).replace(/-+$/g, "");
+  return slug || "post";
 }
 
-function ensurePostSlug(post) {
-  const current = String(post.slug ?? "").trim();
-  if (isGenericSlug(current, post.publishDate)) {
-    const generated = slugifyTitle(post.title, post.publishDate);
-    if (generated !== current) {
-      console.log(`[auto-post] AUTO_SLUG: "${current || "(empty)"}" -> "${generated}"`);
-    }
-    post.slug = generated;
-  }
-  return post.slug;
+function buildSlugFromTitle(title, publishDate) {
+  const base = slugifyTitle(title);
+  const date = String(publishDate ?? "").trim() || romeDateISO();
+  return `${base}-${date}`;
 }
 
 function renderFrontmatter(post) {
@@ -130,6 +112,7 @@ function renderFrontmatter(post) {
     ? post.description
     : `${post.title} • ${post.category || "Blog"} • ${tags.join(", ")}`;
   const focusKeyword = post.focusKeyword || post.title;
+  const jsonLd = buildJsonLdObject(post);
 
   // Assicura publishDate come stringa ISO tra virgolette (es. "2026-01-17")
   const publishDateStr = `"${String(post.publishDate || "")}"`;
@@ -154,11 +137,12 @@ function renderFrontmatter(post) {
     `twitterTitle: "${fmEsc(post.title)}"\n` +
     `twitterDescription: "${fmEsc(description)}"\n` +
     `twitterImage: "${fmEsc(image)}"\n` +
+    `jsonLd: "${fmEsc(JSON.stringify(jsonLd))}"\n` +
     `---\n\n`
   );
 }
 
-function buildJsonLd(post) {
+function buildJsonLdObject(post) {
   const tags = Array.isArray(post.tags) ? post.tags.slice(0, 3) : [];
   const siteUrl = process.env.SITE_URL || "https://canapalandia.com";
   const canonical = `${siteUrl.replace(/\/+$/, "")}/blog/${post.slug}/`;
@@ -167,6 +151,32 @@ function buildJsonLd(post) {
   const description = post.description && String(post.description).trim()
     ? post.description
     : `${post.title} • ${post.category || "Blog"} • ${tags.join(", ")}`;
+  const focusKeyword = post.focusKeyword || post.title;
+  const keywords = [...tags, focusKeyword].filter(Boolean).join(", ");
+
+  const breadcrumb = {
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: siteUrl,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Blog",
+        item: `${siteUrl.replace(/\/+$/, "")}/blog/`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: post.title,
+        item: canonical,
+      },
+    ],
+  };
 
   const json = {
     "@context": "https://schema.org",
@@ -181,11 +191,13 @@ function buildJsonLd(post) {
       "@type": "WebPage",
       "@id": canonical,
     },
-    keywords: tags.join(", "),
+    keywords,
     publisher: { "@type": "Organization", name: "Canapalandia", url: siteUrl },
+    inLanguage: "it-IT",
+    breadcrumb,
   };
 
-  return `<script type="application/ld+json">${JSON.stringify(json)}</script>`;
+  return json;
 }
 
 const INSTRUCTIONS = `
@@ -264,9 +276,12 @@ Per leggere le migliori uscite della community, cerca l’**Archivio frasi**.
 `.trim() + "\n";
 }
 
-async function generateBodyWithOpenAI(post) {
+async function generateBodyWithOpenAI(post, { dryRun } = {}) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
+    if (!dryRun) {
+      throw new Error("OPENAI_API_KEY missing. Set it in .env/.env.local or GitHub Actions secrets.");
+    }
     console.warn("[auto-post] OPENAI_API_KEY missing, fallback body.");
     return "Bozza in attesa di generazione AI\n";
   }
@@ -333,11 +348,14 @@ function extractBodyExcerpt(body) {
 }
 
 // Genera cover image usando OpenAI Images API
-async function generateCoverImage(post, body) {
+async function generateCoverImage(post, body, { dryRun } = {}) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    console.warn("[auto-post] OPENAI_API_KEY missing, skipping cover generation");
-    return;
+    if (dryRun) {
+      console.warn("[auto-post] OPENAI_API_KEY missing, skipping cover generation (dry-run)");
+      return;
+    }
+    throw new Error("OPENAI_API_KEY missing. Cannot generate cover image.");
   }
 
   ensureDir(IMAGES_DIR);
@@ -435,12 +453,12 @@ function checkDateAlreadyUsed(targetDate) {
   const dueForDate = posts.filter(p => String(p.publishDate) === targetDate);
   
   for (const post of dueForDate) {
-    const slug = ensurePostSlug(post);
+    const slug = buildSlugFromTitle(post.title, post.publishDate);
     const outFileMdx = path.join(OUT_DIR, `${slug}.mdx`);
     const outFileMd = path.join(OUT_DIR, `${slug}.md`);
     
     if (fs.existsSync(outFileMdx) || fs.existsSync(outFileMd)) {
-      return { used: true, slug: post.slug, file: fs.existsSync(outFileMdx) ? outFileMdx : outFileMd };
+      return { used: true, slug, file: fs.existsSync(outFileMdx) ? outFileMdx : outFileMd };
     }
   }
   
@@ -476,6 +494,12 @@ function checkSlugExists(slug) {
   }
   
   return { exists: false };
+}
+
+function isScheduleDay(dateStr) {
+  const date = new Date(`${dateStr}T12:00:00+01:00`);
+  const day = date.getUTCDay();
+  return day === 2 || day === 5; // Tuesday or Friday
 }
 
 async function main() {
@@ -515,27 +539,37 @@ async function main() {
 
   ensureDir(OUT_DIR);
 
-  // Idempotenza: verifica se esiste già un post per questa data
-  const dateCheck = checkDateAlreadyUsed(targetDate);
+  const posts = loadCalendar();
+  const due = posts.filter(p => String(p.publishDate) === targetDate);
+
+  if (!due.length) {
+    console.error(`[auto-post] ERROR: No slot in calendar/posts.json for ${targetDate}.`);
+    console.error("[auto-post] ACTION: aggiungi entry in calendar/posts.json");
+    process.exit(1);
+  }
+
+  return await handleSelectedPosts(due, {
+    dryRun,
+    allowTest,
+    targetDate,
+  });
+}
+
+async function handleSelectedPosts(posts, { dryRun, allowTest, targetDate } = {}) {
+  const selectedDate = posts[0]?.publishDate || targetDate || romeDateISO();
+  // Idempotenza: verifica se esiste già un post per la data selezionata
+  const dateCheck = checkDateAlreadyUsed(selectedDate);
   if (dateCheck.used) {
-    console.log(`[auto-post] SKIP_DUPLICATE: Already generated post for ${targetDate}`);
+    console.log(`[auto-post] SKIP_DUPLICATE: Already generated post for ${selectedDate}`);
     console.log(`[auto-post] Existing file: ${path.relative(ROOT, dateCheck.file)}`);
     console.log(`[auto-post] Slug: ${dateCheck.slug}`);
     process.exit(0);
   }
 
-  const posts = loadCalendar();
-  const due = posts.filter(p => String(p.publishDate) === targetDate);
-
-  if (!due.length) {
-    console.log(`[auto-post] SKIP_NO_SLOT: No posts due for ${targetDate}.`);
-    process.exit(0);
-  }
-
   // Filtra post di test (a meno di --allow-test)
-  const filtered = allowTest 
-    ? due 
-    : due.filter(p => {
+  const filtered = allowTest
+    ? posts
+    : posts.filter(p => {
         if (isTestPost(p)) {
           console.log(`[auto-post] SKIP (test/draft): ${p.slug} (category: ${p.category}, tags: ${Array.isArray(p.tags) ? p.tags.join(", ") : "none"})`);
           return false;
@@ -543,21 +577,22 @@ async function main() {
         return true;
       });
 
-  if (!allowTest && filtered.length < due.length) {
-    const testCount = due.length - filtered.length;
+  if (!allowTest && filtered.length < posts.length) {
+    const testCount = posts.length - filtered.length;
     console.error(`[auto-post] ERROR: ${testCount} test/draft posts detected and allow_test=false. Failing pipeline.`);
     process.exit(1);
   }
 
   if (!filtered.length) {
-    console.log(`[auto-post] No non-test posts due for ${targetDate} (${due.length - filtered.length} test posts filtered).`);
+    console.log(`[auto-post] No non-test posts due for ${selectedDate} (${posts.length - filtered.length} test posts filtered).`);
     return;
   }
 
   for (const post of filtered.slice(0, 1)) {
     console.log(`[auto-post] Limiting to 1 post per run.`);
 
-    ensurePostSlug(post);
+    post.slug = buildSlugFromTitle(post.title, post.publishDate);
+    console.log(`[auto-post] Processing: title="${post.title}" slug="${post.slug}" date="${post.publishDate}"`);
 
     // Controllo anti-duplicati: verifica slug esistente
     const slugCheck = checkSlugExists(post.slug);
@@ -623,9 +658,8 @@ async function main() {
 
 
     const frontmatter = renderFrontmatter(post);
-    const jsonLdBlock = buildJsonLd(post);
-    const body = await generateBodyWithOpenAI(post);
-    const mdx = frontmatter + jsonLdBlock + "\n\n" + body + "\n";
+    const body = await generateBodyWithOpenAI(post, { dryRun });
+    const mdx = frontmatter + body + "\n";
 
     if (dryRun) {
       console.log(`\n[auto-post] DRY RUN would write: ${path.relative(ROOT, outFileMdx)}\n`);
@@ -638,7 +672,7 @@ async function main() {
       console.log(`[auto-post] OK_GENERATED slug=${post.slug}`);
       
       // Genera cover image dopo aver scritto il body (per avere estratto)
-      await generateCoverImage(post, body);
+      await generateCoverImage(post, body, { dryRun });
     }
   }
 }
