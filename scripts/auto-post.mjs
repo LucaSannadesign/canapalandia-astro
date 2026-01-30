@@ -307,11 +307,7 @@ Per leggere le migliori uscite della community, cerca l’**Archivio frasi**.
 async function generateBodyWithOpenAI(post, { dryRun } = {}) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    if (!dryRun) {
-      throw new Error("OPENAI_API_KEY missing. Set it in .env/.env.local or GitHub Actions secrets.");
-    }
-    console.warn("[auto-post] OPENAI_API_KEY missing, fallback body.");
-    return "Bozza in attesa di generazione AI\n";
+    throw new Error("OPENAI_API_KEY missing. Set it in .env/.env.local or GitHub Actions secrets.");
   }
 
   const model = process.env.OPENAI_MODEL_DEFAULT || "gpt-5-mini";

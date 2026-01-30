@@ -1,4 +1,4 @@
-[
+†††[
   {
     "publishDate": "2026-01-23",
     "title": "CBD nel 2026: come leggere COA, etichette e claim senza farsi fregare",
@@ -38,20 +38,6 @@
       "italia"
     ],
     "focusKeyword": "cannabis italia 2026",
-    "intent": "informazionale",
-    "status": "ready"
-  },
-  {
-    "publishDate": "2026-01-30",
-    "title": "Legge cannabis 2026: cosa cambia per negozi, produttori e consumatori",
-    "slug": "legge-cannabis-2026-cosa-cambia-negozi-produttori-consumatori-2026-01-30",
-    "category": "Normativa",
-    "tags": [
-      "cannabis-legale",
-      "normativa",
-      "cannabis-light"
-    ],
-    "focusKeyword": "legge cannabis 2026",
     "intent": "informazionale",
     "status": "ready"
   }

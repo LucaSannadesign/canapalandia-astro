@@ -95,40 +95,25 @@ jobs:
           echo "branch=auto-post/${{ github.run_id }}" >> $GITHUB_OUTPUT
           echo "iso=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_OUTPUT
 
-      - name: Run auto-post script
+      - name: Run agent auto-post script
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL_DEFAULT: ${{ vars.OPENAI_MODEL_DEFAULT || 'gpt-5-mini' }}
           OPENAI_MAX_OUTPUT_TOKENS: ${{ vars.OPENAI_MAX_OUTPUT_TOKENS || '7000' }}
+          SITE_URL: ${{ vars.SITE_URL || 'https://canapalandia.com' }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           if [ -z "${OPENAI_API_KEY}" ]; then
             echo "::error::OPENAI_API_KEY secret is missing or empty."
             echo "::error::Please configure it in GitHub Secrets."
             exit 1
           fi
-          args=""
-
-          if [ -n "${{ github.event.inputs.date }}" ]; then
-            args="$args --date ${{ github.event.inputs.date }}"
-            echo "→ Using custom date: ${{ github.event.inputs.date }}"
+          if [ -z "${SITE_URL}" ]; then
+            echo "::error::SITE_URL env is missing or empty."
+            exit 1
           fi
-
-          if [ "${{ github.event.inputs.force }}" == "true" ]; then
-            args="$args --force"
-            echo "→ Force mode enabled"
-          else
-            echo "→ Normal mode: will check Rome time window (10:30-11:00)"
-            echo "→ To bypass time window, set 'force: true'"
-          fi
-
-          if [ "${{ github.event.inputs.allow_test }}" == "true" ]; then
-            args="$args --allow-test"
-            echo "→ Allow test posts enabled"
-          fi
-
-          echo "→ Flags: date='${{ github.event.inputs.date }}' force='${{ github.event.inputs.force }}' allow_test='${{ github.event.inputs.allow_test }}'"
-          echo "→ Running: node scripts/auto-post.mjs $args"
-          node scripts/auto-post.mjs $args
+          echo "→ Running: node scripts/agent-auto-post.mjs"
+          node scripts/agent-auto-post.mjs
 
       - name: Show post-meta.json (if generated)
         if: always()
@@ -139,13 +124,6 @@ jobs:
           else
             echo "ℹ️  No post-meta.json generated (script skipped or no post created)"
           fi
-
-      - name: Sitemap guard (online)
-        env:
-          SITE_URL: https://canapalandia.com
-          SITEMAP_URL: https://canapalandia.com/sitemap-index.xml
-          POST_META_PATH: ./tmp/post-meta.json
-        run: node scripts/sitemap-guard.mjs
 
       - name: Check if changes
         id: changes
@@ -163,40 +141,7 @@ jobs:
         run: |
           echo "Skipping PR creation: no changes detected"
 
-      - name: Create Pull Request (DRAFT)
+      - name: Show git status
         if: steps.changes.outputs.has_changes == 'true'
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.GH_PAT }}
-          branch: ${{ steps.meta.outputs.branch }}
-          base: main
-          draft: true
-          title: "Auto-post: Generated posts for ${{ steps.meta.outputs.today }}"
-          body: |
-            Auto-generated post via GitHub Actions.
-
-            **⚠️ REVIEW REQUIRED BEFORE MERGE**
-
-            Generated on: ${{ steps.meta.outputs.iso }}
-
-            This PR is created as DRAFT to ensure review before merging to main.
-          commit-message: "chore: auto-generate posts"
-          delete-branch: true
-
-      - name: Enforce PR is DRAFT
-        if: steps.changes.outputs.has_changes == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
-          PR_URL="${{ steps.create-pr.outputs.pull-request-url }}"
-          if [ -z "$PR_URL" ]; then
-            echo "::error::No PR URL found"
-            exit 1
-          fi
-          # Check if draft
-          IS_DRAFT=$(gh pr view "$PR_URL" --json isDraft -q .isDraft)
-          if [ "$IS_DRAFT" != "true" ]; then
-            echo "::error::PR must be DRAFT but isDraft=$IS_DRAFT"
-            exit 1
-          fi
-          echo "✓ PR is correctly set as DRAFT"
+          git status --short

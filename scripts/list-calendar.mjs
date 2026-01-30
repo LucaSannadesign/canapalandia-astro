@@ -7,60 +7,60 @@ dotenv.config({ path: path.join(ROOT, ".env") });
 dotenv.config({ path: path.join(ROOT, ".env.local"), override: true });
 
 const CAL_PATH = path.join(ROOT, "calendar", "posts.json");
-const OUT_DIR = path.join(ROOT, "src", "content", "blog");
 
-function normalizeSlugBase(title, maxLen = 80) {
+const IT_STOPWORDS = new Set([
+  "a", "ad", "al", "allo", "ai", "agli", "all", "alla", "alle",
+  "da", "dal", "dallo", "dai", "dagli", "dall", "dalla", "dalle",
+  "di", "del", "dello", "dei", "degli", "dell", "della", "delle",
+  "in", "nel", "nello", "nei", "negli", "nell", "nella", "nelle",
+  "su", "sul", "sullo", "sui", "sugli", "sull", "sulla", "sulle",
+  "per", "tra", "fra", "con", "e", "ed", "o", "od", "ma", "che",
+  "il", "lo", "la", "i", "gli", "le", "un", "uno", "una",
+]);
+
+function arg(name) {
+  const idx = process.argv.indexOf(name);
+  return idx >= 0 ? process.argv[idx + 1] : null;
+}
+
+function slugifyTitle(title) {
   const raw = String(title ?? "post").trim().toLowerCase();
-  let base = raw
+  const normalized = raw
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+
+  const tokens = normalized
+    .split(/\s+/)
+    .filter(Boolean)
+    .filter(token => !IT_STOPWORDS.has(token));
+
+  let slug = tokens.join("-")
+    .replace(/-+/g, "-")
     .replace(/^-+|-+$/g, "");
 
-  if (!base) base = "post";
-  if (base.length > maxLen) base = base.slice(0, maxLen).replace(/-+$/g, "");
-  return base || "post";
-}
-
-function isProvisionalTitle(title) {
-  return /titolo\s+provvisorio|provvisorio|bozza|draft/i.test(String(title ?? ""));
-}
-
-function appendSlugSuffix(base, suffix, maxLen = 80) {
-  const allowed = Math.max(1, maxLen - suffix.length);
-  const trimmed = base.length > allowed ? base.slice(0, allowed).replace(/-+$/g, "") : base;
-  return `${trimmed}${suffix}`;
+  if (!slug) slug = "post";
+  if (slug.length > 80) slug = slug.slice(0, 80).replace(/-+$/g, "");
+  return slug || "post";
 }
 
 function buildSlugFromTitle(title, publishDate) {
-  const base = normalizeSlugBase(title, 80);
+  const base = slugifyTitle(title);
   const date = String(publishDate ?? "").trim();
-  if (isProvisionalTitle(title) && date) {
-    return appendSlugSuffix(base, `-${date}`);
-  }
-  return base;
+  return date ? `${base}-${date}` : base;
 }
 
-function checkSlugExists(slug) {
-  const outFileMdx = path.join(OUT_DIR, `${slug}.mdx`);
-  const outFileMd = path.join(OUT_DIR, `${slug}.md`);
-  return fs.existsSync(outFileMdx) || fs.existsSync(outFileMd);
+function isPlaceholderSlug(slug) {
+  const value = String(slug ?? "").trim();
+  return !value || /^post-del-\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
-function resolveUniqueSlug(slug, publishDate) {
-  const date = String(publishDate ?? "").trim();
-  if (!checkSlugExists(slug)) return slug;
-  if (date) {
-    const withDate = appendSlugSuffix(slug, `-${date}`);
-    if (!checkSlugExists(withDate)) return withDate;
-    let counter = 2;
-    while (counter < 100) {
-      const numbered = appendSlugSuffix(withDate, `-${counter}`);
-      if (!checkSlugExists(numbered)) return numbered;
-      counter += 1;
-    }
+function resolvePostSlug(post) {
+  if (isPlaceholderSlug(post.slug)) {
+    return buildSlugFromTitle(post.title, post.publishDate);
   }
-  return slug;
+  return String(post.slug).trim();
 }
 
 if (!fs.existsSync(CAL_PATH)) {
@@ -74,15 +74,16 @@ if (!Array.isArray(posts)) {
   process.exit(1);
 }
 
+const filterDate = arg("--date");
 const sorted = posts
   .filter(p => p && p.publishDate)
+  .filter(p => !filterDate || String(p.publishDate) === filterDate)
   .slice()
   .sort((a, b) => String(a.publishDate).localeCompare(String(b.publishDate)));
 
 console.log("date\ttitle\tslug\tstatus");
 for (const post of sorted) {
-  const baseSlug = buildSlugFromTitle(post.title, post.publishDate);
-  const slug = resolveUniqueSlug(baseSlug, post.publishDate);
+  const slug = resolvePostSlug(post);
   const status = post.status || "";
   console.log(`${post.publishDate}\t${post.title}\t${slug}\t${status}`);
 }
