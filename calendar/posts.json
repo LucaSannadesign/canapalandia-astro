@@ -4,41 +4,32 @@
     "title": "CBD nel 2026: come leggere COA, etichette e claim senza farsi fregare",
     "slug": "cbd-2026-leggere-coa-etichette-claim",
     "category": "Attualità",
-    "tags": [
-      "cbd",
-      "qualità",
-      "sicurezza"
-    ],
+    "tags": ["cbd", "qualità", "sicurezza"],
     "focusKeyword": "certificati COA CBD",
     "intent": "informazionale",
-    "status": "ready"
+    "status": "ready",
+    "notes": "Guida generale di riferimento su COA ed etichette."
   },
   {
     "publishDate": "2026-01-27",
     "title": "CBD e controlli: come orientarsi tra norme, etichette e responsabilità del consumatore",
     "slug": "cbd-controlli-norme-etichette-responsabilita-consumatore",
     "category": "Normativa",
-    "tags": [
-      "cbd",
-      "normativa",
-      "controlli"
-    ],
+    "tags": ["cbd", "normativa", "controlli"],
     "focusKeyword": "controlli CBD Italia",
     "intent": "informazionale",
-    "status": "ready"
+    "status": "ready",
+    "notes": "Approccio normativo lato consumatore. Non tratta i claim."
   },
   {
-    "publishDate": "2026-01-28",
-    "title": "TITOLO PROVVISORIO (da rifinire)",
-    "slug": "post-del-2026-01-28",
-    "category": "Attualità",
-    "tags": [
-      "cannabis",
-      "normativa",
-      "italia"
-    ],
-    "focusKeyword": "cannabis italia 2026",
+    "publishDate": "2026-01-30",
+    "title": "Claim illegali sul CBD: esempi reali, sanzioni e come evitarli",
+    "slug": "claim-illegali-cbd-esempi-sanzioni",
+    "category": "Normativa",
+    "tags": ["cbd", "claim", "sanzioni"],
+    "focusKeyword": "claim illegali CBD",
     "intent": "informazionale",
-    "status": "ready"
+    "status": "ready",
+    "notes": "Contenuto verticale sui claim. Search intent distinto da COA e controlli."
   }
 ]
