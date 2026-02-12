@@ -14,13 +14,39 @@ export default defineConfig({
   output: "server",
 
   // Alias stabile per import tipo: "@/layouts/SiteLayout.astro"
-  vite: {
-    resolve: {
-      alias: {
-        "@": fileURLToPath(new URL("./src", import.meta.url)),
-      },
+vite: {
+  resolve: {
+    alias: {
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
+
+  server: {
+    watch: {
+      ignored: [
+        "**/node_modules/**",
+        "**/.git/**",
+        "**/dist/**",
+        "**/.astro/**",
+        "**/.vercel/**",
+        "**/coverage/**"
+      ],
+      usePolling: false,
+    },
+  },
+
+  optimizeDeps: {
+    exclude: ["fs", "path"],
+  },
+
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: undefined
+      }
+    }
+  }
+},
 
   // Vercel adapter (server output)
   adapter: vercel({

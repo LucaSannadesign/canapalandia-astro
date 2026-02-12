@@ -1,8 +1,8 @@
 ---
 import "../styles/app.css";
+import enhancementsScript from "../scripts/enhancements.js?raw";
 import AdSlot from "../components/AdSlot.astro";
 import Newsletter from "../components/widgets/Newsletter.astro";
-import CookieBanner from "../components/CookieBanner.astro";
 import GATag from "../components/GATag.astro";
 import { ADS_SLOT_TOP, ADS_EXCLUDED_ROUTES, ADSENSE_CLIENT } from "../lib/consts";
 
@@ -175,6 +175,9 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script is:inline>
+      document.documentElement.classList.add("js");
+    </script>
     <link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/favicons/favicon-192.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/favicons/apple-touch-icon.png" />
@@ -193,152 +196,8 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
       rel="stylesheet"
     />
 
-    <!-- Google Consent Mode v2 - DEVE essere PRIMA di AdSense/GA4 -->
-    <!-- Permette "Limited ads" quando consenso è denied -->
-    <!-- Configura in AdSense UI: Account > Privacy & messaging > EU user consent > Enable "Non-personalized ads" -->
-    <script is:inline>
-      (() => {
-        // Inizializza gtag/Consent Mode con default "denied"
-        window.dataLayer = window.dataLayer || [];
-        window.gtag = window.gtag || function(...args) {
-          window.dataLayer.push(args);
-        };
-        window.gtag("js", new Date());
-        
-        // Imposta default "denied" per permettere "Limited ads" senza consenso
-        window.gtag("consent", "default", {
-          ad_storage: "denied",
-          ad_user_data: "denied",
-          ad_personalization: "denied",
-          analytics_storage: "denied",
-          wait_for_update: 500, // Attendi aggiornamenti consenso fino a 500ms
-        });
-
-        // Funzione globale per aggiornare consenso (chiamata da CookieBanner)
-        window.canapalandiaUpdateConsent = function(granted) {
-          const status = granted ? "granted" : "denied";
-          window.gtag("consent", "update", {
-            ad_storage: status,
-            ad_user_data: status,
-            ad_personalization: status,
-            analytics_storage: status,
-          });
-        };
-
-        // Leggi consenso salvato e aggiorna Consent Mode se presente
-        try {
-          const saved = localStorage.getItem("canapalandia_cookie_consent");
-          if (saved) {
-            const consent = JSON.parse(saved);
-            const granted = consent.analytics === true || consent.ads === true;
-            if (granted) {
-              window.gtag("consent", "update", {
-                ad_storage: "granted",
-                ad_user_data: "granted",
-                ad_personalization: "granted",
-                analytics_storage: "granted",
-              });
-            }
-          }
-        } catch {}
-      })();
-    </script>
-
     <!-- Google Analytics 4 -->
     <GATag />
-
-    <!-- CMP Script Placeholder -->
-    <!-- CMP script goes here -->
-    <!-- <script src="https://cmp.example.com/cmp.js"></script> -->
-
-    <!-- AdSense Consent Gating: funzione globale per CMP TCF -->
-    <script is:inline>
-      (() => {
-        // Cache per risultato TCF (evita polling continuo)
-        let tcfConsentCache = null;
-        let tcfCacheTimestamp = 0;
-        const TCF_CACHE_TTL = 5000; // 5 secondi
-
-        // Funzione globale per verificare consenso ads (CMP-ready)
-        // Supporta TCF 2.x e stato interno
-        window.canapalandiaHasAdConsent = function() {
-          // 1) Verifica CMP TCF (Google-certified)
-          if (typeof window.__tcfapi !== "undefined") {
-            const now = Date.now();
-            // Usa cache se valida
-            if (tcfConsentCache !== null && (now - tcfCacheTimestamp) < TCF_CACHE_TTL) {
-              return tcfConsentCache;
-            }
-
-            // Interroga TCF (asincrono, ma ritorniamo risultato cached o false)
-            try {
-              window.__tcfapi("getTCData", 2, (tcData, success) => {
-                if (success && tcData) {
-                  // Purpose 1 = Store and/or access information on a device (consenso base ads)
-                  // Verifica Purpose 1
-                  let hasConsent = false;
-                  if (tcData.purpose && tcData.purpose.consents) {
-                    hasConsent = tcData.purpose.consents[1] === true;
-                  }
-                  tcfConsentCache = hasConsent;
-                  tcfCacheTimestamp = Date.now();
-                  
-                  // Se consenso cambia, emetti evento per ricaricare AdSense
-                  if (hasConsent && !window.__adsenseLoaded) {
-                    window.dispatchEvent(new CustomEvent("canapalandia:ad-consent-granted"));
-                  }
-                } else {
-                  tcfConsentCache = false;
-                  tcfCacheTimestamp = Date.now();
-                }
-              });
-            } catch (err) {
-              console.warn("[CMP] TCF API error:", err);
-              tcfConsentCache = false;
-              tcfCacheTimestamp = Date.now();
-            }
-
-            // Se abbiamo cache, ritorna quello, altrimenti false (conservativo)
-            return tcfConsentCache !== null ? tcfConsentCache : false;
-          }
-
-          // 2) Fallback: stato interno (localStorage) - solo se TCF non esiste
-          try {
-            const STORAGE_KEY = "canapalandia_cookie_consent";
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved) {
-              const consent = JSON.parse(saved);
-              // Richiede consenso esplicito per ads
-              return consent.ads === true || consent.analytics === true;
-            }
-          } catch (err) {
-            console.warn("[CMP] Storage error:", err);
-          }
-
-          // 3) Nessun consenso: ritorna false (NON permissivo)
-          return false;
-        };
-
-        // Placeholder per aprire CMP
-        window.canapalandiaOpenConsent = function() {
-          // Se CMP TCF è disponibile, apri modal
-          if (typeof window.__tcfapi !== "undefined") {
-            try {
-              window.__tcfapi("showConsentModal", 2, () => {
-                // Invalida cache quando si apre modal
-                tcfConsentCache = null;
-              });
-            } catch (err) {
-              console.warn("[CMP] Error opening consent modal:", err);
-            }
-          } else {
-            // Fallback: apri cookie banner se disponibile
-            const event = new CustomEvent("canapalandia:open-cookie-banner");
-            window.dispatchEvent(event);
-          }
-        };
-      })();
-    </script>
 
     <!-- AdSense: Initializer globale robusto e minimale -->
     <script is:inline define:vars={{ clientId: ADSENSE_CLIENT }}>
@@ -756,21 +615,6 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
           }, 100);
         });
 
-        window.addEventListener("canapalandia:cookie-consent", (e) => {
-          if (e.detail?.ads || e.detail?.analytics) {
-            if (!window.__adsenseLoaded) startInit();
-            else scan();
-          }
-        });
-
-        if (typeof window.__tcfapi !== "undefined") {
-          window.__tcfapi("addEventListener", 2, (tcData, success) => {
-            if (success && window.canapalandiaHasAdConsent?.()) {
-              if (!window.__adsenseLoaded) startInit();
-              else scan();
-            }
-          });
-        }
       })();
     </script>
 
@@ -1095,12 +939,6 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
           <a href="/rss.xml">RSS</a>
         </nav>
 
-        <div class="footer-consent">
-          <a href="#" id="consent-manager-link" aria-label="Gestisci consenso cookie e pubblicità">
-            Gestisci consenso
-          </a>
-        </div>
-
         <div class="footer-copy">
           © {new Date().getFullYear()} Canapalandia. Tutti i diritti riservati.
         </div>
@@ -1253,8 +1091,6 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
         });
       })();
     </script>
-
-    <CookieBanner />
 
     <!-- Calcola altezza navbar dinamicamente -->
     <script is:inline>
@@ -1475,21 +1311,7 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
       })();
     </script>
 
-
-    <!-- Gestisci consenso link handler -->
-    <script is:inline>
-      (() => {
-        const consentLink = document.getElementById("consent-manager-link");
-        if (consentLink) {
-          consentLink.addEventListener("click", (e) => {
-            e.preventDefault();
-            if (window.canapalandiaOpenConsent && typeof window.canapalandiaOpenConsent === "function") {
-              window.canapalandiaOpenConsent();
-            }
-          });
-        }
-      })();
-    </script>
+    <script is:inline set:html={enhancementsScript}></script>
 
   </body>
 </html>

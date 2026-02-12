@@ -1,14 +1,13 @@
 ---
-import { getEntryBySlug, getCollection, type CollectionEntry } from "astro:content";
+import { getEntryBySlug, type CollectionEntry } from "astro:content";
 import SiteLayout from "../../layouts/SiteLayout.astro";
-import CardPost from "../../components/CardPost.astro";
-import AdSenseSlot from "../../components/AdSenseSlot.astro";
 import AdSlot from "../../components/AdSlot.astro";
 import PostMeta from "../../components/PostMeta.astro";
 import PostShare from "../../components/PostShare.astro";
 import SupportCTA from "../../components/SupportCTA.astro";
 import Reactions from "../../components/Reactions.astro";
 import BlogSidebar from "../../components/blog/BlogSidebar.astro";
+import RelatedPosts from "../../components/RelatedPosts.astro";
 import { FEATURES, ADS_SLOT_ARTICLE } from "../../lib/consts";
 
 export const prerender = false;
@@ -53,104 +52,9 @@ function toDate(value: Date | string | number | null | undefined): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-// Helper per formattare data (accetta Date/string/number/null/undefined)
-function formatDate(value: Date | string | number | null | undefined): string {
-  const d = toDate(value);
-  if (!d) return "";
-  return d.toLocaleDateString("it-IT", { year: "numeric", month: "long", day: "numeric" });
-}
-
-// Helper per generare href post
-function postHref(entry: CollectionEntry<"blog">): string {
-  const entrySlug = entry?.slug ?? entry?.data?.slug ?? "";
-  if (!entrySlug) return "/";
-  return `/blog/${entrySlug}/`;
-}
-
 // Calcola cover image
 const rawCover = (entry as any).data.image || (entry as any).data.coverImage || "";
 const coverSrc = normalizeImgSrc(rawCover);
-
-// Post correlati: logica multi-step (categoria → tag → fallback)
-let relatedPosts: CollectionEntry<"blog">[] = [];
-try {
-  const allPosts = await getCollection("blog");
-  const currentCategory = String((entry as any).data.category || "").trim().toLowerCase();
-  const currentTags = Array.isArray((entry as any).data.tags)
-    ? (entry as any).data.tags.map((t: unknown) => String(t || "").trim().toLowerCase()).filter(Boolean)
-    : [];
-
-  // Helper per normalizzare e confrontare tag/categoria
-  const normalizeCategory = (cat: unknown): string => String(cat || "").trim().toLowerCase();
-  const normalizeTags = (tags: unknown): string[] => {
-    if (!Array.isArray(tags)) return [];
-    return tags.map((t: unknown) => String(t || "").trim().toLowerCase()).filter(Boolean);
-  };
-
-  // Helper per ordinare per data DESC
-  const sortByDate = (posts: CollectionEntry<"blog">[]): CollectionEntry<"blog">[] => {
-    return [...posts].sort((a, b) => {
-      const dateA = toDate(a.data.publishDate ?? a.data.updatedDate);
-      const dateB = toDate(b.data.publishDate ?? b.data.updatedDate);
-      const timeA = dateA ? dateA.getTime() : 0;
-      const timeB = dateB ? dateB.getTime() : 0;
-      return timeB - timeA; // DESC
-    });
-  };
-
-  // Set per evitare duplicati (usa slug come chiave)
-  const addedSlugs = new Set<string>([slug]); // Escludi sempre il post corrente
-
-  // STEP 1: Correlati per categoria (priorità massima)
-  if (currentCategory) {
-    const byCategory = allPosts.filter((p) => {
-      const cat = normalizeCategory(p.data.category);
-      return cat === currentCategory && !addedSlugs.has(p.slug);
-    });
-
-    const sorted = sortByDate(byCategory);
-    for (const p of sorted) {
-      if (relatedPosts.length >= 4) break;
-      relatedPosts.push(p);
-      addedSlugs.add(p.slug);
-    }
-  }
-
-  // STEP 2: Se non raggiunto target (4), integra per tag
-  if (relatedPosts.length < 4 && currentTags.length > 0) {
-    const byTag = allPosts.filter((p) => {
-      if (addedSlugs.has(p.slug)) return false;
-      const postTags = normalizeTags(p.data.tags);
-      return currentTags.some((tag: string) => postTags.includes(tag));
-    });
-
-    const sorted = sortByDate(byTag);
-    for (const p of sorted) {
-      if (relatedPosts.length >= 4) break;
-      relatedPosts.push(p);
-      addedSlugs.add(p.slug);
-    }
-  }
-
-  // STEP 3: Se ancora sotto minimo (3), completa con ultimi post pubblicati (fallback)
-  if (relatedPosts.length < 3) {
-    const fallback = allPosts.filter((p) => !addedSlugs.has(p.slug)).slice();
-   
-    
-    const sorted = sortByDate(fallback);
-    for (const p of sorted) {
-      if (relatedPosts.length >= 4) break;
-      relatedPosts.push(p);
-      addedSlugs.add(p.slug);
-    }
-  }
-
-  relatedPosts = relatedPosts.slice(0, 4);
-} catch (err) {
-  console.warn("[blog/[slug]] Errore nel caricamento post correlati:", err);
-}
-
-const sectionTitle = "Articoli correlati";
 
 // Calcola og:image dal post (coverImage o image)
 const postImage = normalizeImage(entry);
@@ -264,6 +168,13 @@ const jsonLd = {
 
         {/* CTA Sostienici */}
         <SupportCTA supportUrl="/sostieni-la-nostra-causa/" showSupportCta={showSupportCta} />
+
+        {/* Articoli correlati */}
+        <RelatedPosts
+          currentSlug={slug}
+          category={(entry as any).data.category}
+          tags={(entry as any).data.tags}
+        />
       </article>
 
       <aside class="post-sidebar">
@@ -272,32 +183,6 @@ const jsonLd = {
     </div>
   </main>
 
-  {/* Articoli correlati - PRIMA del Newsletter */}
-  {relatedPosts.length >= 3 ? (
-    <section class="related-posts">
-      <div class="container">
-        <div class="section-head">
-          <h2>{sectionTitle}</h2>
-        </div>
-        <div class="related-posts__grid">
-          {relatedPosts.map((p) => {
-            const imgSrc = normalizeImage(p);
-            const postDate = toDate(p.data.publishDate ?? p.data.updatedDate);
-            return (
-              <CardPost
-                href={postHref(p)}
-                img={imgSrc || undefined}
-                date={formatDate(postDate)}
-                title={p.data.title}
-                excerpt={p.data.description}
-                category={p.data.category || null}
-              />
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  ) : null}
 </SiteLayout>
 
 <style>
@@ -423,42 +308,6 @@ const jsonLd = {
     border: none;
     border-top: 1px solid var(--border);
     opacity: 0.5;
-  }
-
-  /* Post correlati */
-  .related-posts {
-    margin: 3rem 0;
-    padding: 2.5rem 0;
-    border-top: 1px solid var(--border);
-  }
-
-  .section-head {
-    margin-bottom: 2rem;
-  }
-
-  .section-head h2 {
-    font-size: 1.75rem;
-    font-weight: 700;
-    margin: 0;
-    color: var(--text);
-  }
-
-  .related-posts__grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-  }
-
-  @media (min-width: 640px) {
-    .related-posts__grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-
-  @media (min-width: 1024px) {
-    .related-posts__grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
   }
 
   /* Tighten post title leading and header spacing */

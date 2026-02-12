@@ -1,0 +1,166 @@
+---
+import { getCollection, type CollectionEntry } from "astro:content";
+import CardPost from "./CardPost.astro";
+
+interface Props {
+  currentSlug: string;
+  category?: string | null;
+  tags?: string[];
+  title?: string;
+}
+
+const {
+  currentSlug,
+  category = null,
+  tags = [],
+  title = "Articoli correlati",
+} = Astro.props as Props;
+
+function normalizeText(value: unknown): string {
+  return String(value || "").trim().toLowerCase();
+}
+
+function normalizeTags(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.map((t) => normalizeText(t)).filter(Boolean);
+}
+
+function toDate(value: Date | string | number | null | undefined): Date | null {
+  if (!value) return null;
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+  const d = new Date(String(value));
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function formatDate(value: Date | string | number | null | undefined): string {
+  const d = toDate(value);
+  if (!d) return "";
+  return d.toLocaleDateString("it-IT", { year: "numeric", month: "long", day: "numeric" });
+}
+
+function normalizeImgSrc(src: unknown): string {
+  const s = typeof src === "string" ? src.trim() : "";
+  if (!s) return "";
+  if (s.startsWith("http://") || s.startsWith("https://")) return s;
+  if (s.startsWith("/")) return s;
+  return `/${s}`;
+}
+
+function normalizeImage(entry: CollectionEntry<"blog">): string {
+  const raw = entry.data.image || entry.data.coverImage || "";
+  let srcValue: unknown = raw;
+
+  if (raw && typeof raw === "object" && "src" in raw) {
+    srcValue = (raw as { src?: unknown }).src;
+  }
+
+  return normalizeImgSrc(srcValue);
+}
+
+function postHref(entry: CollectionEntry<"blog">): string {
+  const entrySlug = entry?.slug ?? entry?.data?.slug ?? "";
+  if (!entrySlug) return "/";
+  return `/blog/${entrySlug}/`;
+}
+
+const currentCategory = normalizeText(category);
+const currentTags = normalizeTags(tags);
+
+type ScoredPost = { post: CollectionEntry<"blog">; score: number; date: number };
+
+let relatedPosts: CollectionEntry<"blog">[] = [];
+
+try {
+  const allPosts = await getCollection("blog");
+  const currentSlugNormalized = normalizeText(currentSlug);
+
+  const scored: ScoredPost[] = allPosts
+    .filter((p) => normalizeText(p.slug) !== currentSlugNormalized)
+    .map((p) => {
+      const postCategory = normalizeText(p.data.category);
+      const postTags = normalizeTags(p.data.tags);
+      const sharedTags = currentTags.filter((tag) => postTags.includes(tag)).length;
+
+      let score = 0;
+      if (currentCategory && postCategory === currentCategory) score += 10;
+      if (sharedTags > 0) score += sharedTags * 3;
+
+      const d = toDate(p.data.publishDate ?? p.data.updatedDate);
+      return { post: p, score, date: d ? d.getTime() : 0 };
+    })
+    .filter((item) => item.score > 0)
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return b.date - a.date;
+    });
+
+  relatedPosts = scored.slice(0, 3).map((item) => item.post);
+} catch (err) {
+  console.warn("[RelatedPosts] Errore nel caricamento post correlati:", err);
+}
+---
+
+{relatedPosts.length > 0 ? (
+  <section class="related-posts" aria-label={title}>
+    <div class="section-head">
+      <h2>{title}</h2>
+    </div>
+
+    <div class="related-posts__grid">
+      {relatedPosts.map((p) => {
+        const imgSrc = normalizeImage(p);
+        const postDate = toDate(p.data.publishDate ?? p.data.updatedDate);
+
+        return (
+          <CardPost
+            href={postHref(p)}
+            img={imgSrc || undefined}
+            date={formatDate(postDate)}
+            title={p.data.title}
+            excerpt={p.data.description}
+            category={p.data.category || null}
+          />
+        );
+      })}
+    </div>
+  </section>
+) : null}
+
+<style>
+  .related-posts {
+    margin: 3rem 0 0;
+    padding-top: 2.5rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .section-head {
+    margin-bottom: 2rem;
+  }
+
+  .section-head h2 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text);
+  }
+
+  .related-posts__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 640px) {
+    .related-posts__grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .related-posts__grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+</style>
