@@ -2221,13 +2221,14 @@ html[data-theme="light"] .callout--sources .callout__badge {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s ease;
-  overflow-y: auto;
+  overflow-y: hidden;
   /* z-index 950: sotto header (1000) e header-actions (1100) ma sopra contenuto */
 }
 
 .mobile-menu[aria-hidden="false"] {
   opacity: 1;
   pointer-events: auto;
+  overflow-y: auto;
 }
 
 /* Overlay background */
