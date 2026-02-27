@@ -14,10 +14,11 @@ export default defineConfig({
   output: "server",
 
   // Alias stabile per import tipo: "@/layouts/SiteLayout.astro"
-vite: {
-  resolve: {
-    alias: {
-      "@": fileURLToPath(new URL("./src", import.meta.url)),
+  vite: {
+    resolve: {
+      alias: {
+        "@": fileURLToPath(new URL("./src", import.meta.url)),
+      },
     },
   },
 
@@ -29,7 +30,7 @@ vite: {
         "**/dist/**",
         "**/.astro/**",
         "**/.vercel/**",
-        "**/coverage/**"
+        "**/coverage/**",
       ],
       usePolling: false,
     },
@@ -42,16 +43,13 @@ vite: {
   build: {
     rollupOptions: {
       output: {
-        manualChunks: undefined
-      }
-    }
-  }
-},
+        manualChunks: undefined,
+      },
+    },
+  },
 
   // Vercel adapter (server output)
   adapter: vercel({
-    // puoi cambiare in "edge" se vuoi Edge Functions
-    // ma "serverless" è la scelta più compatibile
     runtime: "serverless",
   }),
 
@@ -65,31 +63,27 @@ vite: {
     sitemap({
       customPages: sitemapPages,
       filter: (page) => {
-        // page è una stringa URL completo (es. "https://canapalandia.com/tag/slug/")
         if (typeof page !== "string") return true;
 
-        // Estrai pathname dall'URL
         try {
           const url = new URL(page);
           const pathname = url.pathname;
 
-          // Escludi endpoint tecnici
           if (pathname.startsWith("/partials/")) return false;
-          // Escludi pagine EN (legacy, noindex)
           if (pathname.startsWith("/en/")) return false;
-          // Escludi pagine tassonomia (noindex per evitare crawl bloat)
+
           if (pathname.startsWith("/tag/")) return false;
           if (pathname.startsWith("/categoria/")) return false;
           if (pathname.startsWith("/autore/")) return false;
+
           if (pathname.startsWith("/en/tag/")) return false;
           if (pathname.startsWith("/en/categoria/")) return false;
           if (pathname.startsWith("/en/autore/")) return false;
           if (pathname.startsWith("/en/author/")) return false;
-          // Escludi /partner-selezionati/ e /go/* (disattivati temporaneamente)
+
           if (pathname.startsWith("/partner-selezionati")) return false;
           if (pathname.startsWith("/go/")) return false;
         } catch {
-          // Se URL non valido, includi per sicurezza
           return true;
         }
 
