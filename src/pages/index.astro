@@ -337,10 +337,11 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
   <section class="inizia-da-qui" aria-labelledby="inizia-da-qui-title">
     <div class="container">
       <h2 id="inizia-da-qui-title" class="inizia-da-qui__title">Inizia da qui</h2>
+      <p class="inizia-da-qui__subtitle">Tre scorciatoie utili per orientarti subito</p>
       <nav class="inizia-da-qui__links">
-        <a href="/categoria/normative-aspetti-legali/">Cosa è legale oggi</a>
-        <a href="/#ultimi">Ultime novità in Italia</a>
-        <a href="/categoria/guide-tutorial/">Guide su prodotti e normativa</a>
+        <a class="btn ghost" href="/categoria/normative-aspetti-legali/">Cosa è legale oggi</a>
+        <a class="btn ghost" href="/#ultimi">Ultime novità in Italia</a>
+        <a class="btn ghost" href="/categoria/guide-tutorial/">Guide su prodotti e normativa</a>
       </nav>
     </div>
   </section>
@@ -519,23 +520,24 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
       padding: var(--space-lg) 0;
     }
     .inizia-da-qui__title {
-      margin: 0 0 var(--space-md);
+      margin: 0 0 var(--space-sm);
       font-size: var(--text-base);
       font-weight: var(--font-semibold);
       color: var(--muted);
+    }
+    .inizia-da-qui__subtitle {
+      margin: 0 0 var(--space-md);
+      font-size: var(--text-sm);
+      color: var(--muted);
+      opacity: 0.95;
     }
     .inizia-da-qui__links {
       display: flex;
       flex-wrap: wrap;
       gap: var(--space-md) var(--space-xl);
     }
-    .inizia-da-qui__links a {
-      color: var(--accent);
-      text-decoration: none;
-      font-weight: var(--font-medium);
-    }
-    .inizia-da-qui__links a:hover {
-      text-decoration: underline;
+    .inizia-da-qui__links .btn {
+      flex-shrink: 0;
     }
 
     /* Hero links discreti */
