@@ -217,42 +217,23 @@ const latestPosts = eligiblePosts
   .slice(0, 6);
 
 /* ---------------------------
-   Mappa icone SVG per categoria
+   Mappa icone SVG per categoria (set uniforme, stile Lucide)
 --------------------------- */
+const iconSvg = (paths: string): string =>
+  `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
+
 function getCategoryIcon(slug: string): string {
   const iconMap: Record<string, string> = {
-    "normative-aspetti-legali": `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M12 3v18M6 7h12M7 7l-3 6h6l-3-6zM17 7l-3 6h6l-3-6zM6 21h12"></path>
-    </svg>`,
-    "salute-benessere": `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"></path>
-    </svg>`,
-    "cannabis-news-it": `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-      <path d="M8 8h8M8 12h8M8 16h6"></path>
-    </svg>`,
-    "coltivazione-legale": `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M12 2v4M4.93 4.93l2.83 2.83M2 12h4M4.93 19.07l2.83-2.83M12 22v-4M19.07 19.07l-2.83-2.83M22 12h-4M19.07 4.93l-2.83 2.83M12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6 6 6 0 0 1-6-6 6 6 0 0 1 6-6z"></path>
-    </svg>`,
-    "guide-tutorial": `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
-      <path d="M9 10h6M9 14h4"></path>
-    </svg>`,
-    "partner-e-affiliazioni": `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-      <circle cx="9" cy="7" r="4"></circle>
-      <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path>
-    </svg>`,
-    "canapa-e-ambiente": `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
-    </svg>`,
-    "cbd": `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M12 2s7 7 7 13a7 7 0 0 1-14 0c0-6 7-13 7-13zM9.5 14.5c1 1.2 4 1.2 5 0"></path>
-    </svg>`,
+    "normative-aspetti-legali": iconSvg(`<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>`),
+    "salute-benessere": iconSvg(`<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/>`),
+    "cannabis-news-it": iconSvg(`<path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-8"/><rect width="8" height="4" x="10" y="6" rx="1"/>`),
+    "coltivazione-legale": iconSvg(`<path d="M7 20h10"/><path d="M10 20c5.5-2.5 7.5-8 7.5-12A7.5 7.5 0 0 0 12 2C10 2 8 3 6 4c-1 1-1.5 2.5-1.5 4 0 5.5 2 9.5 7.5 12Z"/>`),
+    "guide-tutorial": iconSvg(`<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>`),
+    "partner-e-affiliazioni": iconSvg(`<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>`),
+    "canapa-e-ambiente": iconSvg(`<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 3.53 2 5.47 0 2.34-1.95 5.12-4.78 5.47 2-1.96 1.85-4.27 1.85-4.27L11 20Z"/>`),
+    "cbd": iconSvg(`<path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.9S3 11.2 3 12.25c0 2.22 1.8 4.05 4 4.05z"/>`),
   };
-  return iconMap[slug] || `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
-  </svg>`;
+  return iconMap[slug] || iconSvg(`<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>`);
 }
 
 /* ---------------------------
@@ -331,16 +312,16 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
       <p class="kicker">Guida legale aggiornata • Italia</p>
 
       <h1>
-        CBD e cannabis light in Italia: guida legale aggiornata
+        CBD e cannabis light in Italia: cosa c'è da sapere oggi
       </h1>
 
       <p class="lead">
-        Norme, sentenze e filiera spiegate con fonti e contesto. Informazione chiara, senza allarmismi.
+        Guide legali aggiornate, notizie verificate e approfondimenti chiari per orientarti senza confusione.
       </p>
 
       <div class="hero-cta">
-        <a class="btn primary" href="/#percorsi">Leggi la guida legale</a>
-        <a class="btn ghost" href="/#ultimi">Ultime notizie</a>
+        <a class="btn primary" href="/#percorsi">Inizia dalla guida legale</a>
+        <a class="btn ghost" href="/#ultimi">Leggi le ultime notizie</a>
       </div>
 
       <div class="chips">
@@ -350,6 +331,17 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
         <span>•</span>
         <span>Aggiornato</span>
       </div>
+    </div>
+  </section>
+
+  <section class="inizia-da-qui" aria-labelledby="inizia-da-qui-title">
+    <div class="container">
+      <h2 id="inizia-da-qui-title" class="inizia-da-qui__title">Inizia da qui</h2>
+      <nav class="inizia-da-qui__links">
+        <a href="/categoria/normative-aspetti-legali/">Cosa è legale oggi</a>
+        <a href="/#ultimi">Ultime novità in Italia</a>
+        <a href="/categoria/guide-tutorial/">Guide su prodotti e normativa</a>
+      </nav>
     </div>
   </section>
 
@@ -519,6 +511,33 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
   <HomeActionCards />
 
   <style>
+    .hero-inner {
+      max-width: 42rem;
+    }
+
+    .inizia-da-qui {
+      padding: var(--space-lg) 0;
+    }
+    .inizia-da-qui__title {
+      margin: 0 0 var(--space-md);
+      font-size: var(--text-base);
+      font-weight: var(--font-semibold);
+      color: var(--muted);
+    }
+    .inizia-da-qui__links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-md) var(--space-xl);
+    }
+    .inizia-da-qui__links a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: var(--font-medium);
+    }
+    .inizia-da-qui__links a:hover {
+      text-decoration: underline;
+    }
+
     /* Hero links discreti */
     .hero-links {
       margin-top: 12px;
