@@ -13,7 +13,8 @@
     "export:db": "node scripts/export-db-to-content.mjs",
     "export:content": "node scripts/export-db-to-content.mjs",
     "cover": "node scripts/generate-cover.mjs",
-    "auto-post:dry": "node scripts/auto-post.mjs --dry-run"
+    "auto-post:dry": "node scripts/auto-post.mjs --dry-run",
+    "smoke": "node scripts/smoke.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.6.0",
