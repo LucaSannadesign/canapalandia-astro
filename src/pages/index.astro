@@ -7,91 +7,10 @@ import HomeActionCards from "../components/HomeActionCards.astro";
 import { ADS_SLOT_HOME } from "../lib/consts";
 
 /* ---------------------------
-   Data: Content Collections
+   Helpers: date
 --------------------------- */
 
-// Helper per formattare data (accetta Date/string/number/null/undefined, non crasha mai)
-const formatDate = (value: Date | string | number | null | undefined): string => {
-  if (!value) return "";
-  const d = value instanceof Date ? value : new Date(String(value));
-  if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleDateString("it-IT", { year: "numeric", month: "long", day: "numeric" });
-};
-
-function postHref(entry: any): string {
-  const slug = entry?.slug ?? entry?.data?.slug ?? "";
-  if (!slug) throw new Error("Missing slug for post link");
-  return `/blog/${slug}/`;
-}
-
-function dateOf(entry: CollectionEntry<"blog">): Date | null {
-  const raw = entry.data.publishDate ?? entry.data.updatedDate;
-  if (!raw) return null;
-  const d = raw instanceof Date ? raw : new Date(String(raw));
-  return Number.isNaN(d.getTime()) ? null : d;
-}
-
-// Helper per convertire Date/string/number/null/undefined in timestamp
-function dateValue(v: Date | string | number | null | undefined): number {
-  if (!v) return 0;
-  if (v instanceof Date) return v.getTime();
-  const d = new Date(String(v));
-  return Number.isNaN(d.getTime()) ? 0 : d.getTime();
-}
-
-// Helper per normalizzare URL/path immagine
-function normalizeImgSrc(src: unknown): string {
-  const s = typeof src === "string" ? src.trim() : "";
-  // Se vuota/null: fallback a placeholder
-  if (!s) return "/images/placeholder.svg";
-  // Se URL assoluto (http/https): restituisci invariato
-  if (s.startsWith("http://") || s.startsWith("https://")) return s;
-  // Se inizia con "/": ok (path locale)
-  if (s.startsWith("/")) return s;
-  // Altrimenti: aggiungi "/" davanti (normalizza path relativo)
-  return `/${s}`;
-}
-
-// Helper per normalizzare immagine post
-function normalizeImage(entry: CollectionEntry<"blog">): string {
-  // Leggi entry.data.image o entry.data.coverImage
-  const raw = entry.data.image || entry.data.coverImage || "";
-  
-  // Supporta sia stringa sia oggetto con .src (ImageMetadata)
-  let srcValue: unknown = raw;
-  
-  if (raw && typeof raw === "object" && raw !== null && "src" in raw) {
-    const srcObj = raw as { src?: unknown };
-    srcValue = srcObj.src;
-  }
-  
-  // Applica normalizzazione
-  return normalizeImgSrc(srcValue);
-}
-
-// Carica tutti i post dalla collection
-let postsAll: CollectionEntry<"blog">[] = [];
-try {
-  postsAll = await getCollection("blog");
-} catch (err) {
-  // Se non ci sono contenuti, postsAll rimane vuoto
-  console.warn("[index] Nessun contenuto trovato in Content Collections");
-}
-
-// Ordina per publishDate DESC
-const sortedPosts = postsAll
-  .slice()
-  .sort(
-    (a, b) =>
-      dateValue(b.data.publishDate ?? b.data.updatedDate) -
-      dateValue(a.data.publishDate ?? a.data.updatedDate),
-  );
-
-/* ---------------------------
-   Filtro "recent only" (2025-2026)
---------------------------- */
-
-// Helper: estrae la data del post (updatedDate o publishDate)
+// Unica funzione per normalizzare una data (elimina dateOf e dateValue duplicate)
 function getPostDate(post: CollectionEntry<"blog">): Date | null {
   const raw = post.data.updatedDate ?? post.data.publishDate;
   if (!raw) return null;
@@ -99,25 +18,52 @@ function getPostDate(post: CollectionEntry<"blog">): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-// Helper: estrae lo slug del post
+function dateValue(post: CollectionEntry<"blog">): number {
+  return getPostDate(post)?.getTime() ?? 0;
+}
+
+const formatDate = (d: Date | null): string => {
+  if (!d) return "";
+  return d.toLocaleDateString("it-IT", { year: "numeric", month: "long", day: "numeric" });
+};
+
+/* ---------------------------
+   Helpers: slug / immagine
+--------------------------- */
+
 function getSlug(post: CollectionEntry<"blog">): string {
   return post.slug ?? post.data.slug ?? "";
 }
 
-// Soglia minima: solo post dal 2025 in poi
-const MIN_DATE = new Date("2025-01-01T00:00:00.000Z");
+// FIX: tipizzato correttamente, niente più `any`
+function postHref(entry: CollectionEntry<"blog">): string {
+  const slug = getSlug(entry);
+  if (!slug) throw new Error(`Missing slug for post: ${entry.data.title}`);
+  return `/blog/${slug}/`;
+}
 
-// Filtra post eligibili (>= 2025-01-01)
-const eligiblePosts = sortedPosts.filter((p) => {
-  const postDate = getPostDate(p);
-  return postDate && postDate >= MIN_DATE;
-});
+function normalizeImgSrc(src: unknown): string {
+  const s = typeof src === "string" ? src.trim() : "";
+  if (!s) return "/images/placeholder.svg";
+  if (s.startsWith("http://") || s.startsWith("https://")) return s;
+  if (s.startsWith("/")) return s;
+  return `/${s}`;
+}
+
+function normalizeImage(entry: CollectionEntry<"blog">): string {
+  const raw = entry.data.image || entry.data.coverImage || "";
+  // FIX: type guard pulito, niente cast a `any`
+  const srcValue =
+    raw && typeof raw === "object" && "src" in raw
+      ? (raw as Record<string, unknown>)["src"]
+      : raw;
+  return normalizeImgSrc(srcValue);
+}
 
 /* ---------------------------
-   Selezione "In evidenza" (editoriale)
+   Helpers: selezione post
 --------------------------- */
 
-// Helper: seleziona N post unici da un array, escludendo quelli già usati
 function pickUnique(
   posts: CollectionEntry<"blog">[],
   usedSet: Set<string>,
@@ -135,110 +81,36 @@ function pickUnique(
   return result;
 }
 
-// 1) Post con flag editoriale manuale (solo da eligiblePosts)
-const featuredCandidatesManual = eligiblePosts
-  .filter((p) => p.data.homeFeatured === true)
-  .sort((a, b) => {
-    // Ordina per homeFeaturedRank (asc, più basso = più importante), poi per data (desc)
-    const rankA = a.data.homeFeaturedRank ?? 999;
-    const rankB = b.data.homeFeaturedRank ?? 999;
-    if (rankA !== rankB) return rankA - rankB;
-    const dateA = getPostDate(a);
-    const dateB = getPostDate(b);
-    if (!dateA || !dateB) return 0;
-    return dateB.getTime() - dateA.getTime();
-  });
+/* ---------------------------
+   Data: carica e ordina post
+--------------------------- */
 
-// 2) Fallback automatico: post "hot" (cannabis-news-it, ordinati per data desc)
-const featuredCandidatesAuto = eligiblePosts
-  .filter((p) => {
-    const category = p.data.category;
-    return (
-      category === "cannabis-news-it" &&
-      p.data.homeFeatured !== true // Escludi quelli già manuali
-    );
-  })
-  .sort((a, b) => {
-    const dateA = getPostDate(a);
-    const dateB = getPostDate(b);
-    if (!dateA || !dateB) return 0;
-    return dateB.getTime() - dateA.getTime();
-  });
-
-// 3) Costruisci pool: manuali prima, poi auto (dedup per slug)
-const featuredPool: CollectionEntry<"blog">[] = [];
-const featuredPoolSlugs = new Set<string>();
-for (const post of [...featuredCandidatesManual, ...featuredCandidatesAuto]) {
-  const slug = getSlug(post);
-  if (slug && !featuredPoolSlugs.has(slug)) {
-    featuredPool.push(post);
-    featuredPoolSlugs.add(slug);
-  }
+let postsAll: CollectionEntry<"blog">[] = [];
+try {
+  postsAll = await getCollection("blog");
+} catch {
+  console.warn("[index] Nessun contenuto trovato in Content Collections");
 }
 
-// 4) Seleziona 4 post unici (1 main + 3 side)
-const featuredIds = new Set<string>();
-const featuredMain = pickUnique(featuredPool, featuredIds, 1)[0] || null;
-const featuredSide = pickUnique(featuredPool, featuredIds, 3);
-
-// 5) Se il pool non basta, completa con i più recenti di eligiblePosts (sempre dedup)
-if (featuredIds.size < 4) {
-  const remaining = eligiblePosts
-    .filter((p) => {
-      const slug = getSlug(p);
-      return slug && !featuredIds.has(slug);
-    })
-    .slice(0, 4 - featuredIds.size);
-  
-  if (!featuredMain && remaining.length > 0) {
-    const first = remaining[0];
-    const slug = getSlug(first);
-    if (slug) {
-      featuredIds.add(slug);
-    }
-  }
-  
-  for (const post of remaining) {
-    if (featuredSide.length >= 3) break;
-    const slug = getSlug(post);
-    if (slug && !featuredIds.has(slug)) {
-      featuredSide.push(post);
-      featuredIds.add(slug);
-    }
-  }
-}
-
-// 6) "Ultimi articoli": escludi quelli già in evidenza (solo da eligiblePosts)
-const latestPosts = eligiblePosts
-  .filter((p) => {
-    const slug = getSlug(p);
-    return slug && !featuredIds.has(slug);
-  })
-  .slice(0, 6);
+const sortedPosts = postsAll
+  .slice()
+  .sort((a, b) => dateValue(b) - dateValue(a));
 
 /* ---------------------------
-   Mappa icone SVG per categoria (set uniforme, stile Lucide)
+   Filtro: solo post dal 2025 in poi
 --------------------------- */
-const iconSvg = (paths: string): string =>
-  `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
 
-function getCategoryIcon(slug: string): string {
-  const iconMap: Record<string, string> = {
-    "normative-aspetti-legali": iconSvg(`<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>`),
-    "salute-benessere": iconSvg(`<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/>`),
-    "cannabis-news-it": iconSvg(`<path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-8"/><rect width="8" height="4" x="10" y="6" rx="1"/>`),
-    "coltivazione-legale": iconSvg(`<path d="M7 20h10"/><path d="M10 20c5.5-2.5 7.5-8 7.5-12A7.5 7.5 0 0 0 12 2C10 2 8 3 6 4c-1 1-1.5 2.5-1.5 4 0 5.5 2 9.5 7.5 12Z"/>`),
-    "guide-tutorial": iconSvg(`<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>`),
-    "partner-e-affiliazioni": iconSvg(`<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>`),
-    "canapa-e-ambiente": iconSvg(`<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 3.53 2 5.47 0 2.34-1.95 5.12-4.78 5.47 2-1.96 1.85-4.27 1.85-4.27L11 20Z"/>`),
-    "cbd": iconSvg(`<path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.9S3 11.2 3 12.25c0 2.22 1.8 4.05 4 4.05z"/>`),
-  };
-  return iconMap[slug] || iconSvg(`<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>`);
-}
+const MIN_DATE = new Date("2025-01-01T00:00:00.000Z");
+
+const eligiblePosts = sortedPosts.filter((p) => {
+  const d = getPostDate(p);
+  return d !== null && d >= MIN_DATE;
+});
 
 /* ---------------------------
-   Carica categorie da Content Collections o JSON
+   Categorie (singolo ciclo su postsAll)
 --------------------------- */
+
 type CategoryData = {
   slug: string;
   name: string;
@@ -246,8 +118,7 @@ type CategoryData = {
   description?: string;
 };
 
-// Estrai categorie dai post
-const categoryMap = new Map<string, { slug: string; name: string; count: number }>();
+const categoryMap = new Map<string, CategoryData>();
 for (const post of postsAll) {
   const cat = post.data.category;
   if (cat && typeof cat === "string" && cat.trim()) {
@@ -256,18 +127,11 @@ for (const post of postsAll) {
     categoryMap.set(slug, {
       slug,
       name: slug.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" "),
-      count: (existing?.count || 0) + 1,
+      count: (existing?.count ?? 0) + 1,
     });
   }
 }
 
-// Unisci categorie (per ora usa solo quelle dai post, categories.json verrà generato dallo script)
-const allCategories = new Map<string, CategoryData>();
-for (const [slug, data] of categoryMap) {
-  allCategories.set(slug, data);
-}
-
-// Categorie principali da mostrare (priorità)
 const mainCategorySlugs = [
   "normative-aspetti-legali",
   "salute-benessere",
@@ -279,16 +143,11 @@ const mainCategorySlugs = [
   "cbd",
 ];
 
-const mainCategories: CategoryData[] = [];
-for (const slug of mainCategorySlugs) {
-  const cat = allCategories.get(slug);
-  if (cat) {
-    mainCategories.push(cat);
-  }
-}
+const mainCategories = mainCategorySlugs
+  .map((slug) => categoryMap.get(slug))
+  .filter((c): c is CategoryData => c !== undefined);
 
-// Aggiungi altre categorie con count > 0 (max 10 totali)
-const otherCategories = Array.from(allCategories.values())
+const otherCategories = Array.from(categoryMap.values())
   .filter((c) => !mainCategorySlugs.includes(c.slug) && c.count > 0)
   .sort((a, b) => b.count - a.count)
   .slice(0, Math.max(0, 10 - mainCategories.length));
@@ -296,16 +155,93 @@ const otherCategories = Array.from(allCategories.values())
 const displayCategories = [...mainCategories, ...otherCategories].filter((c) => c.count > 0);
 
 /* ---------------------------
+   Selezione "In evidenza"
+--------------------------- */
+
+// Candidati manuali (homeFeatured === true)
+const featuredCandidatesManual = eligiblePosts
+  .filter((p) => p.data.homeFeatured === true)
+  .sort((a, b) => {
+    const rankA = a.data.homeFeaturedRank ?? 999;
+    const rankB = b.data.homeFeaturedRank ?? 999;
+    if (rankA !== rankB) return rankA - rankB;
+    return dateValue(b) - dateValue(a);
+  });
+
+// Candidati automatici: categoria "cannabis-news-it", non già manuali
+const manualSlugs = new Set(featuredCandidatesManual.map(getSlug));
+const featuredCandidatesAuto = eligiblePosts
+  .filter((p) => p.data.category === "cannabis-news-it" && !manualSlugs.has(getSlug(p)))
+  .sort((a, b) => dateValue(b) - dateValue(a));
+
+// Pool deduplicato: manuali prima, poi auto
+const featuredPool: CollectionEntry<"blog">[] = [];
+const featuredPoolSlugs = new Set<string>();
+for (const post of [...featuredCandidatesManual, ...featuredCandidatesAuto]) {
+  const slug = getSlug(post);
+  if (slug && !featuredPoolSlugs.has(slug)) {
+    featuredPool.push(post);
+    featuredPoolSlugs.add(slug);
+  }
+}
+
+// FIX: selezione unificata — prima pick 4, poi split in main+side
+// Così il fallback su eligiblePosts funziona anche per featuredMain
+const featuredIds = new Set<string>();
+
+// Prova a prendere 4 dal pool; se non bastano, completa con eligiblePosts
+const poolPick = pickUnique(featuredPool, featuredIds, 4);
+
+if (poolPick.length < 4) {
+  const fallback = eligiblePosts.filter((p) => {
+    const slug = getSlug(p);
+    return slug && !featuredIds.has(slug);
+  });
+  pickUnique(fallback, featuredIds, 4 - poolPick.length).forEach((p) => poolPick.push(p));
+}
+
+const featuredMain = poolPick[0] ?? null;
+const featuredSide = poolPick.slice(1, 4);
+
+// "Ultimi articoli": post eligibili non già in evidenza
+const latestPosts = eligiblePosts
+  .filter((p) => {
+    const slug = getSlug(p);
+    return slug && !featuredIds.has(slug);
+  })
+  .slice(0, 6);
+
+/* ---------------------------
+   Icone SVG categorie
+--------------------------- */
+
+const iconSvg = (paths: string): string =>
+  `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
+
+function getCategoryIcon(slug: string): string {
+  const iconMap: Record<string, string> = {
+    "normative-aspetti-legali": iconSvg(`<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>`),
+    "salute-benessere": iconSvg(`<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/>`),
+    "cannabis-news-it": iconSvg(`<path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-8"/><rect width="8" height="4" x="10" y="6" rx="1"/>`),
+    "coltivazione-legale": iconSvg(`<path d="M7 20h10"/><path d="M10 20c5.5-2.5 7.5-8 7.5-12A7.5 7.5 0 0 0 12 2C10 2 8 3 6 4c-1 1-1.5 2.5-1.5 4 0 5.5 2 9.5 7.5 12Z"/>`),
+    "guide-tutorial": iconSvg(`<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>`),
+    "partner-e-affiliazioni": iconSvg(`<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>`),
+    "canapa-e-ambiente": iconSvg(`<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 3.53 2 5.47 0 2.34-1.95 5.12-4.78 5.47 2-1.96 1.85-4.27 1.85-4.27L11 20Z"/>`),
+    "cbd": iconSvg(`<path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.9S3 11.2 3 12.25c0 2.22 1.8 4.05 4 4.05z"/>`),
+  };
+  return iconMap[slug] ?? iconSvg(`<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>`);
+}
+
+/* ---------------------------
    Page meta
 --------------------------- */
 
-const heroBgVar = "none";
 const title = "Canapalandia — Cannabis light, CBD e canapa legale in Italia";
 const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
 ---
 
 <Layout title={title} canonical={canonical} shell={false}>
-  <section class="hero" style={`--hero-bg:${heroBgVar}`}>
+  <section class="hero">
     <div class="hero-overlay" aria-hidden="true"></div>
 
     <div class="container hero-inner">
@@ -351,8 +287,7 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
       <div class="section-head">
         <h2>Percorsi tematici</h2>
         <p class="section-lead">
-          Entra subito nell’area giusta: normative, benessere, filiera e
-          approfondimenti.
+          Entra subito nell'area giusta: normative, benessere, filiera e approfondimenti.
         </p>
       </div>
 
@@ -363,9 +298,9 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
             <div class="card--topic__content">
               <div class="card--topic__header">
                 <h3>{cat.name}</h3>
-                {cat.count > 0 ? (
+                {cat.count > 0 && (
                   <span class="card--topic__count">{cat.count}</span>
-                ) : null}
+                )}
               </div>
               {cat.description ? (
                 <p>{cat.description.length > 100 ? cat.description.substring(0, 100) + "..." : cat.description}</p>
@@ -388,8 +323,7 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
       <div class="section-head">
         <h2>In evidenza</h2>
         <p class="section-lead">
-          Una guida “pilastro” e tre letture correlate per farti un quadro
-          completo.
+          Una guida "pilastro" e tre letture correlate per farti un quadro completo.
         </p>
       </div>
 
@@ -399,72 +333,51 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
             <a class="feature-main" href={postHref(featuredMain)}>
               <p class="badge">Tema caldo</p>
 
-              {(() => {
-                const imgSrc = normalizeImage(featuredMain);
-                return imgSrc ? (
-                  <img
-                    class="feature-img"
-                    src={imgSrc}
-                    alt={featuredMain.data.coverAlt || featuredMain.data.title}
-                    loading="eager"
-                    decoding="async"
-                    referrerpolicy="no-referrer"
-                    onerror="this.onerror=null;this.src='/images/placeholder.svg';"
-                  />
-                ) : (
-                  <div
-                    class="feature-img feature-img--placeholder"
-                    aria-hidden="true"
-                  />
-                );
-              })()}
+              {/* FIX: width/height espliciti per evitare CLS */}
+              <img
+                class="feature-img"
+                src={normalizeImage(featuredMain)}
+                alt={featuredMain.data.coverAlt || featuredMain.data.title}
+                width="800"
+                height="450"
+                loading="eager"
+                decoding="async"
+                referrerpolicy="no-referrer"
+                onerror="this.onerror=null;this.src='/images/placeholder.svg';"
+              />
 
               <h3 class="feature-title">{featuredMain.data.title}</h3>
-              <p class="feature-excerpt">
-                {featuredMain.data.description}
-              </p>
+              <p class="feature-excerpt">{featuredMain.data.description}</p>
               <span class="btn small">Leggi</span>
             </a>
           ) : (
             <div class="feature-main">
-              <p>
-                {eligiblePosts.length === 0
-                  ? "Nessun contenuto recente disponibile (2025-2026)."
-                  : "Selezione in evidenza in arrivo."}
-              </p>
+              <p>Selezione in evidenza in arrivo.</p>
             </div>
           )}
 
           <div class="feature-side">
-            {featuredSide.map((p) => {
-              const imgSrc = normalizeImage(p);
-              return (
-                <a class="mini" href={postHref(p)}>
-                  {imgSrc ? (
-                    <img
-                      class="mini-img"
-                      src={imgSrc}
-                      alt={p.data.coverAlt || p.data.title}
-                      loading="lazy"
-                      decoding="async"
-                      referrerpolicy="no-referrer"
-                      onerror="this.onerror=null;this.src='/images/placeholder.svg';"
-                    />
-                  ) : (
-                    <div
-                      class="mini-img mini-img--placeholder"
-                      aria-hidden="true"
-                    />
-                  )}
-
+            {featuredSide.map((p) => (
+              <a class="mini" href={postHref(p)}>
+                {/* FIX: width/height espliciti per evitare CLS */}
+                <img
+                  class="mini-img"
+                  src={normalizeImage(p)}
+                  alt={p.data.coverAlt || p.data.title}
+                  width="400"
+                  height="225"
+                  loading="lazy"
+                  decoding="async"
+                  referrerpolicy="no-referrer"
+                  onerror="this.onerror=null;this.src='/images/placeholder.svg';"
+                />
                 <div class="mini-body">
                   <h3 class="mini-title">{p.data.title}</h3>
                   <p class="mini-excerpt">{(p.data.description || "").slice(0, 90)}</p>
                   <span class="mini-link">Leggi</span>
                 </div>
               </a>
-            );
-            })}
+            ))}
           </div>
         </div>
       ) : (
@@ -486,19 +399,16 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
 
       {latestPosts.length > 0 ? (
         <div class="grid">
-          {latestPosts.map((p) => {
-            const imgSrc = normalizeImage(p);
-            return (
-              <CardPost
-                href={postHref(p)}
-                img={imgSrc || undefined}
-                date={formatDate(dateOf(p))}
-                title={p.data.title}
-                excerpt={p.data.description}
-                category={p.data.category || null}
-              />
-            );
-          })}
+          {latestPosts.map((p) => (
+            <CardPost
+              href={postHref(p)}
+              img={normalizeImage(p) || undefined}
+              date={formatDate(getPostDate(p))}
+              title={p.data.title}
+              excerpt={p.data.description}
+              category={p.data.category || null}
+            />
+          ))}
         </div>
       ) : (
         <div class="card">
@@ -508,7 +418,6 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
     </div>
   </section>
 
-  <!-- Sezione 2 card: Ribaltatore + Supporta -->
   <HomeActionCards />
 
   <style>
@@ -538,21 +447,6 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
     }
     .inizia-da-qui__links .btn {
       flex-shrink: 0;
-    }
-
-    /* Hero links discreti */
-    .hero-links {
-      margin-top: 12px;
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      justify-content: center;
-      flex-wrap: wrap;
-      opacity: 0.9;
-      font-size: 0.95rem;
-    }
-    .hero-link {
-      text-decoration: none;
     }
 
     .hero-cta {
@@ -598,7 +492,6 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
       pointer-events: none;
       opacity: 0;
       transition: opacity 0.18s ease;
-      /* glow leggero + “sheen” */
       background:
         radial-gradient(
           700px 220px at 20% 15%,
