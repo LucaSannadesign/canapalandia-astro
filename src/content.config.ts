@@ -1,7 +1,11 @@
 import { defineCollection, z } from "astro:content";
+// 1. Aggiunto l'import per il loader
+import { glob } from "astro/loaders"; 
 
 const blog = defineCollection({
-  type: "content",
+  // 2. Rimosso type: "content" e aggiunto il loader.
+  // Se i tuoi file si trovano in una cartella diversa da "src/content/blog", aggiorna il percorso di 'base' qui sotto.
+  loader: glob({ pattern: "**/*.{md,mdx}", base: "./src/content/blog" }), 
   schema: z
     .object({
       title: z.string(),

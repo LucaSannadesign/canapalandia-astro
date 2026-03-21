@@ -16,8 +16,9 @@ const formatDate = (value: Date | string | number | null | undefined): string =>
 };
 
 function postHref(entry: CollectionEntry<"blog">): string {
-  const slug = entry?.slug ?? entry?.data?.slug ?? "";
-  if (!slug) throw new Error("Missing slug for post link");
+  // MODIFICA PER ASTRO V6: Usa entry.id al posto di entry.slug
+  const slug = entry?.id ?? entry?.data?.slug ?? "";
+  if (!slug) throw new Error("Missing slug/id for post link");
   return `/blog/${slug}/`;
 }
 
@@ -66,9 +67,9 @@ function isItalianPost(entry: CollectionEntry<"blog">): boolean {
     return data.locale === "it";
   }
   
-  // Altrimenti escludi tutti i post con slug che inizia con "en/"
-  const slug = entry.slug || "";
-  return !slug.startsWith("en/");
+  // MODIFICA PER ASTRO V6: usa id invece di slug per i controlli
+  const id = entry.id || "";
+  return !id.startsWith("en/");
 }
 
 // Carica tutti i post dalla collection
@@ -314,7 +315,6 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/blog/`;
   </section>
 </Layout>
 
-<!-- Indice post serializzato per ricerca client-side -->
 <script type="module" define:vars={{ postsIndex }}>
   const ALL = postsIndex;
   const PAGE_SIZE = 10;

@@ -1,5 +1,6 @@
 ---
-import { getEntryBySlug, type CollectionEntry } from "astro:content";
+// MODIFICA 1: Importato getEntry e render al posto di getEntryBySlug
+import { getEntry, render, type CollectionEntry } from "astro:content";
 import SiteLayout from "../../layouts/SiteLayout.astro";
 import AdSlot from "../../components/AdSlot.astro";
 import PostMeta from "../../components/PostMeta.astro";
@@ -15,10 +16,12 @@ export const prerender = false;
 const slug = String(Astro.params.slug ?? "").trim();
 if (!slug) return new Response(null, { status: 404 });
 
-const entry = await (getEntryBySlug as any)("blog", slug);
+// MODIFICA 2: Usata la funzione getEntry
+const entry = await getEntry("blog", slug);
 if (!entry) return new Response(null, { status: 404 });
 
-const { Content } = await (entry as any).render();
+// MODIFICA 3: Usata la nuova funzione render(entry)
+const { Content } = await render(entry);
 
 // Helper per normalizzare URL/path immagine
 function normalizeImgSrc(src: unknown): string {
@@ -53,7 +56,7 @@ function toDate(value: Date | string | number | null | undefined): Date | null {
 }
 
 // Calcola cover image
-const rawCover = (entry as any).data.image || (entry as any).data.coverImage || "";
+const rawCover = entry.data.image || entry.data.coverImage || "";
 const coverSrc = normalizeImgSrc(rawCover);
 
 // Calcola og:image dal post (coverImage o image)
@@ -61,8 +64,8 @@ const postImage = normalizeImage(entry);
 const SITE_URL = import.meta.env.SITE || "https://canapalandia.com";
 
 const metadata = {
-  title: (entry as any).data.title,
-  description: (entry as any).data.description || "",
+  title: entry.data.title,
+  description: entry.data.description || "",
   canonical: `${SITE_URL}/blog/${slug}/`,
   robots: { index: true, follow: true },
   ogType: "article",
@@ -73,19 +76,19 @@ const metadata = {
 
 // URL canonico per condivisione
 const canonicalUrl = metadata.canonical;
-const postTitle = (entry as any).data.title;
+const postTitle = entry.data.title;
 
 // Opzioni frontmatter per disabilitare blocchi
-const showShare = (entry as any).data.showShare !== false; // default: true
-const showSupportCta = (entry as any).data.showSupportCta !== false; // default: true
+const showShare = entry.data.showShare !== false; // default: true
+const showSupportCta = entry.data.showSupportCta !== false; // default: true
 
 // JSON-LD (Schema.org) - BlogPosting
 const canonicalAbs = metadata.canonical; // già assoluto
 const imageAbs = postImage ? new URL(postImage, SITE_URL).toString() : undefined;
 
-const publishedISO = toDate((entry as any).data.publishDate)?.toISOString();
+const publishedISO = toDate(entry.data.publishDate)?.toISOString();
 const modifiedISO =
-  toDate((entry as any).data.updatedDate)?.toISOString() || publishedISO;
+  toDate(entry.data.updatedDate)?.toISOString() || publishedISO;
 
 const jsonLd = {
   "@context": "https://schema.org",
@@ -93,8 +96,8 @@ const jsonLd = {
   "@id": `${canonicalAbs}#article`,
   mainEntityOfPage: { "@type": "WebPage", "@id": canonicalAbs },
 
-  headline: (entry as any).data.title,
-  description: (entry as any).data.description || "",
+  headline: entry.data.title,
+  description: entry.data.description || "",
 
   ...(imageAbs ? { image: [imageAbs] } : {}),
 
@@ -103,7 +106,7 @@ const jsonLd = {
 
   author: {
     "@type": "Organization",
-    name: (entry as any).data.author || "Canapalandia",
+    name: entry.data.author || "Canapalandia",
   },
   publisher: {
     "@type": "Organization",
@@ -115,8 +118,8 @@ const jsonLd = {
   },
 
   inLanguage: "it-IT",
-  keywords: Array.isArray((entry as any).data.tags)
-    ? (entry as any).data.tags.join(", ")
+  keywords: Array.isArray(entry.data.tags)
+    ? entry.data.tags.join(", ")
     : undefined,
 };
 ---
@@ -125,11 +128,11 @@ const jsonLd = {
   <main class="container page-shell">
     <div class="post-layout">
       <article class="post-main">
-        <h1>{(entry as any).data.title}</h1>
+        <h1>{entry.data.title}</h1>
 
         <PostMeta
-          publishDate={(entry as any).data.publishDate}
-          updatedDate={(entry as any).data.updatedDate}
+          publishDate={entry.data.publishDate}
+          updatedDate={entry.data.updatedDate}
           slug={slug}
         />
 
@@ -138,7 +141,7 @@ const jsonLd = {
             <img
               class="post-hero__img"
               src={coverSrc}
-              alt={(entry as any).data.title || ""}
+              alt={entry.data.title || ""}
               loading="eager"
               decoding="async"
               referrerpolicy="no-referrer"
@@ -172,8 +175,8 @@ const jsonLd = {
         {/* Articoli correlati */}
         <RelatedPosts
           currentSlug={slug}
-          category={(entry as any).data.category}
-          tags={(entry as any).data.tags}
+          category={entry.data.category}
+          tags={entry.data.tags}
         />
       </article>
 

@@ -429,8 +429,6 @@ main#contenuto {
     backdrop-filter: inherit;
     -webkit-backdrop-filter: inherit;
   }
-
-
 }
 
 /* Mobile: stato scrolled mantiene lo stesso sfondo (già definito sopra) */
@@ -1708,149 +1706,153 @@ html[data-theme="light"] .cardExcerpt {
 }
 
 .wp-page :where(h1, h2, h3, h4) {
-  line-height: 1.2;
+  line-height: 1.25;
+  color: var(--text);
 }
 
 .wp-page h1 {
-  font-size: clamp(1.9rem, 3.6vw, 2.6rem);
-  margin: 0 0 1rem;
-  line-height: 1.2;
+  font-size: clamp(2rem, 3.6vw, 2.8rem);
+  margin-top: 0 !important;
+  margin-bottom: 1.5rem !important;
 }
 
+/* TITOLI H2: Mega stacco dal paragrafo precedente */
 .wp-page h2 {
-  font-size: clamp(1.4rem, 2.8vw, 1.9rem);
-  margin: 2.25rem 0 1rem;
-  line-height: 1.2;
+  font-size: clamp(1.6rem, 2.8vw, 2.2rem);
+  margin-top: 4rem !important; /* Questo dà finalmente il vuoto visivo sopra! */
+  margin-bottom: 1.5rem !important;
 }
 
+/* TITOLI H3: Sottotitoli con giusto stacco */
 .wp-page h3 {
-  font-size: 1.25rem;
-  margin: 1.75rem 0 0.75rem;
-  line-height: 1.25;
+  font-size: 1.35rem;
+  margin-top: 2.5rem !important;
+  margin-bottom: 1rem !important;
 }
 
 .wp-page h4 {
-  font-size: 1.1rem;
-  margin: 1.5rem 0 0.75rem;
-  line-height: 1.3;
+  font-size: 1.15rem;
+  margin-top: 2rem !important;
+  margin-bottom: 0.75rem !important;
 }
 
+/* PARAGRAFI: Niente margine sopra, respiro sotto */
 .wp-page p {
-  margin: 0 0 1em;
+  margin-top: 0 !important;
+  margin-bottom: 1.8rem !important; 
   color: var(--text);
   font-size: 1.125rem;
-  line-height: 1.7;
+  line-height: 1.8;
 }
 
+/* LISTE (Punti elenco e numerati) */
 .wp-page :where(ul, ol) {
-  margin: 0 0 1em;
-  padding-left: 1.25em;
+  margin-top: 0 !important;
+  margin-bottom: 2rem !important;
+  padding-left: 1.5rem;
   font-size: 1.125rem;
-  line-height: 1.75;
+  line-height: 1.8;
   color: var(--text);
 }
 
 .wp-page li {
-  margin: 0.35em 0;
+  margin-top: 0 !important;
+  margin-bottom: 0.75rem !important;
 }
 
+.wp-page li:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* LINK nel testo */
 .wp-page a {
   text-decoration: underline;
   text-underline-offset: 3px;
   text-decoration-thickness: from-font;
-  transition: text-decoration-thickness 0.2s ease;
+  transition: text-decoration-thickness 0.2s ease, color 0.2s ease;
 }
 
 .wp-page a:hover {
   text-decoration-thickness: 2px;
+  color: var(--brand);
 }
 
-/* Fix: evita che i link delle card (correlati) prendano il sottolineato del post */
+/* Fix: evita che i link delle card prendano il sottolineato del post */
 .wp-page .cardLink {
-  text-decoration: none;
+  text-decoration: none !important;
 }
 
+/* IMMAGINI e VIDEO */
 .wp-page :where(img, video) {
   max-width: 100%;
   height: auto;
   border-radius: 12px;
   display: block;
+  margin: 2.5rem auto !important; /* Stacca l'immagine dal testo sopra e sotto */
 }
 
 .wp-page figure {
-  margin: 1.5em 0;
+  margin: 2.5rem 0 !important;
 }
 
 .wp-page figcaption {
-  margin-top: 0.5em;
+  margin-top: 0.75rem !important;
   color: var(--muted);
   font-size: 0.95rem;
   text-align: center;
   line-height: 1.5;
 }
 
+/* CITAZIONI (Blockquote) */
 .wp-page blockquote {
-  margin: 1.5em 0;
-  padding: 1em 1.25em;
-  padding-left: 1em;
+  margin: 2.5rem 0 !important;
+  padding: 1.5rem;
   background: var(--panel);
-  border-left: 3px solid var(--brand, rgba(34, 197, 94, 0.4));
+  border-left: 4px solid var(--brand);
   border-radius: 8px;
   color: var(--muted);
   font-style: italic;
+  box-shadow: var(--shadow-sm);
 }
 
 .wp-page blockquote p {
-  margin: 0;
+  margin-bottom: 0 !important;
 }
 
-.wp-page blockquote p + p {
-  margin-top: 0.75em;
-}
-
+/* CODICE */
 .wp-page code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   background: rgba(255, 255, 255, .10);
   padding: 2px 6px;
-  border-radius: 8px;
+  border-radius: 6px;
+  font-size: 0.9em;
 }
 
 html[data-theme="light"] .wp-page code {
   background: rgba(2, 6, 23, .06);
 }
 
-.wp-page hr {
-  border: 0;
-  border-top: 1px solid var(--border);
-  margin: 2em 0;
-}
-
-/* Spacing coerente per altri elementi editoriali */
-.wp-page > * + * {
-  margin-top: 1em;
-}
-
-.wp-page > h2 + *,
-.wp-page > h3 + * {
-  margin-top: 0.5em;
-}
-
-/* Code blocks */
 .wp-page pre {
-  margin: 1.5em 0;
-  padding: 1em;
+  margin: 2rem 0 !important;
+  padding: 1.5rem !important;
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 12px;
   overflow-x: auto;
-  font-size: 0.9rem;
-  line-height: 1.6;
 }
 
 .wp-page pre code {
   background: transparent;
   padding: 0;
   border-radius: 0;
+  font-size: 0.9rem;
+}
+
+/* DIVISORI (HR) */
+.wp-page hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 3.5rem 0 !important;
 }
 
 /* ------------------------------------------------------------
