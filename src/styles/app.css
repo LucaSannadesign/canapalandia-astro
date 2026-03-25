@@ -1717,50 +1717,50 @@ html[data-theme="light"] .cardExcerpt {
 }
 
 /* TITOLI H2: Mega stacco dal paragrafo precedente */
-.wp-page h2 {
+.post-main.wp-page h2 {
   font-size: clamp(1.6rem, 2.8vw, 2.2rem);
   margin-top: 4rem !important; /* Questo dà finalmente il vuoto visivo sopra! */
-  margin-bottom: 1.5rem !important;
+  margin-bottom: 2rem !important;
 }
 
 /* TITOLI H3: Sottotitoli con giusto stacco */
-.wp-page h3 {
+.post-main.wp-page h3 {
   font-size: 1.35rem;
   margin-top: 2.5rem !important;
+  margin-bottom: 1.5rem !important;
+}
+
+.post-main.wp-page h4 {
+  font-size: 1.15rem;
+  margin-top: 2rem !important;
   margin-bottom: 1rem !important;
 }
 
-.wp-page h4 {
-  font-size: 1.15rem;
-  margin-top: 2rem !important;
-  margin-bottom: 0.75rem !important;
-}
-
 /* PARAGRAFI: Niente margine sopra, respiro sotto */
-.wp-page p {
+.post-main.wp-page p {
   margin-top: 0 !important;
-  margin-bottom: 1.8rem !important; 
+  margin-bottom: 2.25rem !important; 
   color: var(--text);
   font-size: 1.125rem;
   line-height: 1.8;
 }
 
 /* LISTE (Punti elenco e numerati) */
-.wp-page :where(ul, ol) {
+.post-main.wp-page :where(ul, ol) {
   margin-top: 0 !important;
-  margin-bottom: 2rem !important;
+  margin-bottom: 2.25rem !important;
   padding-left: 1.5rem;
   font-size: 1.125rem;
   line-height: 1.8;
   color: var(--text);
 }
 
-.wp-page li {
+.post-main.wp-page li {
   margin-top: 0 !important;
-  margin-bottom: 0.75rem !important;
+  margin-bottom: 0.9rem !important;
 }
 
-.wp-page li:last-child {
+.post-main.wp-page li:last-child {
   margin-bottom: 0 !important;
 }
 
@@ -1804,8 +1804,8 @@ html[data-theme="light"] .cardExcerpt {
 }
 
 /* CITAZIONI (Blockquote) */
-.wp-page blockquote {
-  margin: 2.5rem 0 !important;
+.post-main.wp-page blockquote {
+  margin: 2.75rem 0 !important;
   padding: 1.5rem;
   background: var(--panel);
   border-left: 4px solid var(--brand);
@@ -1815,7 +1815,7 @@ html[data-theme="light"] .cardExcerpt {
   box-shadow: var(--shadow-sm);
 }
 
-.wp-page blockquote p {
+.post-main.wp-page blockquote p {
   margin-bottom: 0 !important;
 }
 
@@ -3109,4 +3109,24 @@ html[data-theme="light"] .filter-chip:hover {
 /* CTA Pill buttons */
 .cta-pill {
   @apply inline-flex items-center justify-center px-5 py-2.5 rounded-full border border-white/15 bg-white/5 text-white/90 text-sm font-semibold transition hover:bg-white/10 hover:border-white/30 hover:text-white focus:ring-2 focus:ring-emerald-400/40 focus:outline-none;
+}
+
+.article-content h2,
+.article-content h3 {
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+}
+
+.article-content p {
+  margin-bottom: 1rem;
+}
+.prose :where(h2, h3, h4) {
+  /* maggiore distanza sopra e sotto gli heading */
+  margin-block-start: 2rem; /* invece di margin-top */
+  margin-block-end: 1rem;   /* invece di margin-bottom */
+}
+
+.prose :where(p) {
+  /* spazio sotto ogni paragrafo */
+  margin-block-end: 1rem;
 }
