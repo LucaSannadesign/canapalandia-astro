@@ -133,6 +133,14 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     return gone410();
   }
 
+  // Legacy feed endpoints (WordPress-style) should be gone, not 404.
+  const isLegacyFeedPath =
+    segments.length >= 2 &&
+    segments[segments.length - 1]?.toLowerCase() === "feed";
+  if (isLegacyFeedPath) {
+    return gone410();
+  }
+
   const response = await next();
 
   const hostname = context.url.hostname;
