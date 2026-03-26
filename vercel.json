@@ -27,16 +27,6 @@
       "permanent": true
     },
     {
-      "source": "/sitemap.xml",
-      "destination": "/sitemap-index.xml",
-      "permanent": true
-    },
-    {
-      "source": "/sitemap_index.xml",
-      "destination": "/sitemap-index.xml",
-      "permanent": true
-    },
-    {
       "source": "/ribaltatore",
       "destination": "/ribaltatore/",
       "permanent": true
@@ -56,31 +46,6 @@
       "source": "/cannabis-light-corte-giustizia-ue/",
       "destination": "/blog/cannabis-light-corte-giustizia-ue/",
       "permanent": true
-    },
-    {
-      "source": "/partner-selezionati",
-      "destination": "/blog/",
-      "permanent": false
-    },
-    {
-      "source": "/partner-selezionati/:path*",
-      "destination": "/blog/",
-      "permanent": false
-    },
-    {
-      "source": "/go/:path*",
-      "destination": "/blog/",
-      "permanent": false
-    },
-    {
-      "source": "/partner",
-      "destination": "/blog/",
-      "permanent": false
-    },
-    {
-      "source": "/partner/:path*",
-      "destination": "/blog/",
-      "permanent": false
     }
   ]
 }
