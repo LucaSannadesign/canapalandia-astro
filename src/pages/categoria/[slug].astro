@@ -77,7 +77,7 @@ const metadata = {
     ? `Articoli nella categoria ${categoryName}.`
     : `Nessun articolo trovato per la categoria ${slug}.`,
   canonical: `/categoria/${slug}/`,
-  robots: { index: false, follow: true }, // noindex per evitare crawl bloat
+  robots: { index: true, follow: true },
 };
 ---
 

@@ -163,6 +163,7 @@ const url = Astro.url;
 // Solo parametri tecnici/problematici, NON rimuovere utm_* o ref (tracking legittimo)
 const techParams = ["mailpoet_page", "captcha", "wpnonce", "_wpnonce", "action", "doing_wp_cron"];
 const hasTechParam = techParams.some((param) => url.searchParams.has(param));
+const isDateArchivePath = /^\d{4}\/\d{1,2}(?:\/\d{1,2})?$/.test(targetPathForMatch);
 
 // Se ci sono query params tecnici su pagine migrate, rimuovili con redirect 301
 if (hasTechParam && targetPathForMatch) {
@@ -216,7 +217,7 @@ const metadata = {
   title,
   description,
   canonical: canonicalPath,
-  robots: { index: true, follow: true },
+  robots: { index: !(hasTechParam || isDateArchivePath), follow: true },
 };
 
 /* ---------------------------

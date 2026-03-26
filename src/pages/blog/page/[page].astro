@@ -180,9 +180,10 @@ const pagePosts = sortedPosts.slice(start, end);
 // Metadata
 const title = `Blog — Pagina ${pageNum} — Canapalandia`;
 const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/blog/page/${pageNum}/`;
+const robots = { index: false, follow: true };
 ---
 
-<Layout title={title} canonical={canonical}>
+<Layout title={title} canonical={canonical} robots={robots}>
   <section class="hero">
     <div class="container hero-inner">
       <p class="kicker">Blog</p>
