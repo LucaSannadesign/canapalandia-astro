@@ -18,7 +18,6 @@ Per l'automazione di condivisione Telegram, configura i seguenti secrets in GitH
 - **RSS_URL** (opzionale): URL del feed RSS/Atom. Se non fornito, prova automaticamente:
   - `https://canapalandia.com/rss.xml`
   - `https://canapalandia.com/feed.xml`
-  - `https://canapalandia.com/feed/`
 
 Vedi `.github/TELEGRAM_SETUP.md` per istruzioni dettagliate.
 

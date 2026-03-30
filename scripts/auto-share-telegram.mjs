@@ -18,7 +18,6 @@ const RSS_URL = process.env.RSS_URL; // Se fornito, usa solo questo
 const RSS_CANDIDATES = [
   "https://canapalandia.com/rss.xml",
   "https://canapalandia.com/feed.xml",
-  "https://canapalandia.com/feed/",
   "https://canapalandia.com/rss/",
   "https://canapalandia.com/atom.xml",
 ];
