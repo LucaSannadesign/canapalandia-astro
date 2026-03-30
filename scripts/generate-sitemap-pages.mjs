@@ -50,7 +50,27 @@ const normalizeSlug = (s) =>
     .replace(/^["']|["']$/g, "")
     .replace(/^\/+|\/+$/g, "");
 
-const routeToUrl = (route) => new URL(route, SITE).href;
+function isFileLikeRoute(route) {
+  const last = (route.split("/").pop() || "").trim();
+  return /\.[a-z0-9]+$/i.test(last);
+}
+
+function normalizeRouteForCanonical(route) {
+  if (!route) return "/";
+  let p = route.startsWith("/") ? route : `/${route}`;
+
+  // Root: non cambiare
+  if (p === "/") return "/";
+
+  // Se è un file, non aggiungere trailing slash
+  if (isFileLikeRoute(p)) return p;
+
+  p = p.replace(/\/+$/, "");
+  p = p.replace(/^\/+/, "/");
+  return `${p}/`;
+}
+
+const routeToUrl = (route) => new URL(normalizeRouteForCanonical(route), SITE).href;
 
 const pageRouteExists = async (route) => {
   // route tipo "/contatti/" -> controlla src/pages/contatti.(astro|md|mdx) o index.* in sottodir

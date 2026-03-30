@@ -89,23 +89,58 @@ const robotsFinal = isProduction
   : "noindex,nofollow";
 
 // Normalizza canonical: se relativo, rendilo assoluto
+function isFileLikePath(pathname: string): boolean {
+  // Evita di aggiungere trailing slash a file tipo "/favicon.ico", "/robots.txt", ecc.
+  return /\.[a-z0-9]+$/i.test(pathname);
+}
+
+function normalizeCanonicalPath(pathname: string): string {
+  if (!pathname) return "/";
+  // Root: non aggiungere "bonus" slash
+  if (pathname === "/") return "/";
+
+  let p = pathname.startsWith("/") ? pathname : `/${pathname}`;
+
+  // Se sembra un file, lascialo invariato (nessun trailing slash)
+  if (isFileLikePath(p)) return p;
+
+  // Normalizza in modo che:
+  // - non ci siano slash multipli finali
+  // - ci sia esattamente 1 "/" finale
+  p = p.replace(/\/+$/, "");
+  p = p.replace(/^\/+/, "/");
+  return `${p}/`;
+}
+
 function normalizeCanonical(canonical: string | undefined): string | undefined {
   if (!canonical) return undefined;
-  // Se già assoluto (inizia con http:// o https://), ritorna così
-  if (canonical.startsWith("http://") || canonical.startsWith("https://")) {
-    return canonical;
-  }
-  // Se relativo, rendilo assoluto usando SITE o origin
+
   const base = import.meta.env.SITE || Astro.url.origin;
-  // Assicura trailing slash se necessario
+
+  // Se già assoluto, normalizza solo pathname (trailing slash)
+  if (canonical.startsWith("http://") || canonical.startsWith("https://")) {
+    const u = new URL(canonical);
+    u.pathname = normalizeCanonicalPath(u.pathname);
+    return u.toString();
+  }
+
+  // Se relativo, rendilo assoluto usando base
   const canonicalPath = canonical.startsWith("/") ? canonical : `/${canonical}`;
-  return `${base}${canonicalPath}`;
+  return `${base}${normalizeCanonicalPath(canonicalPath)}`;
 }
 
 // Calcola canonicalFinal: usa canonical fornito, altrimenti SITE + pathname
 const canonicalFinal = canonicalRaw 
   ? normalizeCanonical(canonicalRaw)
   : normalizeCanonical(`${import.meta.env.SITE || "https://canapalandia.com"}${Astro.url.pathname}`);
+
+// Redirect 301: /path senza "/" finale -> /path/ finale
+const SITE_BASE_FOR_CANONICAL = import.meta.env.SITE || "https://canapalandia.com";
+const requestedPath = Astro.url.pathname;
+const requestedCanonicalPath = normalizeCanonicalPath(requestedPath);
+if (requestedPath !== requestedCanonicalPath && !isFileLikePath(requestedPath)) {
+  return Astro.redirect(`${SITE_BASE_FOR_CANONICAL}${requestedCanonicalPath}`, 301);
+}
 
 // Pulizia yoastHeadHtml: rimuovi title, canonical, robots duplicati
 function cleanYoastHead(html: string | undefined): string {
@@ -169,6 +204,11 @@ const currentPath = Astro.url.pathname;
 const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) => 
   currentPath === route || currentPath.startsWith(route + "/")
 );
+
+// Homepage: il banner top NON deve precedere mai la hero.
+// Normalizziamo varianti comuni (/index, /index.html, /index/).
+const normalizedPathForHome = currentPath.replace(/\/index(?:\.html)?\/?$/, "");
+const isHomePage = normalizedPathForHome === "" || normalizedPathForHome === "/";
 ---
 
 <html lang="it">
@@ -795,7 +835,7 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
     </nav>
 
     <!-- AdSense Banner Bar (separato dall'header) -->
-    {shouldShowAds ? (
+    {shouldShowAds && !isHomePage ? (
       <div class="adbar" data-adbar>
         <div class="container">
           <AdSlot slot={ADS_SLOT_TOP} label="Pubblicità" />
@@ -946,7 +986,7 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
     </footer>
 
     <!-- Scroll to top button (fixed, appare dopo scroll) -->
-    <a href="#top" class="scroll-to-top" aria-label="Torna in cima alla pagina" style="display: none;">
+    <a href="#top" class="scroll-to-top" aria-label="Torna in cima alla pagina" aria-hidden="true">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M18 15l-6-6-6 6" />
       </svg>
@@ -960,14 +1000,14 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
         if (!scrollTopBtn) return;
 
         const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const SHOW_AFTER_PX = 350;
 
         // Mostra/nascondi in base a scrollY
         const updateVisibility = () => {
-          if (window.scrollY > 400) {
-            scrollTopBtn.style.display = "flex";
-          } else {
-            scrollTopBtn.style.display = "none";
-          }
+          const y = window.scrollY || document.documentElement.scrollTop || 0;
+          const shouldShow = y > SHOW_AFTER_PX;
+          scrollTopBtn.classList.toggle("is-visible", shouldShow);
+          scrollTopBtn.setAttribute("aria-hidden", shouldShow ? "false" : "true");
         };
 
         // Throttle scroll listener
@@ -1052,42 +1092,6 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
           const next = current === "dark" ? "light" : "dark";
           apply(next);
           safeSet(next);
-        });
-      })();
-    </script>
-
-    <button
-      id="scrollTop"
-      class="scroll-top"
-      type="button"
-      aria-label="Torna su"
-      title="Torna su"
-    >
-      ↑
-    </button>
-
-    <script is:inline>
-      (() => {
-        const btn = document.getElementById("scrollTop");
-        if (!btn) return;
-
-        const prefersReduced = window.matchMedia(
-          "(prefers-reduced-motion: reduce)",
-        ).matches;
-
-        const toggle = () => {
-          const y = window.scrollY || document.documentElement.scrollTop || 0;
-          btn.classList.toggle("is-visible", y > 600);
-        };
-
-        toggle();
-        window.addEventListener("scroll", toggle, { passive: true });
-
-        btn.addEventListener("click", () => {
-          window.scrollTo({
-            top: 0,
-            behavior: prefersReduced ? "auto" : "smooth",
-          });
         });
       })();
     </script>
