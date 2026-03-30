@@ -248,11 +248,13 @@ function getCategoryIcon(slug: string): string {
    Page meta
 --------------------------- */
 
-const title = "Canapalandia — Cannabis light, CBD e canapa legale in Italia";
+const title = "Cannabis light, CBD e canapa in Italia | Notizie, normativa e guide - Canapalandia";
+const description =
+  "Notizie, normativa e guide su cannabis light, CBD e canapa in Italia: analisi chiare per orientarti tra regole, mercato e attualita.";
 const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
 ---
 
-<Layout title={title} canonical={canonical} shell={false}>
+<Layout title={title} description={description} canonical={canonical} shell={false}>
   <div class="page-home">
   <section class="hero hero--home" aria-labelledby="hero-title">
     <div class="hero-overlay" aria-hidden="true"></div>
@@ -271,15 +273,15 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
             </p>
 
             <h1 id="hero-title" class="hero--home__title">
-              Cannabis light e CBD in Italia: capirci con ordine
+              Cannabis light, CBD e canapa in Italia: notizie, normativa e guide
             </h1>
 
             <p class="lead hero--home__lead">
               <span class="hero--home__lead-line hero--home__lead-strong">
-                Normativa, attualità, notizie e guide organizzate per tema.
+                Aggiornamenti e approfondimenti per orientarti tra norme,
               </span>
               <span class="hero--home__lead-line hero--home__lead-rest">
-                Per orientarti in modo diretto e sensato, senza toni confusi.
+                attualita e filiera della canapa in Italia, senza rumore.
               </span>
             </p>
           </header>
@@ -289,11 +291,11 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
               <div class="hero--home__cta-row">
                 <div class="hero--home__primary-block">
                   <a class="btn primary large hero--home__btn-primary" href="/#percorsi">
-                    Apri il percorso tematico
+                    Esplora i percorsi tematici
                   </a>
                 </div>
                 <a class="btn ghost hero--home__btn-secondary" href="/#ultimi">
-                  Sfoglia le ultime notizie
+                  Leggi gli ultimi articoli
                 </a>
               </div>
             </div>
