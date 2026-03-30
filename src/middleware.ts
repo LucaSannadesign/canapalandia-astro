@@ -51,6 +51,21 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     return gone410();
   }
 
+  // Trailing slash redirect per pagine HTML:
+  // - /contatti -> /contatti/
+  // - esclude file con estensione e route tecniche
+  const isFileLikePath = /\.[a-z0-9]+$/i.test(pathNoSlash);
+  const shouldRedirectToTrailingSlash =
+    pathname !== "/" &&
+    !pathname.endsWith("/") &&
+    !isFileLikePath &&
+    !pathname.startsWith("/api/") &&
+    !pathname.startsWith("/_astro/");
+
+  if (shouldRedirectToTrailingSlash) {
+    return redirect301(pathname);
+  }
+
   const gonePrefixPatterns = [
     /^wp-admin(?:\/|$)/i,
     /^wp-includes(?:\/|$)/i,

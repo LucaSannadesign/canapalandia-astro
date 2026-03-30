@@ -39,6 +39,13 @@ function getPostImage(entry: CollectionEntry<"blog">): string | undefined {
   return normalized.startsWith("/") ? normalized : `/${normalized}`;
 }
 
+function postHref(entry: CollectionEntry<"blog">): string {
+  const slug = (entry.slug || entry.data.slug || "").trim();
+  // Protezione minima: evita sempre /blog/undefined/
+  if (!slug || slug === "undefined") return "/blog/";
+  return `/blog/${slug}/`;
+}
+
 // Carica tutti i post dalla collection
 let postsAll: CollectionEntry<"blog">[] = [];
 try {
@@ -114,7 +121,7 @@ const metadata = {
         <div class="grid">
           {posts.map((p) => (
             <CardPost
-              href={`/blog/${p.slug}/`}
+              href={postHref(p)}
               img={getPostImage(p)}
               date={formatDate(dateOf(p))}
               title={p.data.title}

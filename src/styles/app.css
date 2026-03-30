@@ -779,91 +779,11 @@ html[data-theme="light"] .site-footer {
 }
 
 .footer-inner {
-  padding: 28px 0;
+  padding: 26px 0 20px;
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 18px;
-}
-
-.footer-top {
-  display: flex;
-  flex-direction: column;
-}
-
-.footer-nav {
-  display: inline-flex;
-  gap: 14px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-/* Footer mobile: struttura a due livelli */
-@media (max-width: 767px) {
-  .footer-inner {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    /* Padding extra orizzontale per respiro dai bordi */
-    padding-inline: 16px;
-    /* Padding verticale aumentato */
-    padding-top: 32px;
-    padding-bottom: 32px;
-  }
-
-  .footer-top {
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 20px;
-  }
-
-  .footer-brand {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .footer-links {
-    margin-top: 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    text-align: left;
-    gap: 14px;
-  }
-
-  .footer-links a {
-    display: block;
-    padding: 0;
-    line-height: 1.6;
-  }
-
-  .footer-copy {
-    margin-top: 20px;
-    line-height: 1.6;
-  }
-}
-
-/* Footer desktop: layout originale */
-@media (min-width: 768px) {
-  .footer-inner {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 18px;
-  }
-
-  .footer-top {
-    display: block;
-  }
-
-  .footer-nav {
-    display: inline-flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-  }
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
 }
 
 .footer-brand {
@@ -874,20 +794,8 @@ html[data-theme="light"] .site-footer {
   overflow: hidden;
 }
 
-/* Su mobile: regole anti-overflow per logo footer */
-@media (max-width: 767px) {
-  .footer-brand,
-  .footer-logo,
-  .footer-logo__img {
-    max-width: 100%;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    transform: none !important;
-  }
-
-  .footer-logo {
-    box-sizing: border-box;
-  }
+.footer-col {
+  min-width: 0;
 }
 
 .footer-logo {
@@ -907,7 +815,7 @@ html[data-theme="light"] .site-footer {
   margin: 0;
   color: var(--muted);
   font-size: 0.95rem;
-  line-height: 1.6;
+  line-height: 1.55;
 }
 
 .footer-credits {
@@ -928,49 +836,100 @@ html[data-theme="light"] .site-footer {
   color: var(--brand);
 }
 
-/* Social links: icone social riusabili */
+.footer-title {
+  margin: 0 0 10px;
+  font-size: 0.77rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--text), var(--muted) 30%);
+}
+
+.footer-links {
+  display: grid;
+  gap: 9px;
+}
+
+.footer-links a {
+  color: color-mix(in oklab, var(--text), var(--muted) 22%);
+  font-size: 0.95rem;
+  text-decoration: none;
+  transition: color 0.16s ease;
+}
+
+.footer-links a:hover,
+.footer-links a:focus-visible {
+  color: var(--brand);
+}
+
 .social-links {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
   flex-wrap: wrap;
 }
 
 .social-links a {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: color-mix(in oklab, var(--panel), transparent 30%);
+  background: color-mix(in oklab, var(--panel), transparent 25%);
   border: 1px solid var(--border);
-  opacity: 0.9;
-  transition: transform 0.12s ease, opacity 0.12s ease, background 0.12s ease;
+  opacity: 0.96;
+  transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
   text-decoration: none;
 }
 
 .social-links a:hover {
-  opacity: 1;
-  transform: scale(1.06);
+  transform: translateY(-1px);
   background: color-mix(in oklab, var(--panel), var(--brand) 8%);
+  border-color: color-mix(in oklab, var(--border), var(--brand) 36%);
 }
 
 .social-links img {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   filter: var(--icon-filter, none);
 }
 
 .footer-social {
-  margin-top: 6px;
+  margin-top: 14px;
 }
 
 .footer-copy {
   grid-column: 1 / -1;
+  border-top: 1px solid color-mix(in oklab, var(--border), transparent 35%);
+  padding-top: 14px;
   opacity: 0.75;
-  font-size: 0.95rem;
-  margin-top: 8px;
+  font-size: 0.9rem;
+  margin-top: 4px;
+}
+
+@media (max-width: 1023px) {
+  .footer-inner {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px;
+  }
+
+  .footer-brand {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 767px) {
+  .footer-inner {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    padding: 24px 0 18px;
+  }
+
+  .footer-copy {
+    margin-top: 2px;
+    padding-top: 12px;
+  }
 }
 
 /* Scroll to top button (fixed, bottom-right) */
