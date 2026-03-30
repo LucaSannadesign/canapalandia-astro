@@ -563,6 +563,22 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
       --home-gold: #c8a95a;
     }
 
+    :global(html[data-theme="dark"]:has(.page-home)) {
+      /* Dark homepage più aperto: verde bosco, non quasi nero */
+      --bg: #13241A;
+      --panel: #183126;
+      --panel-2: #1D392C;
+      --card-solid: #1D392C;
+      --card-bg: #1D392C;
+      --border: #315744;
+      --border-subtle: rgba(49, 87, 68, 0.35);
+      --border-strong: #315744;
+      --text: #EEF4EC;
+      --muted: #B1BEB3;
+      --card-text: #EEF4EC;
+      --card-muted: #B1BEB3;
+    }
+
     :global(html[data-theme="light"]:has(.page-home)) {
       --bg: #f7f4ec;
       --text: #142018;
@@ -1381,8 +1397,14 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
 
     #percorsi .percorsi-section__secondary {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 0.85rem 1rem;
+    }
+
+    @media (max-width: 1023px) {
+      #percorsi .percorsi-section__secondary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
     }
 
     #percorsi .percorsi-section__footer-cta {
