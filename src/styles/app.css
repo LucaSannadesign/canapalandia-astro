@@ -9,23 +9,23 @@
   color-scheme: dark;
 
   /* ===== COLOR TOKENS ===== */
-  --bg: #06130b;
+  --bg: #13241A;
   --text: #e8f5ec;
   --muted: #a8c1b2;
   --fg: var(--text); /* Alias per foreground */
 
-  --card-solid: #0a1c12;
+  --card-solid: #183126;
   --panel: var(--card-solid);
-  --panel-2: #072015;
+  --panel-2: #1D392C;
 
-  --card-bg: #0f1f16;
+  --card-bg: #1D392C;
   --card-text: #e8f5ec;
   --card-muted: #a8c1b2;
   --card-border: rgba(125, 255, 180, 0.2);
 
-  --border: rgba(125, 255, 180, 0.12);
-  --border-strong: rgba(125, 255, 180, 0.22);
-  --border-subtle: rgba(125, 255, 180, 0.08);
+  --border: #315744;
+  --border-strong: #315744;
+  --border-subtle: rgba(49, 87, 68, 0.35);
   
   --brand: #22c55e;
   --brand-2: #16a34a;
@@ -42,7 +42,7 @@
   --shadow-brand: 0 8px 24px rgba(34, 197, 94, 0.35);
 
   /* ===== HEADER TOKENS ===== */
-  --header-bg: rgba(6, 19, 11, 0.72);
+  --header-bg: rgba(19, 36, 26, 0.78);
   --header-border: rgba(255, 255, 255, 0.08);
   --header-text: var(--text);
   --header-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
@@ -179,6 +179,12 @@ body {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Pagine interne allineate allo sfondo homepage in light mode */
+html[data-theme="light"] body.home-light-bg {
+  --bg: #f7f4ec;
+  background: var(--bg);
 }
 
 /* ===== TYPOGRAPHY SCALE (Editorial Refined) ===== */

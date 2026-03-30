@@ -198,46 +198,54 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/blog/`;
 ---
 
 <Layout title={title} canonical={canonical}>
-  <section class="hero">
-    <div class="container hero-inner">
-      <p class="kicker">Blog</p>
-      <h1>Articoli e guide</h1>
-      <p class="lead">Articoli in italiano su cannabis light, CBD e canapa legale in Italia.</p>
-    </div>
-  </section>
-
-  {/* Sezione Percorsi del Blog */}
-  {mainCategories.length > 0 && (
-    <section class="section">
-      <div class="container">
-        <div class="section-head">
-          <h2>Percorsi del Blog</h2>
-          <p class="section-lead">
-            Scegli un'area tematica e vai dritto al punto.
-          </p>
-        </div>
-
-        <div class="grid cards">
-          {mainCategories.map((cat) => (
-            <a class="card card--topic" href={`/categoria/${cat.slug}/`}>
-              <span class="card-icon" aria-hidden="true" set:html={getCategoryIcon(cat.slug)}></span>
-              <div class="card--topic__content">
-                <div class="card--topic__header">
-                  <h3>{cat.name}</h3>
-                  {cat.count > 0 ? (
-                    <span class="card--topic__count">{cat.count}</span>
-                  ) : null}
-                </div>
-              </div>
-            </a>
-          ))}
-        </div>
+  <div class="page-blog">
+    <section class="hero">
+      <div class="container hero-inner">
+        <p class="kicker">Blog</p>
+        <h1>Articoli e guide</h1>
+        <p class="lead">Articoli in italiano su cannabis light, CBD e canapa legale in Italia.</p>
       </div>
     </section>
-  )}
 
-  <section class="section">
-    <div class="container">
+    {/* Sezione Percorsi del Blog */}
+    {mainCategories.length > 0 && (
+      <section class="section">
+        <div class="container">
+          <div class="section-head">
+            <h2>Percorsi del Blog</h2>
+            <p class="section-lead">
+              Scegli un'area tematica e vai dritto al punto.
+            </p>
+          </div>
+
+          <div class="grid cards">
+            {mainCategories.map((cat) => (
+              <a class="card card--topic" href={`/categoria/${cat.slug}/`}>
+                <span class="card-icon" aria-hidden="true" set:html={getCategoryIcon(cat.slug)}></span>
+                <div class="card--topic__content">
+                  <div class="card--topic__header">
+                    <h3>{cat.name}</h3>
+                    {cat.count > 0 ? (
+                      <span class="card--topic__count">{cat.count}</span>
+                    ) : null}
+                  </div>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+    )}
+
+    {/* Banner AdSense: sotto hero + intro/percorsi */}
+    <section class="section section--blog-ad">
+      <div class="container">
+        <AdSlot slot={ADS_SLOT_BLOG_BOTTOM} label="Pubblicità" />
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
       {pagePosts.length > 0 ? (
         <>
           <div class="grid" id="postsGrid">
@@ -288,11 +296,6 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/blog/`;
             <p id="searchStatus" aria-live="polite" aria-atomic="true" class="blog-search__status"></p>
           </form>
 
-          {/* Banner AdSense */}
-          <div style="margin-top: 3rem; padding-top: 2rem;">
-            <AdSlot slot={ADS_SLOT_BLOG_BOTTOM} label="Pubblicità" />
-          </div>
-
           {/* Container risultati ricerca (sostituisce la lista normale quando attiva) */}
           <div id="searchResults" class="blog-search__results" style="display: none;">
             <div class="grid" id="searchResultsGrid"></div>
@@ -311,8 +314,9 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/blog/`;
           </p>
         </div>
       )}
-    </div>
-  </section>
+      </div>
+    </section>
+  </div>
 </Layout>
 
 <script type="module" define:vars={{ postsIndex }}>
@@ -479,6 +483,28 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/blog/`;
 </script>
 
 <style>
+  :global(html[data-theme="dark"]:has(.page-blog)) {
+    --bg: #1a2e20;
+    --panel: #32493c;
+    --panel-2: #395245;
+    --card-bg: #395245;
+    --border: #4f6b5c;
+    --border-subtle: rgba(79, 107, 92, 0.35);
+    --border-strong: #4f6b5c;
+    --text: #EEF4EC;
+    --muted: #B1BEB3;
+    --card-text: #EEF4EC;
+    --card-muted: #B1BEB3;
+  }
+
+  :global(html[data-theme="dark"] body:has(.page-blog)) {
+    background: var(--bg);
+  }
+
+  .section--blog-ad {
+    padding-top: 0;
+  }
+
   .blog-search {
     margin-top: 3rem;
     padding-top: 2rem;

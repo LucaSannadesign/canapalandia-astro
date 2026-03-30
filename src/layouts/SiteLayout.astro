@@ -209,6 +209,12 @@ const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) =>
 // Normalizziamo varianti comuni (/index, /index.html, /index/).
 const normalizedPathForHome = currentPath.replace(/\/index(?:\.html)?\/?$/, "");
 const isHomePage = normalizedPathForHome === "" || normalizedPathForHome === "/";
+const useHomeLightBg =
+  currentPath === "/blog/" ||
+  currentPath.startsWith("/blog/page/") ||
+  currentPath === "/ribaltatore/" ||
+  currentPath === "/frasi-ribaltate/" ||
+  currentPath === "/contatti/";
 ---
 
 <html lang="it">
@@ -699,7 +705,7 @@ const isHomePage = normalizedPathForHome === "" || normalizedPathForHome === "/"
     </script>
   </head>
 
-  <body>
+  <body class:list={{ "home-light-bg": useHomeLightBg }}>
     <div id="top" tabindex="-1" aria-hidden="true"></div>
     <a class="skip" href="#contenuto">Salta al contenuto</a>
 
