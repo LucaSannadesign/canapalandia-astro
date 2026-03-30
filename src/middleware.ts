@@ -67,6 +67,8 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
   }
 
   const gonePrefixPatterns = [
+    /^wp-content\/plugins(?:\/|$)/i,
+    /^wp-content\/themes(?:\/|$)/i,
     /^wp-admin(?:\/|$)/i,
     /^wp-includes(?:\/|$)/i,
     /^wp-json\/wc\//i,
@@ -146,6 +148,32 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
   if (first === "tag-prodotto") {
     if (!second) return redirect301("/blog/");
     return gone410();
+  }
+
+  // Legacy Italian tag pagination: Astro serves the full tag list on /tag/[slug]/ only.
+  if (
+    first === "tag" &&
+    segments.length === 4 &&
+    segments[2]?.toLowerCase() === "page" &&
+    /^\d+$/.test(segments[3] || "")
+  ) {
+    const tagSlug = segments[1] || "";
+    if (tagSlug) return redirect301(`/tag/${tagSlug}/`);
+  }
+
+  // Legacy monthly archives (WordPress /YYYY/MM/) — no month view; blog hub is the closest hub.
+  if (segments.length === 2) {
+    const y = parseInt(segments[0] || "", 10);
+    const m = parseInt(segments[1] || "", 10);
+    if (
+      /^\d{4}$/.test(segments[0] || "") &&
+      m >= 1 &&
+      m <= 12 &&
+      y >= 1990 &&
+      y <= 2100
+    ) {
+      return redirect301("/blog/");
+    }
   }
 
   // Legacy feed endpoints (WordPress-style) should be gone, not 404.
