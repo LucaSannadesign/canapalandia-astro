@@ -63,7 +63,7 @@ function getPostImage(entry: CollectionEntry<"blog">): string | undefined {
 }
 
 function postHref(entry: CollectionEntry<"blog">): string {
-  const slug = (entry.slug || entry.data.slug || "").trim();
+  const slug = (entry.id || entry.data.slug || "").trim();
   // Protezione minima: evita sempre /blog/undefined/
   if (!slug || slug === "undefined") return "/blog/";
   return `/blog/${slug}/`;
