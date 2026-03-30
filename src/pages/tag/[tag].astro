@@ -5,8 +5,13 @@ import { getCollection, type CollectionEntry } from "astro:content";
 import SiteLayout from "../../layouts/SiteLayout.astro";
 import Breadcrumbs from "../../components/Breadcrumbs.astro";
 import CardPost from "../../components/CardPost.astro";
+import {
+  slugifyTagForUrl,
+  tagArchiveShouldIndex,
+} from "../../lib/tagIndexPolicy";
 
 const tag = String(Astro.params.tag ?? "").trim();
+const tagKey = slugifyTagForUrl(tag) || tag.toLowerCase().trim();
 
 // Helper per formattare data
 const formatDate = (value: Date | string | number | null | undefined): string => {
@@ -40,17 +45,19 @@ function getPostImage(entry: CollectionEntry<"blog">): string | undefined {
 // Carica tutti i post
 let postsAll: CollectionEntry<"blog">[] = [];
 try {
-  postsAll = await getCollection("blog");
+  postsAll = await getCollection(
+    "blog",
+    ({ data }) => data.draft !== true && data.status !== "draft",
+  );
 } catch (err) {
   console.warn("[tag] Nessun contenuto trovato in Content Collections");
 }
 
-// Filtra per tag (case-insensitive)
-const tagLower = tag.toLowerCase();
+// Filtra per tag (slug coerente con link interni: spazi → -, come BlogSidebar)
 const posts = postsAll
   .filter((p) => {
     const tags = p.data.tags || [];
-    return tags.some((t) => t.toLowerCase() === tagLower);
+    return tags.some((t) => slugifyTagForUrl(String(t)) === tagKey);
   })
   .sort((a, b) => {
     const da = dateOf(a);
@@ -60,19 +67,19 @@ const posts = postsAll
     return tb - ta;
   });
 
-// Estrai nome tag dal primo post o decodifica lo slug
+// Nome leggibile: prima etichetta in frontmatter che collima con questo slug URL
 const tagName = posts.length > 0
-  ? posts.find((p) => {
-      const tags = p.data.tags || [];
-      return tags.some((t) => t.toLowerCase() === tagLower);
-    })?.data.tags?.find((t) => t.toLowerCase() === tagLower)
-  : decodeURIComponent(tag).replace(/-/g, " ");
+  ? posts[0].data.tags?.find((t) => slugifyTagForUrl(String(t)) === tagKey)
+  : undefined;
+
+const displayName = tagName || tagKey.replace(/-/g, " ");
+const shouldIndex = tagArchiveShouldIndex(tagKey, posts.length);
 
 const metadata = {
-  title: `Tag: ${tagName || tag} | Canapalandia`,
-  description: `Articoli Canapalandia filtrati per il tag "${tagName || tag}".`,
-  canonical: `/tag/${tag}/`,
-  robots: { index: false, follow: true },
+  title: `Tag: ${displayName} | Canapalandia`,
+  description: `Articoli Canapalandia filtrati per il tag “${displayName}”.`,
+  canonical: `/tag/${tagKey}/`,
+  robots: { index: shouldIndex, follow: true },
 };
 ---
 
@@ -92,12 +99,12 @@ const metadata = {
           items={[
             { label: "Home", href: "/" },
             { label: "Blog", href: "/blog/" },
-            { label: tagName || tag, isCurrent: true },
+            { label: displayName, isCurrent: true },
           ]}
         />
 
         <div class="section-head">
-          <h1>Tag: {tagName || tag}</h1>
+          <h1>Tag: {displayName}</h1>
           <p class="section-lead">
             {posts.length} {posts.length === 1 ? "articolo" : "articoli"}
           </p>
