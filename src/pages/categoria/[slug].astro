@@ -66,6 +66,13 @@ const posts = postsAll
     return tb - ta;
   });
 
+if (posts.length === 0) {
+  return new Response(null, {
+    status: 404,
+    statusText: "Not Found",
+  });
+}
+
 // Estrai nome categoria dal primo post (se disponibile)
 // Oppure usa slug "umanizzato" come fallback
 const categoryName = posts.length > 0 && posts[0].data.category
