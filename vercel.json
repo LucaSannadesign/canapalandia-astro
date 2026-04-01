@@ -56,6 +56,26 @@
       "source": "/italia-stretta-cannabis-light/",
       "destination": "/filiera-canapa-italia-stretta-cannabis-light/",
       "permanent": true
+    },
+    {
+      "source": "/decreto-sicurezza-2025",
+      "destination": "/decreto-sicurezza-2025-repressione-liberta-zero/",
+      "permanent": true
+    },
+    {
+      "source": "/decreto-sicurezza-2025/",
+      "destination": "/decreto-sicurezza-2025-repressione-liberta-zero/",
+      "permanent": true
+    },
+    {
+      "source": "/blog-cannabis-Italia",
+      "destination": "/blog/",
+      "permanent": true
+    },
+    {
+      "source": "/blog-cannabis-Italia/",
+      "destination": "/blog/",
+      "permanent": true
     }
   ]
 }
