@@ -46,6 +46,16 @@
       "source": "/cannabis-light-corte-giustizia-ue/",
       "destination": "/blog/cannabis-light-corte-giustizia-ue/",
       "permanent": true
+    },
+    {
+      "source": "/italia-stretta-cannabis-light",
+      "destination": "/filiera-canapa-italia-stretta-cannabis-light/",
+      "permanent": true
+    },
+    {
+      "source": "/italia-stretta-cannabis-light/",
+      "destination": "/filiera-canapa-italia-stretta-cannabis-light/",
+      "permanent": true
     }
   ]
 }
