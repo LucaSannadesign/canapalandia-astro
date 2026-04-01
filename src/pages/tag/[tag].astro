@@ -5,10 +5,7 @@ import { getCollection, type CollectionEntry } from "astro:content";
 import SiteLayout from "../../layouts/SiteLayout.astro";
 import Breadcrumbs from "../../components/Breadcrumbs.astro";
 import CardPost from "../../components/CardPost.astro";
-import {
-  slugifyTagForUrl,
-  tagArchiveShouldIndex,
-} from "../../lib/tagIndexPolicy";
+import { slugifyTagForUrl } from "../../lib/tagIndexPolicy";
 
 const tag = String(Astro.params.tag ?? "").trim();
 const tagKey = slugifyTagForUrl(tag) || tag.toLowerCase().trim();
@@ -73,13 +70,12 @@ const tagName = posts.length > 0
   : undefined;
 
 const displayName = tagName || tagKey.replace(/-/g, " ");
-const shouldIndex = tagArchiveShouldIndex(tagKey, posts.length);
 
 const metadata = {
   title: `Tag: ${displayName} | Canapalandia`,
   description: `Articoli Canapalandia filtrati per il tag “${displayName}”.`,
   canonical: `/tag/${tagKey}/`,
-  robots: { index: shouldIndex, follow: true },
+  robots: { index: false, follow: true },
 };
 ---
 
