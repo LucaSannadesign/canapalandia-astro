@@ -60,7 +60,11 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     !pathname.endsWith("/") &&
     !isFileLikePath &&
     !pathname.startsWith("/api/") &&
-    !pathname.startsWith("/_astro/");
+    !pathname.startsWith("/_astro/") &&
+    !pathname.startsWith("/wp-content/plugins/") &&
+    !pathname.startsWith("/wp-content/themes/") &&
+    !pathname.startsWith("/wp-content/uploads/") &&
+    !pathname.startsWith("/blocks/");
 
   if (shouldRedirectToTrailingSlash) {
     return redirect301(pathname);
