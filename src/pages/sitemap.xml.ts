@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { getCollection } from "astro:content";
+import { getCollection, type CollectionEntry } from "astro:content";
 import { loadWp } from "../lib/wp";
 import { slugifyTagForUrl, tagArchiveShouldIndex } from "../lib/tagIndexPolicy";
 
@@ -81,7 +81,30 @@ async function indexableTagEntries(): Promise<Array<{ loc: string; lastmod?: str
 
 export const GET: APIRoute = async () => {
   const { entries } = await loadWp();
-  
+
+  let blogPosts: CollectionEntry<"blog">[] = [];
+  try {
+    blogPosts = await getCollection(
+      "blog",
+      ({ data }) => data.draft !== true && data.status !== "draft",
+    );
+  } catch {
+    blogPosts = [];
+  }
+
+  function blogPathForSitemap(path: string): string {
+    if (!path.startsWith("blog/")) return path;
+    const segment = path.slice("blog/".length);
+    if (!segment) return path;
+    const hit = blogPosts.find(
+      (e) => e.id === segment || (e.data?.slug || "").trim() === segment,
+    );
+    if (!hit) return path;
+    const publicSlug = (hit.data?.slug || hit.id || "").trim();
+    if (!publicSlug) return path;
+    return `blog/${publicSlug}`;
+  }
+
   // Pagine statiche da includere sempre
   const staticPages = [
     "", // home
@@ -125,8 +148,8 @@ export const GET: APIRoute = async () => {
       continue;
     }
 
-    // Costruisci URL
-    const url = normalizeUrl(entry.path);
+    // Costruisci URL (post blog: slug evergreen da content collection se presente)
+    const url = normalizeUrl(blogPathForSitemap(entry.path));
     
     // Aggiungi lastmod se disponibile (preferisci modified, fallback a date)
     const lastmod = formatLastmod(entry.modified || entry.date);
