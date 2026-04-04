@@ -1,6 +1,6 @@
 ---
 // MODIFICA 1: Importato getEntry e render al posto di getEntryBySlug
-import { getEntry, render, type CollectionEntry } from "astro:content";
+import { getCollection, getEntry, render, type CollectionEntry } from "astro:content";
 import SiteLayout from "../../layouts/SiteLayout.astro";
 import AdSlot from "../../components/AdSlot.astro";
 import PostMeta from "../../components/PostMeta.astro";
@@ -16,9 +16,18 @@ export const prerender = false;
 const slug = String(Astro.params.slug ?? "").trim();
 if (!slug) return new Response(null, { status: 404 });
 
-// MODIFICA 2: Usata la funzione getEntry
-const entry = await getEntry("blog", slug);
+let entry = await getEntry("blog", slug);
+if (!entry) {
+  const all = await getCollection("blog");
+  entry =
+    all.find((e) => (e.data?.slug || e.id || "").trim() === slug) ?? undefined;
+}
 if (!entry) return new Response(null, { status: 404 });
+
+const publicSlug = (entry.data?.slug || entry.id || "").trim();
+if (!publicSlug || publicSlug !== slug) {
+  return new Response(null, { status: 404, statusText: "Not Found" });
+}
 
 // MODIFICA 3: Usata la nuova funzione render(entry)
 const { Content } = await render(entry);

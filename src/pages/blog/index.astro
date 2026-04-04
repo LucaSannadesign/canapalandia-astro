@@ -16,8 +16,7 @@ const formatDate = (value: Date | string | number | null | undefined): string =>
 };
 
 function postHref(entry: CollectionEntry<"blog">): string {
-  // MODIFICA PER ASTRO V6: Usa entry.id al posto di entry.slug
-  const slug = entry?.id ?? entry?.data?.slug ?? "";
+  const slug = (entry.data?.slug || entry.id || "").trim();
   if (!slug) throw new Error("Missing slug/id for post link");
   return `/blog/${slug}/`;
 }
