@@ -92,15 +92,46 @@ export const GET: APIRoute = async () => {
     blogPosts = [];
   }
 
-  function blogPathForSitemap(path: string): string {
-    if (!path.startsWith("blog/")) return path;
-    const segment = path.slice("blog/".length);
-    if (!segment) return path;
-    const hit = blogPosts.find(
-      (e) => e.id === segment || (e.data?.slug || "").trim() === segment,
+  const blogPublicSlugByKey = new Map<string, string>();
+  for (const post of blogPosts) {
+    const publicSlug = (post.data?.slug || post.id || "").trim();
+    if (!publicSlug) continue;
+    blogPublicSlugByKey.set(post.id, publicSlug);
+    const dataSlug = (post.data?.slug || "").trim();
+    if (dataSlug) blogPublicSlugByKey.set(dataSlug, publicSlug);
+  }
+
+  const SITEMAP_DEBUG_LEGACY_SLUGS = [
+    "cbd-per-la-cura-della-pelle-guida-2025-prodotti-nordic-oil",
+    "cbd-legale-2025-decreto-sicurezza",
+    "decreto-sicurezza-cannabis-light-2025",
+    "legalizzazione-cannabis-europa-2025-aggiornamenti",
+  ];
+  for (const k of SITEMAP_DEBUG_LEGACY_SLUGS) {
+    console.log(
+      "[sitemap debug] blogPublicSlugByKey",
+      k,
+      "->",
+      blogPublicSlugByKey.get(k) ?? "(missing)",
     );
-    if (!hit) return path;
-    const publicSlug = (hit.data?.slug || hit.id || "").trim();
+  }
+
+  function blogPathForSitemap(path: string): string {
+    const trimmed = path.replace(/^\/+|\/+$/g, "");
+    if (!trimmed) return path;
+
+    let candidate: string | null = null;
+    if (trimmed.startsWith("blog/")) {
+      const segment = trimmed.slice("blog/".length);
+      if (!segment) return path;
+      candidate = segment;
+    } else if (!trimmed.includes("/")) {
+      candidate = trimmed;
+    } else {
+      return path;
+    }
+
+    const publicSlug = blogPublicSlugByKey.get(candidate);
     if (!publicSlug) return path;
     return `blog/${publicSlug}`;
   }
@@ -149,6 +180,18 @@ export const GET: APIRoute = async () => {
     }
 
     // Costruisci URL (post blog: slug evergreen da content collection se presente)
+    if (
+      SITEMAP_DEBUG_LEGACY_SLUGS.some(
+        (k) => entry.path === k || entry.path === `blog/${k}`,
+      )
+    ) {
+      console.log(
+        "[sitemap debug] path",
+        entry.path,
+        "->",
+        blogPathForSitemap(entry.path),
+      );
+    }
     const url = normalizeUrl(blogPathForSitemap(entry.path));
     
     // Aggiungi lastmod se disponibile (preferisci modified, fallback a date)
