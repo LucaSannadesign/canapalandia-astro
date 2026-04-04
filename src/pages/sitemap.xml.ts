@@ -92,50 +92,6 @@ export const GET: APIRoute = async () => {
     blogPosts = [];
   }
 
-  const blogPublicSlugByKey = new Map<string, string>();
-  for (const post of blogPosts) {
-    const publicSlug = (post.data?.slug || post.id || "").trim();
-    if (!publicSlug) continue;
-    blogPublicSlugByKey.set(post.id, publicSlug);
-    const dataSlug = (post.data?.slug || "").trim();
-    if (dataSlug) blogPublicSlugByKey.set(dataSlug, publicSlug);
-  }
-
-  const SITEMAP_DEBUG_LEGACY_SLUGS = [
-    "cbd-per-la-cura-della-pelle-guida-2025-prodotti-nordic-oil",
-    "cbd-legale-2025-decreto-sicurezza",
-    "decreto-sicurezza-cannabis-light-2025",
-    "legalizzazione-cannabis-europa-2025-aggiornamenti",
-  ];
-  for (const k of SITEMAP_DEBUG_LEGACY_SLUGS) {
-    console.log(
-      "[sitemap debug] blogPublicSlugByKey",
-      k,
-      "->",
-      blogPublicSlugByKey.get(k) ?? "(missing)",
-    );
-  }
-
-  function blogPathForSitemap(path: string): string {
-    const trimmed = path.replace(/^\/+|\/+$/g, "");
-    if (!trimmed) return path;
-
-    let candidate: string | null = null;
-    if (trimmed.startsWith("blog/")) {
-      const segment = trimmed.slice("blog/".length);
-      if (!segment) return path;
-      candidate = segment;
-    } else if (!trimmed.includes("/")) {
-      candidate = trimmed;
-    } else {
-      return path;
-    }
-
-    const publicSlug = blogPublicSlugByKey.get(candidate);
-    if (!publicSlug) return path;
-    return `blog/${publicSlug}`;
-  }
-
   // Pagine statiche da includere sempre
   const staticPages = [
     "", // home
@@ -156,11 +112,30 @@ export const GET: APIRoute = async () => {
     });
   }
 
+  // Post blog: solo URL dalla content collection (slug pubblico evergreen)
+  for (const post of blogPosts) {
+    const publicSlug = (post.data?.slug || post.id || "").trim();
+    if (!publicSlug) continue;
+    const dateRaw = post.data.updatedDate ?? post.data.publishDate;
+    let lastmod: string | undefined;
+    if (dateRaw) {
+      const d = dateRaw instanceof Date ? dateRaw : new Date(String(dateRaw));
+      if (!Number.isNaN(d.getTime())) lastmod = formatLastmod(d.toISOString());
+    }
+    urls.push({
+      loc: normalizeUrl(`blog/${publicSlug}`),
+      lastmod,
+    });
+  }
+
   // Aggiungi entries (post e page) con path valido
   for (const entry of entries) {
     // Escludi entry senza path valido
     if (!entry.path || entry.path.trim() === "") continue;
-    
+
+    // Post WordPress: già coperti dalla content collection sopra
+    if (entry.kind === "post") continue;
+
     // Escludi route tecniche e tassonomie
     if (
       entry.path.startsWith("tag/") ||
@@ -179,20 +154,7 @@ export const GET: APIRoute = async () => {
       continue;
     }
 
-    // Costruisci URL (post blog: slug evergreen da content collection se presente)
-    if (
-      SITEMAP_DEBUG_LEGACY_SLUGS.some(
-        (k) => entry.path === k || entry.path === `blog/${k}`,
-      )
-    ) {
-      console.log(
-        "[sitemap debug] path",
-        entry.path,
-        "->",
-        blogPathForSitemap(entry.path),
-      );
-    }
-    const url = normalizeUrl(blogPathForSitemap(entry.path));
+    const url = normalizeUrl(entry.path);
     
     // Aggiungi lastmod se disponibile (preferisci modified, fallback a date)
     const lastmod = formatLastmod(entry.modified || entry.date);
