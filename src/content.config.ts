@@ -1,6 +1,27 @@
 import { defineCollection, z } from "astro:content";
 // 1. Aggiunto l'import per il loader
-import { glob } from "astro/loaders"; 
+import { glob } from "astro/loaders";
+
+/** Categorie blog consentite: non introdurne di nuove nel frontmatter senza decisione editoriale esplicita (aggiornare questa lista di conseguenza). */
+const BLOG_CATEGORY_WHITELIST = [
+  "cannabis-news-it",
+  "Normativa",
+  "cbd-alimentazione",
+  "canapa-e-ambiente",
+  "salute-benessere",
+  "guide-tutorial",
+  "cannabis-e-innovazione",
+  "Attualità",
+  "Ricerca",
+  "cbd-bellezza-cura-pelle",
+  "cannabis-news",
+  "cannabis-legalization",
+  "cbd-and-nutrition",
+  "cannabis-and-innovation",
+  "medical-cannabis",
+  "hemp-sustainability",
+  "health-wellness",
+] as const;
 
 const blog = defineCollection({
   // 2. Rimosso type: "content" e aggiunto il loader.
@@ -16,7 +37,7 @@ const blog = defineCollection({
       author: z.string().optional(),
       draft: z.boolean().optional(), // Mantenuto per compatibilità
       status: z.enum(["ready", "draft", "test"]).default("ready"),
-      category: z.string().optional(), // Categoria primaria (per compatibilità)
+      category: z.enum(BLOG_CATEGORY_WHITELIST).optional(),
       categories: z.array(z.string()).optional(), // Tutte le categorie (se disponibili)
       tags: z.array(z.string()).max(3).default([]),
       coverImage: z.string().optional(),
