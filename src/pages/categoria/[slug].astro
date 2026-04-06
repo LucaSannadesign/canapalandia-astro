@@ -85,10 +85,21 @@ const categoryName = posts.length > 0 && posts[0].data.category
       .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
       .join(" ");
 
+/** Hub editoriale: molti contenuti IT, URL già usato dalla home come “Notizie Italia”. */
+const CANNABIS_NEWS_IT_SLUG = "cannabis-news-it";
+const isCannabisNewsItHub = slug === CANNABIS_NEWS_IT_SLUG;
+const breadcrumbCategoryLabel = isCannabisNewsItHub ? "Notizie Italia" : categoryName;
+
 const metadata = {
-  title: posts.length > 0 ? `Categoria: ${categoryName}` : "Categoria non trovata",
+  title: posts.length > 0
+    ? isCannabisNewsItHub
+      ? "Notizie Italia: cannabis light, CBD, referendum e norme | Canapalandia"
+      : `Categoria: ${categoryName}`
+    : "Categoria non trovata",
   description: posts.length > 0
-    ? `Articoli nella categoria ${categoryName}.`
+    ? isCannabisNewsItHub
+      ? "Archivio Notizie Italia: analisi su cannabis light, CBD, filiera e politica. Lettura giornalistica — verifica sempre leggi, decreti e comunicati ufficiali, senza trattarla come consulenza legale."
+      : `Articoli nella categoria ${categoryName}.`
     : `Nessun articolo trovato per la categoria ${slug}.`,
   canonical: `/categoria/${slug}/`,
   robots: { index: true, follow: true },
@@ -114,16 +125,51 @@ const metadata = {
             { label: "Home", href: "/" },
             { label: "Blog", href: "/blog/" },
             { label: "Categoria", href: "/blog/" },
-            { label: categoryName, isCurrent: true },
+            { label: breadcrumbCategoryLabel, isCurrent: true },
           ]}
         />
 
         <div class="section-head">
-          <h1>Categoria: {categoryName}</h1>
-          <p class="section-lead">
-            {posts.length} {posts.length === 1 ? "articolo" : "articoli"} in questa categoria.
-          </p>
+          {isCannabisNewsItHub ? (
+            <>
+              <h1>Cannabis in Italia: notizie e contesto</h1>
+              <p class="section-lead">
+                Raccolta di articoli sul dibattito italiano: norme, mercato, politica e società, con
+                attenzione alle conseguenze concrete per cittadini e filiera.{" "}
+                {posts.length} {posts.length === 1 ? "articolo" : "articoli"} in questa categoria.
+              </p>
+            </>
+          ) : (
+            <>
+              <h1>Categoria: {categoryName}</h1>
+              <p class="section-lead">
+                {posts.length} {posts.length === 1 ? "articolo" : "articoli"} in questa categoria.
+              </p>
+            </>
+          )}
         </div>
+
+        {isCannabisNewsItHub ? (
+          <div class="prose">
+            <h2>Per chi è questa categoria</h2>
+            <p>
+              È pensata per chi vuole seguire l&apos;evoluzione della cannabis in Italia senza
+              perdere il filo tra notizia isolata e quadro d&apos;insieme: dal referendum alle norme
+              su cannabis light e CBD, fino alle discussioni su lavoro, sanità e sicurezza stradale.
+            </p>
+            <h2>Come leggere gli articoli qui sotto</h2>
+            <p>
+              Ogni pezzo resta un contributo giornalistico: integra sempre leggi e decreti al testo
+              vigente, comunicati delle autorità e documentazione scientifica originale quando ti
+              serve una certezza operativa.
+            </p>
+            <h2>Cosa non troverai in questa pagina</h2>
+            <p>
+              Non pubblichiamo istruzioni operative su soglie chimiche né consulenza legale o
+              medica sostitutiva delle fonti istituzionali.
+            </p>
+          </div>
+        ) : null}
 
         <div class="grid">
           {posts.map((p) => (
