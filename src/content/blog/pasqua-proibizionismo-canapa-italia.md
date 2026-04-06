@@ -6,9 +6,9 @@ publishDate: "2026-04-05"
 author: "Luca Sanna"
 category: "Attualità"
 tags:
-  - "pasqua canapa"
+  - "controinformazione"
   - "proibizionismo"
-  - "cannabis italia"
+  - "cannabis-it"
 focusKeyword: "pasqua canapa italia"
 canonical: "https://canapalandia.com/pasqua-proibizionismo-canapa-italia/"
 robots:
