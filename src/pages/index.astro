@@ -133,7 +133,7 @@ for (const post of postsAll) {
 }
 
 /* Home: 2 pilastri editoriali + fino a 4 filoni compatti (stessi slug / categoryMap) */
-const PERCORSI_PRIMARY_SLUGS = ["normative-aspetti-legali", "cbd"] as const;
+const PERCORSI_PRIMARY_SLUGS = ["Normativa", "cbd"] as const;
 const PERCORSI_SECONDARY_SLUGS = [
   "cannabis-news-it",
   "salute-benessere",
@@ -150,7 +150,7 @@ const percorsiSecondary = PERCORSI_SECONDARY_SLUGS.map((slug) => categoryMap.get
 
 /** Una riga editoriale se il CMS non espone description sulla categoria */
 const PERCORSI_FALLBACK_BLURB: Record<string, string> = {
-  "normative-aspetti-legali": "Cosa è legale oggi: riferimenti e aggiornamenti per orientarti in Italia.",
+  Normativa: "Cosa è legale oggi: riferimenti e aggiornamenti per orientarti in Italia.",
   cbd: "Cannabidiolo, prodotti in commercio e quadro normativo nazionale.",
   "cannabis-news-it": "Notizie e sviluppi sul tema cannabis nel nostro paese.",
   "salute-benessere": "Approfondimenti prudenti su benessere, ricerca e uso responsabile.",
@@ -232,7 +232,7 @@ const iconSvg = (paths: string): string =>
 
 function getCategoryIcon(slug: string): string {
   const iconMap: Record<string, string> = {
-    "normative-aspetti-legali": iconSvg(`<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>`),
+    Normativa: iconSvg(`<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>`),
     "salute-benessere": iconSvg(`<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/>`),
     "cannabis-news-it": iconSvg(`<path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-8"/><rect width="8" height="4" x="10" y="6" rx="1"/>`),
     "coltivazione-legale": iconSvg(`<path d="M7 20h10"/><path d="M10 20c5.5-2.5 7.5-8 7.5-12A7.5 7.5 0 0 0 12 2C10 2 8 3 6 4c-1 1-1.5 2.5-1.5 4 0 5.5 2 9.5 7.5 12Z"/>`),
@@ -303,7 +303,7 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
             <div class="hero--home__below-cta">
               <p class="hero--home__quick-label" id="hero-quick-label">Link rapidi</p>
               <nav class="hero--home__quick" aria-labelledby="hero-quick-label">
-                <a class="hero--home__pill" href="/categoria/normative-aspetti-legali/">Normativa</a>
+                <a class="hero--home__pill" href="/categoria/Normativa/">Normativa</a>
                 <a class="hero--home__pill" href="/categoria/cbd/">CBD</a>
                 <a class="hero--home__pill" href="/categoria/cannabis-news-it/">Notizie Italia</a>
                 <a class="hero--home__pill" href="/#percorsi">Tutti i percorsi</a>
@@ -334,7 +334,7 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
       <h2 id="inizia-da-qui-title" class="inizia-da-qui__title">Inizia da qui</h2>
       <p class="inizia-da-qui__subtitle">Tre scorciatoie utili per orientarti subito</p>
       <nav class="inizia-da-qui__links">
-        <a class="btn ghost" href="/categoria/normative-aspetti-legali/">Cosa è legale oggi</a>
+        <a class="btn ghost" href="/categoria/Normativa/">Cosa è legale oggi</a>
         <a class="btn ghost" href="/#ultimi">Ultime novità in Italia</a>
         <a class="btn ghost" href="/categoria/guide-tutorial/">Guide su prodotti e normativa</a>
       </nav>
