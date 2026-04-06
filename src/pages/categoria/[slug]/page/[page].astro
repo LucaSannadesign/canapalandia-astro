@@ -126,19 +126,42 @@ const categoryName = allPosts[0].data.category
       .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
       .join(" ");
 
+/** Allineato all’hub /categoria/cannabis-news-it/ (Notizie Italia in home). */
+const CANNABIS_NEWS_IT_SLUG = "cannabis-news-it";
+const isCannabisNewsItHub = slug === CANNABIS_NEWS_IT_SLUG;
+
 const metadata = {
-  title: `Categoria: ${categoryName} — Pagina ${pageNum}`,
-  description: `Articoli nella categoria ${categoryName}, pagina ${pageNum} di ${totalPages}.`,
+  title: isCannabisNewsItHub
+    ? `Cannabis in Italia: notizie e contesto — Pagina ${pageNum} | Canapalandia`
+    : `Categoria: ${categoryName} — Pagina ${pageNum}`,
+  description: isCannabisNewsItHub
+    ? `Approfondimenti sulla cannabis in Italia: elenco articoli, pagina ${pageNum} di ${totalPages}. Contesto e guida alla lettura sulla prima pagina della categoria.`
+    : `Articoli nella categoria ${categoryName}, pagina ${pageNum} di ${totalPages}.`,
   canonical: `${import.meta.env.SITE || "https://canapalandia.com"}/categoria/${slug}/page/${pageNum}/`,
-  robots: { index: false, follow: true },
+  robots: isCannabisNewsItHub
+    ? { index: true, follow: true }
+    : { index: false, follow: true },
 };
 ---
 
 <SiteLayout metadata={metadata}>
   <main class="container page-shell">
     <div class="section-head">
-      <h1>Categoria: {categoryName}</h1>
-      <p class="section-lead">Pagina {pageNum} di {totalPages}</p>
+      {isCannabisNewsItHub ? (
+        <>
+          <h1>Cannabis in Italia: notizie e contesto</h1>
+          <p class="section-lead">
+            Pagina {pageNum} di {totalPages}: articoli più datati della raccolta{" "}
+            <strong>Notizie Italia</strong>. Per il testo introduttivo completo torna alla{" "}
+            <a href={`/categoria/${slug}/`}>prima pagina della categoria</a>.
+          </p>
+        </>
+      ) : (
+        <>
+          <h1>Categoria: {categoryName}</h1>
+          <p class="section-lead">Pagina {pageNum} di {totalPages}</p>
+        </>
+      )}
     </div>
 
     {pagePosts.length > 0 ? (
