@@ -1,7 +1,6 @@
 import type { APIRoute } from "astro";
 import { getCollection, type CollectionEntry } from "astro:content";
 import { loadWp } from "../lib/wp";
-import { slugifyTagForUrl, tagArchiveShouldIndex } from "../lib/tagIndexPolicy";
 
 export const prerender = false;
 
@@ -41,42 +40,6 @@ function normalizeUrl(path: string): string {
   // Se relativo, aggiungi base e trailing slash
   const cleanPath = path.replace(/^\/+|\/+$/g, "");
   return cleanPath ? `${SITE_URL}/${cleanPath}/` : `${SITE_URL}/`;
-}
-
-async function indexableTagEntries(): Promise<Array<{ loc: string; lastmod?: string }>> {
-  let posts;
-  try {
-    posts = await getCollection(
-      "blog",
-      ({ data }) => data.draft !== true && data.status !== "draft",
-    );
-  } catch {
-    return [];
-  }
-
-  const acc = new Map<string, { count: number; last: Date }>();
-  for (const p of posts) {
-    const raw = p.data.publishDate ?? p.data.updatedDate;
-    const d = raw ? new Date(String(raw)) : null;
-    const tValid = d && !Number.isNaN(d.getTime()) ? d : null;
-    for (const label of p.data.tags || []) {
-      const slug = slugifyTagForUrl(String(label));
-      if (!slug) continue;
-      const cur = acc.get(slug) || { count: 0, last: new Date(0) };
-      cur.count += 1;
-      if (tValid && tValid > cur.last) cur.last = tValid;
-      acc.set(slug, cur);
-    }
-  }
-
-  const out: Array<{ loc: string; lastmod?: string }> = [];
-  for (const [slug, { count, last }] of acc) {
-    if (!tagArchiveShouldIndex(slug, count)) continue;
-    const lastmod =
-      last.getTime() > 0 ? formatLastmod(last.toISOString()) : undefined;
-    out.push({ loc: normalizeUrl(`tag/${slug}`), lastmod });
-  }
-  return out;
 }
 
 export const GET: APIRoute = async () => {
@@ -163,10 +126,6 @@ export const GET: APIRoute = async () => {
       loc: url,
       lastmod,
     });
-  }
-
-  for (const t of await indexableTagEntries()) {
-    urls.push(t);
   }
 
   // Genera XML sitemap
