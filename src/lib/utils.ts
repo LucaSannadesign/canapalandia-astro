@@ -66,10 +66,14 @@ export function stripHtml(html: unknown): string {
  * @param input - Qualsiasi valore (string, object, null, undefined, ecc.)
  * @returns Stringa pulita o stringa vuota
  */
+const JS_COERCION_PLACEHOLDER = /^\[object (Object|Array)\]$/i;
+
 export function toPlainText(input: unknown): string {
-    // Se è già una stringa, ritorna trim
+    // Se è già una stringa, ritorna trim (esclude placeholder da String(obj) salvato per errore in YAML)
     if (typeof input === "string") {
-        return input.trim();
+        const t = input.trim();
+        if (JS_COERCION_PLACEHOLDER.test(t)) return "";
+        return t;
     }
     
     // Se è null o undefined, ritorna vuoto
