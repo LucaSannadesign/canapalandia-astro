@@ -24,7 +24,6 @@ const evergreenRedirects = {
     "/blog/decreto-sicurezza-cannabis-light/",
   "/blog/legalizzazione-cannabis-europa-2025-aggiornamenti/":
     "/blog/legalizzazione-cannabis-europa-aggiornamenti/",
-  "/tag": "/blog/",
   "/tag/": "/blog/",
   "/blog/page/1/": "/blog/",
 };
