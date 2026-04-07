@@ -1,11 +1,32 @@
 import type { APIRoute } from "astro";
 import { getCollection, type CollectionEntry } from "astro:content";
-import { loadWp } from "../lib/wp";
 
 export const prerender = false;
 
 // Base URL: usa SITE da config o fallback
 const SITE_URL = import.meta.env.SITE || "https://canapalandia.com";
+
+/**
+ * Allineato a `src/pages/categoria/[slug].astro` — solo queste hub categoria IT sono index,follow.
+ * Aggiornare insieme alla pagina categoria.
+ */
+const CATEGORY_INDEX_ALLOWLIST = new Set<string>([
+  "cannabis-news-it",
+  "normative-aspetti-legali",
+  "Normativa",
+  "salute-benessere",
+  "cbd-alimentazione",
+  "coltivazione-legale",
+  "novita-tendenze",
+  "canapa-e-ambiente",
+  "cbd-bellezza-cura-pelle",
+  "guide-tutorial",
+  "ribellario",
+  "cannabis-e-innovazione",
+]);
+
+const CATEGORY_PER_PAGE = 24;
+const CANNABIS_NEWS_IT_SLUG = "cannabis-news-it";
 
 // Escape XML
 function escapeXml(input: unknown): string {
@@ -79,15 +100,27 @@ function isRedirectSourcePath(pathRel: string): boolean {
   return REDIRECT_SOURCE_PATHS.has(p);
 }
 
-/** Yoast: pagina esplicitamente noindex → non in sitemap. */
-function isYoastNoindex(entry: { yoastHeadJson?: { robots?: { index?: string } } }): boolean {
-  const idx = entry.yoastHeadJson?.robots?.index;
-  return typeof idx === "string" && idx.toLowerCase() === "noindex";
+function postLastmodIso(post: CollectionEntry<"blog">): string | undefined {
+  const dateRaw = post.data.updatedDate ?? post.data.publishDate;
+  if (!dateRaw) return undefined;
+  const d = dateRaw instanceof Date ? dateRaw : new Date(String(dateRaw));
+  if (Number.isNaN(d.getTime())) return undefined;
+  return formatLastmod(d.toISOString());
+}
+
+function maxLastmodFromPosts(posts: CollectionEntry<"blog">[]): string | undefined {
+  let best: number | undefined;
+  for (const p of posts) {
+    const d = p.data.updatedDate ?? p.data.publishDate;
+    if (!d) continue;
+    const t = new Date(d instanceof Date ? d : String(d)).getTime();
+    if (Number.isNaN(t)) continue;
+    if (best === undefined || t > best) best = t;
+  }
+  return best !== undefined ? formatLastmod(new Date(best).toISOString()) : undefined;
 }
 
 export const GET: APIRoute = async () => {
-  const { entries } = await loadWp();
-
   let blogPosts: CollectionEntry<"blog">[] = [];
   try {
     blogPosts = await getCollection(
@@ -98,83 +131,44 @@ export const GET: APIRoute = async () => {
     blogPosts = [];
   }
 
-  // Pagine statiche da includere sempre
-  const staticPages = [
-    "", // home
-    "blog",
-    "ribaltatore",
-    "frasi-ribaltate",
-    "cerca",
-    "contatti",
-    "cookie-policy",
-  ];
-
   const urls: Array<{ loc: string; lastmod?: string }> = [];
 
-  // Aggiungi pagine statiche
-  for (const page of staticPages) {
-    if (isRedirectSourcePath(page)) continue;
-    urls.push({
-      loc: normalizeUrl(page),
-    });
-  }
-
-  // Post blog: solo URL dalla content collection (slug pubblico evergreen)
+  // Articoli: solo URL pubblici /blog/[slug]/ (slug canonico evergreen)
   for (const post of blogPosts) {
     const publicSlug = (post.data?.slug || post.id || "").trim();
     if (!publicSlug) continue;
     const relPath = normalizePathKey(`blog/${publicSlug}`);
     if (isRedirectSourcePath(relPath)) continue;
-    const dateRaw = post.data.updatedDate ?? post.data.publishDate;
-    let lastmod: string | undefined;
-    if (dateRaw) {
-      const d = dateRaw instanceof Date ? dateRaw : new Date(String(dateRaw));
-      if (!Number.isNaN(d.getTime())) lastmod = formatLastmod(d.toISOString());
-    }
     urls.push({
       loc: normalizeUrl(`blog/${publicSlug}`),
-      lastmod,
+      lastmod: postLastmodIso(post),
     });
   }
 
-  // Aggiungi entries (post e page) con path valido
-  for (const entry of entries) {
-    // Escludi entry senza path valido
-    if (!entry.path || entry.path.trim() === "") continue;
+  // Categorie IT: solo hub in allowlist con almeno un post; paginazione solo Notizie Italia (cannabis-news-it)
+  for (const slug of CATEGORY_INDEX_ALLOWLIST) {
+    const inCat = blogPosts.filter((p) => (p.data.category || "") === slug);
+    if (inCat.length === 0) continue;
 
-    // Post WordPress: già coperti dalla content collection sopra
-    if (entry.kind === "post") continue;
-
-    // Escludi route tecniche e tassonomie
-    if (
-      entry.path.startsWith("tag/") ||
-      entry.path.startsWith("categoria/") ||
-      entry.path.startsWith("autore/") ||
-      entry.path.startsWith("en/tag/") ||
-      entry.path.startsWith("en/categoria/") ||
-      entry.path.startsWith("en/autore/") ||
-      entry.path.startsWith("en/author/") ||
-      entry.path.startsWith("partials/") ||
-      entry.path.startsWith("en/") ||
-      entry.path.includes("/partials/") ||
-      entry.path.startsWith("go/") ||
-      entry.path === "partner-selezionati"
-    ) {
-      continue;
-    }
-
-    if (isYoastNoindex(entry)) continue;
-    if (isRedirectSourcePath(entry.path)) continue;
-
-    const url = normalizeUrl(entry.path);
-
-    // Aggiungi lastmod se disponibile (preferisci modified, fallback a date)
-    const lastmod = formatLastmod(entry.modified || entry.date);
-
+    const relCat = normalizePathKey(`categoria/${slug}`);
+    if (isRedirectSourcePath(relCat)) continue;
+    const lastmodCat = maxLastmodFromPosts(inCat);
     urls.push({
-      loc: url,
-      lastmod,
+      loc: normalizeUrl(`categoria/${slug}`),
+      lastmod: lastmodCat,
     });
+
+    if (slug !== CANNABIS_NEWS_IT_SLUG) continue;
+
+    const totalPages = Math.max(1, Math.ceil(inCat.length / CATEGORY_PER_PAGE));
+    for (let page = 2; page <= totalPages; page++) {
+      const relPage = normalizePathKey(`categoria/${slug}/page/${page}`);
+      if (isRedirectSourcePath(relPage)) continue;
+      urls.push({
+        loc: normalizeUrl(`categoria/${slug}/page/${page}`),
+        lastmod: lastmodCat,
+      });
+    }
   }
 
   // Una sola entry per URL (prima occorrenza vince).
@@ -187,7 +181,7 @@ export const GET: APIRoute = async () => {
   }
 
   // Genera XML sitemap
-  
+
   const xml =
     `<?xml version="1.0" encoding="UTF-8"?>\n` +
     `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
