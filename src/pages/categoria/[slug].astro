@@ -2,6 +2,7 @@
 export const prerender = false;
 
 import { getCollection, type CollectionEntry } from "astro:content";
+import { CATEGORY_INDEX_ALLOWLIST } from "../../lib/categoryIndexAllowlist";
 import SiteLayout from "../../layouts/SiteLayout.astro";
 import Breadcrumbs from "../../components/Breadcrumbs.astro";
 import CardPost from "../../components/CardPost.astro";
@@ -89,22 +90,6 @@ const categoryName = posts.length > 0 && posts[0].data.category
 const CANNABIS_NEWS_IT_SLUG = "cannabis-news-it";
 const isCannabisNewsItHub = slug === CANNABIS_NEWS_IT_SLUG;
 const breadcrumbCategoryLabel = isCannabisNewsItHub ? "Notizie Italia" : categoryName;
-
-/** Solo queste categorie IT sono index,follow; include `Normativa` (frontmatter MDX) oltre allo slug WP `normative-aspetti-legali`. */
-const CATEGORY_INDEX_ALLOWLIST = new Set<string>([
-  "cannabis-news-it",
-  "normative-aspetti-legali",
-  "Normativa",
-  "salute-benessere",
-  "cbd-alimentazione",
-  "coltivazione-legale",
-  "novita-tendenze",
-  "canapa-e-ambiente",
-  "cbd-bellezza-cura-pelle",
-  "guide-tutorial",
-  "ribellario",
-  "cannabis-e-innovazione",
-]);
 
 const categoryShouldIndex = CATEGORY_INDEX_ALLOWLIST.has(slug);
 

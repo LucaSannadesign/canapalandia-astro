@@ -1,29 +1,11 @@
 import type { APIRoute } from "astro";
 import { getCollection, type CollectionEntry } from "astro:content";
+import { CATEGORY_INDEX_ALLOWLIST } from "../lib/categoryIndexAllowlist";
 
 export const prerender = false;
 
 // Base URL: usa SITE da config o fallback
 const SITE_URL = import.meta.env.SITE || "https://canapalandia.com";
-
-/**
- * Allineato a `src/pages/categoria/[slug].astro` — solo queste hub categoria IT sono index,follow.
- * Aggiornare insieme alla pagina categoria.
- */
-const CATEGORY_INDEX_ALLOWLIST = new Set<string>([
-  "cannabis-news-it",
-  "normative-aspetti-legali",
-  "Normativa",
-  "salute-benessere",
-  "cbd-alimentazione",
-  "coltivazione-legale",
-  "novita-tendenze",
-  "canapa-e-ambiente",
-  "cbd-bellezza-cura-pelle",
-  "guide-tutorial",
-  "ribellario",
-  "cannabis-e-innovazione",
-]);
 
 const CATEGORY_PER_PAGE = 24;
 const CANNABIS_NEWS_IT_SLUG = "cannabis-news-it";
