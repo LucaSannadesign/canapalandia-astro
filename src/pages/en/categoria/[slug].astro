@@ -2,8 +2,9 @@
 /**
  * Route EN categoria: /en/categoria/[slug]/
  * Compatibilità WordPress: assorbe URL storici EN /en/categoria/slug/
- * 
- * Se il sito non ha contenuti EN reali, mostra pagina minimale con noindex,follow
+ *
+ * Se il sito non ha contenuti EN reali, mostra pagina minimale con noindex,follow.
+ * Nessun 301 automatico verso /categoria/[slug]/: lo slug EN può non coincidere con `category` IT.
  */
 import SiteLayout from "../../../layouts/SiteLayout.astro";
 
@@ -27,7 +28,7 @@ const metadata = {
       <h1>Category: {slug}</h1>
       <p>This is a legacy English category archive. The site content is primarily in Italian.</p>
       <p>
-        <a href="/categoria/{slug}/">View Italian version</a> | <a href="/blog/">Go to Blog</a>
+        <a href={`/categoria/${slug}/`}>View Italian version</a> | <a href="/blog/">Go to Blog</a>
       </p>
     </section>
   </main>
