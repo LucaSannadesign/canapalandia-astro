@@ -26,6 +26,11 @@ const evergreenRedirects = {
     "/blog/legalizzazione-cannabis-europa-aggiornamenti/",
   "/tag/": "/blog/",
   "/blog/page/1/": "/blog/",
+  // Categorie WP thin → hub (allineato a middleware)
+  "/categoria/cbd-sport-recupero/": "/categoria/salute-benessere/",
+  "/categoria/cbd-animali/": "/categoria/salute-benessere/",
+  "/categoria/stili-di-vita-testimonianze/": "/categoria/salute-benessere/",
+  "/categoria/partner-e-affiliazioni/": "/blog/",
 };
 
 export default defineConfig({

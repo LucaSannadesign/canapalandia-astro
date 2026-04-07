@@ -63,6 +63,23 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     return redirect301(`/tag/${enTagLegacy[1]}/`);
   }
 
+  /**
+   * Categorie legacy “thin” (WP): 301 verso hub utile. Non usare /partner-selezionati/ qui:
+   * quel path è 410 in gonePrefixPatterns sotto.
+   */
+  const thinCategoryRedirects: Record<string, string> = {
+    "cbd-sport-recupero": "/categoria/salute-benessere/",
+    "cbd-animali": "/categoria/salute-benessere/",
+    "stili-di-vita-testimonianze": "/categoria/salute-benessere/",
+    "partner-e-affiliazioni": "/blog/",
+  };
+  const thinCatLegacy = pathNoSlash.match(
+    /^categoria\/(cbd-sport-recupero|cbd-animali|stili-di-vita-testimonianze|partner-e-affiliazioni)(?:\/page\/\d+)?$/,
+  );
+  if (thinCatLegacy?.[1] && thinCategoryRedirects[thinCatLegacy[1]]) {
+    return redirect301(thinCategoryRedirects[thinCatLegacy[1]]);
+  }
+
   // Trailing slash redirect per pagine HTML:
   // - /contatti -> /contatti/
   // - esclude file con estensione e route tecniche

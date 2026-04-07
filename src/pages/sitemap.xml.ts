@@ -75,6 +75,11 @@ const REDIRECT_SOURCE_PATHS = new Set<string>([
   "italia-stretta-cannabis-light",
   "decreto-sicurezza-2025",
   "blog-cannabis-Italia",
+  // evergreenRedirects: categorie WP thin → hub
+  "categoria/cbd-sport-recupero",
+  "categoria/cbd-animali",
+  "categoria/stili-di-vita-testimonianze",
+  "categoria/partner-e-affiliazioni",
 ]);
 
 function isRedirectSourcePath(pathRel: string): boolean {
