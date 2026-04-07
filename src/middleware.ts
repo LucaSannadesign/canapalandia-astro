@@ -51,6 +51,18 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     return gone410();
   }
 
+  /**
+   * EN legacy `/en/tag/...` → hub IT `/tag/[slug]/` (slug identico).
+   * Prima della normalizzazione trailing-slash sotto: così anche richieste senza `/` finale
+   * possono 301 direttamente a `/tag/.../` in un solo hop (Vercel aggiunge spesso uno 308
+   * slash, ma non dipendiamo dall’ordine).
+   * Se in produzione vedi ancora 200 su queste URL, la build deployata non include questo blocco.
+   */
+  const enTagLegacy = pathNoSlash.match(/^en\/tag\/([^/]+)(?:\/page\/\d+)?$/);
+  if (enTagLegacy?.[1]) {
+    return redirect301(`/tag/${enTagLegacy[1]}/`);
+  }
+
   // Trailing slash redirect per pagine HTML:
   // - /contatti -> /contatti/
   // - esclude file con estensione e route tecniche
@@ -163,27 +175,6 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
   ) {
     const tagSlug = segments[1] || "";
     if (tagSlug) return redirect301(`/tag/${tagSlug}/`);
-  }
-
-  /**
-   * EN legacy tag → stesso slug su hub IT (/tag/[slug]/). Corrispondenza 1:1 sul segmento URL;
-   * l’hub IT resta noindex,follow (strategia solo-IT). Nessun redirect analogo per /en/categoria/
-   * (slug WP EN vs taxonomy IT possono divergere → resta pagina legacy noindex senza 301 forzati).
-   */
-  if (first === "en" && second === "tag" && segments.length >= 3) {
-    const tagSlug = segments[2] || "";
-    if (tagSlug) {
-      if (
-        segments.length >= 5 &&
-        segments[3]?.toLowerCase() === "page" &&
-        /^\d+$/.test(segments[4] || "")
-      ) {
-        return redirect301(`/tag/${tagSlug}/`);
-      }
-      if (segments.length === 3) {
-        return redirect301(`/tag/${tagSlug}/`);
-      }
-    }
   }
 
   // Legacy monthly archives (WordPress /YYYY/MM/) — no month view; blog hub is the closest hub.
