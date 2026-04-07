@@ -42,6 +42,49 @@ function normalizeUrl(path: string): string {
   return cleanPath ? `${SITE_URL}/${cleanPath}/` : `${SITE_URL}/`;
 }
 
+/** Path relativo senza slash iniziale/finale (come `entry.path` / segmenti statici). */
+function normalizePathKey(path: string): string {
+  return path.replace(/^\/+|\/+$/g, "").trim();
+}
+
+/**
+ * Sorgenti redirect 301/302 (allineate a `astro.config.mjs` + `vercel.json`).
+ * La sitemap deve elencare solo URL finali indicizzabili, non le URL sorgente.
+ */
+const REDIRECT_SOURCE_PATHS = new Set<string>([
+  // astro.config.mjs → evergreenRedirects (chiavi)
+  "blog/cannabis-laws-italy-2025",
+  "blog/top-hemp-strains-2025",
+  "blog/medical-cannabis-slovenia-albania-italy-2025",
+  "blog/italy-light-cannabis-ban-security-decree-2025",
+  "blog/cannabis-light-italia-europa-luglio-novembre-2025",
+  "blog/cbd-legale-2025-decreto-sicurezza",
+  "blog/best-cbd-strains-2025",
+  "blog/cbd-per-la-cura-della-pelle-guida-2025-prodotti-nordic-oil",
+  "blog/decreto-sicurezza-cannabis-light-2025",
+  "blog/legalizzazione-cannabis-europa-2025-aggiornamenti",
+  "tag",
+  "blog/page/1",
+  // vercel.json → redirects[].source (path unici)
+  "categoria",
+  "autore",
+  "cannabis-light-corte-giustizia-ue",
+  "italia-stretta-cannabis-light",
+  "decreto-sicurezza-2025",
+  "blog-cannabis-Italia",
+]);
+
+function isRedirectSourcePath(pathRel: string): boolean {
+  const p = normalizePathKey(pathRel);
+  return REDIRECT_SOURCE_PATHS.has(p);
+}
+
+/** Yoast: pagina esplicitamente noindex → non in sitemap. */
+function isYoastNoindex(entry: { yoastHeadJson?: { robots?: { index?: string } } }): boolean {
+  const idx = entry.yoastHeadJson?.robots?.index;
+  return typeof idx === "string" && idx.toLowerCase() === "noindex";
+}
+
 export const GET: APIRoute = async () => {
   const { entries } = await loadWp();
 
@@ -70,6 +113,7 @@ export const GET: APIRoute = async () => {
 
   // Aggiungi pagine statiche
   for (const page of staticPages) {
+    if (isRedirectSourcePath(page)) continue;
     urls.push({
       loc: normalizeUrl(page),
     });
@@ -79,6 +123,8 @@ export const GET: APIRoute = async () => {
   for (const post of blogPosts) {
     const publicSlug = (post.data?.slug || post.id || "").trim();
     if (!publicSlug) continue;
+    const relPath = normalizePathKey(`blog/${publicSlug}`);
+    if (isRedirectSourcePath(relPath)) continue;
     const dateRaw = post.data.updatedDate ?? post.data.publishDate;
     let lastmod: string | undefined;
     if (dateRaw) {
@@ -117,24 +163,35 @@ export const GET: APIRoute = async () => {
       continue;
     }
 
+    if (isYoastNoindex(entry)) continue;
+    if (isRedirectSourcePath(entry.path)) continue;
+
     const url = normalizeUrl(entry.path);
-    
+
     // Aggiungi lastmod se disponibile (preferisci modified, fallback a date)
     const lastmod = formatLastmod(entry.modified || entry.date);
-    
+
     urls.push({
       loc: url,
       lastmod,
     });
   }
 
+  // Una sola entry per URL (prima occorrenza vince).
+  const seenLoc = new Set<string>();
+  const deduped: typeof urls = [];
+  for (const item of urls) {
+    if (seenLoc.has(item.loc)) continue;
+    seenLoc.add(item.loc);
+    deduped.push(item);
+  }
+
   // Genera XML sitemap
-  const now = new Date().toISOString().split("T")[0];
   
   const xml =
     `<?xml version="1.0" encoding="UTF-8"?>\n` +
     `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-    urls
+    deduped
       .map((item) => {
         const lastmodTag = item.lastmod
           ? `    <lastmod>${escapeXml(item.lastmod)}</lastmod>\n`
