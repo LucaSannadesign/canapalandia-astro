@@ -66,6 +66,8 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
   /**
    * Categorie legacy “thin” (WP): 301 verso hub utile. Non usare /partner-selezionati/ qui:
    * quel path è 410 in gonePrefixPatterns sotto.
+   * In produzione le URL canoniche hanno sempre `/` finale: i redirect Astro in build Vercel
+   * matchano spesso solo la variante senza slash → `vercel.json` duplica le regole con slash e /page/.
    */
   const thinCategoryRedirects: Record<string, string> = {
     "cbd-sport-recupero": "/categoria/salute-benessere/",

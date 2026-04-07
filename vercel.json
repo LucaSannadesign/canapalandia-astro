@@ -7,6 +7,86 @@
   ],
   "redirects": [
     {
+      "source": "/categoria/cbd-sport-recupero",
+      "destination": "/categoria/salute-benessere/",
+      "permanent": true
+    },
+    {
+      "source": "/categoria/cbd-sport-recupero/",
+      "destination": "/categoria/salute-benessere/",
+      "permanent": true
+    },
+    {
+      "source": "/categoria/cbd-sport-recupero/page/:page",
+      "destination": "/categoria/salute-benessere/",
+      "permanent": true
+    },
+    {
+      "source": "/categoria/cbd-sport-recupero/page/:page/",
+      "destination": "/categoria/salute-benessere/",
+      "permanent": true
+    },
+    {
+      "source": "/categoria/cbd-animali",
+      "destination": "/categoria/salute-benessere/",
+      "permanent": true
+    },
+    {
+      "source": "/categoria/cbd-animali/",
+      "destination": "/categoria/salute-benessere/",
+      "permanent": true
+    },
+    {
+      "source": "/categoria/cbd-animali/page/:page",
+      "destination": "/categoria/salute-benessere/",
+      "permanent": true
+    },
+    {
+      "source": "/categoria/cbd-animali/page/:page/",
+      "destination": "/categoria/salute-benessere/",
+      "permanent": true
+    },
+    {
+      "source": "/categoria/stili-di-vita-testimonianze",
+      "destination": "/categoria/salute-benessere/",
+      "permanent": true
+    },
+    {
+      "source": "/categoria/stili-di-vita-testimonianze/",
+      "destination": "/categoria/salute-benessere/",
+      "permanent": true
+    },
+    {
+      "source": "/categoria/stili-di-vita-testimonianze/page/:page",
+      "destination": "/categoria/salute-benessere/",
+      "permanent": true
+    },
+    {
+      "source": "/categoria/stili-di-vita-testimonianze/page/:page/",
+      "destination": "/categoria/salute-benessere/",
+      "permanent": true
+    },
+    {
+      "source": "/categoria/partner-e-affiliazioni",
+      "destination": "/blog/",
+      "permanent": true
+    },
+    {
+      "source": "/categoria/partner-e-affiliazioni/",
+      "destination": "/blog/",
+      "permanent": true
+    },
+    {
+      "source": "/categoria/partner-e-affiliazioni/page/:page",
+      "destination": "/blog/",
+      "permanent": true
+    },
+    {
+      "source": "/categoria/partner-e-affiliazioni/page/:page/",
+      "destination": "/blog/",
+      "permanent": true
+    },
+    {
       "source": "/categoria",
       "destination": "/blog/",
       "permanent": true
