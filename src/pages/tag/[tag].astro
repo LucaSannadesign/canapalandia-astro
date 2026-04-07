@@ -5,6 +5,7 @@ import { getCollection, type CollectionEntry } from "astro:content";
 import SiteLayout from "../../layouts/SiteLayout.astro";
 import Breadcrumbs from "../../components/Breadcrumbs.astro";
 import CardPost from "../../components/CardPost.astro";
+// tagIndexPolicy: usata solo slugifyTagForUrl; tagArchiveShouldIndex non si applica (tutti i tag restano noindex).
 import { slugifyTagForUrl } from "../../lib/tagIndexPolicy";
 
 const tag = String(Astro.params.tag ?? "").trim();
@@ -75,6 +76,10 @@ const metadata = {
   title: `Tag: ${displayName} | Canapalandia`,
   description: `Articoli Canapalandia filtrati per il tag “${displayName}”.`,
   canonical: `/tag/${tagKey}/`,
+  /**
+   * Sempre noindex,follow: nessun tag va indicizzato (nessuna eccezione per volume o allowlist).
+   * In produzione SiteLayout usa questo valore; non passare yoastHeadHtml che sovrascriva robots.
+   */
   robots: { index: false, follow: true },
 };
 ---
