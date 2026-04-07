@@ -90,6 +90,24 @@ const CANNABIS_NEWS_IT_SLUG = "cannabis-news-it";
 const isCannabisNewsItHub = slug === CANNABIS_NEWS_IT_SLUG;
 const breadcrumbCategoryLabel = isCannabisNewsItHub ? "Notizie Italia" : categoryName;
 
+/** Solo queste categorie IT sono index,follow; include `Normativa` (frontmatter MDX) oltre allo slug WP `normative-aspetti-legali`. */
+const CATEGORY_INDEX_ALLOWLIST = new Set<string>([
+  "cannabis-news-it",
+  "normative-aspetti-legali",
+  "Normativa",
+  "salute-benessere",
+  "cbd-alimentazione",
+  "coltivazione-legale",
+  "novita-tendenze",
+  "canapa-e-ambiente",
+  "cbd-bellezza-cura-pelle",
+  "guide-tutorial",
+  "ribellario",
+  "cannabis-e-innovazione",
+]);
+
+const categoryShouldIndex = CATEGORY_INDEX_ALLOWLIST.has(slug);
+
 const metadata = {
   title: posts.length > 0
     ? isCannabisNewsItHub
@@ -102,7 +120,7 @@ const metadata = {
       : `Articoli nella categoria ${categoryName}.`
     : `Nessun articolo trovato per la categoria ${slug}.`,
   canonical: `/categoria/${slug}/`,
-  robots: { index: true, follow: true },
+  robots: categoryShouldIndex ? { index: true, follow: true } : { index: false, follow: true },
 };
 ---
 
