@@ -7,9 +7,6 @@ export const prerender = false;
 // Base URL: usa SITE da config o fallback
 const SITE_URL = import.meta.env.SITE || "https://canapalandia.com";
 
-const CATEGORY_PER_PAGE = 24;
-const CANNABIS_NEWS_IT_SLUG = "cannabis-news-it";
-
 // Escape XML
 function escapeXml(input: unknown): string {
   const s = String(input ?? "");
@@ -132,30 +129,18 @@ export const GET: APIRoute = async () => {
     });
   }
 
-  // Categorie IT: solo hub in allowlist con almeno un post; paginazione solo Notizie Italia (cannabis-news-it)
+  // Categorie IT: solo hub in allowlist con almeno un post (URL slug in minuscolo per canone).
   for (const slug of CATEGORY_INDEX_ALLOWLIST) {
     const inCat = blogPosts.filter((p) => (p.data.category || "") === slug);
     if (inCat.length === 0) continue;
 
-    const relCat = normalizePathKey(`categoria/${slug}`);
+    const relCat = normalizePathKey(`categoria/${slug.toLowerCase()}`);
     if (isRedirectSourcePath(relCat)) continue;
     const lastmodCat = maxLastmodFromPosts(inCat);
     urls.push({
-      loc: normalizeUrl(`categoria/${slug}`),
+      loc: normalizeUrl(`categoria/${slug.toLowerCase()}`),
       lastmod: lastmodCat,
     });
-
-    if (slug !== CANNABIS_NEWS_IT_SLUG) continue;
-
-    const totalPages = Math.max(1, Math.ceil(inCat.length / CATEGORY_PER_PAGE));
-    for (let page = 2; page <= totalPages; page++) {
-      const relPage = normalizePathKey(`categoria/${slug}/page/${page}`);
-      if (isRedirectSourcePath(relPage)) continue;
-      urls.push({
-        loc: normalizeUrl(`categoria/${slug}/page/${page}`),
-        lastmod: lastmodCat,
-      });
-    }
   }
 
   // Una sola entry per URL (prima occorrenza vince).

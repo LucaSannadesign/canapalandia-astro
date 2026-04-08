@@ -2,7 +2,7 @@
 export const prerender = false;
 
 import { getCollection, type CollectionEntry } from "astro:content";
-import { CATEGORY_INDEX_ALLOWLIST } from "../../lib/categoryIndexAllowlist";
+import { isCategoryIndexAllowed } from "../../lib/categoryIndexAllowlist";
 import SiteLayout from "../../layouts/SiteLayout.astro";
 import Breadcrumbs from "../../components/Breadcrumbs.astro";
 import CardPost from "../../components/CardPost.astro";
@@ -56,9 +56,9 @@ try {
   console.warn("[categoria] Nessun contenuto trovato in Content Collections");
 }
 
-// Filtra per categoria
+// Filtra per categoria (case-insensitive: URL canoniche in minuscolo)
 const posts = postsAll
-  .filter((p) => (p.data.category || "") === slug)
+  .filter((p) => (p.data.category || "").toLowerCase() === slug.toLowerCase())
   .sort((a, b) => {
     const da = dateOf(a);
     const db = dateOf(b);
@@ -88,10 +88,10 @@ const categoryName = posts.length > 0 && posts[0].data.category
 
 /** Hub editoriale: molti contenuti IT, URL già usato dalla home come “Notizie Italia”. */
 const CANNABIS_NEWS_IT_SLUG = "cannabis-news-it";
-const isCannabisNewsItHub = slug === CANNABIS_NEWS_IT_SLUG;
+const isCannabisNewsItHub = slug.toLowerCase() === CANNABIS_NEWS_IT_SLUG;
 const breadcrumbCategoryLabel = isCannabisNewsItHub ? "Notizie Italia" : categoryName;
 
-const categoryShouldIndex = CATEGORY_INDEX_ALLOWLIST.has(slug);
+const categoryShouldIndex = isCategoryIndexAllowed(slug);
 
 const metadata = {
   title: posts.length > 0
@@ -104,7 +104,7 @@ const metadata = {
       ? "Archivio Notizie Italia: analisi su cannabis light, CBD, filiera e politica. Lettura giornalistica — verifica sempre leggi, decreti e comunicati ufficiali, senza trattarla come consulenza legale."
       : `Articoli nella categoria ${categoryName}.`
     : `Nessun articolo trovato per la categoria ${slug}.`,
-  canonical: `/categoria/${slug}/`,
+  canonical: `/categoria/${slug.toLowerCase()}/`,
   robots: categoryShouldIndex ? { index: true, follow: true } : { index: false, follow: true },
 };
 ---

@@ -20,3 +20,12 @@ export const CATEGORY_INDEX_ALLOWLIST = new Set<string>([
   "ribellario",
   "cannabis-e-innovazione",
 ]);
+
+/** True se l’URL `/categoria/[slug]/` è un hub indicizzabile (slug case-insensitive). */
+export function isCategoryIndexAllowed(paramSlug: string): boolean {
+  const q = paramSlug.trim().toLowerCase();
+  for (const s of CATEGORY_INDEX_ALLOWLIST) {
+    if (s.toLowerCase() === q) return true;
+  }
+  return false;
+}

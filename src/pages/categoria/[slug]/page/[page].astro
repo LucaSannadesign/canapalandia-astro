@@ -28,7 +28,7 @@ if (isNaN(pageNum) || pageNum < 1) {
 
 // page=1 canonicalizza a /categoria/[slug]/
 if (pageNum === 1) {
-  return Astro.redirect(`/categoria/${slug}/`, 301);
+  return Astro.redirect(`/categoria/${slug.toLowerCase()}/`, 301);
 }
 
 // Helper per formattare data (accetta Date/string/number/null/undefined, non crasha mai)
@@ -78,9 +78,9 @@ try {
   console.warn("[categoria/page] Nessun contenuto trovato in Content Collections");
 }
 
-// Filtra per categoria
+// Filtra per categoria (case-insensitive)
 const allPosts = postsAll
-  .filter((p) => (p.data.category || "") === slug)
+  .filter((p) => (p.data.category || "").toLowerCase() === slug.toLowerCase())
   .sort((a, b) => {
     const da = dateOf(a);
     const db = dateOf(b);
@@ -128,7 +128,7 @@ const categoryName = allPosts[0].data.category
 
 /** Allineato all’hub /categoria/cannabis-news-it/ (Notizie Italia in home). */
 const CANNABIS_NEWS_IT_SLUG = "cannabis-news-it";
-const isCannabisNewsItHub = slug === CANNABIS_NEWS_IT_SLUG;
+const isCannabisNewsItHub = slug.toLowerCase() === CANNABIS_NEWS_IT_SLUG;
 
 const metadata = {
   title: isCannabisNewsItHub
@@ -137,7 +137,7 @@ const metadata = {
   description: isCannabisNewsItHub
     ? `Approfondimenti sulla cannabis in Italia: elenco articoli, pagina ${pageNum} di ${totalPages}. Contesto e guida alla lettura sulla prima pagina della categoria.`
     : `Articoli nella categoria ${categoryName}, pagina ${pageNum} di ${totalPages}.`,
-  canonical: `${import.meta.env.SITE || "https://canapalandia.com"}/categoria/${slug}/page/${pageNum}/`,
+  canonical: `${import.meta.env.SITE || "https://canapalandia.com"}/categoria/${slug.toLowerCase()}/page/${pageNum}/`,
   robots: isCannabisNewsItHub
     ? { index: true, follow: true }
     : { index: false, follow: true },
@@ -153,7 +153,7 @@ const metadata = {
           <p class="section-lead">
             Pagina {pageNum} di {totalPages}: articoli più datati della raccolta{" "}
             <strong>Notizie Italia</strong>. Per il testo introduttivo completo torna alla{" "}
-            <a href={`/categoria/${slug}/`}>prima pagina della categoria</a>.
+            <a href={`/categoria/${slug.toLowerCase()}/`}>prima pagina della categoria</a>.
           </p>
         </>
       ) : (
@@ -185,8 +185,8 @@ const metadata = {
             <a
               href={
                 pageNum === 2
-                  ? `/categoria/${slug}/`
-                  : `/categoria/${slug}/page/${pageNum - 1}/`
+                  ? `/categoria/${slug.toLowerCase()}/`
+                  : `/categoria/${slug.toLowerCase()}/page/${pageNum - 1}/`
               }
               class="btn"
             >
@@ -197,7 +197,7 @@ const metadata = {
             Pagina {pageNum} di {totalPages}
           </span>
           {pageNum < totalPages && (
-            <a href={`/categoria/${slug}/page/${pageNum + 1}/`} class="btn">
+            <a href={`/categoria/${slug.toLowerCase()}/page/${pageNum + 1}/`} class="btn">
               Pagina successiva »
             </a>
           )}
