@@ -8,6 +8,9 @@ import Breadcrumbs from "../../components/Breadcrumbs.astro";
 import CardPost from "../../components/CardPost.astro";
 
 const slug = String(Astro.params.slug ?? "").trim();
+if (slug !== slug.toLowerCase()) {
+  return Astro.redirect(`/categoria/${slug.toLowerCase()}/`, 301);
+}
 
 // Helper per formattare data (accetta Date/string/number/null/undefined, non crasha mai)
 const formatDate = (value: Date | string | number | null | undefined): string => {

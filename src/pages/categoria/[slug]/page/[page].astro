@@ -26,9 +26,17 @@ if (isNaN(pageNum) || pageNum < 1) {
   });
 }
 
+const slugLower = slug.toLowerCase();
+if (slug !== slugLower) {
+  if (pageNum === 1) {
+    return Astro.redirect(`/categoria/${slugLower}/`, 301);
+  }
+  return Astro.redirect(`/categoria/${slugLower}/page/${pageNum}/`, 301);
+}
+
 // page=1 canonicalizza a /categoria/[slug]/
 if (pageNum === 1) {
-  return Astro.redirect(`/categoria/${slug.toLowerCase()}/`, 301);
+  return Astro.redirect(`/categoria/${slug}/`, 301);
 }
 
 // Helper per formattare data (accetta Date/string/number/null/undefined, non crasha mai)
