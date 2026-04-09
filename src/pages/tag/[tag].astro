@@ -112,11 +112,11 @@ const metadata = {
         </div>
 
         <div class="grid">
-          {posts.map((p) => (
-            (() => {
-              const safeSlug = String(p.data.slug || p.id || "").trim();
-              const safeHref = safeSlug ? `/blog/${safeSlug}/` : "/blog/";
-              return (
+          {posts.map((p) => {
+            const safeSlug = String(p.data.slug || p.id || "").trim();
+            const safeHref =
+              safeSlug && safeSlug !== "undefined" ? `/blog/${safeSlug}/` : "/blog/";
+            return (
             <CardPost
               href={safeHref}
               img={getPostImage(p)}
@@ -125,9 +125,8 @@ const metadata = {
               excerpt={p.data.description}
               category={p.data.category || null}
             />
-              );
-            })()
-          ))}
+            );
+          })}
         </div>
       </>
     )}
