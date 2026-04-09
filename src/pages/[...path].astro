@@ -511,6 +511,16 @@ const relatedPosts: CardPost[] = findRelatedPosts(entry, rawItem);
 /* ---------------------------
    Extract tags for sidebar
 --------------------------- */
+function slugifyTag(value: string): string {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 function extractTags(item: WPItemRaw | null | undefined): { slug: string; name: string }[] {
   if (!item) return [];
   // Type assertion per accedere a wp:term che non è nel tipo stretto
@@ -518,15 +528,21 @@ function extractTags(item: WPItemRaw | null | undefined): { slug: string; name: 
   const wpTerm = embedded?.["wp:term"] as any;
   if (!Array.isArray(wpTerm)) return [];
   const flat = wpTerm.flat().flat();
-  return flat
-    .filter(
-      (t: any) =>
-        t &&
-        t.taxonomy === "post_tag" &&
-        typeof t.slug === "string" &&
-        typeof t.name === "string",
-    )
-    .map((t: any) => ({ slug: String(t.slug), name: String(t.name) }));
+  const out: { slug: string; name: string }[] = [];
+  const seen = new Set<string>();
+  for (const t of flat) {
+    if (!t || t.taxonomy !== "post_tag" || typeof t.name !== "string") continue;
+    const name = String(t.name).trim();
+    if (!name) continue;
+    let slug = typeof t.slug === "string" ? String(t.slug).trim() : "";
+    if (!slug || slug.toLowerCase() === "undefined") {
+      slug = slugifyTag(name);
+    }
+    if (!slug || slug.toLowerCase() === "undefined" || seen.has(slug)) continue;
+    seen.add(slug);
+    out.push({ slug, name });
+  }
+  return out;
 }
 
 const postTags = extractTags(rawItem);
@@ -775,9 +791,11 @@ if (isSupportPage && contentHtml) {
               <h3 class="sidebar-title">Tag</h3>
               <div class="post-tags">
                 {postTags.map((tag) => (
-                  <a href={`/tag/${tag.slug}/`} class="tag-link">
-                    {tag.name}
-                  </a>
+                  tag.slug && tag.slug.toLowerCase() !== "undefined" ? (
+                    <a href={`/tag/${encodeURIComponent(tag.slug)}/`} class="tag-link">
+                      {tag.name}
+                    </a>
+                  ) : null
                 ))}
               </div>
             </div>
