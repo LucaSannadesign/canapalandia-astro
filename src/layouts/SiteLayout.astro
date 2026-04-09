@@ -40,13 +40,17 @@ function normalizeRobots(robots: unknown): string {
 }
 
 const robotsNormalized = normalizeRobots(robotsRaw);
+const currentPath = Astro.url.pathname;
+
+function isCurrent(path: string): boolean {
+  if (path === "/") return currentPath === "/";
+  return currentPath === path || currentPath.startsWith(path);
+}
 
 // Default robots: index,follow
 const robotsDefault = "index,follow";
 
-/* ---------------------------
-   Esclusione CTA per pagina sostegno
---------------------------- */
+// Esclusione CTA per pagina sostegno
 // Verifica se siamo sulla pagina "sostieni-la-nostra-causa"
 const isSupportPage = Astro.url.pathname.includes("/sostieni-la-nostra-causa");
 
@@ -200,7 +204,6 @@ const twitterDescription = ogDescription;
 const twitterImage = ogImage;
 
 // Determina se mostrare ads: escludi route "low-value"
-const currentPath = Astro.url.pathname;
 const shouldShowAds = !ADS_EXCLUDED_ROUTES.some((route) => 
   currentPath === route || currentPath.startsWith(route + "/")
 );
@@ -910,11 +913,11 @@ const useHomeLightBg =
         <section class="footer-col footer-menu" aria-label="Supporto">
           <h2 class="footer-title">Supporto</h2>
           <nav class="footer-links" aria-label="Link di supporto">
-            <a href="/cerca/">Cerca</a>
+            <a href="/cerca/" aria-current={isCurrent("/cerca/") ? "page" : undefined}>Cerca</a>
             {!isSupportPage ? (
-              <a href="/sostieni-la-nostra-causa/">Sostieni</a>
+              <a href="/sostieni-la-nostra-causa/" aria-current={isCurrent("/sostieni-la-nostra-causa/") ? "page" : undefined}>Sostieni</a>
             ) : null}
-            <a href="/contatti/">Contatti</a>
+            <a href="/contatti/" aria-current={isCurrent("/contatti/") ? "page" : undefined}>Contatti</a>
           </nav>
 
           <nav class="social-links footer-social" aria-label="Canali social">
