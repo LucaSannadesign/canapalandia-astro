@@ -113,14 +113,20 @@ const metadata = {
 
         <div class="grid">
           {posts.map((p) => (
+            (() => {
+              const safeSlug = String(p.data.slug || p.id || "").trim();
+              const safeHref = safeSlug ? `/blog/${safeSlug}/` : "/blog/";
+              return (
             <CardPost
-              href={`/blog/${p.slug}/`}
+              href={safeHref}
               img={getPostImage(p)}
               date={formatDate(dateOf(p))}
               title={p.data.title}
               excerpt={p.data.description}
               category={p.data.category || null}
             />
+              );
+            })()
           ))}
         </div>
       </>
