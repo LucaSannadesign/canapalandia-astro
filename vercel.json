@@ -156,6 +156,16 @@
       "source": "/blog-cannabis-Italia/",
       "destination": "/blog/",
       "permanent": true
+    },
+    {
+      "source": "/decreto-sicurezza-cannabis-light-2025",
+      "destination": "/blog/decreto-sicurezza-cannabis-light/",
+      "permanent": true
+    },
+    {
+      "source": "/decreto-sicurezza-cannabis-light-2025/",
+      "destination": "/blog/decreto-sicurezza-cannabis-light/",
+      "permanent": true
     }
   ]
 }
