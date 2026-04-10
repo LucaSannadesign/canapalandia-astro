@@ -211,7 +211,7 @@ const groupedPosts = sortedPosts.reduce((acc, post) => {
             const date = new Date(post.data.publishDate || post.data.date || post.data.pubDate).toLocaleDateString('it-IT');
             return (
               <li class="sitemap-item" data-title={post.data.title.toLowerCase()}>
-                <a href={`/blog/${post.slug}/`} class="sitemap-link">
+                <a href={`/blog/${(post.data?.slug || post.id?.replace(/\.mdx?$/, '')).trim()}/`} class="sitemap-link">
                   <span>{post.data.title}</span>
                   <span class="sitemap-date">{date}</span>
                 </a>
