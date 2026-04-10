@@ -50,7 +50,7 @@ const sortedTags = Object.entries(tagCount)
     <ul class="sidebar-list recent-posts">
       {recentPosts.map(post => (
         <li class="py-[10px]">
-          <a href={`/blog/${post.slug}/`} class="sidebar-link block leading-snug">
+          <a href={`/blog/${(post.data?.slug || post.id?.replace(/\.mdx?$/, '')).trim()}/`} class="sidebar-link block leading-snug">
             {post.data.title}
           </a>
         </li>
@@ -65,7 +65,7 @@ const sortedTags = Object.entries(tagCount)
       <ul class="sidebar-list">
         {featuredPosts.map(post => (
           <li>
-            <a href={`/blog/${post.slug}/`} class="sidebar-link">
+            <a href={`/blog/${(post.data?.slug || post.id?.replace(/\.mdx?$/, '')).trim()}/`} class="sidebar-link">
               {post.data.title}
             </a>
           </li>

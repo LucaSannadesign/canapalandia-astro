@@ -118,9 +118,11 @@ export const GET: APIRoute = async () => {
   const urls: Array<{ loc: string; lastmod?: string }> = [];
 
   // Articoli: solo URL pubblici /blog/[slug]/ (slug canonico evergreen)
+  const NOINDEX_SLUG_RE = /bozza|\/bozza|^test-/i;
   for (const post of blogPosts) {
     const publicSlug = (post.data?.slug || post.id || "").trim();
     if (!publicSlug) continue;
+    if (NOINDEX_SLUG_RE.test(publicSlug)) continue;
     const relPath = normalizePathKey(`blog/${publicSlug}`);
     if (isRedirectSourcePath(relPath)) continue;
     urls.push({

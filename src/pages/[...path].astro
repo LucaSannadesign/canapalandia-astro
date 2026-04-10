@@ -10,6 +10,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
 import AdSlot from "../components/AdSlot.astro";
 import ShareBar from "../components/ShareBar.astro";
 import BlogSidebar from "../components/blog/BlogSidebar.astro";
+import { getCollection } from 'astro:content';
 import { ADS_SLOT_ARTICLE, ADS_SLOT_SIDEBAR } from "../lib/consts";
 import { loadWp, type WpEntry } from "../lib/wp";
 import {
@@ -179,6 +180,17 @@ if (hasTechParam && targetPathForMatch) {
 }
 
 const foundEntry = findEntryByPath(targetPathForMatch);
+
+const blogEntries = await getCollection('blog');
+const matchingBlogEntry = blogEntries.find((e) => {
+  const entrySlug = (e.data?.slug || e.id?.replace(/\.mdx?$/, '')).trim();
+  return entrySlug === targetPathForMatch;
+});
+
+if (matchingBlogEntry) {
+  const entrySlug = (matchingBlogEntry.data?.slug || matchingBlogEntry.id?.replace(/\.mdx?$/, '')).trim();
+  return Astro.redirect(`/blog/${entrySlug}/`, 301);
+}
 
 // Se non trovato, restituisci 404 vero (non redirect)
 if (!foundEntry) {
