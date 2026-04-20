@@ -42,6 +42,11 @@ function normalizeRobots(robots: unknown): string {
 
 const robotsNormalized = normalizeRobots(robotsRaw);
 const currentPath = Astro.url.pathname;
+const isTagArchivePath =
+  currentPath === "/tag/" ||
+  currentPath.startsWith("/tag/") ||
+  currentPath === "/en/tag/" ||
+  currentPath.startsWith("/en/tag/");
 
 function isCurrent(path: string): boolean {
   if (path === "/") return currentPath === "/";
@@ -92,6 +97,9 @@ const isProduction = isProductionEnvironment();
 const robotsFinal = isProduction 
   ? (robotsNormalized || robotsDefault)
   : "noindex,nofollow";
+
+// Tag archive: forza sempre noindex,follow.
+const robotsFinalWithTagPolicy = isTagArchivePath ? "noindex,follow" : robotsFinal;
 
 // Normalizza canonical: se relativo, rendilo assoluto
 function isFileLikePath(pathname: string): boolean {
@@ -672,7 +680,7 @@ const useHomeLightBg =
     <title>{titleFinal}</title>
     {descriptionFinal ? <meta name="description" content={descriptionFinal} /> : null}
     {canonicalFinal ? <link rel="canonical" href={canonicalFinal} /> : null}
-    <meta name="robots" content={robotsFinal} />
+    <meta name="robots" content={robotsFinalWithTagPolicy} />
     
     {/* OpenGraph meta tags */}
     <meta property="og:type" content={ogType} />
