@@ -751,6 +751,35 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
       padding: clamp(2.4rem, 5vw, 4rem) 0 clamp(2.3rem, 4.8vw, 3.9rem);
     }
 
+    /* Hero: immagine full-bleed solo su desktop (lg+); mobile invariato */
+    @media (min-width: 1024px) {
+      .page-home .hero.hero--home {
+        background-image: url("/images/canapalandia-hero-desktop.webp");
+        background-size: cover;
+        background-position: center center;
+        background-repeat: no-repeat;
+      }
+
+      .page-home .hero-overlay {
+        background:
+          linear-gradient(180deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.28) 58%, rgba(0, 0, 0, 0.18) 100%),
+          radial-gradient(760px 420px at 50% 0%, rgba(200, 169, 90, 0.08), transparent 62%),
+          linear-gradient(180deg, rgba(0, 0, 0, 0.32) 0%, transparent 60%);
+      }
+
+      html[data-theme="light"] .page-home .hero-overlay {
+        background:
+          linear-gradient(180deg, rgba(0, 0, 0, 0.36) 0%, rgba(0, 0, 0, 0.14) 55%, rgba(247, 244, 236, 0.2) 100%),
+          radial-gradient(760px 420px at 50% 0%, rgba(45, 143, 86, 0.06), transparent 62%),
+          linear-gradient(180deg, rgba(247, 244, 236, 0.72) 0%, transparent 60%);
+      }
+
+      .page-home .hero--home > .container.header-inner {
+        position: relative;
+        z-index: 1;
+      }
+    }
+
     /* La hero usa lo stesso wrapper strutturale dell'header.
        Qui neutralizziamo il `display:flex` dell'header-inner perché dentro
        abbiamo una griglia (non elementi header separati). */
