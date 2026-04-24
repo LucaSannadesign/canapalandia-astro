@@ -144,6 +144,9 @@ const jsonLd = {
           updatedDate={entry.data.updatedDate}
           slug={slug}
         />
+        <p class="post-author" aria-label="Autore articolo">
+          Di <strong>{entry.data.author || "Canapalandia"}</strong>
+        </p>
 
         {coverSrc ? (
           <figure class="post-hero">
@@ -163,6 +166,15 @@ const jsonLd = {
         <div class="post-content" data-post-content>
           <Content />
         </div>
+
+        <aside class="post-editorial-note" aria-label="Nota editoriale">
+          <p>
+            Canapalandia è un progetto editoriale indipendente dedicato a canapa, CBD, cannabis light e
+            normativa in Italia. I contenuti hanno finalità informative e non costituiscono consulenza
+            legale o medica.
+            <a href="/disclaimer-legale-canapalandia/"> Leggi il disclaimer legale.</a>
+          </p>
+        </aside>
 
         {/* Separatore */}
         <hr class="post-separator" aria-hidden="true" />
@@ -330,5 +342,37 @@ const jsonLd = {
 
   .post-meta {
     margin-bottom: 1rem;
+  }
+
+  .post-author {
+    margin: 0 0 1.15rem;
+    color: var(--muted);
+    font-size: var(--text-sm);
+    line-height: 1.45;
+  }
+
+  .post-author strong {
+    color: var(--text);
+    font-weight: var(--font-semibold);
+  }
+
+  .post-editorial-note {
+    margin: 2rem 0 0;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--r-md);
+    background: color-mix(in oklab, var(--panel) 78%, transparent);
+  }
+
+  .post-editorial-note p {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--text-sm);
+    line-height: 1.55;
+  }
+
+  .post-editorial-note a {
+    color: var(--brand);
+    font-weight: var(--font-medium);
   }
 </style>
