@@ -249,11 +249,41 @@ function getCategoryIcon(slug: string): string {
 
 const title = "Cannabis light, CBD e canapa in Italia | Notizie, normativa e guide - Canapalandia";
 const description =
-  "Osservatorio editoriale su cannabis light, CBD e canapa in Italia: normativa, notizie e analisi per orientarti senza sensazionalismi.";
+  "Osservatorio editoriale su cannabis light, CBD e canapa in Italia: normativa, notizie, guide e analisi per orientarti senza sensazionalismi.";
 const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
+const homeJsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      name: "Canapalandia",
+      url: "https://canapalandia.com/",
+      description: "Osservatorio editoriale su cannabis light, CBD e canapa in Italia",
+      inLanguage: "it-IT",
+    },
+    {
+      "@type": "Organization",
+      name: "Canapalandia",
+      url: "https://canapalandia.com/",
+      description: "Osservatorio editoriale su cannabis light, CBD e canapa in Italia",
+    },
+    {
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "Canapalandia",
+          item: "https://canapalandia.com/",
+        },
+      ],
+    },
+  ],
+};
 ---
 
 <Layout title={title} description={description} canonical={canonical} shell={false}>
+  <script type="application/ld+json" set:html={JSON.stringify(homeJsonLd)} />
   <div class="page-home">
   <section class="hero hero--home" aria-labelledby="hero-title">
     <div class="hero-overlay" aria-hidden="true"></div>
@@ -264,12 +294,12 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
         <h1 id="hero-title" class="hero--home__title">
           Il punto di riferimento
           <br />
-          su <span class="hero--home__title-highlight">canapa e CBD</span> in Italia
+          su <span class="hero--home__title-highlight">canapa, CBD e cannabis light</span> in Italia
         </h1>
 
         <p class="lead hero--home__lead">
-          Normativa, notizie e analisi approfondite. Un osservatorio indipendente con linguaggio chiaro e
-          fonti sempre verificate.
+          Normativa, notizie e analisi approfondite su canapa, CBD e cannabis light. Un osservatorio
+          indipendente con linguaggio chiaro e fonti sempre verificate.
         </p>
 
         <div class="hero--home__cta-row">
