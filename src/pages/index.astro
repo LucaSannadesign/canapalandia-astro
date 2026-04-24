@@ -737,16 +737,16 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
 
     .page-home .hero-overlay {
       background:
-        radial-gradient(900px 520px at 50% 34%, rgba(0, 0, 0, 0.36), rgba(0, 0, 0, 0.08) 58%, transparent 78%),
+        radial-gradient(920px 540px at 50% 34%, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0.1) 58%, transparent 80%),
         radial-gradient(760px 420px at 50% 0%, rgba(200, 169, 90, 0.07), transparent 62%),
         linear-gradient(180deg, rgba(0, 0, 0, 0.44) 0%, rgba(0, 0, 0, 0.22) 58%, rgba(0, 0, 0, 0.12) 100%);
     }
 
     html[data-theme="light"] .page-home .hero-overlay {
       background:
-        radial-gradient(900px 520px at 50% 34%, rgba(14, 26, 18, 0.34), rgba(14, 26, 18, 0.1) 58%, transparent 78%),
+        radial-gradient(920px 540px at 50% 34%, rgba(14, 26, 18, 0.26), rgba(14, 26, 18, 0.08) 58%, transparent 80%),
         radial-gradient(760px 420px at 50% 0%, rgba(45, 143, 86, 0.06), transparent 62%),
-        linear-gradient(180deg, rgba(0, 0, 0, 0.34) 0%, rgba(0, 0, 0, 0.14) 58%, rgba(247, 244, 236, 0.16) 100%);
+        linear-gradient(180deg, rgba(0, 0, 0, 0.28) 0%, rgba(0, 0, 0, 0.1) 58%, rgba(247, 244, 236, 0.14) 100%);
     }
 
     .hero.hero--home {
@@ -764,16 +764,16 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
 
       .page-home .hero-overlay {
         background:
-          radial-gradient(980px 560px at 50% 34%, rgba(0, 0, 0, 0.52), rgba(0, 0, 0, 0.16) 58%, transparent 80%),
+          radial-gradient(1000px 580px at 50% 34%, rgba(0, 0, 0, 0.56), rgba(0, 0, 0, 0.18) 58%, transparent 82%),
           radial-gradient(760px 420px at 50% 0%, rgba(200, 169, 90, 0.08), transparent 62%),
           linear-gradient(180deg, rgba(0, 0, 0, 0.58) 0%, rgba(0, 0, 0, 0.32) 58%, rgba(0, 0, 0, 0.2) 100%);
       }
 
       html[data-theme="light"] .page-home .hero-overlay {
         background:
-          radial-gradient(980px 560px at 50% 34%, rgba(10, 22, 15, 0.44), rgba(10, 22, 15, 0.14) 58%, transparent 80%),
+          radial-gradient(1000px 580px at 50% 34%, rgba(10, 22, 15, 0.32), rgba(10, 22, 15, 0.1) 58%, transparent 82%),
           radial-gradient(760px 420px at 50% 0%, rgba(45, 143, 86, 0.06), transparent 62%),
-          linear-gradient(180deg, rgba(0, 0, 0, 0.44) 0%, rgba(0, 0, 0, 0.18) 55%, rgba(247, 244, 236, 0.2) 100%);
+          linear-gradient(180deg, rgba(0, 0, 0, 0.34) 0%, rgba(0, 0, 0, 0.14) 55%, rgba(247, 244, 236, 0.18) 100%);
       }
 
       .page-home .hero--home > .container.header-inner {
@@ -800,19 +800,19 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
       gap: clamp(1rem, 2.6vw, 1.65rem);
       max-width: min(50rem, 100%);
       margin-inline: auto;
-      padding: clamp(1.2rem, 2.8vw, 1.75rem) clamp(1rem, 3vw, 1.55rem);
-      border-radius: var(--r-lg);
-      border: 1px solid rgba(255, 255, 255, 0.26);
-      background: rgba(255, 255, 255, 0.24);
-      backdrop-filter: blur(8px) saturate(1.05);
-      -webkit-backdrop-filter: blur(8px) saturate(1.05);
-      box-shadow: 0 14px 34px rgba(0, 0, 0, 0.2);
+      padding: clamp(0.45rem, 1.6vw, 0.75rem) clamp(0.5rem, 1.5vw, 0.8rem);
+      border-radius: var(--r-md);
+      border: 0;
+      background: transparent;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      box-shadow: none;
     }
 
     html[data-theme="dark"] .page-home .hero--home__wrap {
-      border-color: rgba(230, 238, 233, 0.2);
-      background: rgba(10, 20, 14, 0.52);
-      box-shadow: 0 16px 38px rgba(0, 0, 0, 0.34);
+      border-color: transparent;
+      background: transparent;
+      box-shadow: none;
     }
 
     .hero--home__eyebrow {
@@ -838,7 +838,7 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
       line-height: 0.98;
       letter-spacing: -0.035em;
       color: var(--text);
-      text-shadow: 0 2px 16px rgba(0, 0, 0, 0.22), 0 1px 2px rgba(0, 0, 0, 0.26);
+      text-shadow: 0 4px 18px rgba(0, 0, 0, 0.32), 0 1px 2px rgba(0, 0, 0, 0.28);
       text-wrap: balance;
       max-width: 14.5ch;
     }
@@ -854,11 +854,15 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
       line-height: 1.74;
       color: color-mix(in oklab, var(--text) 84%, var(--muted));
       text-wrap: pretty;
-      text-shadow: 0 1px 8px rgba(0, 0, 0, 0.16);
+      text-shadow: 0 1px 8px rgba(0, 0, 0, 0.2);
+      padding: 0.4rem 0.7rem;
+      border-radius: var(--r-md);
+      background: rgba(9, 18, 13, 0.24);
     }
 
     html[data-theme="light"] .hero--home__lead {
       color: color-mix(in oklab, var(--muted) 88%, var(--text) 12%);
+      background: rgba(255, 253, 248, 0.48);
     }
 
     html[data-theme="light"] .page-home .hero--home__eyebrow {
@@ -972,8 +976,8 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
       margin: 0;
       padding: clamp(0.95rem, 2.2vw, 1.15rem);
       border-radius: var(--r-lg);
-      border: 1px solid rgba(255, 255, 255, 0.24);
-      background: rgba(13, 24, 16, 0.34);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(13, 24, 16, 0.2);
     }
 
     .hero--home__feature-title {
@@ -1002,24 +1006,24 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
     .hero--home__proof-row li {
       padding: 0.28rem 0.6rem;
       border-radius: var(--r-full);
-      border: 1px solid rgba(255, 255, 255, 0.24);
-      background: rgba(13, 24, 16, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(13, 24, 16, 0.2);
     }
 
     html[data-theme="light"] .page-home .hero--home__feature-card {
-      border-color: rgba(22, 48, 31, 0.16);
-      background: rgba(255, 253, 248, 0.64);
+      border-color: rgba(22, 48, 31, 0.14);
+      background: rgba(255, 253, 248, 0.42);
     }
 
     html[data-theme="light"] .page-home .hero--home__proof-row li {
-      border-color: rgba(22, 48, 31, 0.16);
-      background: rgba(255, 253, 248, 0.56);
+      border-color: rgba(22, 48, 31, 0.14);
+      background: rgba(255, 253, 248, 0.38);
       color: #16301F;
     }
 
     html[data-theme="dark"] .page-home .hero--home__proof-row li {
-      border-color: rgba(230, 238, 233, 0.2);
-      background: rgba(9, 18, 13, 0.44);
+      border-color: rgba(230, 238, 233, 0.16);
+      background: rgba(9, 18, 13, 0.28);
     }
 
     /* Allineamento laterale su mobile:
@@ -1049,7 +1053,7 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
       }
 
       .hero--home__wrap {
-        padding: 1rem 0.9rem 1.1rem;
+        padding: 0.35rem 0.5rem 0.45rem;
       }
 
       .hero--home__cta-row {
