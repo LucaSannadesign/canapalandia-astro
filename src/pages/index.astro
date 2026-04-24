@@ -907,6 +907,14 @@ const homeJsonLd = {
       color: var(--home-gold);
     }
 
+    html[data-theme="light"] .page-home .hero--home__title {
+      color: #f7f3e8;
+    }
+
+    html[data-theme="light"] .page-home .hero--home__title :where(span:not(.hero--home__title-highlight)) {
+      color: inherit;
+    }
+
     .hero--home__lead {
       margin: 0;
       max-width: 54ch;
