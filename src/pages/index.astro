@@ -311,23 +311,27 @@ const homeJsonLd = {
           </a>
         </div>
 
-        <div class="hero--home__features" aria-label="Valori editoriali">
-          <article class="hero--home__feature-card">
-            <h2 class="hero--home__feature-title">Notizie verificate</h2>
-          </article>
-          <article class="hero--home__feature-card">
-            <h2 class="hero--home__feature-title">Normativa aggiornata</h2>
-          </article>
-          <article class="hero--home__feature-card">
-            <h2 class="hero--home__feature-title">Analisi di mercato</h2>
-          </article>
-        </div>
+        {false && (
+          <>
+            <div class="hero--home__features" aria-label="Valori editoriali">
+              <article class="hero--home__feature-card">
+                <h2 class="hero--home__feature-title">Notizie verificate</h2>
+              </article>
+              <article class="hero--home__feature-card">
+                <h2 class="hero--home__feature-title">Normativa aggiornata</h2>
+              </article>
+              <article class="hero--home__feature-card">
+                <h2 class="hero--home__feature-title">Analisi di mercato</h2>
+              </article>
+            </div>
 
-        <ul class="hero--home__proof-row" aria-label="Indicatori editoriali">
-          <li>200+ articoli</li>
-          <li>100% indipendente</li>
-          <li>Fonti sempre citate</li>
-        </ul>
+            <ul class="hero--home__proof-row" aria-label="Indicatori editoriali">
+              <li>200+ articoli</li>
+              <li>100% indipendente</li>
+              <li>Fonti sempre citate</li>
+            </ul>
+          </>
+        )}
       </div>
     </div>
   </section>
@@ -772,13 +776,6 @@ const homeJsonLd = {
         linear-gradient(180deg, rgba(0, 0, 0, 0.44) 0%, rgba(0, 0, 0, 0.22) 58%, rgba(0, 0, 0, 0.12) 100%);
     }
 
-    html[data-theme="light"] .page-home .hero-overlay {
-      background:
-        radial-gradient(920px 540px at 50% 34%, rgba(14, 26, 18, 0.26), rgba(14, 26, 18, 0.08) 58%, transparent 80%),
-        radial-gradient(760px 420px at 50% 0%, rgba(45, 143, 86, 0.06), transparent 62%),
-        linear-gradient(180deg, rgba(0, 0, 0, 0.28) 0%, rgba(0, 0, 0, 0.1) 58%, rgba(247, 244, 236, 0.14) 100%);
-    }
-
     .hero.hero--home {
       padding: clamp(2.4rem, 5vw, 4rem) 0 clamp(2.3rem, 4.8vw, 3.9rem);
     }
@@ -790,7 +787,7 @@ const homeJsonLd = {
         background-size: cover;
         background-position: center center;
         background-repeat: no-repeat;
-        padding: clamp(1.7rem, 3.8vw, 2.7rem) 0 clamp(1.8rem, 4vw, 2.8rem);
+        padding: clamp(1.25rem, 3.1vw, 2.1rem) 0 clamp(1.25rem, 3.2vw, 2.15rem);
       }
 
       .page-home .hero-overlay {
@@ -800,13 +797,6 @@ const homeJsonLd = {
           linear-gradient(180deg, rgba(0, 0, 0, 0.64) 0%, rgba(0, 0, 0, 0.36) 58%, rgba(0, 0, 0, 0.22) 100%);
       }
 
-      html[data-theme="light"] .page-home .hero-overlay {
-        background:
-          radial-gradient(1120px 620px at 50% 34%, rgba(10, 22, 15, 0.44), rgba(10, 22, 15, 0.16) 58%, transparent 84%),
-          radial-gradient(760px 420px at 50% 0%, rgba(45, 143, 86, 0.06), transparent 62%),
-          linear-gradient(180deg, rgba(0, 0, 0, 0.44) 0%, rgba(0, 0, 0, 0.2) 55%, rgba(247, 244, 236, 0.16) 100%);
-      }
-
       .page-home .hero--home > .container.header-inner {
         position: relative;
         z-index: 1;
@@ -814,18 +804,41 @@ const homeJsonLd = {
 
       .hero--home__wrap {
         max-width: min(64rem, 100%);
-        gap: clamp(0.72rem, 1.55vw, 1.05rem);
+        gap: clamp(0.78rem, 1.4vw, 1rem);
       }
 
       .hero--home__title {
         font-size: clamp(2.4rem, 4.2vw, 4.8rem);
-        line-height: 0.92;
+        line-height: 1.1;
         max-width: min(34ch, 100%);
       }
 
       .hero--home__lead {
         max-width: min(72ch, 100%);
-        margin-top: -0.15rem;
+        margin-top: 0.05rem;
+        padding: 0.3rem 0.7rem;
+      }
+
+      .hero--home__cta-row {
+        margin-top: 0.15rem;
+      }
+
+      .hero--home__features {
+        gap: clamp(0.55rem, 1.35vw, 0.75rem);
+        margin-top: 0.15rem;
+      }
+
+      .hero--home__feature-card {
+        padding: clamp(0.72rem, 1.5vw, 0.9rem);
+      }
+
+      .hero--home__proof-row {
+        gap: 0.55rem;
+        padding-top: 0.2rem;
+      }
+
+      .hero--home__proof-row li {
+        padding: 0.2rem 0.5rem;
       }
     }
 
@@ -882,7 +895,7 @@ const homeJsonLd = {
       font-family: "Iowan Old Style", "Palatino Linotype", "URW Palladio L", Georgia, serif;
       font-size: clamp(2.35rem, 6vw, 4.7rem);
       font-weight: 700;
-      line-height: 0.98;
+      line-height: 1.06;
       letter-spacing: -0.035em;
       color: var(--text);
       text-shadow: 0 8px 24px rgba(0, 0, 0, 0.42), 0 2px 4px rgba(0, 0, 0, 0.34);
@@ -907,26 +920,6 @@ const homeJsonLd = {
       background: rgba(9, 18, 13, 0.24);
     }
 
-    html[data-theme="light"] .hero--home__lead {
-      color: #16251b;
-      background: rgba(248, 244, 236, 0.94);
-      border: 1px solid rgba(22, 48, 31, 0.2);
-      box-shadow: 0 8px 20px rgba(22, 48, 31, 0.12);
-    }
-
-    html[data-theme="light"] .page-home .hero--home__eyebrow {
-      color: color-mix(in oklab, var(--home-gold) 60%, var(--text));
-      border-color: color-mix(in oklab, var(--home-gold) 30%, var(--border-subtle));
-      background: color-mix(in oklab, var(--panel-2) 72%, transparent);
-    }
-
-    html[data-theme="light"] .page-home .hero--home__title-highlight {
-      color: var(--home-gold);
-    }
-
-    html[data-theme="light"] .page-home .hero--home__title {
-      color: #f3efe4;
-    }
 
     .hero--home__cta-row {
       position: relative;
@@ -956,18 +949,6 @@ const homeJsonLd = {
       color: #1d1505;
     }
 
-    html[data-theme="light"] .page-home .hero--home__btn-primary {
-      background: linear-gradient(135deg, var(--brand), var(--brand-2));
-      border-color: color-mix(in oklab, var(--brand) 70%, var(--border));
-      color: #f0faf3;
-      box-shadow: 0 10px 24px color-mix(in oklab, var(--brand) 24%, transparent);
-    }
-
-    html[data-theme="light"] .page-home .hero--home__btn-primary:hover:not(:disabled) {
-      background: linear-gradient(135deg, var(--brand-2), color-mix(in oklab, var(--brand-2) 88%, #0d5c2e));
-      border-color: color-mix(in oklab, var(--brand-2) 84%, var(--border));
-      color: #f0faf3;
-    }
 
     .hero--home__btn-secondary {
       border-color: color-mix(in oklab, var(--home-gold) 48%, var(--border));
@@ -987,31 +968,6 @@ const homeJsonLd = {
       color: var(--text);
     }
 
-    html[data-theme="light"] .page-home .hero--home__btn-secondary {
-      border-color: color-mix(in oklab, var(--home-gold) 42%, var(--border));
-      background: rgba(255, 255, 255, 0.6);
-      color: #16301F;
-    }
-
-    html[data-theme="light"] .page-home .hero--home__btn-secondary:hover:not(:disabled) {
-      border-color: color-mix(in oklab, var(--home-gold) 68%, var(--border));
-      background: color-mix(in oklab, var(--panel-2) 65%, transparent);
-      color: #16301F;
-    }
-
-    html[data-theme="light"] .page-home .hero--home__btn-secondary:focus-visible {
-      outline: 2px solid var(--home-gold);
-      outline-offset: 3px;
-    }
-
-    html[data-theme="light"] .page-home .hero--home__feature-card {
-      border-color: color-mix(in oklab, var(--border-subtle) 80%, var(--home-gold) 10%);
-      background: color-mix(in oklab, var(--panel-2) 78%, transparent);
-    }
-
-    html[data-theme="light"] .page-home .hero--home__proof-row {
-      border-top: 1px solid color-mix(in oklab, var(--border-subtle) 92%, var(--home-gold) 10%);
-    }
 
     .hero--home__features {
       display: grid;
@@ -1059,21 +1015,6 @@ const homeJsonLd = {
       background: rgba(13, 24, 16, 0.2);
     }
 
-    html[data-theme="light"] .page-home .hero--home__feature-card {
-      border-color: rgba(22, 48, 31, 0.2);
-      background: rgba(248, 244, 236, 0.9);
-      box-shadow: 0 6px 16px rgba(22, 48, 31, 0.08);
-    }
-
-    html[data-theme="light"] .page-home .hero--home__feature-title {
-      color: #16251b;
-    }
-
-    html[data-theme="light"] .page-home .hero--home__proof-row li {
-      border-color: rgba(22, 48, 31, 0.2);
-      background: rgba(248, 244, 236, 0.94);
-      color: #16251b;
-    }
 
     html[data-theme="dark"] .page-home .hero--home__proof-row li {
       border-color: rgba(230, 238, 233, 0.16);
