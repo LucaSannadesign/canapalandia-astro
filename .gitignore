@@ -39,3 +39,6 @@ public/wp-content/uploads/
 # Auto-post temp
 tmp/
 scripts/*.bak*
+
+# Temporary WordPress media backup/migration workspace
+public/images/wp-content/
