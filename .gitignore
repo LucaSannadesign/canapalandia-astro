@@ -41,4 +41,9 @@ tmp/
 scripts/*.bak*
 
 # Temporary WordPress media backup/migration workspace
-public/images/wp-content/
+public/images/wp-content/uploads-full-backup/
+
+# WordPress media actually used by migrated posts
+!public/images/wp-content/
+!public/images/wp-content/uploads/
+!public/images/wp-content/uploads/**

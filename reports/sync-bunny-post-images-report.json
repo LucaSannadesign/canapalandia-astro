@@ -1,0 +1,21 @@
+{
+  "generatedAt": "2026-04-25T17:54:55.373Z",
+  "mode": "apply",
+  "bunnyArchiveDir": "/Users/lucasanna/Downloads/canapalandia-bunny-archive/uploads",
+  "mdxAnalyzed": 238,
+  "imageReferencesFound": 221,
+  "uniqueImagesRequested": 145,
+  "exactMatches": 141,
+  "basenameMatches": 0,
+  "ambiguous": 0,
+  "missing": 4,
+  "mdxFilesModified": 209,
+  "imagesCopied": 141,
+  "missingSample": [
+    "2017/06/images-300x168.webp",
+    "2017/06/skin_lesion_plaque_high_it-300x253.webp",
+    "2017/06/images-300x168.jpg",
+    "2017/06/skin_lesion_plaque_high_it-300x253.jpg"
+  ],
+  "ambiguousSample": []
+}
