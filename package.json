@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "astro dev",
-    "prebuild": "node scripts/generate-sitemap-pages.mjs",
+    "prebuild": "rm -rf .astro dist .vercel/output node_modules/.vite node_modules/.astro && node scripts/generate-sitemap-pages.mjs",
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
