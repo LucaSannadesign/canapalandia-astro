@@ -24,6 +24,8 @@ const RSS_CANDIDATES = [
 
 // Path per state file (usato con GitHub Actions cache)
 const STATE_FILE = process.env.STATE_FILE || ".cache/telegram-share.json";
+// Default 168h (7 giorni): evita di perdere post se GitHub Actions salta una o più esecuzioni.
+const NEW_POST_WINDOW_HOURS = Number(process.env.NEW_POST_WINDOW_HOURS || 168);
 
 /**
  * Prova a scaricare un feed e verifica che sia valido (contiene <rss o <feed)
@@ -85,117 +87,128 @@ async function findFeedUrl() {
 }
 
 /**
- * Parse RSS XML e estrae il post più recente
+ * Estrae slug da URL post
+ */
+function extractSlug(link) {
+  try {
+    const url = new URL(link);
+    const parts = url.pathname.split("/").filter(Boolean);
+    return parts.length ? parts[parts.length - 1] : "";
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Normalizza data in ISO se possibile
+ */
+function toISODate(raw) {
+  if (!raw) return "";
+  try {
+    const date = new Date(String(raw));
+    return Number.isNaN(date.getTime()) ? "" : date.toISOString();
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Verifica se il post è pubblicabile in base a segnali presenti nel feed.
+ * Esclude esplicitamente draft/non pubblicati quando questi campi compaiono.
+ */
+function isPublishedPost(post) {
+  const haystack = `${post.title || ""} ${post.description || ""}`.toLowerCase();
+  const hasDraftSignal = /\bdraft\b/.test(haystack) || /\bstatus:\s*draft\b/.test(haystack) || /\bstatus:\s*test\b/.test(haystack);
+  return !hasDraftSignal;
+}
+
+/**
+ * Ordina i post dal più recente al meno recente
+ */
+function sortByDateDesc(a, b) {
+  const da = a.dateISO ? new Date(a.dateISO).getTime() : 0;
+  const db = b.dateISO ? new Date(b.dateISO).getTime() : 0;
+  return db - da;
+}
+
+/**
+ * Parse RSS XML e estrae tutti i post
  */
 function parseRSS(xml) {
-  // Estrai il primo <item>
-  const itemMatch = xml.match(/<item>([\s\S]*?)<\/item>/);
-  if (!itemMatch) {
+  const itemMatches = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)];
+  if (!itemMatches.length) {
     throw new Error("RSS format: no <item> found");
   }
 
-  const item = itemMatch[1];
+  const posts = itemMatches
+    .map((match) => {
+      const item = match[1];
+      const titleMatch = item.match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/);
+      const linkMatch = item.match(/<link>(.*?)<\/link>/);
+      const pubDateMatch = item.match(/<pubDate>(.*?)<\/pubDate>/) || item.match(/<updated>(.*?)<\/updated>/);
+      const descMatch = item.match(/<description>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/description>/) ||
+                        item.match(/<content:encoded>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/content:encoded>/);
 
-  // Estrai campi (supporta sia CDATA che testo normale)
-  const titleMatch = item.match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/);
-  const linkMatch = item.match(/<link>(.*?)<\/link>/);
-  const pubDateMatch = item.match(/<pubDate>(.*?)<\/pubDate>/) || item.match(/<updated>(.*?)<\/updated>/);
-  const descMatch = item.match(/<description>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/description>/) ||
-                     item.match(/<content:encoded>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/content:encoded>/);
+      const title = titleMatch?.[1]?.trim() || "";
+      const link = linkMatch?.[1]?.trim() || "";
+      const pubDate = pubDateMatch?.[1]?.trim() || "";
+      const description = descMatch?.[1]?.trim() || "";
+      const dateISO = toISODate(pubDate);
+      const slug = extractSlug(link);
 
-  if (!titleMatch || !linkMatch) {
-    throw new Error("RSS format: missing title or link");
+      if (!title || !link) return null;
+      return { title, link, pubDate, dateISO, description, slug };
+    })
+    .filter(Boolean);
+
+  if (!posts.length) {
+    throw new Error("RSS format: no valid post entries found");
   }
 
-  const title = titleMatch[1]?.trim() || "";
-  const link = linkMatch[1]?.trim() || "";
-  const pubDate = pubDateMatch?.[1]?.trim() || "";
-  const description = descMatch?.[1]?.trim() || "";
-
-  if (!title || !link) {
-    throw new Error("RSS format: empty title or link");
-  }
-
-  // Normalizza data in ISO
-  let dateISO = "";
-  if (pubDate) {
-    try {
-      const date = new Date(pubDate);
-      if (!isNaN(date.getTime())) {
-        dateISO = date.toISOString();
-      }
-    } catch {
-      // Ignora errori di parsing data
-    }
-  }
-
-  return {
-    title,
-    link,
-    pubDate,
-    dateISO,
-    description,
-  };
+  return posts;
 }
 
 /**
- * Parse Atom XML e estrae il post più recente
+ * Parse Atom XML e estrae tutti i post
  */
 function parseAtom(xml) {
-  // Estrai il primo <entry>
-  const entryMatch = xml.match(/<entry>([\s\S]*?)<\/entry>/);
-  if (!entryMatch) {
+  const entryMatches = [...xml.matchAll(/<entry>([\s\S]*?)<\/entry>/g)];
+  if (!entryMatches.length) {
     throw new Error("Atom format: no <entry> found");
   }
 
-  const entry = entryMatch[1];
+  const posts = entryMatches
+    .map((match) => {
+      const entry = match[1];
+      const titleMatch = entry.match(/<title[^>]*>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/);
+      const linkMatch = entry.match(/<link[^>]*href=["']([^"']+)["'][^>]*>/) || entry.match(/<link[^>]*>[\s\S]*?href=["']([^"']+)["']/);
+      const updatedMatch = entry.match(/<updated>(.*?)<\/updated>/) || entry.match(/<published>(.*?)<\/published>/);
+      const summaryMatch = entry.match(/<summary[^>]*>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/summary>/) ||
+                           entry.match(/<content[^>]*>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/content>/);
 
-  // Estrai campi
-  const titleMatch = entry.match(/<title[^>]*>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/);
-  const linkMatch = entry.match(/<link[^>]*href=["']([^"']+)["'][^>]*>/) || entry.match(/<link[^>]*>[\s\S]*?href=["']([^"']+)["']/);
-  const updatedMatch = entry.match(/<updated>(.*?)<\/updated>/) || entry.match(/<published>(.*?)<\/published>/);
-  const summaryMatch = entry.match(/<summary[^>]*>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/summary>/) ||
-                        entry.match(/<content[^>]*>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/content>/);
+      const title = titleMatch?.[1]?.trim() || "";
+      const link = linkMatch?.[1]?.trim() || "";
+      const updated = updatedMatch?.[1]?.trim() || "";
+      const summary = summaryMatch?.[1]?.trim() || "";
+      const dateISO = toISODate(updated);
+      const slug = extractSlug(link);
 
-  if (!titleMatch || !linkMatch) {
-    throw new Error("Atom format: missing title or link");
+      if (!title || !link) return null;
+      return { title, link, pubDate: updated, dateISO, description: summary, slug };
+    })
+    .filter(Boolean);
+
+  if (!posts.length) {
+    throw new Error("Atom format: no valid post entries found");
   }
 
-  const title = titleMatch[1]?.trim() || "";
-  const link = linkMatch[1]?.trim() || "";
-  const updated = updatedMatch?.[1]?.trim() || "";
-  const summary = summaryMatch?.[1]?.trim() || "";
-
-  if (!title || !link) {
-    throw new Error("Atom format: empty title or link");
-  }
-
-  // Normalizza data in ISO
-  let dateISO = "";
-  if (updated) {
-    try {
-      const date = new Date(updated);
-      if (!isNaN(date.getTime())) {
-        dateISO = date.toISOString();
-      }
-    } catch {
-      // Ignora errori di parsing data
-    }
-  }
-
-  return {
-    title,
-    link,
-    pubDate: updated,
-    dateISO,
-    description: summary,
-  };
+  return posts;
 }
 
 /**
- * Parse feed RSS/Atom e estrae il post più recente
+ * Parse feed RSS/Atom e estrae tutti i post
  */
-async function fetchLatestPost() {
+async function fetchFeedPosts() {
   try {
     const { url, xml } = await findFeedUrl();
     
@@ -232,6 +245,18 @@ function loadState() {
     const content = fs.readFileSync(statePath, "utf8");
     const state = JSON.parse(content);
     
+    // Backward compatibility: stato legacy con solo lastLink
+    if (!Array.isArray(state.sentPosts)) {
+      state.sentPosts = [];
+      if (state.lastLink) {
+        state.sentPosts.push({
+          slug: extractSlug(state.lastLink),
+          link: state.lastLink,
+          title: state.title || "",
+          sentAt: state.sharedAt || state.lastDate || new Date().toISOString(),
+        });
+      }
+    }
     return state;
   } catch (error) {
     // Se il file non esiste o è corrotto, ritorna null (prima esecuzione)
@@ -242,7 +267,7 @@ function loadState() {
 /**
  * Salva stato (ultimo post condiviso)
  */
-function saveState(post) {
+function saveState(post, previousState = null) {
   try {
     const statePath = path.resolve(process.cwd(), STATE_FILE);
     const stateDir = path.dirname(statePath);
@@ -252,11 +277,29 @@ function saveState(post) {
       fs.mkdirSync(stateDir, { recursive: true });
     }
 
+    const sentAt = new Date().toISOString();
+    const today = sentAt.slice(0, 10);
+    const baseSentPosts = Array.isArray(previousState?.sentPosts) ? previousState.sentPosts : [];
+    const alreadyExists = baseSentPosts.some((p) => p.link === post.link || (p.slug && p.slug === post.slug));
+    const sentPosts = alreadyExists
+      ? baseSentPosts
+      : [
+          ...baseSentPosts,
+          {
+            slug: post.slug || extractSlug(post.link),
+            link: post.link,
+            title: post.title,
+            sentAt,
+          },
+        ];
+
     const state = {
       lastLink: post.link,
-      lastDate: post.dateISO || post.pubDate || new Date().toISOString(),
+      lastDate: post.dateISO || post.pubDate || sentAt,
       title: post.title,
-      sharedAt: new Date().toISOString(),
+      sharedAt: sentAt,
+      lastSentDay: today,
+      sentPosts,
     };
 
     fs.writeFileSync(statePath, JSON.stringify(state, null, 2), "utf8");
@@ -264,6 +307,35 @@ function saveState(post) {
   } catch (error) {
     console.error(`[auto-share] Error saving state: ${error.message}`);
     // Non bloccare se il salvataggio fallisce
+  }
+}
+
+/**
+ * Inizializza file di stato vuoto (warm-up) se assente
+ */
+function initializeEmptyState() {
+  try {
+    const statePath = path.resolve(process.cwd(), STATE_FILE);
+    const stateDir = path.dirname(statePath);
+    if (!fs.existsSync(stateDir)) {
+      fs.mkdirSync(stateDir, { recursive: true });
+    }
+
+    const state = {
+      lastLink: "",
+      lastDate: "",
+      title: "",
+      sharedAt: "",
+      lastSentDay: "",
+      sentPosts: [],
+    };
+
+    fs.writeFileSync(statePath, JSON.stringify(state, null, 2), "utf8");
+    console.log(`[auto-share] State initialized: ${statePath}`);
+    return true;
+  } catch (error) {
+    console.error(`[auto-share] Error initializing state: ${error.message}`);
+    return false;
   }
 }
 
@@ -369,41 +441,77 @@ async function main() {
   }
 
   try {
-    // 1. Fetch feed e ottieni ultimo post
+    // 1. Fetch feed e ottieni post
     console.log("[auto-share] Fetching feed...");
-    const latestPost = await fetchLatestPost();
-    console.log(`[auto-share] Latest post: "${latestPost.title}" (${latestPost.link})`);
+    const allPosts = await fetchFeedPosts();
+    console.log(`[auto-share] Feed posts loaded: ${allPosts.length}`);
 
     // 2. Carica stato precedente
     const previousState = loadState();
-    
-    // CASO 1: Warm-up (prima esecuzione - stato non esiste)
     if (!previousState) {
-      console.log("[auto-share] warm-up: state initialized, not sending");
-      saveState(latestPost);
+      console.log("[auto-share] state: missing");
+      const initialized = initializeEmptyState();
+      if (!initialized) {
+        console.error("[auto-share] ERROR: warm-up failed, state not initialized");
+        process.exit(1);
+      }
+      console.log("[auto-share] warm-up: state missing, initialized without sending");
       process.exit(0);
     }
-    
-    // CASO 2: No-op (stesso post già condiviso)
-    if (previousState.lastLink === latestPost.link) {
-      console.log("[auto-share] no-op: No new posts");
+    console.log("[auto-share] state: loaded");
+
+    const now = new Date();
+    const newPostWindowStart = new Date(now.getTime() - NEW_POST_WINDOW_HOURS * 60 * 60 * 1000);
+    console.log(`[auto-share] New post window hours: ${NEW_POST_WINDOW_HOURS}`);
+
+    const sentPosts = Array.isArray(previousState?.sentPosts) ? previousState.sentPosts : [];
+    const sentLinks = new Set(sentPosts.map((p) => p.link).filter(Boolean));
+    const sentSlugs = new Set(sentPosts.map((p) => p.slug).filter(Boolean));
+    console.log(`[auto-share] Already shared posts in state: ${sentPosts.length}`);
+
+    // 2. Escludi draft/non pubblicati (se segnali presenti)
+    const publishablePosts = allPosts.filter(isPublishedPost);
+    console.log(`[auto-share] Publishable posts after draft filter: ${publishablePosts.length}`);
+
+    // 3. Filtra solo i post appena pubblicati nella finestra configurata
+    const newlyPublishedPosts = publishablePosts.filter((post) => {
+      if (!post.dateISO) return false;
+      const postDate = new Date(post.dateISO);
+      return !Number.isNaN(postDate.getTime()) && postDate >= newPostWindowStart && postDate <= now;
+    });
+    console.log(`[auto-share] Newly published posts in window: ${newlyPublishedPosts.length}`);
+
+    // 4. Escludi post già inviati (slug first, fallback link)
+    const availablePosts = newlyPublishedPosts.filter((post) => {
+      if (post.slug) return !sentSlugs.has(post.slug);
+      return !sentLinks.has(post.link);
+    });
+    console.log(`[auto-share] Available new unsent posts: ${availablePosts.length}`);
+
+    if (!availablePosts.length) {
+      console.log("[auto-share] no-op: No newly published unsent posts");
       process.exit(0);
     }
-    
-    // CASO 3: Nuovo post rilevato (link diverso)
-    console.log(`[auto-share] Last shared: "${previousState.title}" (${previousState.lastLink})`);
-    console.log(`[auto-share] New post detected: "${latestPost.title}" (${latestPost.link})`);
-    
+
+    // 5. Ordina candidati dal più recente al meno recente e seleziona 1
+    const sortedCandidates = availablePosts.slice().sort(sortByDateDesc);
+    const selectedPost = sortedCandidates[0];
+    console.log(`[auto-share] Selected new post: "${selectedPost.title}" (slug: ${selectedPost.slug || "n/a"})`);
+
     if (dryRun) {
-      console.log("[auto-share] DRY RUN: Would send message:");
-      console.log(`  Title: ${latestPost.title}`);
-      console.log(`  Link: ${latestPost.link}`);
-      console.log(`  Description: ${cleanDescription(latestPost.description)}`);
+      console.log("[auto-share] DRY RUN: post selection successful, not sending");
+      console.log(`  Title: ${selectedPost.title}`);
+      console.log(`  Link: ${selectedPost.link}`);
+      console.log(`  Slug: ${selectedPost.slug || "(none)"}`);
+      console.log(`  Date: ${selectedPost.dateISO || selectedPost.pubDate || "(none)"}`);
+      console.log(`  Description: ${cleanDescription(selectedPost.description)}`);
     } else {
-      await sendTelegramMessage(latestPost);
+      // 5. Invia messaggio
+      await sendTelegramMessage(selectedPost);
       console.log("[auto-share] message sent: Telegram notification delivered");
-      saveState(latestPost);
-      console.log("[auto-share] state saved: Latest post state persisted");
+      // 6. Salva stato SOLO dopo invio riuscito
+      saveState(selectedPost, previousState);
+      console.log("[auto-share] state saved: Post marked as sent");
     }
 
     console.log("[auto-share] Done.");
