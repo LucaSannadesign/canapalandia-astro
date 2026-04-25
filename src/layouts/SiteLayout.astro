@@ -188,15 +188,6 @@ function normalizeOgImage(imagePath: string | undefined | null): string {
   // Normalizza path relativo
   const normalizedPath = imagePath.startsWith("/") ? imagePath : `/${imagePath}`;
   
-  // Se è .webp, prova a convertire in .jpg (Telegram preferisce JPG/PNG)
-  if (normalizedPath.endsWith(".webp")) {
-    const jpgPath = normalizedPath.replace(/\.webp$/, ".jpg");
-    // Nota: non possiamo verificare se il file esiste a build-time,
-    // ma Telegram accetterà il 404 e userà il fallback, quindi proviamo JPG prima
-    // Se non esiste, il server restituirà 404 e Telegram userà il fallback
-    return `${SITE_URL}${jpgPath}`;
-  }
-  
   return `${SITE_URL}${normalizedPath}`;
 }
 
