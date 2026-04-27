@@ -120,6 +120,15 @@ type CategoryData = {
 };
 
 const categoryMap = new Map<string, CategoryData>();
+const categoryDisplayNameMap: Record<string, string> = {
+  "Normativa": "Normativa",
+  "Attualità": "Attualità",
+  "Ricerca": "Ricerca",
+  "cbd-alimentazione": "CBD",
+  "guide-tutorial": "Guide",
+  "canapa-e-ambiente": "Canapa e ambiente",
+  "cannabis-news-it": "Notizie Italia",
+};
 for (const post of italianPosts) {
   const cat = post.data.category;
   if (cat && typeof cat === "string" && cat.trim()) {
@@ -127,7 +136,12 @@ for (const post of italianPosts) {
     const existing = categoryMap.get(slug);
     categoryMap.set(slug, {
       slug,
-      name: slug.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" "),
+      name:
+        categoryDisplayNameMap[slug] ||
+        slug
+          .split("-")
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(" "),
       count: (existing?.count || 0) + 1,
     });
   }
@@ -135,13 +149,14 @@ for (const post of italianPosts) {
 
 // Ordine di priorità categorie
 const categoryPriority = [
-  "normative-aspetti-legali",
-  "cannabis-news-it",
-  "cbd-alimentazione",
-  "salute-benessere",
+  "Normativa",
+  "Attualità",
   "guide-tutorial",
-  "coltivazione-legale",
+  "cbd-alimentazione",
   "canapa-e-ambiente",
+  "cannabis-news-it",
+  "Ricerca",
+  "salute-benessere",
 ];
 
 // Ordina categorie per priorità (max 8)
@@ -157,6 +172,17 @@ for (const slug of categoryPriority) {
 // Helper per icona categoria
 function getCategoryIcon(slug: string): string {
   const iconMap: Record<string, string> = {
+    "Normativa": `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 3v18M6 7h12M7 7l-3 6h6l-3-6zM17 7l-3 6h6l-3-6zM6 21h12"></path>
+    </svg>`,
+    "Attualità": `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+      <path d="M8 8h8M8 12h8M8 16h6"></path>
+    </svg>`,
+    "Ricerca": `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"></circle>
+      <path d="m21 21-4.3-4.3"></path>
+    </svg>`,
     "normative-aspetti-legali": `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M12 3v18M6 7h12M7 7l-3 6h6l-3-6zM17 7l-3 6h6l-3-6zM6 21h12"></path>
     </svg>`,
@@ -195,8 +221,8 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/blog/`;
     <section class="hero">
       <div class="container hero-inner">
         <p class="kicker">Blog</p>
-        <h1>Articoli e guide</h1>
-        <p class="lead">Articoli in italiano su cannabis light, CBD e canapa legale in Italia.</p>
+        <h1>Articoli, guide e aggiornamenti sulla canapa</h1>
+        <p class="lead">Approfondimenti in italiano su cannabis light, CBD, normativa, filiera della canapa e cultura antiproibizionista.</p>
       </div>
     </section>
 
@@ -205,9 +231,9 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/blog/`;
       <section class="section">
         <div class="container">
           <div class="section-head">
-            <h2>Percorsi del Blog</h2>
+            <h2>Percorsi principali</h2>
             <p class="section-lead">
-              Scegli un'area tematica e vai dritto al punto.
+              Parti dai temi più utili per orientarti tra norme, prodotti legali, aggiornamenti e cultura della canapa.
             </p>
           </div>
 
