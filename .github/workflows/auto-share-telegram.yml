@@ -1,9 +1,9 @@
 name: Auto Share Telegram
 
 on:
-  schedule:
-    # Esegui ogni 2 ore
-    - cron: '0 */2 * * *'
+  # schedule:
+  #   # Esegui ogni 2 ore
+  #   - cron: '0 */2 * * *'
   workflow_dispatch: # Permette esecuzione manuale
 
 permissions:
