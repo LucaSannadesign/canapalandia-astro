@@ -18,6 +18,16 @@ const slug = String(Astro.params.slug ?? "").trim();
 const pageParam = Astro.params.page;
 const pageNum = pageParam ? parseInt(pageParam, 10) : 1;
 
+function slugifyCategory(value: string): string {
+  return value
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 // Validazione: page deve essere intero >= 1
 if (isNaN(pageNum) || pageNum < 1) {
   return new Response(null, {
@@ -26,17 +36,17 @@ if (isNaN(pageNum) || pageNum < 1) {
   });
 }
 
-const slugLower = slug.toLowerCase();
-if (slug !== slugLower) {
+const canonicalSlug = slugifyCategory(slug);
+if (slug !== canonicalSlug) {
   if (pageNum === 1) {
-    return Astro.redirect(`/categoria/${slugLower}/`, 301);
+    return Astro.redirect(`/categoria/${canonicalSlug}/`, 301);
   }
-  return Astro.redirect(`/categoria/${slugLower}/page/${pageNum}/`, 301);
+  return Astro.redirect(`/categoria/${canonicalSlug}/page/${pageNum}/`, 301);
 }
 
 // page=1 canonicalizza a /categoria/[slug]/
 if (pageNum === 1) {
-  return Astro.redirect(`/categoria/${slug}/`, 301);
+  return Astro.redirect(`/categoria/${canonicalSlug}/`, 301);
 }
 
 // Helper per formattare data (accetta Date/string/number/null/undefined, non crasha mai)
@@ -88,7 +98,7 @@ try {
 
 // Filtra per categoria (case-insensitive)
 const allPosts = postsAll
-  .filter((p) => (p.data.category || "").toLowerCase() === slug.toLowerCase())
+  .filter((p) => slugifyCategory(p.data.category || "") === canonicalSlug)
   .sort((a, b) => {
     const da = dateOf(a);
     const db = dateOf(b);
@@ -129,14 +139,14 @@ const categoryName = allPosts[0].data.category
       .split("-")
       .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
       .join(" ")
-  : slug
+  : canonicalSlug
       .split("-")
       .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
       .join(" ");
 
 /** Allineato all’hub /categoria/cannabis-news-it/ (Notizie Italia in home). */
 const CANNABIS_NEWS_IT_SLUG = "cannabis-news-it";
-const isCannabisNewsItHub = slug.toLowerCase() === CANNABIS_NEWS_IT_SLUG;
+const isCannabisNewsItHub = canonicalSlug === CANNABIS_NEWS_IT_SLUG;
 
 const metadata = {
   title: isCannabisNewsItHub
@@ -145,7 +155,7 @@ const metadata = {
   description: isCannabisNewsItHub
     ? `Approfondimenti sulla cannabis in Italia: elenco articoli, pagina ${pageNum} di ${totalPages}. Contesto e guida alla lettura sulla prima pagina della categoria.`
     : `Articoli nella categoria ${categoryName}, pagina ${pageNum} di ${totalPages}.`,
-  canonical: `${import.meta.env.SITE || "https://canapalandia.com"}/categoria/${slug.toLowerCase()}/page/${pageNum}/`,
+  canonical: `${import.meta.env.SITE || "https://canapalandia.com"}/categoria/${canonicalSlug}/page/${pageNum}/`,
   robots: isCannabisNewsItHub
     ? { index: true, follow: true }
     : { index: false, follow: true },
@@ -161,7 +171,7 @@ const metadata = {
           <p class="section-lead">
             Pagina {pageNum} di {totalPages}: articoli più datati della raccolta{" "}
             <strong>Notizie Italia</strong>. Per il testo introduttivo completo torna alla{" "}
-            <a href={`/categoria/${slug.toLowerCase()}/`}>prima pagina della categoria</a>.
+            <a href={`/categoria/${canonicalSlug}/`}>prima pagina della categoria</a>.
           </p>
         </>
       ) : (
@@ -193,8 +203,8 @@ const metadata = {
             <a
               href={
                 pageNum === 2
-                  ? `/categoria/${slug.toLowerCase()}/`
-                  : `/categoria/${slug.toLowerCase()}/page/${pageNum - 1}/`
+                  ? `/categoria/${canonicalSlug}/`
+                  : `/categoria/${canonicalSlug}/page/${pageNum - 1}/`
               }
               class="btn"
             >
@@ -205,7 +215,7 @@ const metadata = {
             Pagina {pageNum} di {totalPages}
           </span>
           {pageNum < totalPages && (
-            <a href={`/categoria/${slug.toLowerCase()}/page/${pageNum + 1}/`} class="btn">
+            <a href={`/categoria/${canonicalSlug}/page/${pageNum + 1}/`} class="btn">
               Pagina successiva »
             </a>
           )}

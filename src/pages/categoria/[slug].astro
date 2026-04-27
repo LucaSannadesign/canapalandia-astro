@@ -8,8 +8,19 @@ import Breadcrumbs from "../../components/Breadcrumbs.astro";
 import CardPost from "../../components/CardPost.astro";
 
 const slug = String(Astro.params.slug ?? "").trim();
-if (slug !== slug.toLowerCase()) {
-  return Astro.redirect(`/categoria/${slug.toLowerCase()}/`, 301);
+function slugifyCategory(value: string): string {
+  return value
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+const canonicalSlug = slugifyCategory(slug);
+if (slug !== canonicalSlug) {
+  return Astro.redirect(`/categoria/${canonicalSlug}/`, 301);
 }
 
 // Helper per formattare data (accetta Date/string/number/null/undefined, non crasha mai)
@@ -61,7 +72,7 @@ try {
 
 // Filtra per categoria (case-insensitive: URL canoniche in minuscolo)
 const posts = postsAll
-  .filter((p) => (p.data.category || "").toLowerCase() === slug.toLowerCase())
+  .filter((p) => slugifyCategory(p.data.category || "") === canonicalSlug)
   .sort((a, b) => {
     const da = dateOf(a);
     const db = dateOf(b);
@@ -84,17 +95,17 @@ const categoryName = posts.length > 0 && posts[0].data.category
       .split("-")
       .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
       .join(" ")
-  : slug
+  : canonicalSlug
       .split("-")
       .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
       .join(" ");
 
 /** Hub editoriale: molti contenuti IT, URL già usato dalla home come “Notizie Italia”. */
 const CANNABIS_NEWS_IT_SLUG = "cannabis-news-it";
-const isCannabisNewsItHub = slug.toLowerCase() === CANNABIS_NEWS_IT_SLUG;
+const isCannabisNewsItHub = canonicalSlug === CANNABIS_NEWS_IT_SLUG;
 const breadcrumbCategoryLabel = isCannabisNewsItHub ? "Notizie Italia" : categoryName;
 
-const categoryShouldIndex = isCategoryIndexAllowed(slug);
+const categoryShouldIndex = isCategoryIndexAllowed(canonicalSlug);
 
 const metadata = {
   title: posts.length > 0
@@ -106,8 +117,8 @@ const metadata = {
     ? isCannabisNewsItHub
       ? "Archivio Notizie Italia: analisi su cannabis light, CBD, filiera e politica. Lettura giornalistica — verifica sempre leggi, decreti e comunicati ufficiali, senza trattarla come consulenza legale."
       : `Articoli nella categoria ${categoryName}.`
-    : `Nessun articolo trovato per la categoria ${slug}.`,
-  canonical: `/categoria/${slug.toLowerCase()}/`,
+    : `Nessun articolo trovato per la categoria ${canonicalSlug}.`,
+  canonical: `/categoria/${canonicalSlug}/`,
   robots: categoryShouldIndex ? { index: true, follow: true } : { index: false, follow: true },
 };
 ---
