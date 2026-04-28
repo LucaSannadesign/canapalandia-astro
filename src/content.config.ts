@@ -73,6 +73,8 @@ const blog = defineCollection({
       homeFeaturedRank: z.number().optional(), // Priorità manuale (più basso = più importante)
       socialShare: z.boolean().optional(),
       socialEvergreen: z.boolean().optional(),
+      instagramShare: z.boolean().optional(),
+      instagramImage: z.string().optional(),
       showShare: z.boolean().optional(), // Disabilita sezione share per singolo post
       showSupportCta: z.boolean().optional(), // Disabilita CTA sostegno per singolo post
     })
