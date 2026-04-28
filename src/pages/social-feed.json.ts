@@ -25,15 +25,27 @@ function normalizePostUrl(slug: string): string {
 
 export const GET: APIRoute = async () => {
   const posts = await getCollection("blog");
+  const now = new Date();
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
   const items = posts
-    .filter((post) => post.data.draft !== true)
+    .filter((post) => {
+      if (post.data.draft === true) return false;
+      if (post.data.socialShare !== true) return false;
+      if (!post.data.publishDate) return false;
+      const publishTs = new Date(String(post.data.publishDate)).getTime();
+      return (
+        !Number.isNaN(publishTs) &&
+        publishTs >= sevenDaysAgo.getTime() &&
+        publishTs <= now.getTime()
+      );
+    })
     .sort((a, b) => {
       const da = new Date(String(a.data.publishDate || 0)).getTime();
       const db = new Date(String(b.data.publishDate || 0)).getTime();
       return db - da;
     })
-    .slice(0, 10)
+    .slice(0, 1)
     .map((post) => {
       const slug = post.data.slug || post.id;
       return {
