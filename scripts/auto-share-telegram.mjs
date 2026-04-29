@@ -24,8 +24,15 @@ const RSS_CANDIDATES = [
 
 // Path per state file (usato con GitHub Actions cache)
 const STATE_FILE = process.env.STATE_FILE || ".cache/telegram-share.json";
-// Default 168h (7 giorni): evita di perdere post se GitHub Actions salta una o più esecuzioni.
-const NEW_POST_WINDOW_HOURS = Number(process.env.NEW_POST_WINDOW_HOURS || 168);
+const SHARE_MODE = process.env.SHARE_MODE || "repost";
+const NEW_POST_WINDOW_HOURS = Number(process.env.NEW_POST_WINDOW_HOURS || 48);
+const MIN_HOURS_BETWEEN_SHARES = Number(process.env.MIN_HOURS_BETWEEN_SHARES || 22);
+const RECENT_POSTS_WINDOW_MONTHS = 6;
+const TEMPORARY_EXCLUDED_SLUGS = {
+  "25-aprile-canapa-liberazione-proibizionismo": "2026-05-12",
+  "20-aprile-420-canapa-cannabis-italia-2026": "2026-05-12",
+  "usa-riclassificano-cannabis-medica-schedule-iii": "2026-05-12",
+};
 
 /**
  * Prova a scaricare un feed e verifica che sia valido (contiene <rss o <feed)
@@ -129,6 +136,17 @@ function sortByDateDesc(a, b) {
   const da = a.dateISO ? new Date(a.dateISO).getTime() : 0;
   const db = b.dateISO ? new Date(b.dateISO).getTime() : 0;
   return db - da;
+}
+
+function isoDay(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function isTemporarilyExcluded(post, now) {
+  if (!post?.slug) return false;
+  const untilDay = TEMPORARY_EXCLUDED_SLUGS[post.slug];
+  if (!untilDay) return false;
+  return isoDay(now) <= untilDay;
 }
 
 /**
@@ -433,6 +451,7 @@ async function main() {
   const dryRun = process.argv.includes("--dry-run");
 
   console.log(`[auto-share] Starting...`);
+  console.log(`[auto-share] Mode: ${SHARE_MODE}`);
 
   // Verifica secrets (solo se non dry-run)
   if (!dryRun && (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID)) {
@@ -461,8 +480,8 @@ async function main() {
     console.log("[auto-share] state: loaded");
 
     const now = new Date();
-    const newPostWindowStart = new Date(now.getTime() - NEW_POST_WINDOW_HOURS * 60 * 60 * 1000);
-    console.log(`[auto-share] New post window hours: ${NEW_POST_WINDOW_HOURS}`);
+    const sixMonthsAgo = new Date(now);
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - RECENT_POSTS_WINDOW_MONTHS);
 
     const sentPosts = Array.isArray(previousState?.sentPosts) ? previousState.sentPosts : [];
     const sentLinks = new Set(sentPosts.map((p) => p.link).filter(Boolean));
@@ -472,31 +491,76 @@ async function main() {
     // 2. Escludi draft/non pubblicati (se segnali presenti)
     const publishablePosts = allPosts.filter(isPublishedPost);
     console.log(`[auto-share] Publishable posts after draft filter: ${publishablePosts.length}`);
+    let selectedPost = null;
 
-    // 3. Filtra solo i post appena pubblicati nella finestra configurata
-    const newlyPublishedPosts = publishablePosts.filter((post) => {
-      if (!post.dateISO) return false;
-      const postDate = new Date(post.dateISO);
-      return !Number.isNaN(postDate.getTime()) && postDate >= newPostWindowStart && postDate <= now;
-    });
-    console.log(`[auto-share] Newly published posts in window: ${newlyPublishedPosts.length}`);
+    if (SHARE_MODE === "new") {
+      const newPostWindowStart = new Date(now.getTime() - NEW_POST_WINDOW_HOURS * 60 * 60 * 1000);
+      console.log(`[auto-share] New post window hours: ${NEW_POST_WINDOW_HOURS}`);
 
-    // 4. Escludi post già inviati (slug first, fallback link)
-    const availablePosts = newlyPublishedPosts.filter((post) => {
-      if (post.slug) return !sentSlugs.has(post.slug);
-      return !sentLinks.has(post.link);
-    });
-    console.log(`[auto-share] Available new unsent posts: ${availablePosts.length}`);
+      const newPosts = publishablePosts.filter((post) => {
+        if (!post.dateISO) return false;
+        const postDate = new Date(post.dateISO);
+        return !Number.isNaN(postDate.getTime()) && postDate >= newPostWindowStart && postDate <= now;
+      });
 
-    if (!availablePosts.length) {
-      console.log("[auto-share] no-op: No newly published unsent posts");
-      process.exit(0);
+      const availableNewPosts = newPosts.filter((post) => {
+        if (post.slug) return !sentSlugs.has(post.slug);
+        return !sentLinks.has(post.link);
+      });
+
+      if (!availableNewPosts.length) {
+        console.log("[auto-share] no-op: No new unsent posts found");
+        process.exit(0);
+      }
+
+      selectedPost = availableNewPosts.slice().sort(sortByDateDesc)[0];
+    } else {
+      // Modalita repost (default): ultimi 6 mesi + esclusioni + frequenza minima
+      console.log(`[auto-share] Recent post window months: ${RECENT_POSTS_WINDOW_MONTHS}`);
+
+      const lastSharedRaw = previousState?.sharedAt || previousState?.lastDate || "";
+      if (lastSharedRaw) {
+        const lastSharedAt = new Date(String(lastSharedRaw));
+        if (!Number.isNaN(lastSharedAt.getTime())) {
+          const hoursSinceLastShare = (now.getTime() - lastSharedAt.getTime()) / (1000 * 60 * 60);
+          if (hoursSinceLastShare < MIN_HOURS_BETWEEN_SHARES) {
+            console.log(`[auto-share] no-op: Last share was less than ${MIN_HOURS_BETWEEN_SHARES} hours ago`);
+            process.exit(0);
+          }
+        }
+      }
+
+      const recentPosts = publishablePosts.filter((post) => {
+        if (!post.dateISO) return false;
+        const postDate = new Date(post.dateISO);
+        return !Number.isNaN(postDate.getTime()) && postDate >= sixMonthsAgo && postDate <= now;
+      });
+      console.log(`[auto-share] Recent posts last 6 months: ${recentPosts.length}`);
+
+      const unsentPosts = recentPosts.filter((post) => {
+        if (post.slug) return !sentSlugs.has(post.slug);
+        return !sentLinks.has(post.link);
+      });
+
+      let temporaryExcludedSkipped = 0;
+      const repostCandidates = unsentPosts.filter((post) => {
+        const excluded = isTemporarilyExcluded(post, now);
+        if (excluded) temporaryExcludedSkipped += 1;
+        return !excluded;
+      });
+
+      console.log(`[auto-share] Temporary excluded posts skipped: ${temporaryExcludedSkipped}`);
+      console.log(`[auto-share] Available unsent posts: ${repostCandidates.length}`);
+
+      if (!repostCandidates.length) {
+        console.log("[auto-share] no-op: No repost candidates available");
+        process.exit(0);
+      }
+
+      selectedPost = repostCandidates.slice().sort(sortByDateDesc)[0];
     }
 
-    // 5. Ordina candidati dal più recente al meno recente e seleziona 1
-    const sortedCandidates = availablePosts.slice().sort(sortByDateDesc);
-    const selectedPost = sortedCandidates[0];
-    console.log(`[auto-share] Selected new post: "${selectedPost.title}" (slug: ${selectedPost.slug || "n/a"})`);
+    console.log(`[auto-share] Selected post: "${selectedPost.title}"`);
 
     if (dryRun) {
       console.log("[auto-share] DRY RUN: post selection successful, not sending");
@@ -506,10 +570,10 @@ async function main() {
       console.log(`  Date: ${selectedPost.dateISO || selectedPost.pubDate || "(none)"}`);
       console.log(`  Description: ${cleanDescription(selectedPost.description)}`);
     } else {
-      // 5. Invia messaggio
+      // 7. Invia messaggio
       await sendTelegramMessage(selectedPost);
       console.log("[auto-share] message sent: Telegram notification delivered");
-      // 6. Salva stato SOLO dopo invio riuscito
+      // 8. Salva stato SOLO dopo invio riuscito
       saveState(selectedPost, previousState);
       console.log("[auto-share] state saved: Post marked as sent");
     }

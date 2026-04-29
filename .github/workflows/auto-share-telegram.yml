@@ -1,10 +1,18 @@
 name: Auto Share Telegram
 
 on:
-  # schedule:
-  #   # Esegui ogni 2 ore
-  #   - cron: '0 */2 * * *'
+  schedule:
+    - cron: '30 8 * * *'
   workflow_dispatch: # Permette esecuzione manuale
+    inputs:
+      mode:
+        description: "Modalità di condivisione"
+        required: true
+        default: "repost"
+        type: choice
+        options:
+          - new
+          - repost
 
 permissions:
   contents: read # Permessi minimi: solo read per checkout
@@ -42,6 +50,8 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           STATE_FILE: .cache/telegram-share.json
+          SHARE_MODE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.mode || 'repost' }}
+          NEW_POST_WINDOW_HOURS: 48
         run: |
           # Crea directory se non esiste (dopo restore cache)
           mkdir -p .cache
