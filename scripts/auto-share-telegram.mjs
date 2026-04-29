@@ -12,6 +12,7 @@ import path from "node:path";
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const RSS_URL = process.env.RSS_URL; // Se fornito, usa solo questo
+const MAKE_WEBHOOK_URL = process.env.MAKE_WEBHOOK_URL;
 
 // URL RSS da provare in ordine (se RSS_URL non è fornito)
 // Primo candidato: /rss.xml (definito in src/pages/rss.xml.ts)
@@ -433,6 +434,42 @@ async function sendTelegramMessage(post) {
 }
 
 /**
+ * Invia payload post selezionato al webhook Make (opzionale)
+ */
+async function sendMakeWebhook(post) {
+  if (!MAKE_WEBHOOK_URL) {
+    console.log("[auto-share] Make webhook skipped: MAKE_WEBHOOK_URL not set");
+    return;
+  }
+
+  const payload = {
+    title: post.title || "",
+    description: cleanDescription(post.description),
+    link: post.link || "",
+    slug: post.slug || extractSlug(post.link),
+    dateISO: post.dateISO || "",
+    pubDate: post.pubDate || "",
+    source: "github-actions",
+    site: "canapalandia",
+  };
+
+  const response = await fetch(MAKE_WEBHOOK_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Make webhook error ${response.status}: ${errorText}`);
+  }
+
+  console.log("[auto-share] Make webhook notified successfully");
+}
+
+/**
  * Escape HTML per Telegram
  */
 function escapeHtml(text) {
@@ -569,13 +606,20 @@ async function main() {
       console.log(`  Slug: ${selectedPost.slug || "(none)"}`);
       console.log(`  Date: ${selectedPost.dateISO || selectedPost.pubDate || "(none)"}`);
       console.log(`  Description: ${cleanDescription(selectedPost.description)}`);
+      console.log("[auto-share] DRY RUN: would notify Make webhook if configured");
     } else {
       // 7. Invia messaggio
       await sendTelegramMessage(selectedPost);
       console.log("[auto-share] message sent: Telegram notification delivered");
-      // 8. Salva stato SOLO dopo invio riuscito
+      // 8. Salva stato subito dopo Telegram riuscito (anti-duplicato)
       saveState(selectedPost, previousState);
       console.log("[auto-share] state saved: Post marked as sent");
+      // 9. Notifica Make webhook (se configurato), senza bloccare il flusso
+      try {
+        await sendMakeWebhook(selectedPost);
+      } catch (err) {
+        console.warn(`[auto-share] WARN: Make webhook failed after Telegram success: ${err?.message || err}`);
+      }
     }
 
     console.log("[auto-share] Done.");
