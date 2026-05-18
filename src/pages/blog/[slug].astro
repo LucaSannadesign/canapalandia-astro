@@ -248,9 +248,10 @@ const jsonLd = {
      ========================================================= */
 
   .post-main .post-content {
+    max-width: 72ch;
+    width: 100%;
     line-height: 1.75;
     font-size: clamp(1rem, 0.25vw + 0.95rem, 1.08rem);
-    max-width: 72ch; /* leggibilità */
   }
 
   /* Spazio verticale consistente tra blocchi */
@@ -339,6 +340,35 @@ const jsonLd = {
     border: none;
     border-top: 1px solid var(--border);
     opacity: 0.5;
+  }
+
+  .post-main .post-content :global(img) {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    margin: 2rem 0;
+    border-radius: 16px;
+    object-fit: cover;
+  }
+
+  .post-main .post-content :global(a[href]) {
+    color: #169c48 !important;
+    text-decoration: underline;
+    text-underline-offset: 0.18em;
+    transition: color 160ms ease;
+  }
+
+  .post-main .post-content :global(a[href]:hover) {
+    color: #22c55e !important;
+  }
+
+  .dark .post-main .post-content :global(a[href]) {
+    color: #bbf7d0 !important;
+  }
+
+  .dark .post-main .post-content :global(a[href]:hover) {
+    color: #dcfce7 !important;
   }
 
   @media (max-width: 640px) {
