@@ -92,7 +92,17 @@
         color: var(--muted);
         font-size: 1rem;
         line-height: 1.62;
-        opacity: 0.94;
+    }
+
+    html[data-theme="dark"] .newsletter-content {
+        background: #182a20;
+        border: 1px solid rgba(214, 180, 92, 0.22);
+        border-radius: var(--r-lg);
+        box-shadow: 0 18px 42px rgba(6, 22, 13, 0.22);
+    }
+
+    html[data-theme="dark"] .newsletter-widget .newsletter-desc {
+        color: rgba(255, 248, 232, 0.86);
     }
 
     .newsletter-form {
@@ -117,19 +127,39 @@
         color: var(--text);
         font-size: 1rem;
         font-family: var(--font-sans);
-        transition: all 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        transition:
+            border-color 0.2s ease,
+            background 0.2s ease,
+            box-shadow 0.2s ease;
     }
 
     input[type="email"]::placeholder {
         color: var(--muted);
-        opacity: 0.6;
+        opacity: 0.75;
+    }
+
+    html[data-theme="dark"] .newsletter-widget input[type="email"] {
+        background: rgba(255, 248, 232, 0.94);
+        color: #13241a;
+        border: 1.5px solid rgba(214, 180, 92, 0.55);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.14);
+    }
+
+    html[data-theme="dark"] .newsletter-widget input[type="email"]::placeholder {
+        color: rgba(19, 36, 26, 0.65);
+        opacity: 1;
     }
 
     input[type="email"]:focus {
         outline: none;
         border-color: color-mix(in oklab, var(--gold) 68%, var(--border));
-        background: var(--panel);
-        box-shadow: 0 0 0 4px color-mix(in oklab, var(--gold-subtle) 86%, transparent);
+        box-shadow: 0 0 0 3px color-mix(in oklab, var(--gold-subtle) 86%, transparent);
+    }
+
+    html[data-theme="dark"] .newsletter-widget input[type="email"]:focus {
+        border-color: #d6b45c;
+        background: rgba(255, 252, 245, 0.98);
+        box-shadow: 0 0 0 3px rgba(214, 180, 92, 0.42);
     }
 
     input[type="email"]:focus-visible {
@@ -137,15 +167,32 @@
         outline-offset: 2px;
     }
 
-    /* Tema light: input più contrastato */
-    html[data-theme="light"] input[type="email"] {
-        background: color-mix(in oklab, var(--panel-2) 88%, #fff);
-        border-color: color-mix(in oklab, var(--border) 76%, var(--gold) 24%);
+    html[data-theme="dark"] .newsletter-widget input[type="email"]:focus-visible {
+        outline: 3px solid rgba(214, 180, 92, 0.5);
+        outline-offset: 2px;
     }
 
-    html[data-theme="light"] input[type="email"]:focus {
-        border-color: color-mix(in oklab, var(--gold) 68%, var(--border));
-        box-shadow: 0 0 0 4px color-mix(in oklab, var(--gold-subtle) 92%, transparent);
+    html[data-theme="light"] .newsletter-widget input[type="email"] {
+        background: #ffffff;
+        color: var(--text);
+        border: 1.5px solid color-mix(in oklab, var(--border) 76%, var(--gold) 24%);
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+    }
+
+    html[data-theme="light"] .newsletter-widget input[type="email"]::placeholder {
+        color: rgba(22, 48, 31, 0.55);
+        opacity: 1;
+    }
+
+    html[data-theme="light"] .newsletter-widget input[type="email"]:focus {
+        border-color: color-mix(in oklab, var(--brand) 55%, var(--border));
+        background: #ffffff;
+        box-shadow: 0 0 0 3px color-mix(in oklab, var(--brand-subtle) 92%, transparent);
+    }
+
+    html[data-theme="light"] .newsletter-widget input[type="email"]:focus-visible {
+        outline: 2px solid var(--brand);
+        outline-offset: 2px;
     }
 
     .btn-submit {
@@ -179,7 +226,27 @@
     .btn-submit:focus-visible {
         outline: 2px solid var(--gold);
         outline-offset: 2px;
-        box-shadow: 0 0 0 4px color-mix(in oklab, var(--gold-subtle) 90%, transparent);
+        box-shadow: 0 0 0 3px color-mix(in oklab, var(--gold-subtle) 90%, transparent);
+    }
+
+    html[data-theme="dark"] .newsletter-widget .btn-submit {
+        background: linear-gradient(135deg, #d6b45c, var(--gold-2));
+        color: #13241a;
+        border: 1px solid rgba(255, 248, 232, 0.42);
+        box-shadow: 0 8px 22px rgba(0, 0, 0, 0.28);
+    }
+
+    html[data-theme="dark"] .newsletter-widget .btn-submit:hover {
+        background: linear-gradient(135deg, #e0c36a, var(--gold));
+        color: #13241a;
+        border-color: rgba(255, 248, 232, 0.55);
+        box-shadow: 0 10px 26px rgba(0, 0, 0, 0.32);
+    }
+
+    html[data-theme="dark"] .newsletter-widget .btn-submit:focus-visible {
+        outline: 3px solid rgba(214, 180, 92, 0.55);
+        outline-offset: 2px;
+        box-shadow: 0 0 0 3px rgba(214, 180, 92, 0.38);
     }
 
     html[data-theme="light"] .btn-submit {
@@ -333,10 +400,16 @@
         margin-top: 2px;
         flex-shrink: 0;
         cursor: pointer;
-        width: 1.02rem;
-        height: 1.02rem;
+        width: 1.1rem;
+        height: 1.1rem;
         accent-color: var(--gold);
         border-radius: 4px;
+    }
+
+    html[data-theme="dark"] .newsletter-widget .consent input[type="checkbox"] {
+        accent-color: #d6b45c;
+        outline: 1px solid rgba(255, 248, 232, 0.35);
+        outline-offset: 1px;
     }
 
     .consent span {
@@ -344,14 +417,27 @@
         color: color-mix(in oklab, var(--muted) 88%, var(--text));
     }
 
+    html[data-theme="dark"] .newsletter-widget .consent span {
+        color: rgba(255, 248, 232, 0.9);
+    }
+
     .consent a {
         color: color-mix(in oklab, var(--text) 84%, var(--gold));
         text-decoration: underline;
         text-underline-offset: 2px;
+        font-weight: 600;
+    }
+
+    html[data-theme="dark"] .newsletter-widget .consent a {
+        color: #f3d57a;
     }
 
     .consent a:hover {
         color: var(--gold);
+    }
+
+    html[data-theme="dark"] .newsletter-widget .consent a:hover {
+        color: #ffe08a;
     }
 
     .consent input[type="checkbox"]:focus-visible {
@@ -359,8 +445,26 @@
         outline-offset: 2px;
     }
 
-    html[data-theme="light"] .consent span {
-        color: color-mix(in oklab, var(--muted) 82%, var(--text));
+    html[data-theme="dark"] .newsletter-widget .consent input[type="checkbox"]:focus-visible {
+        outline: 3px solid rgba(214, 180, 92, 0.5);
+        outline-offset: 2px;
+    }
+
+    html[data-theme="light"] .newsletter-widget .consent span {
+        color: color-mix(in oklab, var(--muted) 55%, var(--text));
+    }
+
+    html[data-theme="light"] .newsletter-widget .consent a {
+        color: var(--brand-2);
+    }
+
+    html[data-theme="light"] .newsletter-widget .consent input[type="checkbox"] {
+        accent-color: var(--brand);
+    }
+
+    html[data-theme="light"] .newsletter-widget .consent input[type="checkbox"]:focus-visible {
+        outline: 2px solid var(--brand);
+        outline-offset: 2px;
     }
 </style>
 
