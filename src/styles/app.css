@@ -9,7 +9,7 @@
   color-scheme: dark;
 
   /* ===== COLOR TOKENS ===== */
-  --bg: #13241A;
+  --bg: #2e503c;
   --text: #e8f5ec;
   --muted: #a8c1b2;
   --fg: var(--text); /* Alias per foreground */
@@ -109,6 +109,10 @@
 
   /* Icon filter per dark mode (inverti icone monocrome) */
   --icon-filter: invert(1);
+}
+
+html[data-theme="dark"] {
+  --bg: #2e503c;
 }
 
 html[data-theme="light"] {

@@ -574,12 +574,11 @@ const homeJsonLd = {
 
     :global(html[data-theme="dark"]:has(.page-home)) {
       /* Dark homepage più aperto: verde bosco, non quasi nero */
-      --bg: #13241A;
-      --panel: #183126;
-      --panel-2: #1D392C;
-      --card-solid: #1D392C;
-      --card-bg: #1D392C;
-      --border: #315744;
+      --panel: #2c6142;
+      --panel-2: #2c6142;
+      --card-solid: #2c6142;
+      --card-bg: #28583d;
+      --border: #4f8062;
       --border-subtle: rgba(49, 87, 68, 0.35);
       --border-strong: #315744;
       --text: #EEF4EC;
@@ -771,9 +770,9 @@ const homeJsonLd = {
 
     .page-home .hero-overlay {
       background:
-        radial-gradient(920px 540px at 50% 34%, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0.1) 58%, transparent 80%),
+        radial-gradient(920px 540px at 50% 34%, rgba(18, 55, 32, 0.42), rgba(18, 55, 32, 0.14) 58%, transparent 80%),
         radial-gradient(760px 420px at 50% 0%, rgba(200, 169, 90, 0.07), transparent 62%),
-        linear-gradient(180deg, rgba(0, 0, 0, 0.44) 0%, rgba(0, 0, 0, 0.22) 58%, rgba(0, 0, 0, 0.12) 100%);
+        linear-gradient(180deg, rgba(18, 55, 32, 0.42) 0%, rgba(18, 55, 32, 0.28) 58%, rgba(18, 55, 32, 0.18) 100%);
     }
 
     .hero.hero--home {
@@ -792,9 +791,9 @@ const homeJsonLd = {
 
       .page-home .hero-overlay {
         background:
-          radial-gradient(1120px 620px at 50% 34%, rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0.22) 58%, transparent 84%),
+          radial-gradient(1120px 620px at 50% 34%, rgba(18, 55, 32, 0.42), rgba(18, 55, 32, 0.18) 58%, transparent 84%),
           radial-gradient(760px 420px at 50% 0%, rgba(200, 169, 90, 0.08), transparent 62%),
-          linear-gradient(180deg, rgba(0, 0, 0, 0.64) 0%, rgba(0, 0, 0, 0.36) 58%, rgba(0, 0, 0, 0.22) 100%);
+          linear-gradient(180deg, rgba(18, 55, 32, 0.42) 0%, rgba(18, 55, 32, 0.28) 58%, rgba(18, 55, 32, 0.18) 100%);
       }
 
       .page-home .hero--home > .container.header-inner {
@@ -898,7 +897,9 @@ const homeJsonLd = {
       line-height: 1.06;
       letter-spacing: -0.035em;
       color: var(--text);
-      text-shadow: 0 8px 24px rgba(0, 0, 0, 0.42), 0 2px 4px rgba(0, 0, 0, 0.34);
+      text-shadow:
+        0 2px 4px rgba(18, 34, 24, 0.38),
+        0 6px 12px rgba(18, 34, 24, 0.22);
       text-wrap: balance;
       max-width: min(28ch, 100%);
     }
