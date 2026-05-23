@@ -666,6 +666,18 @@ if (isSupportPage && contentHtml) {
     // Pulisci spazi multipli e righe vuote eccessive
     .replace(/\n{3,}/g, "\n\n")
     .replace(/\s{3,}/g, " ");
+
+  contentHtml = contentHtml.replace(
+    /<h3>Dati per il Bonifico<\/h3>\s*<p>[\s\S]*?<\/p>/i,
+    `<h3>Coordinate bancarie per il versamento</h3>
+<ul style="list-style:none; padding:0; margin:0; line-height:1.75;">
+<li><strong>Beneficiario:</strong> Luca Sanna</li>
+<li><strong>IBAN:</strong> IT70 T036 6901 6001 4240 4006 713</li>
+<li><strong>BIC/SWIFT:</strong> REVOITM2</li>
+<li><strong>Banca:</strong> Revolut Bank UAB</li>
+<li><strong>Sede:</strong> Via Dante 7, 20123 Milano (MI), Italy</li>
+</ul>`
+  );
 }
 ---
 
