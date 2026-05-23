@@ -2,8 +2,14 @@ name: Auto Share Telegram
 
 on:
   schedule:
-    - cron: '30 8 * * *'
-  workflow_dispatch: # Permette esecuzione manuale
+    - cron: '30 8 */2 * *'
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/content/**'
+      - 'src/pages/rss.xml.ts'
+  workflow_dispatch:
     inputs:
       mode:
         description: "Modalità di condivisione"
@@ -15,8 +21,8 @@ on:
           - repost
 
 permissions:
-  contents: read # Permessi minimi: solo read per checkout
-  actions: write # Necessario per salvare cache
+  contents: read
+  actions: write
 
 concurrency:
   group: auto-share-telegram
@@ -51,10 +57,10 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           MAKE_WEBHOOK_URL: ${{ secrets.MAKE_WEBHOOK_URL }}
           STATE_FILE: .cache/telegram-share.json
-          SHARE_MODE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.mode || 'repost' }}
+          SHARE_MODE: ${{ github.event_name == 'push' && 'new' || (github.event_name == 'workflow_dispatch' && github.event.inputs.mode || 'repost') }}
           NEW_POST_WINDOW_HOURS: 48
+          MIN_HOURS_BETWEEN_SHARES: 47
         run: |
-          # Crea directory se non esiste (dopo restore cache)
           mkdir -p .cache
           node scripts/auto-share-telegram.mjs
 
