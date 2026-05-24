@@ -1,6 +1,26 @@
 import type { APIRoute } from "astro";
+import { access } from "node:fs/promises";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { getCollection, type CollectionEntry } from "astro:content";
 import { CATEGORY_INDEX_ALLOWLIST } from "../lib/categoryIndexAllowlist";
+import { loadWp } from "../lib/wp";
+
+const PAGES_DIR = fileURLToPath(new URL("../pages", import.meta.url));
+
+/** Hub statici indicizzabili: incluse in sitemap solo se la route esiste (Astro o pagina WP). */
+const STRUCTURAL_ROUTES = [
+  "/",
+  "/blog/",
+  "/chi-siamo/",
+  "/missione/",
+  "/la-nostra-storia/",
+  "/pubblicita/",
+  "/i-nostri-partner/",
+  "/sostieni-la-causa/",
+  "/disclaimer/",
+  "/contatti/",
+] as const;
 
 export const prerender = false;
 
@@ -84,6 +104,62 @@ function isRedirectSourcePath(pathRel: string): boolean {
   return REDIRECT_SOURCE_PATHS.has(p);
 }
 
+async function fileExists(path: string): Promise<boolean> {
+  try {
+    await access(path);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Route Astro in `src/pages` (stesso criterio di `scripts/generate-sitemap-pages.mjs`). */
+async function astroRouteExists(route: string): Promise<boolean> {
+  const clean = normalizePathKey(route);
+  if (!clean) {
+    return fileExists(join(PAGES_DIR, "index.astro"));
+  }
+
+  const candidates = [
+    join(PAGES_DIR, `${clean}.astro`),
+    join(PAGES_DIR, `${clean}.md`),
+    join(PAGES_DIR, `${clean}.mdx`),
+    join(PAGES_DIR, clean, "index.astro"),
+    join(PAGES_DIR, clean, "index.md"),
+    join(PAGES_DIR, clean, "index.mdx"),
+  ];
+
+  for (const p of candidates) {
+    if (await fileExists(p)) return true;
+  }
+  return false;
+}
+
+async function loadWpPagePaths(): Promise<Set<string>> {
+  const paths = new Set<string>();
+  try {
+    const { entries } = await loadWp();
+    for (const e of entries) {
+      if (e.kind !== "page" || !e.path) continue;
+      const p = normalizePathKey(e.path);
+      if (!p || p.startsWith("en/")) continue;
+      paths.add(p);
+    }
+  } catch {
+    // WP export assente o illeggibile: solo route Astro
+  }
+  return paths;
+}
+
+async function structuralRouteExists(
+  route: string,
+  wpPagePaths: Set<string>,
+): Promise<boolean> {
+  if (await astroRouteExists(route)) return true;
+  const rel = normalizePathKey(route);
+  return rel !== "" && wpPagePaths.has(rel);
+}
+
 function postLastmodIso(post: CollectionEntry<"blog">): string | undefined {
   const dateRaw = post.data.updatedDate ?? post.data.publishDate;
   if (!dateRaw) return undefined;
@@ -116,6 +192,14 @@ export const GET: APIRoute = async () => {
   }
 
   const urls: Array<{ loc: string; lastmod?: string }> = [];
+
+  const wpPagePaths = await loadWpPagePaths();
+  for (const route of STRUCTURAL_ROUTES) {
+    const rel = normalizePathKey(route);
+    if (rel && isRedirectSourcePath(rel)) continue;
+    if (!(await structuralRouteExists(route, wpPagePaths))) continue;
+    urls.push({ loc: normalizeUrl(route) });
+  }
 
   // Articoli: solo URL pubblici /blog/[slug]/ (slug canonico evergreen)
   const NOINDEX_SLUG_RE = /bozza|\/bozza|^test-/i;
