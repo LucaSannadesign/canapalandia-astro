@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://canapalandia.com/sitemap-index.xml
+Sitemap: https://canapalandia.com/sitemap.xml
