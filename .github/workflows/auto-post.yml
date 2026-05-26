@@ -55,6 +55,8 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
+          token: ${{ github.token }}
+          persist-credentials: false
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
