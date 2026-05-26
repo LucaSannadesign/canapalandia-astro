@@ -19,6 +19,20 @@ on:
         options:
           - new
           - repost
+          - manual
+
+      manual_title:
+        description: "Titolo articolo (manual)"
+        required: false
+        type: string
+      manual_description:
+        description: "Descrizione articolo (manual)"
+        required: false
+        type: string
+      manual_url:
+        description: "URL articolo (manual)"
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -60,6 +74,9 @@ jobs:
           MAKE_WEBHOOK_URL: ${{ secrets.MAKE_WEBHOOK_URL }}
           STATE_FILE: .cache/telegram-share.json
           SHARE_MODE: ${{ github.event_name == 'push' && 'new' || (github.event_name == 'workflow_dispatch' && github.event.inputs.mode || 'repost') }}
+          MANUAL_TITLE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.manual_title || '' }}
+          MANUAL_DESCRIPTION: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.manual_description || '' }}
+          MANUAL_URL: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.manual_url || '' }}
           NEW_POST_WINDOW_HOURS: 48
           MIN_HOURS_BETWEEN_SHARES: 47
         run: |

@@ -13,6 +13,9 @@ const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const RSS_URL = process.env.RSS_URL; // Se fornito, usa solo questo
 const MAKE_WEBHOOK_URL = process.env.MAKE_WEBHOOK_URL;
+const MANUAL_TITLE = process.env.MANUAL_TITLE;
+const MANUAL_DESCRIPTION = process.env.MANUAL_DESCRIPTION;
+const MANUAL_URL = process.env.MANUAL_URL;
 
 // URL RSS da provare in ordine (se RSS_URL non è fornito)
 // Primo candidato: /rss.xml (definito in src/pages/rss.xml.ts)
@@ -433,6 +436,48 @@ async function sendTelegramMessage(post) {
   return data;
 }
 
+async function sendTelegramManualMessage({ title, description, url }) {
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+    throw new Error("TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID must be set");
+  }
+
+  const text =
+    `<b>${escapeHtml(title)}</b>\n\n` +
+    `${description ? escapeHtml(description) : ""}\n\n` +
+    `Leggi l’articolo:\n${escapeHtml(url)}`;
+
+  const apiUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+
+  const response = await fetch(apiUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      chat_id: TELEGRAM_CHAT_ID,
+      text,
+      parse_mode: "HTML",
+      disable_web_page_preview: false,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    const safeError = errorText
+      .replace(new RegExp(TELEGRAM_BOT_TOKEN, "g"), "***")
+      .replace(new RegExp(TELEGRAM_CHAT_ID, "g"), "***");
+    throw new Error(`Telegram API error ${response.status}: ${safeError}`);
+  }
+
+  const data = await response.json();
+  if (!data.ok) {
+    throw new Error(`Telegram API returned error: ${data.description || "Unknown error"}`);
+  }
+
+  console.log(`[auto-share] Manual message sent successfully to Telegram`);
+  return data;
+}
+
 /**
  * Invia payload post selezionato al webhook Make (opzionale)
  */
@@ -497,6 +542,33 @@ async function main() {
   }
 
   try {
+    if (SHARE_MODE === "manual") {
+      const manualTitle = String(MANUAL_TITLE ?? "").trim();
+      const manualDescription = String(MANUAL_DESCRIPTION ?? "").trim();
+      const manualUrl = String(MANUAL_URL ?? "").trim();
+
+      if (!manualTitle) {
+        throw new Error("MANUAL_TITLE must be set for manual share mode");
+      }
+      if (!manualUrl) {
+        throw new Error("MANUAL_URL must be set for manual share mode");
+      }
+
+      if (dryRun) {
+        console.log("[auto-share] DRY RUN: manual share would send Telegram message");
+        console.log(`  Title: ${manualTitle}`);
+        console.log(`  Url: ${manualUrl}`);
+        process.exit(0);
+      }
+
+      await sendTelegramManualMessage({
+        title: manualTitle,
+        description: manualDescription,
+        url: manualUrl,
+      });
+      process.exit(0);
+    }
+
     // 1. Fetch feed e ottieni post
     console.log("[auto-share] Fetching feed...");
     const allPosts = await fetchFeedPosts();
