@@ -140,7 +140,12 @@ jobs:
           SITE_URL: https://canapalandia.com
           SITEMAP_URL: https://canapalandia.com/sitemap-index.xml
           POST_META_PATH: ./tmp/post-meta.json
-        run: node scripts/sitemap-guard.mjs
+        run: |
+          if [ -f "tmp/post-meta.json" ]; then
+            node scripts/sitemap-guard.mjs
+          else
+            echo "ℹ️  Skipping sitemap guard: tmp/post-meta.json not generated"
+          fi
 
       - name: Check if changes
         id: changes
