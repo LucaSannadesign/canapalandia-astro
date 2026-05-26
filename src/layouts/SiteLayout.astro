@@ -1,6 +1,7 @@
 ---
 import "../styles/app.css";
 import Analytics from '@vercel/analytics/astro';
+import SpeedInsights from "@vercel/speed-insights/astro";
 import enhancementsScript from "../scripts/enhancements.js?raw";
 import AdSlot from "../components/AdSlot.astro";
 import Newsletter from "../components/widgets/Newsletter.astro";
@@ -1334,6 +1335,8 @@ const useHomeLightBg =
     <script is:inline set:html={enhancementsScript}></script>
 
     <Analytics />
+
+    <SpeedInsights />
 
   </body>
 </html>
