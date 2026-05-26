@@ -5,7 +5,7 @@ const posts = await getCollection('blog');
 
 // Sort posts by publishDate descending
 const sortedPosts = posts
-  .filter(post => !post.data.draft)
+  .filter((post) => post.data.draft !== true && post.data.status !== "draft" && post.data.status !== "test")
   .sort((a, b) => {
     const dateA = new Date(a.data.publishDate || a.data.date || a.data.pubDate || '1970-01-01');
     const dateB = new Date(b.data.publishDate || b.data.date || b.data.pubDate || '1970-01-01');
