@@ -146,7 +146,8 @@ function renderFrontmatter(post) {
     `image: "${fmEsc(image)}"\n` +
     `focusKeyword: "${fmEsc(focusKeyword)}"\n` +
     `canonical: "${fmEsc(canonical)}"\n` +
-    `robots: "index,follow"\n` +
+    `status: "draft"\n` +
+    `robots: "noindex,nofollow"\n` +
     `ogTitle: "${fmEsc(post.title)}"\n` +
     `ogDescription: "${fmEsc(description)}"\n` +
     `ogImage: "${fmEsc(image)}"\n` +
