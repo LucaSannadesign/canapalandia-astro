@@ -279,9 +279,10 @@ const collaborazioneRedirect = "https://canapalandia.com/grazie-collaborazione/"
         <div class="mt-16">
           <a
             href="#form-collaborazione"
-            class="inline-flex items-center justify-center rounded-full bg-amber-100 px-8 py-4 text-base font-bold text-[#173f2d] transition hover:bg-amber-200"
+            class="inline-flex items-center justify-center gap-3 rounded-full bg-[#173f2d] px-8 py-4 text-base font-bold text-white shadow-lg transition hover:bg-[#20543d] focus:outline-none focus:ring-4 focus:ring-[#173f2d]/25"
           >
-            Contattaci per una collaborazione
+            Vai al modulo
+            <span aria-hidden="true" class="text-xl leading-none">↓</span>
           </a>
         </div>
       </div>
@@ -295,7 +296,7 @@ const collaborazioneRedirect = "https://canapalandia.com/grazie-collaborazione/"
             Nota editoriale
           </h2>
 
-          <p class="mt-4 text-sm leading-7 text-stone-600 md:text-base">
+          <p class="mt-8 text-sm leading-7 text-stone-600 md:text-base md:leading-8">
             Canapalandia è uno spazio informativo indipendente. I contenuti pubblicati non costituiscono consulenza legale, medica o commerciale. Ogni collaborazione viene valutata caso per caso e può essere rifiutata se non coerente con la linea editoriale del progetto.
           </p>
         </div>
@@ -303,18 +304,18 @@ const collaborazioneRedirect = "https://canapalandia.com/grazie-collaborazione/"
     </section>
 
     <!-- FORM COLLABORAZIONE -->
-    <section id="form-collaborazione" class="scroll-mt-24 border-t border-black/5 bg-[#f7f3e8] px-6 py-28 md:py-36">
+    <section id="form-collaborazione" class="scroll-mt-24 border-t-2 border-black/10 bg-[#f7f3e8] px-6 pt-20 pb-28 md:pt-28 md:pb-36">
       <div class="mx-auto max-w-3xl">
         <h2 class="text-3xl font-black leading-tight text-[#173f2d] md:text-5xl">
           Invia la tua proposta editoriale
         </h2>
 
-        <p class="mt-10 text-lg leading-9 text-stone-700 md:text-xl md:leading-10">
+        <p class="mt-10 text-lg leading-9 text-stone-700 md:mt-12 md:text-xl md:leading-10">
           Compila il modulo con le informazioni principali sul tuo progetto. Valuteremo la proposta e ti risponderemo se sarà coerente con la linea editoriale di Canapalandia.
         </p>
 
         <form
-          class="collaboration-form mt-14"
+          class="collaboration-form mt-14 md:mt-16"
           method="POST"
           action={FORMSPREE_ACTION}
         >
