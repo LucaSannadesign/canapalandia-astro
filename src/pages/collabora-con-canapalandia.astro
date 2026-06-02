@@ -32,561 +32,629 @@ const metadata = {
   },
 };
 
-const page = {
-  title,
-  description,
-  publishDate: "2026-06-02",
-  updatedDate: "2026-06-02",
-  author: "Canapalandia",
-  category: "Canapalandia",
-  tags: ["canapalandia", "guest post", "collaborazioni"],
-  focusKeyword: "collaborazione editoriale Canapalandia",
-  aiSummary:
-    "Pagina di conversione per aziende, associazioni, professionisti e realtà del settore canapa interessate a proporre guest post, contenuti sponsorizzati o collaborazioni editoriali su Canapalandia.",
-  aiIntent: "lead generation",
-  aiTopics: [
-    "collaborazioni editoriali",
-    "guest post",
-    "contenuti sponsorizzati",
-    "canapa",
-    "CBD",
-    "cannabis light",
-  ],
-  aiTarget: [
-    "aziende del settore canapa",
-    "brand CBD",
-    "associazioni",
-    "professionisti",
-    "operatori della filiera",
-  ],
-  aiTakeaways: [
-    "Canapalandia valuta collaborazioni editoriali selezionate.",
-    "Ogni proposta viene controllata prima della pubblicazione.",
-    "Non vengono accettati contenuti ingannevoli, claim medici non verificabili o testi pensati solo per la link building.",
-  ],
-  aiContentType: "landing page editoriale",
-  aiExpertiseLevel: "intermedio",
-};
-
 const contactEmail = "info@canapalandia.com";
 const contactSubject = "Proposta collaborazione editoriale Canapalandia";
 const mailtoHref = `mailto:${contactEmail}?subject=${encodeURIComponent(contactSubject)}`;
+const FORMSPREE_ACTION = "https://formspree.io/f/maqynojl";
+const collaborazioneRedirect = "https://canapalandia.com/grazie-collaborazione/";
 ---
 
 <Layout metadata={metadata}>
   <main class="bg-[#f7f3e8] text-stone-900">
-    <section class="relative w-full scroll-mt-24 overflow-hidden border-b border-black/10 bg-[#173f2d] px-6 pt-24 pb-24 text-white md:pt-32 md:pb-32">
-      <div class="mx-auto max-w-6xl">
-        <p class="mb-6 inline-flex rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-green-100">
+    <!-- HERO -->
+    <section class="bg-[#173f2d] px-6 py-28 text-white md:py-36">
+      <div class="mx-auto max-w-3xl">
+        <p class="inline-flex rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-green-100 ring-1 ring-white/15">
           Collaborazioni editoriali selezionate
         </p>
 
-        <h1 class="mt-8 max-w-4xl text-4xl font-extrabold leading-tight tracking-tight md:text-6xl">
+        <h1 class="mt-10 text-4xl font-black leading-[1.05] tracking-tight md:text-6xl">
           Collabora con Canapalandia
         </h1>
 
-        <p class="mt-10 max-w-3xl text-lg leading-8 text-green-50">
-          Proponi un <strong>guest post</strong>, un contenuto sponsorizzato, un’intervista o un approfondimento editoriale su canapa, CBD, cannabis light, normativa, filiera e cultura antiproibizionista.
+        <p class="mt-10 text-xl leading-9 text-green-50 md:text-2xl md:leading-10">
+          Proponi un <strong>guest post</strong>, un contenuto sponsorizzato, un’intervista o un approfondimento editoriale su canapa, CBD, cannabis light, normativa e filiera.
         </p>
 
-        <div class="mt-10 flex flex-col gap-4 sm:flex-row">
+        <div class="mt-14 flex flex-col gap-4 sm:flex-row">
           <a
-            href={mailtoHref}
-            class="inline-flex items-center justify-center rounded-full bg-amber-100 px-7 py-4 text-base font-bold text-[#173f2d] shadow-lg shadow-black/20 transition hover:bg-amber-50"
+            href="#form-collaborazione"
+            class="inline-flex items-center justify-center rounded-full bg-amber-100 px-8 py-4 text-base font-bold text-[#173f2d] transition hover:bg-amber-200"
           >
-            Proponi una collaborazione editoriale
+            Contattaci per una collaborazione
           </a>
 
           <a
-            href="#come-proporre"
-            class="inline-flex items-center justify-center rounded-full border-2 border-white/50 px-7 py-4 text-base font-semibold text-white transition hover:border-white hover:bg-white/10"
+            href="#come-funziona"
+            class="inline-flex items-center justify-center rounded-full border-2 border-white/30 px-8 py-4 text-base font-semibold text-white transition hover:bg-white/10"
           >
-            Leggi le linee guida
+            Scopri come funziona
           </a>
         </div>
       </div>
     </section>
 
-    <section class="border-t border-black/5 px-6 py-20 md:py-28">
-      <div class="mx-auto grid max-w-6xl gap-12 px-6 md:grid-cols-2 md:items-start md:gap-20">
-        <div>
-          <h2 class="mb-8 text-3xl font-extrabold text-stone-950 md:text-4xl">
-            Uno spazio indipendente per raccontare la canapa con serietà
-          </h2>
+    <!-- INTRO -->
+    <section class="px-6 py-28 md:py-36">
+      <div class="mx-auto max-w-3xl">
+        <h2 class="text-3xl font-black leading-tight text-[#173f2d] md:text-5xl">
+          Uno spazio editoriale indipendente sulla canapa
+        </h2>
 
-          <div class="space-y-6 text-lg leading-8 text-stone-700">
-            <p>
-              Canapalandia è uno spazio editoriale indipendente dedicato a <strong>canapa, CBD, cannabis light, normativa, filiera, sostenibilità e cultura antiproibizionista</strong>.
-            </p>
+        <div class="mt-12 space-y-8 text-lg leading-9 text-stone-700 md:text-xl md:leading-10">
+          <p>
+            Canapalandia racconta <strong>canapa, CBD, cannabis light, normativa, sostenibilità e cultura antiproibizionista</strong> con un linguaggio chiaro, critico e accessibile.
+          </p>
 
-            <p>
-              Raccontiamo il settore con un linguaggio chiaro, critico e accessibile, cercando di distinguere l’informazione utile dalla propaganda, dagli slogan e dalla confusione normativa che spesso accompagna il dibattito sulla canapa in Italia.
-            </p>
+          <p>
+            Valutiamo collaborazioni con aziende, associazioni, professionisti, brand e realtà della filiera che abbiano qualcosa di utile da raccontare.
+          </p>
 
-            <p>
-              Se rappresenti un’azienda, un’associazione, un progetto editoriale, una realtà agricola, un brand o un professionista legato al mondo della canapa, puoi proporre una <strong>collaborazione editoriale</strong> con Canapalandia.
+          <p>
+            Ogni proposta viene letta e valutata prima della pubblicazione. Non pubblichiamo contenuti automaticamente e non accettiamo testi pensati solo per ottenere link.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- IN SINTESI -->
+    <section class="border-t border-black/5 bg-white px-6 py-28 md:py-36">
+      <div class="mx-auto max-w-3xl">
+        <h2 class="text-3xl font-black leading-tight text-[#173f2d] md:text-5xl">
+          In sintesi
+        </h2>
+
+        <div class="mt-12 space-y-6">
+          <div class="rounded-3xl bg-[#f7f3e8] p-7 ring-1 ring-black/5 md:p-8">
+            <p class="text-lg leading-9 text-stone-700 md:text-xl md:leading-10">
+              <strong>Ogni proposta viene valutata</strong> prima della pubblicazione.
             </p>
           </div>
-        </div>
 
-        <aside class="rounded-3xl border border-[#173f2d]/10 bg-white p-8 shadow-md shadow-stone-900/5 ring-1 ring-black/5 md:p-10">
-          <h2 class="text-xl font-extrabold text-[#173f2d] md:text-2xl">
-            In sintesi
-          </h2>
-
-          <ul class="mt-6 space-y-5 text-lg leading-8 text-stone-700">
-            <li>
-              <strong>Non pubblichiamo automaticamente:</strong> ogni proposta viene valutata.
-            </li>
-            <li>
+          <div class="rounded-3xl bg-[#f7f3e8] p-7 ring-1 ring-black/5 md:p-8">
+            <p class="text-lg leading-9 text-stone-700 md:text-xl md:leading-10">
               <strong>Nessun prezzo pubblico:</strong> le condizioni vengono inviate solo dopo una prima valutazione.
-            </li>
-            <li>
+            </p>
+          </div>
+
+          <div class="rounded-3xl bg-[#f7f3e8] p-7 ring-1 ring-black/5 md:p-8">
+            <p class="text-lg leading-9 text-stone-700 md:text-xl md:leading-10">
               <strong>No link building pura:</strong> il contenuto deve essere utile per i lettori.
-            </li>
-            <li>
+            </p>
+          </div>
+
+          <div class="rounded-3xl bg-[#f7f3e8] p-7 ring-1 ring-black/5 md:p-8">
+            <p class="text-lg leading-9 text-stone-700 md:text-xl md:leading-10">
               <strong>Linea prudente:</strong> niente claim medici non verificabili o inviti ad aggirare la legge.
-            </li>
-          </ul>
-        </aside>
-      </div>
-    </section>
-
-    <section class="border-t border-black/5 bg-white px-6 py-20 md:py-28">
-      <div class="mx-auto max-w-6xl px-6">
-        <div class="max-w-3xl">
-          <h2 class="mb-8 text-3xl font-extrabold text-stone-950 md:text-4xl">
-            Perché collaborare con Canapalandia
-          </h2>
-
-          <p class="mt-6 text-lg leading-8 text-stone-700">
-            Il settore della canapa vive una fase complessa: normative in evoluzione, comunicazione spesso imprecisa, contenuti superficiali e un clima pubblico ancora pieno di pregiudizi. Canapalandia offre uno spazio dove parlare di questi temi con <strong>chiarezza, spirito critico e attenzione alla realtà italiana</strong>.
-          </p>
-        </div>
-
-        <div class="mt-12 grid gap-6 md:grid-cols-2">
-          <article class="space-y-4 rounded-3xl border border-stone-200 bg-[#f7f3e8] p-8 shadow-sm ring-1 ring-black/5 md:p-10">
-            <h3 class="text-xl font-bold text-[#173f2d]">Pubblico verticale</h3>
-            <p class="text-lg leading-8 text-stone-700">
-              Lettori interessati a canapa, CBD, cannabis light, normativa, sostenibilità e filiera.
             </p>
-          </article>
-
-          <article class="space-y-4 rounded-3xl border border-stone-200 bg-[#f7f3e8] p-8 shadow-sm ring-1 ring-black/5 md:p-10">
-            <h3 class="text-xl font-bold text-[#173f2d]">Contesto editoriale</h3>
-            <p class="text-lg leading-8 text-stone-700">
-              I contenuti vengono inseriti in un progetto tematico coerente, non in una vetrina generica.
-            </p>
-          </article>
-
-          <article class="space-y-4 rounded-3xl border border-stone-200 bg-[#f7f3e8] p-8 shadow-sm ring-1 ring-black/5 md:p-10">
-            <h3 class="text-xl font-bold text-[#173f2d]">Revisione</h3>
-            <p class="text-lg leading-8 text-stone-700">
-              Le proposte vengono controllate per mantenere qualità, chiarezza e coerenza editoriale.
-            </p>
-          </article>
-
-          <article class="space-y-4 rounded-3xl border border-stone-200 bg-[#f7f3e8] p-8 shadow-sm ring-1 ring-black/5 md:p-10">
-            <h3 class="text-xl font-bold text-[#173f2d]">Trasparenza</h3>
-            <p class="text-lg leading-8 text-stone-700">
-              Le collaborazioni commerciali vengono dichiarate in modo chiaro e responsabile.
-            </p>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section class="border-t border-black/5 bg-[#f7f3e8] px-6 py-20 md:py-28">
-      <div class="mx-auto max-w-6xl px-6">
-        <div class="max-w-3xl">
-          <h2 class="mb-8 text-3xl font-extrabold text-stone-950 md:text-4xl">
-            Che tipo di collaborazioni valutiamo
-          </h2>
-
-          <p class="mt-6 text-lg leading-8 text-stone-700">
-            Canapalandia può ospitare diverse forme di collaborazione editoriale. Ogni proposta viene valutata singolarmente, in base alla coerenza con il sito, alla qualità del contenuto e all’utilità per i lettori.
-          </p>
-        </div>
-
-        <div class="mt-12 grid gap-8 md:grid-cols-2">
-          <article class="space-y-4 rounded-3xl bg-white p-8 shadow-md shadow-stone-900/5 ring-1 ring-black/5 md:p-10">
-            <h3 class="text-2xl font-extrabold text-[#173f2d]">Guest post</h3>
-            <p class="text-lg leading-8 text-stone-700">
-              Puoi proporre un articolo già scritto da pubblicare su Canapalandia. Il testo deve avere un taglio informativo, essere originale e offrire un valore reale al lettore.
-            </p>
-            <p class="text-lg leading-8 text-stone-700">
-              Un buon guest post non deve limitarsi a presentare un brand o un servizio, ma deve aiutare le persone a capire meglio un tema, un problema, una novità o un aspetto della filiera.
-            </p>
-          </article>
-
-          <article class="space-y-4 rounded-3xl bg-white p-8 shadow-md shadow-stone-900/5 ring-1 ring-black/5 md:p-10">
-            <h3 class="text-2xl font-extrabold text-[#173f2d]">Contenuti sponsorizzati</h3>
-            <p class="text-lg leading-8 text-stone-700">
-              Valutiamo contenuti realizzati in collaborazione con aziende, brand o progetti del settore, purché siano dichiarati in modo trasparente.
-            </p>
-            <p class="text-lg leading-8 text-stone-700">
-              La sponsorizzazione non garantisce la pubblicazione automatica e non modifica il nostro criterio di revisione.
-            </p>
-          </article>
-
-          <article class="space-y-4 rounded-3xl bg-white p-8 shadow-md shadow-stone-900/5 ring-1 ring-black/5 md:p-10">
-            <h3 class="text-2xl font-extrabold text-[#173f2d]">Interviste e approfondimenti</h3>
-            <p class="text-lg leading-8 text-stone-700">
-              Possiamo valutare interviste o articoli dedicati a realtà del settore canapa, CBD, agricoltura, sostenibilità, ricerca e innovazione.
-            </p>
-            <p class="text-lg leading-8 text-stone-700">
-              Questo formato è adatto a chi vuole raccontare il proprio progetto in modo più umano, chiaro e approfondito.
-            </p>
-          </article>
-
-          <article class="space-y-4 rounded-3xl bg-white p-8 shadow-md shadow-stone-900/5 ring-1 ring-black/5 md:col-span-2 md:p-10">
-            <h3 class="text-2xl font-extrabold text-[#173f2d]">Collaborazioni tematiche</h3>
-            <p class="max-w-3xl text-lg leading-8 text-stone-700">
-              Per progetti selezionati possiamo valutare collaborazioni più ampie, legate a uno specifico tema o percorso editoriale.
-            </p>
-            <p class="max-w-3xl text-lg leading-8 text-stone-700">
-              Ad esempio: serie di articoli, rubriche, approfondimenti sulla filiera, sostenibilità, normativa, ricerca o cultura della canapa.
-            </p>
-          </article>
-        </div>
-
-        <div class="mt-14 rounded-3xl bg-[#173f2d] px-8 py-10 text-center text-white shadow-lg md:px-12 md:py-12">
-          <p class="mx-auto max-w-2xl text-lg leading-8 text-green-50">
-            Ogni proposta viene valutata prima della pubblicazione. Se il tuo progetto è coerente con la linea editoriale di Canapalandia, scrivici con tutti i dettagli utili.
-          </p>
-          <div class="mt-10">
-            <a
-              href={mailtoHref}
-              class="inline-flex items-center justify-center rounded-full bg-amber-100 px-7 py-4 text-base font-bold text-[#173f2d] shadow-lg transition hover:bg-amber-50"
-            >
-              Proponi una collaborazione editoriale
-            </a>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="border-t border-black/5 bg-[#173f2d] px-6 py-20 text-white md:py-28">
-      <div class="mx-auto max-w-6xl px-6">
-        <div class="max-w-3xl">
-          <h2 class="mb-8 text-3xl font-extrabold md:text-4xl">
-            Temi più adatti
-          </h2>
+    <!-- COSA PUOI PROPORRE -->
+    <section class="border-t border-black/5 px-6 py-28 md:py-36">
+      <div class="mx-auto max-w-3xl">
+        <h2 class="text-3xl font-black leading-tight text-[#173f2d] md:text-5xl">
+          Cosa puoi proporre
+        </h2>
 
-          <p class="mt-6 text-lg leading-8 text-green-50">
-            Sono particolarmente interessanti i contenuti che aiutano a fare chiarezza, spiegare un problema, raccontare un’esperienza reale o offrire strumenti utili al lettore.
-          </p>
-        </div>
-
-        <div class="mt-10 flex flex-wrap gap-3">
-          <span class="rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white md:text-base">Canapa industriale</span>
-          <span class="rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white md:text-base">CBD</span>
-          <span class="rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white md:text-base">Cannabis light</span>
-          <span class="rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white md:text-base">Sostenibilità</span>
-          <span class="rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white md:text-base">Agricoltura</span>
-          <span class="rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white md:text-base">Filiera italiana</span>
-          <span class="rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white md:text-base">Normativa</span>
-          <span class="rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white md:text-base">Ricerca scientifica</span>
-          <span class="rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white md:text-base">Innovazione</span>
-          <span class="rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white md:text-base">Tracciabilità</span>
-          <span class="rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white md:text-base">Certificazioni</span>
-          <span class="rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white md:text-base">Educazione del consumatore</span>
-        </div>
-      </div>
-    </section>
-
-    <section class="border-t border-black/5 bg-white px-6 py-20 md:py-28">
-      <div class="mx-auto max-w-6xl px-6">
-        <div class="max-w-3xl">
-          <h2 class="mb-8 text-3xl font-extrabold text-stone-950 md:text-4xl">
-            Cosa non accettiamo
-          </h2>
-
-          <p class="mt-6 text-lg leading-8 text-stone-700">
-            Per tutelare i lettori, il progetto e la credibilità editoriale di Canapalandia, non accettiamo contenuti che non rispettano criteri minimi di correttezza, trasparenza e responsabilità.
-          </p>
-        </div>
-
-        <div class="mt-12 grid gap-5 md:grid-cols-2">
-          <div class="rounded-3xl border border-red-100 bg-[#f7f3e8] p-8 text-lg leading-8 text-stone-700 ring-1 ring-black/5 md:p-10">
-            Promesse terapeutiche non dimostrate o claim medici non verificabili.
-          </div>
-          <div class="rounded-3xl border border-red-100 bg-[#f7f3e8] p-8 text-lg leading-8 text-stone-700 ring-1 ring-black/5 md:p-10">
-            Inviti a violare, aggirare o ignorare la normativa vigente.
-          </div>
-          <div class="rounded-3xl border border-red-100 bg-[#f7f3e8] p-8 text-lg leading-8 text-stone-700 ring-1 ring-black/5 md:p-10">
-            Contenuti copiati, superficiali, fuorvianti o generati senza revisione.
-          </div>
-          <div class="rounded-3xl border border-red-100 bg-[#f7f3e8] p-8 text-lg leading-8 text-stone-700 ring-1 ring-black/5 md:p-10">
-            Testi pensati esclusivamente per la link building.
-          </div>
-          <div class="rounded-3xl border border-red-100 bg-[#f7f3e8] p-8 text-lg leading-8 text-stone-700 ring-1 ring-black/5 md:p-10">
-            Promozioni ingannevoli, aggressive o non coerenti con il progetto.
-          </div>
-          <div class="rounded-3xl border border-red-100 bg-[#f7f3e8] p-8 text-lg leading-8 text-stone-700 ring-1 ring-black/5 md:col-span-2 md:p-10">
-            Informazioni false, ambigue, sensazionalistiche o non verificabili.
-          </div>
-        </div>
-
-        <p class="mt-10 rounded-3xl bg-[#173f2d]/10 p-8 text-lg font-semibold leading-8 text-[#173f2d] md:p-10">
-          Canapalandia fa informazione. Non promuove comportamenti contrari alla normativa vigente.
+        <p class="mt-12 text-lg leading-9 text-stone-700 md:text-xl md:leading-10">
+          Accettiamo contenuti coerenti con la linea editoriale di Canapalandia. La proposta deve essere chiara, originale e utile per chi legge.
         </p>
-      </div>
-    </section>
 
-    <section class="border-t border-black/5 bg-white px-6 py-20 md:py-28">
-      <div class="mx-auto max-w-6xl px-6">
-        <div class="max-w-3xl">
-          <h2 class="mb-8 text-3xl font-extrabold text-stone-950 md:text-4xl">
-            La nostra linea editoriale
-          </h2>
+        <div class="mt-16 space-y-12">
+          <article>
+            <h3 class="text-2xl font-black leading-tight text-[#173f2d] md:text-3xl">
+              Guest post
+            </h3>
 
-          <p class="mt-6 text-lg leading-8 text-stone-700">
-            Ogni contenuto pubblicato su Canapalandia deve rispettare alcuni principi fondamentali.
-          </p>
+            <p class="mt-6 text-lg leading-9 text-stone-700">
+              Articoli informativi già scritti, da valutare e revisionare prima della pubblicazione.
+            </p>
+          </article>
+
+          <article>
+            <h3 class="text-2xl font-black leading-tight text-[#173f2d] md:text-3xl">
+              Contenuti sponsorizzati
+            </h3>
+
+            <p class="mt-6 text-lg leading-9 text-stone-700">
+              Contenuti realizzati in collaborazione con aziende o progetti del settore, sempre dichiarati con trasparenza.
+            </p>
+          </article>
+
+          <article>
+            <h3 class="text-2xl font-black leading-tight text-[#173f2d] md:text-3xl">
+              Interviste
+            </h3>
+
+            <p class="mt-6 text-lg leading-9 text-stone-700">
+              Approfondimenti dedicati a realtà, professionisti, associazioni o progetti legati alla canapa.
+            </p>
+          </article>
+
+          <article>
+            <h3 class="text-2xl font-black leading-tight text-[#173f2d] md:text-3xl">
+              Approfondimenti tematici
+            </h3>
+
+            <p class="mt-6 text-lg leading-9 text-stone-700">
+              Contenuti su normativa, filiera, sostenibilità, ricerca, tracciabilità, certificazioni e cultura antiproibizionista.
+            </p>
+          </article>
         </div>
 
-        <div class="mt-12 grid gap-6 md:grid-cols-2">
-          <article class="space-y-4 rounded-3xl bg-white p-8 shadow-sm ring-1 ring-black/5 md:p-10">
-            <h3 class="text-xl font-extrabold text-[#173f2d]">Chiarezza</h3>
-            <p class="text-lg leading-8 text-stone-700">
-              Il testo deve essere comprensibile anche per chi non conosce il settore. La canapa è già un tema complesso: non serve renderlo ancora più confuso.
-            </p>
-          </article>
-
-          <article class="space-y-4 rounded-3xl bg-white p-8 shadow-sm ring-1 ring-black/5 md:p-10">
-            <h3 class="text-xl font-extrabold text-[#173f2d]">Trasparenza</h3>
-            <p class="text-lg leading-8 text-stone-700">
-              Quando un contenuto nasce da una collaborazione commerciale, viene indicato in modo chiaro.
-            </p>
-          </article>
-
-          <article class="space-y-4 rounded-3xl bg-white p-8 shadow-sm ring-1 ring-black/5 md:p-10">
-            <h3 class="text-xl font-extrabold text-[#173f2d]">Utilità</h3>
-            <p class="text-lg leading-8 text-stone-700">
-              Ogni articolo deve offrire un valore reale: spiegare, informare, raccontare, orientare o aprire una riflessione.
-            </p>
-          </article>
-
-          <article class="space-y-4 rounded-3xl bg-white p-8 shadow-sm ring-1 ring-black/5 md:p-10">
-            <h3 class="text-xl font-extrabold text-[#173f2d]">Prudenza normativa</h3>
-            <p class="text-lg leading-8 text-stone-700">
-              Evitiamo affermazioni rischiose, promesse non dimostrate e interpretazioni forzate.
-            </p>
-          </article>
-
-          <article class="space-y-4 rounded-3xl bg-white p-8 shadow-sm ring-1 ring-black/5 md:p-10">
-            <h3 class="text-xl font-extrabold text-[#173f2d]">Coerenza</h3>
-            <p class="text-lg leading-8 text-stone-700">
-              Canapalandia non è una vetrina generica. Accettiamo solo contenuti coerenti con il progetto.
-            </p>
-          </article>
-
-          <article class="space-y-4 rounded-3xl bg-white p-8 shadow-sm ring-1 ring-black/5 md:col-span-2 md:p-10">
-            <h3 class="text-xl font-extrabold text-[#173f2d]">Responsabilità</h3>
-            <p class="max-w-3xl text-lg leading-8 text-stone-700">
-              I contenuti devono rispettare i lettori, la normativa e la credibilità del progetto.
-            </p>
-          </article>
+        <div class="mt-16">
+          <a
+            href="#form-collaborazione"
+            class="inline-flex items-center justify-center rounded-full bg-[#173f2d] px-8 py-4 text-base font-bold text-white transition hover:bg-[#20543d]"
+          >
+            Contattaci per proporre un contenuto
+          </a>
         </div>
       </div>
     </section>
 
-    <section class="border-t border-black/5 bg-[#f7f3e8] px-6 py-20 md:py-28">
-      <div class="mx-auto max-w-6xl px-6">
-        <h2 class="mb-8 text-3xl font-extrabold text-stone-950 md:text-4xl">
-          Trasparenza sulle collaborazioni
+    <!-- COSA NON ACCETTIAMO -->
+    <section class="border-t border-black/5 bg-white px-6 py-28 md:py-36">
+      <div class="mx-auto max-w-3xl">
+        <h2 class="text-3xl font-black leading-tight text-[#173f2d] md:text-5xl">
+          Cosa non accettiamo
         </h2>
 
-        <div class="space-y-6 text-lg leading-8 text-stone-700">
-          <p>
-            Quando un articolo nasce da una collaborazione, può essere indicato con una dicitura editoriale chiara.
-          </p>
+        <p class="mt-12 text-lg leading-9 text-stone-700 md:text-xl md:leading-10">
+          Per proteggere i lettori e la credibilità del progetto, non pubblichiamo contenuti contrari alla nostra linea editoriale.
+        </p>
 
-          <blockquote class="rounded-3xl border-l-4 border-[#173f2d] bg-white p-8 text-lg leading-8 text-stone-800 shadow-md ring-1 ring-black/5 md:p-10">
-            Contenuto realizzato in collaborazione con il brand citato. La pubblicazione è stata sottoposta a revisione editoriale da Canapalandia.
-          </blockquote>
+        <ul class="mt-12 space-y-6 text-lg leading-9 text-stone-700">
+          <li class="rounded-2xl bg-[#f7f3e8] p-6 ring-1 ring-black/5">
+            Promesse terapeutiche non dimostrate o claim medici non verificabili.
+          </li>
 
-          <p>
-            Oppure:
-          </p>
+          <li class="rounded-2xl bg-[#f7f3e8] p-6 ring-1 ring-black/5">
+            Inviti a violare, aggirare o ignorare la normativa vigente.
+          </li>
 
-          <blockquote class="rounded-3xl border-l-4 border-[#173f2d] bg-white p-8 text-lg leading-8 text-stone-800 shadow-md ring-1 ring-black/5 md:p-10">
-            Questo articolo nasce da una collaborazione editoriale. Canapalandia ha revisionato il contenuto per verificarne coerenza, chiarezza e conformità alla propria linea editoriale.
-          </blockquote>
+          <li class="rounded-2xl bg-[#f7f3e8] p-6 ring-1 ring-black/5">
+            Testi copiati, superficiali, fuorvianti o generati senza revisione.
+          </li>
 
-          <p>
-            La formula precisa viene scelta in base al tipo di collaborazione.
-          </p>
-        </div>
+          <li class="rounded-2xl bg-[#f7f3e8] p-6 ring-1 ring-black/5">
+            Contenuti pensati esclusivamente per ottenere link.
+          </li>
+        </ul>
       </div>
     </section>
 
-    <section class="border-t border-black/5 bg-white px-6 py-20 md:py-28">
-      <div class="mx-auto max-w-6xl px-6">
-        <h2 class="mb-8 text-3xl font-extrabold text-stone-950 md:text-4xl">
-          Link e contenuti esterni
+    <!-- TRASPARENZA -->
+    <section class="border-t border-black/5 px-6 py-28 md:py-36">
+      <div class="mx-auto max-w-3xl">
+        <h2 class="text-3xl font-black leading-tight text-[#173f2d] md:text-5xl">
+          Trasparenza editoriale
         </h2>
 
-        <div class="max-w-3xl space-y-6 text-lg leading-8 text-stone-700">
+        <div class="mt-12 space-y-8 text-lg leading-9 text-stone-700 md:text-xl md:leading-10">
           <p>
-            I link presenti nei contenuti vengono valutati prima della pubblicazione. Non accettiamo link inseriti in modo artificiale, non coerente o poco trasparente.
+            Quando un contenuto nasce da una collaborazione commerciale, viene indicato in modo chiaro.
           </p>
 
           <p>
-            I link devono essere utili al lettore e collegati al tema dell’articolo.
+            La collaborazione non implica automaticamente raccomandazione, certificazione o approvazione dei prodotti o servizi citati.
           </p>
 
           <p>
-            Canapalandia si riserva la possibilità di rifiutare link non coerenti, modificare anchor text troppo promozionali, limitare il numero di link, richiedere modifiche al testo o non pubblicare contenuti che non rispettano la linea editoriale.
+            Canapalandia si riserva la possibilità di rifiutare proposte non coerenti, modificare anchor text troppo promozionali, limitare il numero di link o richiedere modifiche prima della pubblicazione.
           </p>
         </div>
       </div>
     </section>
 
-    <section id="come-proporre" class="scroll-mt-24 border-t border-black/5 bg-[#f7f3e8] px-6 py-20 md:py-28">
-      <div class="mx-auto grid max-w-6xl gap-12 px-6 md:grid-cols-2 md:items-start md:gap-20">
-        <div class="space-y-6">
-          <h2 class="mb-8 text-3xl font-extrabold text-stone-950 md:text-4xl">
-            Come proporre una collaborazione
-          </h2>
+    <!-- COME FUNZIONA -->
+    <section id="come-funziona" class="scroll-mt-24 border-t border-black/5 bg-[#173f2d] px-6 py-28 text-white md:py-36">
+      <div class="mx-auto max-w-3xl">
+        <h2 class="text-3xl font-black leading-tight md:text-5xl">
+          Come proporre una collaborazione
+        </h2>
 
-          <p class="text-lg leading-8 text-stone-700">
-            Le collaborazioni su Canapalandia vengono valutate caso per caso, in base alla coerenza con la linea editoriale del sito, al tipo di contenuto proposto e agli obiettivi della pubblicazione.
-          </p>
+        <p class="mt-12 text-lg leading-9 text-green-50 md:text-xl md:leading-10">
+          Scrivici raccontando chi sei, cosa vorresti pubblicare e perché pensi che il contenuto sia adatto a Canapalandia.
+        </p>
 
-          <p class="text-lg leading-8 text-stone-700">
-            Non pubblichiamo contenuti automaticamente e non accettiamo proposte pensate esclusivamente per la link building.
-          </p>
-        </div>
-
-        <div class="rounded-3xl bg-white p-8 shadow-md shadow-stone-900/5 ring-1 ring-black/5 md:p-10">
-          <h3 class="text-2xl font-extrabold text-[#173f2d]">
-            Informazioni da inviare
+        <div class="mt-12 rounded-3xl bg-white/10 p-8 ring-1 ring-white/15 md:p-10">
+          <h3 class="text-2xl font-black">
+            Nel messaggio indica:
           </h3>
 
-          <ul class="mt-6 space-y-4 text-lg leading-8 text-stone-700">
-            <li>Nome dell’azienda, del brand o del progetto.</li>
+          <ul class="mt-8 space-y-5 text-lg leading-8 text-green-50">
+            <li>Nome dell’azienda, brand o progetto.</li>
             <li>Sito web ufficiale.</li>
-            <li>Settore di attività.</li>
-            <li>Tipo di contenuto che vorresti proporre.</li>
-            <li>Argomento desiderato.</li>
-            <li>Obiettivo della pubblicazione.</li>
+            <li>Tipo di contenuto proposto.</li>
+            <li>Argomento e obiettivo della pubblicazione.</li>
             <li>Eventuale bozza già disponibile.</li>
-            <li>Link che vorresti sottoporre a valutazione.</li>
-            <li>Informazioni utili sulla tua realtà.</li>
+            <li>Link da sottoporre a valutazione.</li>
           </ul>
+        </div>
 
-          <p class="mt-8 rounded-2xl bg-[#173f2d]/10 p-6 text-lg leading-8 text-[#173f2d] md:p-8">
-            Dopo una prima valutazione, se la proposta è coerente con la linea editoriale di Canapalandia, potremo inviarti informazioni riservate su formati, modalità e condizioni di collaborazione.
+        <div class="mt-16">
+          <a
+            href="#form-collaborazione"
+            class="inline-flex items-center justify-center rounded-full bg-amber-100 px-8 py-4 text-base font-bold text-[#173f2d] transition hover:bg-amber-200"
+          >
+            Contattaci per una collaborazione
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- NOTA EDITORIALE -->
+    <section class="border-t border-black/5 bg-[#f7f3e8] px-6 py-14 md:py-16">
+      <div class="mx-auto max-w-3xl">
+        <div class="rounded-3xl bg-white p-6 ring-1 ring-black/5 md:p-8">
+          <h2 class="text-base font-extrabold text-stone-700 md:text-lg">
+            Nota editoriale
+          </h2>
+
+          <p class="mt-4 text-sm leading-7 text-stone-600 md:text-base">
+            Canapalandia è uno spazio informativo indipendente. I contenuti pubblicati non costituiscono consulenza legale, medica o commerciale. Ogni collaborazione viene valutata caso per caso e può essere rifiutata se non coerente con la linea editoriale del progetto.
           </p>
         </div>
       </div>
     </section>
 
-    <section class="border-t border-black/5 bg-[#173f2d] px-6 py-20 text-white md:py-28">
-      <div class="mx-auto max-w-6xl px-6">
-        <h2 class="mb-8 text-3xl font-extrabold md:text-4xl">
-          Schema consigliato per il primo contatto
+    <!-- FORM COLLABORAZIONE -->
+    <section id="form-collaborazione" class="scroll-mt-24 border-t border-black/5 bg-[#f7f3e8] px-6 py-28 md:py-36">
+      <div class="mx-auto max-w-3xl">
+        <h2 class="text-3xl font-black leading-tight text-[#173f2d] md:text-5xl">
+          Invia la tua proposta editoriale
         </h2>
 
-        <p class="mt-6 max-w-3xl text-lg leading-8 text-green-50">
-          Puoi scriverci usando questo schema, così possiamo valutare la proposta in modo più rapido e preciso.
+        <p class="mt-10 text-lg leading-9 text-stone-700 md:text-xl md:leading-10">
+          Compila il modulo con le informazioni principali sul tuo progetto. Valuteremo la proposta e ti risponderemo se sarà coerente con la linea editoriale di Canapalandia.
         </p>
 
-        <pre class="mt-10 overflow-x-auto rounded-3xl bg-black/30 p-8 text-sm leading-7 text-stone-100 md:text-base md:leading-8"><code>Oggetto: Proposta collaborazione editoriale Canapalandia
+        <form
+          class="collaboration-form mt-14"
+          method="POST"
+          action={FORMSPREE_ACTION}
+        >
+          <input
+            class="honeypot-field"
+            type="text"
+            name="_gotcha"
+            tabindex="-1"
+            autocomplete="off"
+            aria-hidden="true"
+          />
 
-Ciao Canapalandia,
+          <input type="hidden" name="_subject" value="Nuova proposta collaborazione editoriale Canapalandia" />
+          <input type="hidden" name="_redirect" value={collaborazioneRedirect} />
 
-vorrei proporre una collaborazione editoriale.
+          <p class="form-note">
+            I campi contrassegnati con * sono obbligatori.
+          </p>
 
-Nome azienda/progetto:
-Sito web:
-Settore di attività:
-Tipo di contenuto proposto:
-Argomento:
-Obiettivo della pubblicazione:
-Il testo è già disponibile? Sì/No
-Link da sottoporre a valutazione:
-Note aggiuntive:
+          <div class="form-grid">
+            <div class="field-group">
+              <label for="collab-nome">
+                Nome e cognome <span class="text-red-700">*</span>
+              </label>
+              <input
+                id="collab-nome"
+                name="nome_cognome"
+                type="text"
+                autocomplete="name"
+                required
+              />
+            </div>
 
-Grazie.</code></pre>
+            <div class="field-group">
+              <label for="collab-email">
+                Email <span class="text-red-700">*</span>
+              </label>
+              <input
+                id="collab-email"
+                name="email"
+                type="email"
+                autocomplete="email"
+                required
+              />
+            </div>
 
-        <div class="mt-10">
-          <a
-            href={mailtoHref}
-            class="inline-flex items-center justify-center rounded-full bg-amber-100 px-7 py-4 text-base font-bold text-[#173f2d] shadow-lg transition hover:bg-amber-50"
-          >
-            Proponi una collaborazione editoriale
-          </a>
-        </div>
-      </div>
-    </section>
+            <div class="field-group">
+              <label for="collab-azienda">
+                Azienda, brand o progetto <span class="text-red-700">*</span>
+              </label>
+              <input
+                id="collab-azienda"
+                name="azienda"
+                type="text"
+                required
+              />
+            </div>
 
-    <section class="border-t border-black/5 bg-white px-6 py-20 md:py-28">
-      <div class="mx-auto max-w-6xl px-6">
-        <h2 class="mb-8 text-3xl font-extrabold text-stone-950 md:text-4xl">
-          Prima di inviare la proposta
-        </h2>
+            <div class="field-group">
+              <label for="collab-sito">
+                Sito web <span class="text-red-700">*</span>
+              </label>
+              <input
+                id="collab-sito"
+                name="sito_web"
+                type="url"
+                placeholder="https://"
+                required
+              />
+            </div>
 
-        <p class="mt-6 max-w-3xl text-lg leading-8 text-stone-700">
-          Prima di contattarci, verifica che la proposta sia coerente con i temi di Canapalandia, utile per il lettore, informativa e non solo pubblicitaria.
-        </p>
+            <div class="field-group">
+              <label for="collab-tipo">
+                Tipo di contenuto <span class="text-red-700">*</span>
+              </label>
+              <select
+                id="collab-tipo"
+                name="tipo_contenuto"
+                required
+              >
+                <option value="" disabled selected>Seleziona un’opzione</option>
+                <option value="Guest post">Guest post</option>
+                <option value="Contenuto sponsorizzato">Contenuto sponsorizzato</option>
+                <option value="Intervista">Intervista</option>
+                <option value="Approfondimento tematico">Approfondimento tematico</option>
+                <option value="Altro">Altro</option>
+              </select>
+            </div>
 
-        <div class="mt-10 flex flex-wrap gap-3">
-          <span class="rounded-full border border-stone-200 bg-[#f7f3e8] px-5 py-2.5 text-sm font-medium text-stone-800 md:text-base">Originale e non copiata da altri siti</span>
-          <span class="rounded-full border border-stone-200 bg-[#f7f3e8] px-5 py-2.5 text-sm font-medium text-stone-800 md:text-base">Scritta in italiano corretto</span>
-          <span class="rounded-full border border-stone-200 bg-[#f7f3e8] px-5 py-2.5 text-sm font-medium text-stone-800 md:text-base">Rispettosa della normativa vigente</span>
-          <span class="rounded-full border border-stone-200 bg-[#f7f3e8] px-5 py-2.5 text-sm font-medium text-stone-800 md:text-base">Priva di promesse mediche non dimostrate</span>
-          <span class="rounded-full border border-stone-200 bg-[#f7f3e8] px-5 py-2.5 text-sm font-medium text-stone-800 md:text-base">Accompagnata da fonti, quando necessario</span>
-          <span class="rounded-full border border-stone-200 bg-[#f7f3e8] px-5 py-2.5 text-sm font-medium text-stone-800 md:text-base">Compatibile con un progetto editoriale indipendente</span>
-        </div>
-      </div>
-    </section>
+            <div class="field-group">
+              <label for="collab-argomento">
+                Argomento proposto <span class="text-red-700">*</span>
+              </label>
+              <input
+                id="collab-argomento"
+                name="argomento"
+                type="text"
+                required
+              />
+            </div>
 
-    <section class="border-t border-black/5 bg-[#173f2d] px-6 py-20 text-white md:py-28">
-      <div class="mx-auto max-w-6xl px-6 text-center">
-        <h2 class="mb-8 text-3xl font-extrabold md:text-4xl">
-          Vuoi proporre un guest post o una collaborazione?
-        </h2>
+            <div class="field-group field-full">
+              <label for="collab-link">
+                Link da valutare <span class="text-red-700">*</span>
+              </label>
+              <input
+                id="collab-link"
+                name="link"
+                type="url"
+                placeholder="https://"
+                required
+              />
+            </div>
+          </div>
 
-        <p class="mx-auto mt-8 max-w-3xl text-lg leading-8 text-green-50">
-          Raccontaci il tuo progetto e il tipo di contenuto che vorresti pubblicare su Canapalandia. Valuteremo la coerenza della proposta con la nostra linea editoriale e, se il progetto è adatto, ti invieremo le informazioni necessarie per procedere.
-        </p>
+          <div class="field-group">
+            <label for="collab-messaggio">
+              Messaggio <span class="text-red-700">*</span>
+            </label>
+            <textarea
+              id="collab-messaggio"
+              name="messaggio"
+              rows="7"
+              required
+            ></textarea>
+          </div>
 
-        <p class="mx-auto mt-6 max-w-3xl text-lg leading-8 text-green-50">
-          <strong>Canapalandia accetta solo collaborazioni coerenti, trasparenti e utili per i lettori.</strong>
-        </p>
+          <div class="privacy-box">
+            <label>
+              <input
+                type="checkbox"
+                name="privacy"
+                value="accettata"
+                required
+              />
+              <span>
+                Dichiaro di aver letto e accettato <a
+                  href="/privacy-policy/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="font-extrabold text-[#86efac] underline decoration-[#86efac]/70 decoration-2 underline-offset-4 transition hover:text-[#bbf7d0] hover:decoration-[#bbf7d0]"
+                >l’informativa privacy</a> e acconsento al trattamento dei dati per la valutazione della proposta editoriale. <span class="text-red-700">*</span>
+              </span>
+            </label>
+          </div>
 
-        <div class="mt-10">
-          <a
-            href={mailtoHref}
-            class="inline-flex items-center justify-center rounded-full bg-amber-100 px-7 py-4 text-base font-bold text-[#173f2d] shadow-lg transition hover:bg-amber-50"
-          >
-            Proponi una collaborazione editoriale
-          </a>
-        </div>
-      </div>
-    </section>
-
-    <section class="border-t border-black/5 bg-[#f7f3e8] px-6 py-16 md:py-20">
-      <div class="mx-auto max-w-6xl space-y-6 px-6 text-lg leading-8 text-stone-600">
-        <h2 class="mb-4 text-2xl font-extrabold text-stone-900 md:text-3xl">
-          Nota editoriale
-        </h2>
-
-        <p>
-          Canapalandia è uno spazio informativo indipendente. I contenuti pubblicati non costituiscono consulenza legale, medica o commerciale.
-        </p>
-
-        <p>
-          Ogni collaborazione viene valutata caso per caso e può essere rifiutata se non coerente con la linea editoriale del progetto.
-        </p>
-
-        <p>
-          La pubblicazione di un contenuto non implica automaticamente approvazione, raccomandazione o certificazione dei prodotti, dei servizi o delle realtà citate.
-        </p>
+          <div class="form-actions">
+            <button type="submit">
+              Invia la proposta
+            </button>
+          </div>
+        </form>
       </div>
     </section>
   </main>
 </Layout>
+
+<style>
+  .collaboration-form {
+    margin-top: 3.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    border-radius: 2rem;
+    background: #173f2d;
+    color: #f7f3e8;
+    padding: 2rem;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.22);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  @media (min-width: 768px) {
+    .collaboration-form {
+      padding: 3rem;
+    }
+  }
+
+  .collaboration-form .form-note {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: rgba(247, 243, 232, 0.78);
+  }
+
+  .collaboration-form .form-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 768px) {
+    .collaboration-form .form-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1.75rem;
+    }
+
+    .collaboration-form .field-full {
+      grid-column: 1 / -1;
+    }
+  }
+
+  .collaboration-form .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .collaboration-form label {
+    display: block;
+    margin: 0;
+    font-size: 0.78rem;
+    line-height: 1.4;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #fef3c7;
+  }
+
+  .collaboration-form .honeypot-field {
+    position: absolute !important;
+    left: -9999px !important;
+    width: 1px !important;
+    height: 1px !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    padding: 0 !important;
+    border: 0 !important;
+    margin: 0 !important;
+  }
+
+  .collaboration-form input:not(.honeypot-field),
+  .collaboration-form select,
+  .collaboration-form textarea {
+    width: 100%;
+    box-sizing: border-box;
+    border-radius: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: #f7f3e8 !important;
+    color: #1c1917 !important;
+    padding: 1rem 1.1rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    outline: none;
+    transition:
+      border-color 160ms ease,
+      box-shadow 160ms ease,
+      background-color 160ms ease;
+  }
+
+  .collaboration-form input:not(.honeypot-field)::placeholder,
+  .collaboration-form textarea::placeholder {
+    color: #78716c;
+  }
+
+  .collaboration-form input:not(.honeypot-field):focus,
+  .collaboration-form select:focus,
+  .collaboration-form textarea:focus {
+    border-color: #f5d98b;
+    background: #fffaf0 !important;
+    box-shadow: 0 0 0 4px rgba(245, 217, 139, 0.24);
+  }
+
+  .collaboration-form textarea {
+    min-height: 12rem;
+    resize: vertical;
+  }
+
+  .collaboration-form select {
+    appearance: auto;
+  }
+
+  .collaboration-form .privacy-box {
+    border-radius: 1.25rem;
+    background: rgba(255, 255, 255, 0.08);
+    padding: 1.25rem;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+  }
+
+  .collaboration-form .privacy-box label {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 0.95rem;
+    line-height: 1.7;
+    font-weight: 500;
+    color: rgba(247, 243, 232, 0.9);
+  }
+
+  .collaboration-form input[type="checkbox"] {
+    width: 1.15rem;
+    height: 1.15rem;
+    min-width: 1.15rem;
+    margin-top: 0.25rem;
+    accent-color: #f5d98b;
+  }
+
+  .collaboration-form .form-actions {
+    padding-top: 0.75rem;
+  }
+
+  .collaboration-form button {
+    display: inline-flex;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 999px;
+    background: #fef3c7;
+    color: #173f2d;
+    padding: 1rem 2rem;
+    font-size: 1rem;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.22);
+    transition:
+      transform 160ms ease,
+      background-color 160ms ease,
+      box-shadow 160ms ease;
+  }
+
+  .collaboration-form button:hover {
+    background: #f5d98b;
+    transform: translateY(-1px);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+  }
+
+  .collaboration-form button:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 4px rgba(245, 217, 139, 0.28),
+      0 18px 40px rgba(0, 0, 0, 0.28);
+  }
+
+  @media (min-width: 640px) {
+    .collaboration-form button {
+      width: auto;
+    }
+  }
+</style>

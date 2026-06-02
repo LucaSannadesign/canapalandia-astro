@@ -1,0 +1,50 @@
+---
+import Layout from "../layouts/MigratedLayout.astro";
+
+const metadata = {
+  title: "Grazie per la proposta | Canapalandia",
+  description:
+    "Grazie per aver inviato una proposta di collaborazione editoriale a Canapalandia.",
+  canonical: "https://canapalandia.com/grazie-collaborazione/",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
+---
+
+<Layout metadata={metadata}>
+  <main class="bg-[#f7f3e8] px-6 py-28 text-stone-900 md:py-36">
+    <div class="mx-auto max-w-3xl">
+      <div class="rounded-[2rem] bg-white px-8 py-12 text-center shadow-xl ring-1 ring-black/10 md:px-12 md:py-16">
+        <p class="text-sm font-bold uppercase tracking-[0.18em] text-[#173f2d]">
+          Proposta inviata
+        </p>
+
+        <h1 class="mt-8 text-3xl font-black leading-tight text-[#173f2d] md:text-5xl">
+          Grazie, abbiamo ricevuto la tua proposta
+        </h1>
+
+        <p class="mx-auto mt-10 max-w-2xl text-lg leading-9 text-stone-700 md:text-xl md:leading-10">
+          Valuteremo il progetto e ti risponderemo se sarà coerente con la linea editoriale di Canapalandia.
+        </p>
+
+        <div class="mt-14 flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <a
+            href="/"
+            class="inline-flex w-full items-center justify-center rounded-full bg-[#173f2d] px-8 py-4 font-bold text-white shadow-lg transition hover:bg-[#20543d] sm:w-auto"
+          >
+            Torna alla home
+          </a>
+
+          <a
+            href="/blog/"
+            class="inline-flex w-full items-center justify-center rounded-full border-2 border-[#173f2d] px-8 py-4 font-bold text-[#173f2d] transition hover:bg-[#173f2d]/5 sm:w-auto"
+          >
+            Leggi il blog
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+</Layout>
