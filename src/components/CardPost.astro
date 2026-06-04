@@ -1,7 +1,45 @@
 ---
 import { toPlainText } from "../lib/utils";
 
-const { href, img, date, title, excerpt, category } = Astro.props;
+const {
+  href,
+  img,
+  date,
+  title,
+  excerpt,
+  category,
+  publishDate,
+  updatedDate,
+} = Astro.props;
+
+function toDate(value: Date | string | number | null | undefined): Date | null {
+  if (!value) return null;
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+  const d = new Date(String(value));
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function formatDate(value: Date | string | number | null | undefined): string {
+  const d = toDate(value);
+  if (!d) return "";
+  return d.toLocaleDateString("it-IT", { year: "numeric", month: "long", day: "numeric" });
+}
+
+function isSameDate(date1: Date | null, date2: Date | null): boolean {
+  if (!date1 || !date2) return false;
+  return (
+    date1.getFullYear() === date2.getFullYear() &&
+    date1.getMonth() === date2.getMonth() &&
+    date1.getDate() === date2.getDate()
+  );
+}
+
+const pubDate = toDate(publishDate);
+const updDate = toDate(updatedDate);
+const showUpdated = updDate && pubDate && !isSameDate(pubDate, updDate);
+const updatedLabel = showUpdated ? `Aggiornato il ${formatDate(updatedDate)}` : "";
 
 // Sanitizza excerpt: converte qualsiasi tipo in stringa pulita
 const excerptSafe = toPlainText(excerpt);
@@ -41,6 +79,9 @@ const safeHref = normalizeHref(href);
 
         <div class="cardBody">
             <p class="cardMeta">{date}</p>
+            {updatedLabel ? (
+                <p class="cardMeta cardMeta--updated">{updatedLabel}</p>
+            ) : null}
             {categoryName ? (
                 <span class="badge badge--cat">{categoryName}</span>
             ) : null}
@@ -54,3 +95,12 @@ const safeHref = normalizeHref(href);
         </div>
     </a>
 </article>
+
+<style>
+    .cardMeta--updated {
+        margin: -0.15rem 0 var(--space-sm);
+        font-size: 0.8125rem;
+        color: var(--muted);
+        opacity: 0.85;
+    }
+</style>

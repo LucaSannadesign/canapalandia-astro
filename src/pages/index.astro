@@ -11,15 +11,15 @@ import { ADS_SLOT_HOME, ADS_SLOT_TOP } from "../lib/consts";
 --------------------------- */
 
 // Unica funzione per normalizzare una data (elimina dateOf e dateValue duplicate)
-function getPostDate(post: CollectionEntry<"blog">): Date | null {
-  const raw = post.data.updatedDate ?? post.data.publishDate;
+function getPublishDate(post: CollectionEntry<"blog">): Date | null {
+  const raw = post.data.publishDate;
   if (!raw) return null;
   const d = raw instanceof Date ? raw : new Date(String(raw));
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
 function dateValue(post: CollectionEntry<"blog">): number {
-  return getPostDate(post)?.getTime() ?? 0;
+  return getPublishDate(post)?.getTime() ?? 0;
 }
 
 const formatDate = (d: Date | null): string => {
@@ -103,7 +103,7 @@ const sortedPosts = postsAll
 const MIN_DATE = new Date("2025-01-01T00:00:00.000Z");
 
 const eligiblePosts = sortedPosts.filter((p) => {
-  const d = getPostDate(p);
+  const d = getPublishDate(p);
   return d !== null && d >= MIN_DATE;
 });
 
@@ -557,7 +557,9 @@ const homeJsonLd = {
             <CardPost
               href={postHref(p)}
               img={normalizeImage(p) || undefined}
-              date={formatDate(getPostDate(p))}
+              date={formatDate(getPublishDate(p))}
+              publishDate={p.data.publishDate}
+              updatedDate={p.data.updatedDate}
               title={p.data.title}
               excerpt={p.data.description}
               category={p.data.category || null}

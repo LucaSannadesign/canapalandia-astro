@@ -19,8 +19,8 @@ function postHref(entry: CollectionEntry<"blog">): string {
   return `/blog/${slug}/`;
 }
 
-function dateOf(entry: CollectionEntry<"blog">): Date | null {
-  const raw = entry.data.updatedDate ?? entry.data.publishDate;
+function publishDateOf(entry: CollectionEntry<"blog">): Date | null {
+  const raw = entry.data.publishDate;
   if (!raw) return null;
   const d = raw instanceof Date ? raw : new Date(String(raw));
   return Number.isNaN(d.getTime()) ? null : d;
@@ -203,7 +203,9 @@ const robots = { index: false, follow: true };
                 <CardPost
                   href={postHref(p)}
                   img={imgSrc || undefined}
-                  date={formatDate(dateOf(p))}
+                  date={formatDate(publishDateOf(p))}
+                  publishDate={p.data.publishDate}
+                  updatedDate={p.data.updatedDate}
                   title={p.data.title}
                   excerpt={p.data.description}
                   category={p.data.category || null}

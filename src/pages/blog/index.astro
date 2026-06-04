@@ -21,11 +21,29 @@ function postHref(entry: CollectionEntry<"blog">): string {
   return `/blog/${slug}/`;
 }
 
-function dateOf(entry: CollectionEntry<"blog">): Date | null {
-  const raw = entry.data.updatedDate ?? entry.data.publishDate;
+function publishDateOf(entry: CollectionEntry<"blog">): Date | null {
+  const raw = entry.data.publishDate;
   if (!raw) return null;
   const d = raw instanceof Date ? raw : new Date(String(raw));
   return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function formatUpdatedLabel(
+  publishDate: CollectionEntry<"blog">["data"]["publishDate"],
+  updatedDate: CollectionEntry<"blog">["data"]["updatedDate"],
+): string {
+  if (!updatedDate || !publishDate) return "";
+  const pub = publishDate instanceof Date ? publishDate : new Date(String(publishDate));
+  const upd = updatedDate instanceof Date ? updatedDate : new Date(String(updatedDate));
+  if (Number.isNaN(pub.getTime()) || Number.isNaN(upd.getTime())) return "";
+  if (
+    pub.getFullYear() === upd.getFullYear() &&
+    pub.getMonth() === upd.getMonth() &&
+    pub.getDate() === upd.getDate()
+  ) {
+    return "";
+  }
+  return `Aggiornato il ${upd.toLocaleDateString("it-IT", { year: "numeric", month: "long", day: "numeric" })}`;
 }
 
 // Helper per normalizzare immagine post
@@ -82,12 +100,12 @@ try {
 // Filtra solo post italiani
 const italianPosts = postsAll.filter(isItalianPost);
 
-// Ordina per publishDate (fallback updatedDate) DESC
+// Ordina per publishDate DESC
 const sortedPosts = italianPosts
   .slice()
   .sort((a, b) => {
-    const da = a.data.publishDate ?? a.data.updatedDate;
-    const db = b.data.publishDate ?? b.data.updatedDate;
+    const da = a.data.publishDate;
+    const db = b.data.publishDate;
     const ta = da ? (da instanceof Date ? da.getTime() : new Date(da).getTime()) : 0;
     const tb = db ? (db instanceof Date ? db.getTime() : new Date(db).getTime()) : 0;
     return tb - ta;
@@ -108,7 +126,8 @@ const postsIndex = sortedPosts.map((p) => ({
   description: p.data.description ?? "",
   category: p.data.category ?? "",
   tags: Array.isArray(p.data.tags) ? p.data.tags : [],
-  date: formatDate(dateOf(p)),
+  date: formatDate(publishDateOf(p)),
+  updatedLabel: formatUpdatedLabel(p.data.publishDate, p.data.updatedDate),
   img: normalizeImage(p),
 }));
 
@@ -274,7 +293,9 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/blog/`;
                 <CardPost
                   href={postHref(p)}
                   img={imgSrc || undefined}
-                  date={formatDate(dateOf(p))}
+                  date={formatDate(publishDateOf(p))}
+                  publishDate={p.data.publishDate}
+                  updatedDate={p.data.updatedDate}
                   title={p.data.title}
                   excerpt={p.data.description}
                   category={p.data.category || null}
@@ -393,6 +414,7 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/blog/`;
           ` : ""}
           <div class="cardBody">
             <p class="cardMeta">${escapeHtml(post.date)}</p>
+            ${post.updatedLabel ? `<p class="cardMeta cardMeta--updated">${escapeHtml(post.updatedLabel)}</p>` : ""}
             ${post.category ? `<span class="badge badge--cat">${escapeHtml(post.category)}</span>` : ""}
             <h3 class="card-title clamp-2">${escapeHtml(post.title)}</h3>
             ${post.description ? `<p class="card-excerpt clamp-3">${escapeHtml(post.description)}</p>` : ""}
