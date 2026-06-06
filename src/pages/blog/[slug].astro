@@ -346,22 +346,26 @@ const jsonLd = {
   }
 
   .post-main .post-content :global(a[href]) {
-    color: #169c48 !important;
+    color: #a7f3d0 !important;
     text-decoration: underline;
+    text-decoration-color: rgba(167, 243, 208, 0.7);
     text-underline-offset: 0.18em;
-    transition: color 160ms ease;
+    transition: color 160ms ease, text-decoration-color 160ms ease;
   }
 
   .post-main .post-content :global(a[href]:hover) {
-    color: #22c55e !important;
+    color: #ecfccb !important;
+    text-decoration-color: currentColor;
   }
 
-  .dark .post-main .post-content :global(a[href]) {
-    color: #bbf7d0 !important;
+  :global(html[data-theme="light"]) .post-main .post-content :global(a[href]) {
+    color: #169c48 !important;
+    text-decoration-color: rgba(22, 156, 72, 0.45);
   }
 
-  .dark .post-main .post-content :global(a[href]:hover) {
-    color: #dcfce7 !important;
+  :global(html[data-theme="light"]) .post-main .post-content :global(a[href]:hover) {
+    color: #15803d !important;
+    text-decoration-color: currentColor;
   }
 
   @media (max-width: 640px) {
