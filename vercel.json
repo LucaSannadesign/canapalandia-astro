@@ -166,6 +166,16 @@
       "source": "/decreto-sicurezza-cannabis-light-2025/",
       "destination": "/blog/decreto-sicurezza-cannabis-light/",
       "permanent": true
+    },
+    {
+      "source": "/cbd-legale-2025-decreto-sicurezza",
+      "destination": "/blog/cbd-legale-decreto-sicurezza/",
+      "permanent": true
+    },
+    {
+      "source": "/cbd-legale-2025-decreto-sicurezza/",
+      "destination": "/blog/cbd-legale-decreto-sicurezza/",
+      "permanent": true
     }
   ]
 }

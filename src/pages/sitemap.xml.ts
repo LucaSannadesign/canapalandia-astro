@@ -91,6 +91,7 @@ const REDIRECT_SOURCE_PATHS = new Set<string>([
   "cannabis-light-corte-giustizia-ue",
   "italia-stretta-cannabis-light",
   "decreto-sicurezza-2025",
+  "cbd-legale-2025-decreto-sicurezza",
   "blog-cannabis-Italia",
   // evergreenRedirects: categorie WP thin → hub
   "categoria/cbd-sport-recupero",
