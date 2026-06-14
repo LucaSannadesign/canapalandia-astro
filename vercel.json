@@ -176,6 +176,16 @@
       "source": "/cbd-legale-2025-decreto-sicurezza/",
       "destination": "/blog/cbd-legale-decreto-sicurezza/",
       "permanent": true
+    },
+    {
+      "source": "/proteine-canapa-prive-thc-alimentazione-sostenibile",
+      "destination": "/blog/proteine-canapa-prive-thc-alimentazione-sostenibile/",
+      "permanent": true
+    },
+    {
+      "source": "/proteine-canapa-prive-thc-alimentazione-sostenibile/",
+      "destination": "/blog/proteine-canapa-prive-thc-alimentazione-sostenibile/",
+      "permanent": true
     }
   ]
 }
