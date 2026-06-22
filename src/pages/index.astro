@@ -1,10 +1,8 @@
 ---
 import { getCollection, type CollectionEntry } from "astro:content";
 import Layout from "../layouts/MigratedLayout.astro";
-import AdSlot from "../components/AdSlot.astro";
 import CardPost from "../components/CardPost.astro";
 import HomeActionCards from "../components/HomeActionCards.astro";
-import { ADS_SLOT_HOME, ADS_SLOT_TOP } from "../lib/consts";
 
 /* ---------------------------
    Helpers: date
@@ -361,13 +359,6 @@ const homeJsonLd = {
     </div>
   </section>
 
-  <!-- Banner AdsSense: sotto hero e sotto i quick links -->
-  <div class="adbar" data-adbar>
-    <div class="container">
-      <AdSlot slot={ADS_SLOT_TOP} label="Pubblicità" />
-    </div>
-  </div>
-
   <section id="percorsi" class="section percorsi-section" aria-labelledby="percorsi-title">
     <div class="container">
       <div class="section-head percorsi-section__head">
@@ -463,10 +454,6 @@ const homeJsonLd = {
       </div>
     </div>
   </section>
-
-  <div class="container">
-    <AdSlot slot={ADS_SLOT_HOME} label="Pubblicità" />
-  </div>
 
   <section id="in-evidenza" class="section alt in-evidenza-section" aria-labelledby="in-evidenza-title">
     <div class="container">

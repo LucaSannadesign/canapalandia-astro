@@ -390,7 +390,7 @@ main#contenuto {
               box-shadow 260ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
               padding 260ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
               backdrop-filter 260ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  /* z-index 1000: sopra menu mobile (950) e adbar (900) */
+  /* z-index 1000: sopra menu mobile (950) */
 }
 
 /* Mobile: navbar sempre con sfondo semitrasparente per leggibilità */
@@ -480,68 +480,6 @@ main#contenuto {
     transition: background 100ms ease,
                 border-bottom-color 100ms ease,
                 box-shadow 100ms ease;
-  }
-}
-
-/* Adbar: barra pubblicità sotto header */
-.adbar {
-  position: relative;
-  width: 100%;
-  max-height: 140px;
-  opacity: 1;
-  transform: translateY(0);
-  overflow: hidden;
-  transition: max-height 260ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
-              opacity 260ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
-              transform 260ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  pointer-events: auto;
-  z-index: 900;
-  /* z-index 900: sotto header (1000) e menu mobile (9999) */
-}
-
-.adbar[data-hidden="true"] {
-  max-height: 0;
-  opacity: 0;
-  transform: translateY(-6px);
-  pointer-events: none;
-  margin: 0;
-  padding: 0;
-}
-
-.adbar .container {
-  /* Spaziatura compatta: header -> label -> banner -> contenuto */
-  padding-top: 10px;   /* target: 8–12px sopra l’ads */
-  padding-bottom: 12px; /* target: 12–16px sotto l’ads */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-/* Override spacing Ads SOLO nella barra sotto-navbar */
-.adbar .adslot-container {
-  margin: 0; /* rimuove il margin 2rem del componente */
-}
-
-.adbar .adslot-label {
-  margin: 0 0 6px; /* target: 6–8px tra label e banner */
-  letter-spacing: 0.12em;
-  line-height: 1.1;
-}
-
-/* Rimuovi padding quando adbar è nascosta */
-.adbar[data-hidden="true"] .container {
-  padding-top: 0;
-  padding-bottom: 0;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .adbar {
-    transition: max-height 100ms ease,
-                opacity 100ms ease;
-  }
-  
-  .adbar[data-hidden="true"] {
-    transform: none;
   }
 }
 
@@ -1690,35 +1628,6 @@ html[data-theme="light"] .cardExcerpt {
   transform: translateY(-1px);
 }
 
-/* Sticky AdSense banner in sidebar */
-.sidebar-ad__wrapper {
-  /* Wrapper senza padding extra per permettere sticky */
-  margin-bottom: 0;
-  padding-bottom: 0;
-  border-bottom: none;
-}
-
-/* Mobile/Tablet: sticky disattivato (comportamento normale) */
-.sidebar-ad__sticky {
-  padding: 16px;
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  background: var(--panel);
-  box-shadow: var(--shadow-soft);
-  min-height: 250px; /* Altezza minima per evitare collasso prima del render ads */
-}
-
-.sidebar-ad__sticky .sidebar-title {
-  margin-top: 0;
-}
-
-/* Reset margin di AdSlot/AdSenseSlot dentro sticky per coerenza */
-.sidebar-ad__sticky :global(.adslot-container),
-.sidebar-ad__sticky :global(.adsense-slot-container) {
-  margin: 0;
-  overflow: visible; /* IMPORTANTE: visible per permettere sticky, non hidden */
-}
-
 /* Desktop: se lo schermo è troppo piccolo, riduci la sidebar */
 @media (max-width: 1200px) {
   .post-layout {
@@ -1737,39 +1646,6 @@ html[data-theme="light"] .cardExcerpt {
     grid-template-columns: 1fr;
     gap: 36px;
   }
-
-  .sidebar-ad__sticky {
-    position: static; /* Disattiva sticky su mobile */
-    top: auto;
-    max-height: none;
-  }
-}
-
-/* Desktop: applica sticky solo su schermi >= 1024px */
-@media (min-width: 1024px) {
-  .sidebar-ad__sticky {
-    position: sticky;
-    /* Offset: usa variabile CSS per coerenza */
-    top: var(--post-sticky-top, 92px);
-    align-self: start; /* IMPORTANTE: allinea in alto per sticky corretto */
-    z-index: 10;
-    /* Limita altezza massima per evitare overflow oltre viewport */
-    max-height: calc(100vh - var(--post-sticky-top, 92px) - 16px);
-    overflow: visible; /* Permette ads di renderizzare correttamente */
-  }
-}
-
-/* Post-end Ad */
-.post-end-ad {
-  margin-top: 32px;
-  margin-bottom: 0;
-  text-align: center;
-  max-width: 100%;
-}
-
-.post-end-ad :global(.adslot-container) {
-  margin: 0 auto;
-  max-width: 728px; /* Standard banner size */
 }
 
 /* ------------------------------------------------------------

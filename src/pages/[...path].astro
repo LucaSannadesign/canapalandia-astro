@@ -2,16 +2,13 @@
 // UPDATED BLOCKS: 
 // - findRelatedPosts(): score-based algorithm (category +10, tag +3, recency bonus)
 // - related section: responsive grid (3/2/1 columns) + min 3 posts condition
-// - sidebar-ad__sticky: position sticky on desktop (>=1024px) with top: 96px
 // - post-hero: max-height constraint for featured image
 // - spacing: reduced margins between sections
 
 import SiteLayout from "../layouts/SiteLayout.astro";
-import AdSlot from "../components/AdSlot.astro";
 import ShareBar from "../components/ShareBar.astro";
 import BlogSidebar from "../components/blog/BlogSidebar.astro";
 import { getCollection } from 'astro:content';
-import { ADS_SLOT_ARTICLE, ADS_SLOT_SIDEBAR } from "../lib/consts";
 import { loadWp, type WpEntry } from "../lib/wp";
 import {
   stripHtml,
@@ -630,7 +627,7 @@ const isSupportPage = entry.path === "sostieni-la-nostra-causa" ||
    Sidebar content logic
 --------------------------- */
 // Determina se la sidebar ha contenuti da mostrare
-// Per ora: ShareBar + AdSlot sono sempre presenti per i post
+// Per ora: ShareBar è sempre presente per i post
 // Tags sono opzionali
 const hasSidebarContent = entry.kind === "post";
 
@@ -647,6 +644,27 @@ const postTitleForShare = title || "";
 --------------------------- */
 let contentHtml = entry.html || rawItem?.content?.rendered || "";
 const titleHtml = entry.title || rawItem?.title?.rendered || "";
+
+/* ---------------------------
+   Rimuovi eventuale markup AdSense incorporato nei contenuti WP
+   (script loader googlesyndication, push inline e slot <ins class="adsbygoogle">)
+--------------------------- */
+if (contentHtml) {
+  contentHtml = contentHtml
+    // Slot <ins class="adsbygoogle"> con eventuali <br> adiacenti
+    .replace(
+      /(?:\s*<br\s*\/?>)*\s*<ins\b[^>]*adsbygoogle[^>]*>[\s\S]*?<\/ins>(?:\s*<br\s*\/?>)*/gi,
+      ""
+    )
+    // Qualsiasi <script> AdSense (loader googlesyndication o push adsbygoogle)
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, (block) =>
+      /adsbygoogle|googlesyndication/i.test(block) ? "" : block
+    )
+    // Commenti placeholder "Banner N" e <br> orfani lasciati dal blocco annuncio
+    .replace(/(?:\s*<br\s*\/?>)*\s*<!--\s*Banner[^>]*-->(?:\s*<br\s*\/?>)*/gi, "")
+    // Wrapper annuncio (<div style="margin:0 auto"...>) rimasto vuoto dopo la rimozione
+    .replace(/<div\b[^>]*margin:0 auto[^>]*>\s*<\/div>/gi, "");
+}
 
 /* ---------------------------
    Rimuovi CTA dal contenuto se siamo sulla pagina sostegno
@@ -716,10 +734,6 @@ if (isSupportPage && contentHtml) {
       <article class="post-main wp-page">
         <h1 set:html={titleHtml} />
         <div set:html={contentHtml} />
-
-        <div style="margin: 1.5rem 0;">
-          <AdSlot slot={ADS_SLOT_ARTICLE} label="Pubblicità" />
-        </div>
 
         {/* Internal Linking Boxes - Solo per post */}
         {foundEntry.kind === "post" && (seedPhrase || themeKeyword) ? (

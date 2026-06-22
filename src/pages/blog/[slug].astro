@@ -2,14 +2,13 @@
 // MODIFICA 1: Importato getEntry e render al posto di getEntryBySlug
 import { getCollection, getEntry, render, type CollectionEntry } from "astro:content";
 import SiteLayout from "../../layouts/SiteLayout.astro";
-import AdSlot from "../../components/AdSlot.astro";
 import PostMeta from "../../components/PostMeta.astro";
 import PostShare from "../../components/PostShare.astro";
 import SupportCTA from "../../components/SupportCTA.astro";
 import Reactions from "../../components/Reactions.astro";
 import BlogSidebar from "../../components/blog/BlogSidebar.astro";
 import RelatedPosts from "../../components/RelatedPosts.astro";
-import { FEATURES, ADS_SLOT_ARTICLE } from "../../lib/consts";
+import { FEATURES } from "../../lib/consts";
 
 export const prerender = false;
 
@@ -187,11 +186,6 @@ const jsonLd = {
 
         {/* Social Share */}
         <PostShare url={canonicalUrl} title={postTitle} showShare={showShare} />
-
-        {/* Post-end Ad */}
-        <div class="post-end-ad" aria-label="Pubblicità">
-          <AdSlot slot={ADS_SLOT_ARTICLE} label="Pubblicità" />
-        </div>
 
         {/* CTA Sostienici */}
         <SupportCTA supportUrl="/sostieni-la-nostra-causa/" showSupportCta={showSupportCta} />

@@ -2,8 +2,6 @@
 import { getCollection, type CollectionEntry } from "astro:content";
 import CardPost from "../../components/CardPost.astro";
 import Layout from "../../layouts/MigratedLayout.astro";
-import AdSlot from "../../components/AdSlot.astro";
-import { ADS_SLOT_BLOG_BOTTOM } from "../../lib/consts";
 
 // Paginazione statica: pagina 1 è sempre prerenderizzata
 
@@ -275,13 +273,6 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/blog/`;
       </section>
     )}
 
-    {/* Banner AdSense: sotto hero + intro/percorsi */}
-    <section class="section section--blog-ad">
-      <div class="container">
-        <AdSlot slot={ADS_SLOT_BLOG_BOTTOM} label="Pubblicità" />
-      </div>
-    </section>
-
     <section class="section">
       <div class="container">
       {pagePosts.length > 0 ? (
@@ -540,10 +531,6 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/blog/`;
 
   :global(html[data-theme="dark"] body:has(.page-blog)) {
     background: var(--bg);
-  }
-
-  .section--blog-ad {
-    padding-top: 0;
   }
 
   .blog-search {
