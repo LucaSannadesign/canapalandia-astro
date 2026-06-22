@@ -134,6 +134,7 @@ const jsonLd = {
 ---
 
 <SiteLayout metadata={metadata}>
+  <script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLd).replace(/</g, "\\u003c")} />
   <main class="container page-shell">
     <div class="post-layout">
       <article class="post-main">
