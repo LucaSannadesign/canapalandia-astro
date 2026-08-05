@@ -79,9 +79,17 @@
   --post-sticky-top: calc(var(--nav-h, 76px) + 16px);
 
   /* ===== TYPOGRAPHY TOKENS ===== */
-  --font-sans: "Sora", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial,
+  /* Sistema tipografico (design approvato):
+     - --font-ui        → interfaccia e informazioni di servizio
+     - --font-editorial → contenuto editoriale (titoli, corpo articolo, citazioni) */
+  --font-ui: "Archivo", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial,
     "Apple Color Emoji", "Segoe UI Emoji";
-  
+  --font-editorial: "Source Serif 4", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+
+  /* Alias storici: mantenuti per non rompere riferimenti esistenti */
+  --font-sans: var(--font-ui);
+  --font-serif: var(--font-editorial);
+
   /* Font sizes (scala modulare) */
   --text-xs: 0.75rem;    /* 12px */
   --text-sm: 0.875rem;    /* 14px */
@@ -184,7 +192,9 @@ body {
   font-size: var(--text-base);
   background: var(--bg);
   color: var(--text);
-  font-family: var(--font-sans);
+  /* Default = interfaccia. Il serif editoriale è opt-in (vedi
+     "SISTEMA TIPOGRAFICO" più sotto). */
+  font-family: var(--font-ui);
   font-weight: var(--font-normal);
   /* Nessun padding-top sul body - compensazione solo su main */
   overflow-x: hidden;
@@ -202,6 +212,7 @@ html[data-theme="light"] body.home-light-bg {
 
 /* ===== TYPOGRAPHY SCALE (Editorial Refined) ===== */
 h1, .h1 {
+  font-family: var(--font-editorial);
   font-size: clamp(var(--text-3xl), 4vw, var(--text-5xl));
   line-height: var(--leading-tight);
   font-weight: var(--font-bold);
@@ -211,6 +222,7 @@ h1, .h1 {
 }
 
 h2, .h2 {
+  font-family: var(--font-editorial);
   font-size: clamp(var(--text-2xl), 3vw, var(--text-4xl));
   line-height: var(--leading-tight);
   font-weight: var(--font-bold);
@@ -220,6 +232,7 @@ h2, .h2 {
 }
 
 h3, .h3 {
+  font-family: var(--font-editorial);
   font-size: clamp(var(--text-xl), 2.5vw, var(--text-3xl));
   line-height: var(--leading-snug);
   font-weight: var(--font-semibold);
@@ -250,6 +263,140 @@ h6, .h6 {
   font-weight: var(--font-semibold);
   margin: 0 0 var(--space-sm);
   color: var(--text);
+}
+
+/* ------------------------------------------------------------
+   SISTEMA TIPOGRAFICO
+   Archivo (--font-ui)               → interfaccia, navigazione, metadati, azioni
+   Source Serif 4 (--font-editorial) → titoli e contenuto editoriale
+
+   Il default del <body> è Archivo: qui si dichiara l'opt-in serif per
+   l'editoriale e il rientro in Archivo per gli elementi funzionali,
+   compresi quelli annidati dentro un articolo.
+------------------------------------------------------------ */
+
+/* --- Editoriale: titoli, lead, citazioni --- */
+.post-title,
+.post-hero__title,
+.card-title,
+.cardTitle,
+.feature-title,
+.mini-title,
+.related__title,
+.callout__title,
+.contact-title,
+.lead,
+.section-lead,
+blockquote {
+  font-family: var(--font-editorial);
+}
+
+/* --- Editoriale: corpo dei contenuti lunghi ---
+   .post-content → articoli del blog (MDX)
+   .wp-page      → contenuti migrati da WordPress e pagine statiche lunghe */
+.post-content,
+.post-content :where(h1, h2, h3, h4),
+.post-content figcaption,
+.wp-page,
+.wp-page :where(h1, h2, h3, h4),
+.wp-page figcaption,
+.callout__body {
+  font-family: var(--font-editorial);
+}
+
+/* --- Interfaccia: elementi funzionali, anche dentro l'editoriale --- */
+.nav,
+.mobile-menu,
+.search,
+.breadcrumbs,
+.btn,
+.btn-ghost,
+.cta-pill,
+.badge,
+.tag-link,
+.tax-chip,
+.filter-chip,
+.modern-filters,
+.kicker,
+.cardMeta,
+.cardCategory,
+.cardCta,
+.card-read,
+.card-footer,
+.callout__badge,
+.post-tags,
+.post-tax,
+.post-cta,
+.post-cta__title,
+.internal-linking,
+.internal-linking__title,
+.sidebar-title,
+.footer-title,
+.comments__title,
+.comments__subtitle,
+.support-cta__title,
+.legal-note,
+.notice,
+.field,
+.form-note,
+.form-actions {
+  font-family: var(--font-ui);
+}
+
+/* I controlli dei moduli non ereditano il font-family dal documento */
+input,
+textarea,
+select,
+button {
+  font-family: var(--font-ui);
+}
+
+/* --- Ritmo di lettura del corpo articolo (.post-content, MDX) ---
+   Queste regole stanno qui e non nello <style> della pagina perché il
+   markup prodotto da MDX non riceve l'attributo di scope di Astro:
+   i selettori scoped non lo raggiungono. */
+.post-content p,
+.post-content li {
+  line-height: 1.7;
+}
+
+.post-content p {
+  margin: 0 0 1.35rem;
+}
+
+.post-content :where(ul, ol) {
+  margin: 0 0 1.5rem;
+  padding-left: 1.35rem;
+}
+
+.post-content li {
+  margin: 0 0 0.5rem;
+}
+
+.post-content li:last-child {
+  margin-bottom: 0;
+}
+
+.post-content h3 {
+  margin: 2.25rem 0 0.75rem;
+  line-height: 1.25;
+}
+
+.post-content h4 {
+  margin: 1.75rem 0 0.6rem;
+  line-height: 1.3;
+}
+
+.post-content blockquote {
+  margin: 2rem 0;
+  padding: 0.25rem 0 0.25rem 1.25rem;
+  border-left: 3px solid var(--brand);
+  font-style: italic;
+  color: var(--muted);
+}
+
+.post-content blockquote p:last-child {
+  margin-bottom: 0;
 }
 
 p {
@@ -760,6 +907,90 @@ html[data-theme="dark"] .theme-toggle__icon--sun {
 
 html[data-theme="light"] .theme-toggle__icon--moon {
   display: block;
+}
+
+/* ------------------------------------------------------------
+   Header CTA — pulsante verde "Pubblicità" (in alto a destra)
+   Voce separata dalla navigazione ordinaria: non compare nel menu.
+------------------------------------------------------------ */
+
+/* `color` usa !important perché la regola globale
+   `html[data-theme="light"] a:not(.btn)...` ha specificità superiore
+   e altrimenti forzerebbe il testo del pulsante a --ink-light. */
+.header-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 42px;
+  padding: 0 16px;
+  border-radius: var(--r-full);
+  border: 1px solid transparent;
+  background: #1f4a2c;
+  color: #fffdf7 !important;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: var(--font-semibold);
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  position: relative;
+  z-index: 1101;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+
+.header-cta__mark {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  background: #c6a15b;
+  transform: rotate(45deg);
+  display: block;
+}
+
+.header-cta:hover {
+  background: #2b6139;
+  color: #fffdf7 !important;
+  transform: translateY(-1px);
+}
+
+.header-cta:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.header-cta[aria-current="page"] {
+  background: #2b6139;
+}
+
+/* Dark: verde più chiaro + bordo oro per staccare dall'header scuro */
+html[data-theme="dark"] .header-cta {
+  background: #2b6139;
+  border-color: rgba(200, 169, 90, 0.38);
+}
+
+html[data-theme="dark"] .header-cta:hover {
+  background: #35744a;
+  border-color: rgba(200, 169, 90, 0.55);
+}
+
+/* Mobile: versione compatta, resta sempre visibile e cliccabile */
+@media (max-width: 560px) {
+  .header-cta {
+    height: 38px;
+    padding: 0 12px;
+    font-size: 13px;
+    gap: 6px;
+  }
+}
+
+@media (max-width: 400px) {
+  .header-cta {
+    padding: 0 10px;
+  }
+
+  .header-cta__mark {
+    display: none;
+  }
 }
 
 /* Main shell */
@@ -1653,8 +1884,16 @@ html[data-theme="light"] .cardExcerpt {
    Migliora leggibilità e ritmo editoriale senza toccare UI globale
 ------------------------------------------------------------ */
 .wp-page {
-  /* Max-width per leggibilità: 75ch, ma rispetta il container */
-  max-width: 75ch;
+  /* Misura di lettura: ~70 caratteri con Source Serif 4 */
+  max-width: 70ch;
+}
+
+/* Comfort di lettura anche per le pagine statiche lunghe che usano
+   .wp-page senza .post-main (es. cookie policy) */
+.wp-page p,
+.wp-page li {
+  font-size: 1.1875rem;
+  line-height: 1.7;
 }
 
 .wp-page :where(h1, h2, h3, h4) {
@@ -1691,19 +1930,19 @@ html[data-theme="light"] .cardExcerpt {
 /* PARAGRAFI: Niente margine sopra, respiro sotto */
 .post-main.wp-page p {
   margin-top: 0 !important;
-  margin-bottom: 2.25rem !important; 
+  margin-bottom: 2rem !important;
   color: var(--text);
-  font-size: 1.125rem;
-  line-height: 1.8;
+  font-size: 1.1875rem; /* 19px */
+  line-height: 1.7;
 }
 
 /* LISTE (Punti elenco e numerati) */
 .post-main.wp-page :where(ul, ol) {
   margin-top: 0 !important;
-  margin-bottom: 2.25rem !important;
+  margin-bottom: 2rem !important;
   padding-left: 1.5rem;
-  font-size: 1.125rem;
-  line-height: 1.8;
+  font-size: 1.1875rem;
+  line-height: 1.7;
   color: var(--text);
 }
 
