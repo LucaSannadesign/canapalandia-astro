@@ -105,6 +105,17 @@ const eligiblePosts = sortedPosts.filter((p) => {
   return d !== null && d >= MIN_DATE;
 });
 
+/** Post pubblicabile: niente bozze, niente contenuti di test, niente date future. */
+const NOW = new Date();
+
+function isPublished(post: CollectionEntry<"blog">): boolean {
+  const { draft, status } = post.data;
+  if (draft === true) return false;
+  if (status === "draft" || status === "test") return false;
+  const d = getPublishDate(post);
+  return d !== null && d.getTime() <= NOW.getTime();
+}
+
 /* ---------------------------
    Categorie (singolo ciclo su postsAll)
 --------------------------- */
@@ -178,6 +189,33 @@ function percorsiBlurb(cat: CategoryData, maxLen: number): string {
 }
 
 /* ---------------------------
+   Selezione "Primo piano" (post in evidenza principale)
+   1) post pubblicato con homeFeatured: true (rank crescente, poi più recente)
+   2) fallback: ultimo post pubblicato
+   In entrambi i casi: no bozze, no contenuti di test, no date future.
+--------------------------- */
+
+const publishablePosts = eligiblePosts.filter((p) => isPublished(p) && getSlug(p) !== "");
+
+const topStory: CollectionEntry<"blog"> | null =
+  publishablePosts
+    .filter((p) => p.data.homeFeatured === true)
+    .sort((a, b) => {
+      const rankA = a.data.homeFeaturedRank ?? 999;
+      const rankB = b.data.homeFeaturedRank ?? 999;
+      if (rankA !== rankB) return rankA - rankB;
+      return dateValue(b) - dateValue(a);
+    })[0] ??
+  publishablePosts[0] ??
+  null;
+
+const topStoryDate = topStory ? getPublishDate(topStory) : null;
+const topStoryCategory = topStory?.data.category ?? null;
+const topStoryCategoryLabel = topStoryCategory
+  ? (PERCORSI_DISPLAY_NAME[topStoryCategory] ?? topStoryCategory)
+  : null;
+
+/* ---------------------------
    Selezione "In evidenza"
 --------------------------- */
 
@@ -211,6 +249,9 @@ for (const post of [...featuredCandidatesManual, ...featuredCandidatesAuto]) {
 // FIX: selezione unificata — prima pick 4, poi split in main+side
 // Così il fallback su eligiblePosts funziona anche per featuredMain
 const featuredIds = new Set<string>();
+
+// Il post in "Primo piano" non va ripetuto né in "In evidenza" né in "Ultimi articoli"
+if (topStory) featuredIds.add(getSlug(topStory));
 
 // Prova a prendere 4 dal pool; se non bastano, completa con eligiblePosts
 const poolPick = pickUnique(featuredPool, featuredIds, 4);
@@ -346,6 +387,63 @@ const homeJsonLd = {
       </div>
     </div>
   </section>
+
+  {topStory && (
+    <section id="primo-piano" class="section primo-piano-section" aria-labelledby="primo-piano-title">
+      <div class="container">
+        <article class="primo-piano">
+          <figure class="primo-piano__figure">
+            <img
+              class="primo-piano__img"
+              src={normalizeImage(topStory)}
+              alt={topStory.data.coverAlt || topStory.data.title}
+              width="1536"
+              height="1024"
+              loading="lazy"
+              decoding="async"
+              referrerpolicy="no-referrer"
+              onerror="this.onerror=null;this.src='/images/placeholder.svg';"
+            />
+          </figure>
+
+          <div class="primo-piano__body">
+            <p class="primo-piano__badge">
+              <span>In evidenza</span>
+              {topStoryCategoryLabel && (
+                <>
+                  <span class="primo-piano__badge-sep" aria-hidden="true">·</span>
+                  <span>{topStoryCategoryLabel}</span>
+                </>
+              )}
+            </p>
+
+            <h2 id="primo-piano-title" class="primo-piano__title">{topStory.data.title}</h2>
+
+            {topStory.data.description && (
+              <p class="primo-piano__excerpt">{topStory.data.description}</p>
+            )}
+
+            {topStoryDate && (
+              <p class="primo-piano__meta">
+                <time datetime={topStoryDate.toISOString().slice(0, 10)}>
+                  {formatDate(topStoryDate)}
+                </time>
+              </p>
+            )}
+
+            <a
+              class="btn primary primo-piano__cta"
+              href={postHref(topStory)}
+              aria-label={`Leggi l'articolo: ${topStory.data.title}`}
+            >
+              Leggi l'articolo
+              <span class="primo-piano__cta-icon" aria-hidden="true">→</span>
+            </a>
+          </div>
+        </article>
+      </div>
+    </section>
+  )}
 
   <section class="inizia-da-qui" aria-labelledby="inizia-da-qui-title">
     <div class="container">
@@ -1788,6 +1886,176 @@ const homeJsonLd = {
 
       #percorsi .percorsi-section__card.card--topic:hover .card-icon,
       #percorsi .percorsi-section__card.card--topic:hover .card--topic__cta-icon {
+        transform: none;
+      }
+    }
+
+    /* ----- Primo piano: approfondimento editoriale in apertura ----- */
+
+    #primo-piano.primo-piano-section {
+      padding: clamp(1.6rem, 3.6vw, 2.6rem) 0 clamp(0.6rem, 1.6vw, 1rem);
+    }
+
+    .primo-piano {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+      align-items: center;
+      gap: clamp(1.15rem, 3vw, 2.1rem);
+      padding: clamp(1rem, 2.4vw, 1.5rem);
+      border-radius: var(--r-lg);
+      border: 1px solid color-mix(in oklab, var(--home-gold) 26%, var(--border));
+      background: var(--card-bg);
+      box-shadow: 0 18px 42px rgba(6, 22, 13, 0.18);
+    }
+
+    html[data-theme="dark"] .primo-piano {
+      border-color: rgba(214, 180, 92, 0.22);
+      background: #182a20;
+      box-shadow: 0 18px 42px rgba(6, 22, 13, 0.22);
+    }
+
+    html[data-theme="light"] .primo-piano {
+      border-color: rgba(31, 122, 69, 0.18);
+      background: #fffdf7;
+      box-shadow: 0 18px 42px rgba(20, 32, 24, 0.08);
+    }
+
+    .primo-piano__figure {
+      margin: 0;
+      border-radius: var(--r-md);
+      overflow: hidden;
+      background: var(--panel-2);
+    }
+
+    .primo-piano__img {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 3 / 2;
+      object-fit: cover;
+    }
+
+    .primo-piano__body {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: clamp(0.6rem, 1.4vw, 0.85rem);
+      min-width: 0;
+    }
+
+    .primo-piano__badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin: 0;
+      padding: 0.3rem 0.7rem;
+      font-size: var(--text-xs);
+      font-weight: var(--font-semibold);
+      letter-spacing: 0.09em;
+      line-height: 1.2;
+      text-transform: uppercase;
+      border-radius: var(--r-full);
+      border: 1px solid color-mix(in oklab, var(--home-gold) 38%, var(--border-subtle));
+      background: color-mix(in oklab, var(--gold-subtle) 26%, transparent);
+      color: color-mix(in oklab, var(--text) 70%, var(--home-gold));
+    }
+
+    html[data-theme="light"] .primo-piano__badge {
+      border-color: color-mix(in oklab, var(--brand) 32%, var(--border));
+      background: color-mix(in oklab, var(--panel-2) 66%, var(--brand-subtle));
+      color: color-mix(in oklab, var(--text) 80%, var(--brand-2));
+    }
+
+    .primo-piano__badge-sep {
+      opacity: 0.7;
+    }
+
+    .primo-piano__title {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: clamp(1.45rem, 2.9vw, 2.15rem);
+      font-weight: 600;
+      line-height: 1.14;
+      letter-spacing: -0.022em;
+      color: var(--text);
+      text-wrap: balance;
+    }
+
+    .primo-piano__excerpt {
+      margin: 0;
+      max-width: 56ch;
+      font-size: clamp(0.98rem, 1.35vw, 1.08rem);
+      line-height: var(--leading-relaxed);
+      color: color-mix(in oklab, var(--muted) 86%, var(--text) 14%);
+      text-wrap: pretty;
+    }
+
+    .primo-piano__meta {
+      margin: 0;
+      font-size: var(--text-sm);
+      color: var(--muted);
+    }
+
+    .primo-piano .primo-piano__cta {
+      margin-top: 0.15rem;
+      background: linear-gradient(135deg, var(--gold), var(--gold-2));
+      color: #1f1706;
+      border-color: color-mix(in oklab, var(--gold) 56%, rgba(255, 255, 255, 0.18));
+      box-shadow: 0 10px 24px color-mix(in oklab, var(--gold) 30%, transparent);
+    }
+
+    html[data-theme="light"] .primo-piano .primo-piano__cta {
+      background: linear-gradient(135deg, var(--brand-2), color-mix(in oklab, var(--brand-2) 82%, #0a4a22));
+      color: #f0faf3;
+      border-color: color-mix(in oklab, var(--brand-2) 62%, rgba(255, 255, 255, 0.18));
+      box-shadow: 0 10px 24px color-mix(in oklab, var(--brand) 24%, transparent);
+    }
+
+    /* Link unico: la CTA copre l'intera card (nessun link duplicato nel DOM) */
+    .primo-piano__cta::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: var(--r-lg);
+    }
+
+    .primo-piano__cta-icon {
+      display: inline-block;
+      margin-left: 0.4rem;
+      transition: transform 0.2s ease;
+    }
+
+    .primo-piano:hover .primo-piano__cta-icon {
+      transform: translateX(3px);
+    }
+
+    .primo-piano__cta:focus-visible {
+      outline: 2px solid color-mix(in oklab, var(--home-gold) 82%, transparent);
+      outline-offset: 3px;
+    }
+
+    html[data-theme="light"] .primo-piano__cta:focus-visible {
+      outline-color: color-mix(in oklab, var(--brand) 85%, transparent);
+    }
+
+    @media (max-width: 899px) {
+      .primo-piano {
+        grid-template-columns: 1fr;
+        align-items: stretch;
+        gap: 1rem;
+      }
+
+      .primo-piano__cta {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .primo-piano__cta-icon,
+      .primo-piano:hover .primo-piano__cta-icon {
+        transition: none;
         transform: none;
       }
     }
