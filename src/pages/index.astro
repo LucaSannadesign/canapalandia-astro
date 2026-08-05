@@ -33,6 +33,15 @@ function getSlug(post: CollectionEntry<"blog">): string {
   return post.slug ?? post.data.slug ?? "";
 }
 
+/**
+ * Identificatore stabile del contenuto, usato per la deduplicazione tra le sezioni.
+ * `entry.id` è generato dal loader della collection (percorso del file) ed è sempre
+ * presente: a differenza di `getSlug()` non dipende da un campo del frontmatter.
+ */
+function getKey(post: CollectionEntry<"blog">): string {
+  return post.id;
+}
+
 // FIX: tipizzato correttamente, niente più `any`
 function postHref(entry: CollectionEntry<"blog">): string {
   const slug = getSlug(entry);
@@ -64,16 +73,17 @@ function normalizeImage(entry: CollectionEntry<"blog">): string {
 
 function pickUnique(
   posts: CollectionEntry<"blog">[],
-  usedSet: Set<string>,
+  usedKeys: Set<string>,
   n: number
 ): CollectionEntry<"blog">[] {
   const result: CollectionEntry<"blog">[] = [];
   for (const post of posts) {
     if (result.length >= n) break;
-    const slug = getSlug(post);
-    if (slug && !usedSet.has(slug)) {
+    const key = getKey(post);
+    // lo slug resta necessario per costruire il link, la dedup usa `key`
+    if (key && !usedKeys.has(key) && getSlug(post)) {
       result.push(post);
-      usedSet.add(slug);
+      usedKeys.add(key);
     }
   }
   return result;
@@ -230,49 +240,44 @@ const featuredCandidatesManual = eligiblePosts
   });
 
 // Candidati automatici: categoria "cannabis-news-it", non già manuali
-const manualSlugs = new Set(featuredCandidatesManual.map(getSlug));
+const manualKeys = new Set(featuredCandidatesManual.map(getKey));
 const featuredCandidatesAuto = eligiblePosts
-  .filter((p) => p.data.category === "cannabis-news-it" && !manualSlugs.has(getSlug(p)))
+  .filter((p) => p.data.category === "cannabis-news-it" && !manualKeys.has(getKey(p)))
   .sort((a, b) => dateValue(b) - dateValue(a));
 
 // Pool deduplicato: manuali prima, poi auto
 const featuredPool: CollectionEntry<"blog">[] = [];
-const featuredPoolSlugs = new Set<string>();
+const featuredPoolKeys = new Set<string>();
 for (const post of [...featuredCandidatesManual, ...featuredCandidatesAuto]) {
-  const slug = getSlug(post);
-  if (slug && !featuredPoolSlugs.has(slug)) {
+  const key = getKey(post);
+  if (key && !featuredPoolKeys.has(key)) {
     featuredPool.push(post);
-    featuredPoolSlugs.add(slug);
+    featuredPoolKeys.add(key);
   }
 }
 
 // FIX: selezione unificata — prima pick 4, poi split in main+side
 // Così il fallback su eligiblePosts funziona anche per featuredMain
-const featuredIds = new Set<string>();
+// `usedKeys` raccoglie gli id già mostrati: è la sola fonte di verità anti-duplicazione.
+const usedKeys = new Set<string>();
 
 // Il post in "Primo piano" non va ripetuto né in "In evidenza" né in "Ultimi articoli"
-if (topStory) featuredIds.add(getSlug(topStory));
+if (topStory) usedKeys.add(getKey(topStory));
 
 // Prova a prendere 4 dal pool; se non bastano, completa con eligiblePosts
-const poolPick = pickUnique(featuredPool, featuredIds, 4);
+const poolPick = pickUnique(featuredPool, usedKeys, 4);
 
 if (poolPick.length < 4) {
-  const fallback = eligiblePosts.filter((p) => {
-    const slug = getSlug(p);
-    return slug && !featuredIds.has(slug);
-  });
-  pickUnique(fallback, featuredIds, 4 - poolPick.length).forEach((p) => poolPick.push(p));
+  const fallback = eligiblePosts.filter((p) => !usedKeys.has(getKey(p)));
+  pickUnique(fallback, usedKeys, 4 - poolPick.length).forEach((p) => poolPick.push(p));
 }
 
 const featuredMain = poolPick[0] ?? null;
 const featuredSide = poolPick.slice(1, 4);
 
-// "Ultimi articoli": post eligibili non già in evidenza
+// "Ultimi articoli": post eligibili non già mostrati sopra (confronto per id, non per titolo)
 const latestPosts = eligiblePosts
-  .filter((p) => {
-    const slug = getSlug(p);
-    return slug && !featuredIds.has(slug);
-  })
+  .filter((p) => !usedKeys.has(getKey(p)) && getSlug(p) !== "")
   .slice(0, 6);
 
 /* ---------------------------
@@ -388,6 +393,18 @@ const homeJsonLd = {
     </div>
   </section>
 
+  <section class="inizia-da-qui" aria-labelledby="inizia-da-qui-title">
+    <div class="container">
+      <h2 id="inizia-da-qui-title" class="inizia-da-qui__title">Inizia da qui</h2>
+      <p class="inizia-da-qui__subtitle">Tre scorciatoie utili per orientarti subito</p>
+      <nav class="inizia-da-qui__links">
+        <a class="btn ghost" href="/categoria/Normativa/">Cosa è legale oggi</a>
+        <a class="btn ghost" href="/#ultimi">Ultime novità in Italia</a>
+        <a class="btn ghost" href="/categoria/guide-tutorial/">Guide su prodotti e normativa</a>
+      </nav>
+    </div>
+  </section>
+
   {topStory && (
     <section id="primo-piano" class="section primo-piano-section" aria-labelledby="primo-piano-title">
       <div class="container">
@@ -444,18 +461,6 @@ const homeJsonLd = {
       </div>
     </section>
   )}
-
-  <section class="inizia-da-qui" aria-labelledby="inizia-da-qui-title">
-    <div class="container">
-      <h2 id="inizia-da-qui-title" class="inizia-da-qui__title">Inizia da qui</h2>
-      <p class="inizia-da-qui__subtitle">Tre scorciatoie utili per orientarti subito</p>
-      <nav class="inizia-da-qui__links">
-        <a class="btn ghost" href="/categoria/Normativa/">Cosa è legale oggi</a>
-        <a class="btn ghost" href="/#ultimi">Ultime novità in Italia</a>
-        <a class="btn ghost" href="/categoria/guide-tutorial/">Guide su prodotti e normativa</a>
-      </nav>
-    </div>
-  </section>
 
   <section id="percorsi" class="section percorsi-section" aria-labelledby="percorsi-title">
     <div class="container">
