@@ -117,13 +117,14 @@ const main = async () => {
 
   // Post blog da filesystem (content collections)
   if (await exists(BLOG_DIR)) {
+    // Stesse estensioni del loader della collection: glob "**/*.{md,mdx}"
     const files = (await listFilesRecursive(BLOG_DIR)).filter((p) =>
-      p.endsWith(".mdx"),
+      /\.mdx?$/i.test(p),
     );
 
     for (const filePath of files) {
       const fileName = filePath.split("/").pop() || "";
-      const fileSlug = fileName.replace(/\.mdx$/i, "");
+      const fileSlug = fileName.replace(/\.mdx?$/i, "");
       if (!fileSlug) continue;
 
       const raw = await readFile(filePath, "utf8");
