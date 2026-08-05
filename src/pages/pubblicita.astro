@@ -1,0 +1,1301 @@
+---
+/**
+ * /pubblicita/ — landing B2B per contenuti sponsorizzati e collaborazioni.
+ *
+ * Route statica: in Astro ha precedenza su `src/pages/[...path].astro`, quindi
+ * sostituisce la resa generica della pagina WordPress con slug `pubblicita`
+ * senza creare URL alternativi e senza toccare il template generico.
+ *
+ * Il sistema visivo è lo stesso della homepage (Archivo + Source Serif 4,
+ * fondo crema in light, verde profondo in dark), con token locali `--ad-*`
+ * scoped alla pagina: nessuna regola globale viene aggiunta o modificata.
+ */
+import SiteLayout from "../layouts/SiteLayout.astro";
+
+const SITE = import.meta.env.SITE || "https://canapalandia.com";
+
+const title = "Pubblicità e articoli sponsorizzati | Canapalandia";
+const description =
+  "Scopri articoli sponsorizzati, guest post, banner e partnership editoriali su Canapalandia, il magazine dedicato a canapa, CBD e normativa.";
+const canonical = `${SITE}/pubblicita/`;
+
+/* Recapiti: già presenti nella pagina WordPress e nel footer del sito. */
+const EMAIL = "info@canapalandia.com";
+const WHATSAPP_URL = "https://wa.me/393403223494";
+const WHATSAPP_LABEL = "+39 340 32 23 494";
+
+/* Pannello hero: quattro informazioni sintetiche, non claim quantitativi. */
+const heroFacts = [
+  {
+    label: "Pubblico verticale",
+    text: "Lettori interessati a canapa, CBD, normativa e sostenibilità.",
+  },
+  {
+    label: "Revisione editoriale",
+    text: "Ogni contenuto passa dalla redazione prima della pubblicazione.",
+  },
+  {
+    label: "Trasparenza",
+    text: "I contenuti sponsorizzati sono segnalati in modo chiaro.",
+  },
+  {
+    label: "Diffusione social",
+    text: "Condivisione attraverso i canali del progetto.",
+  },
+] as const;
+
+const reasons = [
+  {
+    title: "Un pubblico verticale",
+    text: "Il tuo progetto viene presentato all’interno di un contesto specializzato in canapa, CBD, normativa, sostenibilità e cultura.",
+  },
+  {
+    title: "Cura editoriale",
+    text: "Ogni contenuto viene revisionato, impaginato e adattato allo stile di Canapalandia.",
+  },
+  {
+    title: "Trasparenza",
+    text: "I contenuti sponsorizzati vengono sempre segnalati in modo chiaro.",
+  },
+  {
+    title: "Diffusione multicanale",
+    text: "Le formule editoriali comprendono anche la condivisione attraverso i canali social del progetto.",
+  },
+] as const;
+
+const plans = [
+  {
+    name: "Articolo fornito da voi",
+    price: "180 €",
+    priceNote: "una tantum",
+    text: "Revisione editoriale, formattazione, ottimizzazione SEO on-page e pubblicazione.",
+    highlight: false,
+  },
+  {
+    name: "Articolo realizzato da noi",
+    price: "250 €",
+    priceNote: "una tantum",
+    text: "Ideazione e scrittura a partire da un brief concordato, revisione editoriale, SEO on-page e pubblicazione.",
+    highlight: false,
+  },
+  {
+    name: "Partnership annuale",
+    price: "600 €",
+    priceNote: "/ anno",
+    text: "Quattro articoli distribuiti durante l’anno e presenza nella sezione Partner.",
+    highlight: true,
+  },
+] as const;
+
+const formats = [
+  "Banner mensili su pagine selezionate",
+  "Presenza nella sezione Partner",
+  "Pacchetti articolo e banner",
+  "Collaborazioni editoriali continuative",
+] as const;
+
+const steps = [
+  {
+    num: "01",
+    title: "Proposta",
+    text: "Inviaci il tema, il brand, gli obiettivi e i link da valutare.",
+  },
+  {
+    num: "02",
+    title: "Valutazione",
+    text: "Verifichiamo coerenza editoriale, fattibilità e formula più adatta.",
+  },
+  {
+    num: "03",
+    title: "Accordo",
+    text: "Confermiamo attività, costi e modalità di pagamento.",
+  },
+  {
+    num: "04",
+    title: "Pubblicazione",
+    text: "Revisioniamo o realizziamo il contenuto e lo pubblichiamo con la relativa diffusione.",
+  },
+] as const;
+
+const criteria = [
+  "Contenuti originali in italiano.",
+  "Temi coerenti con canapa, CBD, cannabis light, normativa, sostenibilità, benessere, cultura e attivismo.",
+  "Nessun claim terapeutico privo di fonti.",
+  "Link sottoposti a valutazione editoriale.",
+  "Possibilità di rifiutare contenuti non coerenti con la linea editoriale.",
+  "Indicazione trasparente dei contenuti sponsorizzati.",
+] as const;
+
+const breadcrumbJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    {
+      "@type": "ListItem",
+      position: 1,
+      name: "Home",
+      item: `${SITE}/`,
+    },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: "Pubblicità",
+      item: canonical,
+    },
+  ],
+};
+---
+
+<SiteLayout
+  title={title}
+  description={description}
+  canonical={canonical}
+  shell={false}
+>
+  <script type="application/ld+json" set:html={JSON.stringify(breadcrumbJsonLd)} />
+
+  <div class="adv">
+    <!-- ===== BREADCRUMB ===== -->
+    <nav class="adv-crumbs" aria-label="Percorso di navigazione">
+      <div class="adv-wrap">
+        <ol class="adv-crumbs__list">
+          <li class="adv-crumbs__item">
+            <a class="adv-crumbs__link" href="/">Home</a>
+          </li>
+          <li class="adv-crumbs__item">
+            <span class="adv-crumbs__sep" aria-hidden="true">→</span>
+            <span class="adv-crumbs__current" aria-current="page">Pubblicità</span>
+          </li>
+        </ol>
+      </div>
+    </nav>
+
+    <!-- ===== HERO ===== -->
+    <section class="adv-hero" aria-labelledby="adv-hero-title">
+      <div class="adv-wrap adv-hero__grid">
+        <div class="adv-hero__intro">
+          <p class="adv-eyebrow">
+            <span class="adv-eyebrow__dot" aria-hidden="true"></span>
+            Pubblicità e collaborazioni
+          </p>
+
+          <h1 id="adv-hero-title" class="adv-hero__title">
+            Racconta il tuo progetto a un pubblico interessato a canapa e CBD
+          </h1>
+
+          <p class="adv-hero__lead">
+            Canapalandia ospita contenuti sponsorizzati e collaborazioni selezionate
+            per aziende, professionisti e realtà della filiera. Ogni proposta viene
+            valutata editorialmente e presentata ai lettori con chiarezza e trasparenza.
+          </p>
+
+          <div class="adv-hero__cta">
+            <a class="adv-btn adv-btn--primary" href="#contatti">
+              Richiedi una proposta <span aria-hidden="true">→</span>
+            </a>
+            <a class="adv-btn adv-btn--ghost" href="#formule">Scopri le formule</a>
+          </div>
+        </div>
+
+        <aside class="adv-panel" aria-labelledby="adv-panel-title">
+          <h2 id="adv-panel-title" class="adv-panel__title">In sintesi</h2>
+          <dl class="adv-panel__list">
+            {heroFacts.map((fact) => (
+              <div class="adv-panel__row">
+                <dt class="adv-panel__label">{fact.label}</dt>
+                <dd class="adv-panel__text">{fact.text}</dd>
+              </div>
+            ))}
+          </dl>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ===== PERCHÉ COLLABORARE ===== -->
+    <section class="adv-reasons" aria-labelledby="adv-reasons-title">
+      <div class="adv-wrap">
+        <div class="adv-sechead">
+          <h2 id="adv-reasons-title" class="adv-sechead__title">
+            Perché collaborare con Canapalandia
+          </h2>
+          <span class="adv-sechead__rule" aria-hidden="true"></span>
+        </div>
+
+        <div class="adv-reasons__grid">
+          {reasons.map((item) => (
+            <article class="adv-reason">
+              <h3 class="adv-reason__title">{item.title}</h3>
+              <p class="adv-reason__text">{item.text}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== FORMULE ===== -->
+    <section id="formule" class="adv-plans" aria-labelledby="adv-plans-title">
+      <div class="adv-wrap">
+        <div class="adv-sechead">
+          <h2 id="adv-plans-title" class="adv-sechead__title">
+            Scegli la formula più adatta
+          </h2>
+          <span class="adv-sechead__rule" aria-hidden="true"></span>
+        </div>
+
+        <div class="adv-plans__grid">
+          {plans.map((plan) => (
+            <article class:list={["adv-plan", { "adv-plan--featured": plan.highlight }]}>
+              {plan.highlight && <p class="adv-plan__badge">Più completa</p>}
+              <h3 class="adv-plan__name">{plan.name}</h3>
+              <p class="adv-plan__price">
+                <span class="adv-plan__amount">{plan.price}</span>
+                <span class="adv-plan__unit">{plan.priceNote}</span>
+              </p>
+              <p class="adv-plan__text">{plan.text}</p>
+              <a
+                class:list={[
+                  "adv-btn",
+                  "adv-plan__cta",
+                  plan.highlight ? "adv-btn--primary" : "adv-btn--ghost",
+                ]}
+                href="#contatti"
+                aria-label={`Richiedi una proposta per la formula ${plan.name}`}
+              >
+                Richiedi una proposta
+              </a>
+            </article>
+          ))}
+        </div>
+
+        <p class="adv-plans__note">
+          Tutte le formule includono la diffusione attraverso i canali social di Canapalandia.
+        </p>
+      </div>
+    </section>
+
+    <!-- ===== ALTRI FORMATI ===== -->
+    <section class="adv-formats" aria-labelledby="adv-formats-title">
+      <div class="adv-wrap adv-formats__grid">
+        <div class="adv-formats__intro">
+          <p class="adv-overline">Altri formati</p>
+          <h2 id="adv-formats-title" class="adv-formats__title">Visibilità su misura</h2>
+          <p class="adv-formats__text">
+            Valutiamo anche collaborazioni continuative e soluzioni dedicate
+            per aziende, professionisti ed eventi del settore.
+          </p>
+          <a class="adv-btn adv-btn--ghost adv-formats__cta" href="#contatti">
+            Chiedi disponibilità e listino
+          </a>
+        </div>
+
+        <div class="adv-formats__body">
+          <ul class="adv-formats__list">
+            {formats.map((format) => (
+              <li class="adv-formats__item">{format}</li>
+            ))}
+          </ul>
+          <p class="adv-formats__note">
+            I banner sono disponibili con impegno mensile. Disponibilità e listino
+            vengono definiti in base alla posizione e alla durata.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== COME FUNZIONA ===== -->
+    <section class="adv-steps" aria-labelledby="adv-steps-title">
+      <div class="adv-wrap">
+        <div class="adv-steps__head">
+          <p class="adv-overline adv-overline--gold">Il percorso</p>
+          <h2 id="adv-steps-title" class="adv-steps__title">Come funziona</h2>
+        </div>
+
+        <ol class="adv-steps__grid">
+          {steps.map((step) => (
+            <li class="adv-step">
+              <span class="adv-step__num" aria-hidden="true">{step.num}</span>
+              <h3 class="adv-step__title">{step.title}</h3>
+              <p class="adv-step__text">{step.text}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+
+    <!-- ===== CRITERI EDITORIALI ===== -->
+    <section class="adv-criteria" aria-labelledby="adv-criteria-title">
+      <div class="adv-wrap adv-criteria__grid">
+        <div class="adv-criteria__intro">
+          <p class="adv-overline">Linea editoriale</p>
+          <h2 id="adv-criteria-title" class="adv-criteria__title">Criteri editoriali</h2>
+          <p class="adv-criteria__lead">
+            Sono i riferimenti che usiamo per valutare ogni proposta e per mantenere
+            coerente il rapporto con chi ci legge.
+          </p>
+        </div>
+
+        <ul class="adv-criteria__list">
+          {criteria.map((item) => (
+            <li class="adv-criteria__item">{item}</li>
+          ))}
+        </ul>
+      </div>
+    </section>
+
+    <!-- ===== CTA FINALE E CONTATTI ===== -->
+    <section id="contatti" class="adv-contact" aria-labelledby="adv-contact-title">
+      <div class="adv-wrap">
+        <div class="adv-contact__panel">
+          <h2 id="adv-contact-title" class="adv-contact__title">Parliamo del tuo progetto</h2>
+          <p class="adv-contact__text">
+            Raccontaci il brand, l’argomento, gli obiettivi e i link che desideri
+            promuovere. Valuteremo la proposta e ti indicheremo la formula più adatta.
+          </p>
+
+          <div class="adv-contact__cta">
+            <a
+              class="adv-btn adv-btn--primary"
+              href={`mailto:${EMAIL}`}
+              aria-label={`Contattaci via email a ${EMAIL}`}
+            >
+              Contattaci via email
+            </a>
+            <a
+              class="adv-btn adv-btn--ghost adv-btn--on-panel"
+              href={WHATSAPP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Scrivici su WhatsApp al numero ${WHATSAPP_LABEL}`}
+            >
+              Scrivici su WhatsApp
+            </a>
+          </div>
+
+          <ul class="adv-contact__details">
+            <li class="adv-contact__detail">
+              <span class="adv-contact__label">Email</span>
+              <a class="adv-contact__value" href={`mailto:${EMAIL}`}>{EMAIL}</a>
+            </li>
+            <li class="adv-contact__detail">
+              <span class="adv-contact__label">WhatsApp</span>
+              <a
+                class="adv-contact__value"
+                href={WHATSAPP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {WHATSAPP_LABEL}
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <style>
+    /* ============================================================
+       /pubblicita/ — landing B2B, stesso sistema visivo della home.
+       Token locali `--ad-*`: nessuna altra pagina viene toccata.
+    ============================================================ */
+
+    :global(html:has(.adv)) {
+      /* Superfici */
+      --ad-bg: #f6f2e7;
+      --ad-surface: #fffdf7;
+      --ad-surface-2: #ede7d6;
+      --ad-band: #1b3d23;
+      --ad-band-hover: #23502c;
+
+      /* Bordi */
+      --ad-border: #e3dcc9;
+      --ad-border-strong: #d6ceb8;
+      --ad-rule: #ded6c2;
+
+      /* Testo */
+      --ad-heading: #16281a;
+      --ad-text: #1c2a1e;
+      --ad-body: #4a5a4c;
+      --ad-soft: #5f6e60;
+      --ad-faint: #62705f;
+
+      /* Accenti */
+      --ad-green: #1f4a2c;
+      --ad-green-hover: #2b6139;
+      --ad-olive: #6e8b3d;
+      --ad-olive-text: #55702c;
+      --ad-gold: #c6a15b;
+      --ad-link: #1f4a2c;
+      --ad-link-hover: #55702c;
+
+      /* Testo sulle superfici scure */
+      --ad-band-title: #fffdf7;
+      --ad-band-body: #bfcdbb;
+      --ad-band-num: #9fb79a;
+      --ad-band-gold: #d8b978;
+      --ad-band-line: rgba(255, 253, 247, 0.16);
+
+      --ad-shadow-sm: 0 1px 2px rgba(28, 42, 30, 0.05);
+      --ad-shadow-lg: 0 1px 2px rgba(28, 42, 30, 0.05),
+        0 18px 40px -28px rgba(28, 42, 30, 0.35);
+    }
+
+    /* Dark: stessa struttura su superfici verde profondo */
+    :global(html[data-theme="dark"]:has(.adv)) {
+      --ad-bg: #14261b;
+      --ad-surface: #1b3d23;
+      --ad-surface-2: #16301c;
+      --ad-band: #101e15;
+      --ad-band-hover: #17301f;
+
+      --ad-border: #2e4a35;
+      --ad-border-strong: #3a5a42;
+      --ad-rule: #2e4a35;
+
+      --ad-heading: #f4f2e6;
+      --ad-text: #efede0;
+      --ad-body: #c6d3c2;
+      --ad-soft: #bfcdbb;
+      --ad-faint: #9fb79a;
+
+      --ad-green: #2b6139;
+      --ad-green-hover: #35744a;
+      --ad-olive: #8fb05a;
+      --ad-olive-text: #9dc063;
+      --ad-gold: #d8b978;
+      --ad-link: #9dc063;
+      --ad-link-hover: #bcd98a;
+
+      --ad-band-title: #fffdf7;
+      --ad-band-body: #bfcdbb;
+      --ad-band-num: #9fb79a;
+      --ad-band-gold: #d8b978;
+      --ad-band-line: rgba(255, 253, 247, 0.14);
+
+      --ad-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.28);
+      --ad-shadow-lg: 0 1px 2px rgba(0, 0, 0, 0.3),
+        0 18px 40px -28px rgba(0, 0, 0, 0.7);
+    }
+
+    /* Sfondo pagina e header allineati alla palette (logo e CTA invariati) */
+    :global(html:has(.adv) body) {
+      background: var(--ad-bg);
+    }
+
+    :global(body:has(.adv) .site-header) {
+      background: color-mix(in srgb, var(--ad-bg) 88%, transparent);
+      border-bottom-color: var(--ad-border);
+    }
+
+    :global(body:has(.adv) .site-header .nav a),
+    :global(body:has(.adv) .site-header .search),
+    :global(body:has(.adv) .site-header .menu-toggle),
+    :global(body:has(.adv) .site-header .theme-toggle__btn) {
+      color: var(--ad-text);
+    }
+
+    :global(body:has(.adv) .nav a:hover) {
+      background: var(--ad-surface-2);
+      color: var(--ad-link);
+      box-shadow: none;
+    }
+
+    /* Su mobile main#contenuto aggiunge padding: la pagina lo gestisce da sé */
+    @media (max-width: 767px) {
+      :global(main#contenuto:has(.adv)) {
+        padding-inline: 0 !important;
+      }
+    }
+
+    .adv {
+      font-family: var(--font-ui);
+      color: var(--ad-text);
+      background: var(--ad-bg);
+      overflow-x: hidden;
+    }
+
+    .adv-wrap {
+      max-width: 1200px;
+      margin-inline: auto;
+      padding-inline: clamp(16px, 4vw, 40px);
+    }
+
+    /* Le ancore interne (#formule, #contatti) devono restare sotto l'header
+       sticky: `scroll-padding-top` di app.css è su <html>, ma lo scroller
+       effettivo del sito è <body>, quindi l'offset va sui target. */
+    #formule,
+    #contatti {
+      scroll-margin-top: calc(var(--nav-h, 76px) + 24px);
+    }
+
+    /* ----- Elementi condivisi ----- */
+
+    .adv-overline {
+      margin: 0 0 8px;
+      font-size: 12.5px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ad-faint);
+    }
+
+    .adv-overline--gold {
+      color: var(--ad-band-gold);
+    }
+
+    .adv-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      min-height: 48px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    }
+
+    .adv-btn--primary {
+      background: var(--ad-green);
+    }
+
+    .adv-btn--primary:hover {
+      background: var(--ad-green-hover);
+    }
+
+    .adv-btn--ghost {
+      background: transparent;
+      border-color: var(--ad-border-strong);
+    }
+
+    .adv-btn--ghost:hover {
+      background: var(--ad-surface-2);
+    }
+
+    /* La regola globale `html[data-theme="light"] a:not(.btn)…` di app.css ha
+       specificità superiore: il colore dei link va forzato qui. */
+    .adv-btn--primary,
+    .adv-btn--primary:hover {
+      color: #fffdf7 !important;
+    }
+
+    .adv-btn--ghost {
+      color: var(--ad-link) !important;
+    }
+
+    .adv-btn--ghost:hover {
+      color: var(--ad-link-hover) !important;
+    }
+
+    /* Varianti sul pannello scuro finale: il verde pieno non avrebbe contrasto
+       sufficiente sulla fascia, quindi la CTA primaria si inverte in crema. */
+    .adv-contact__panel .adv-btn--primary,
+    .adv-contact__panel .adv-btn--primary:hover {
+      background: var(--ad-band-title);
+      color: var(--ad-band) !important;
+    }
+
+    .adv-contact__panel .adv-btn--primary:hover {
+      background: var(--ad-band-gold);
+    }
+
+    .adv-btn--on-panel {
+      border-color: var(--ad-band-line);
+      color: var(--ad-band-title) !important;
+    }
+
+    .adv-btn--on-panel:hover {
+      background: var(--ad-band-hover);
+      border-color: var(--ad-band-gold);
+      color: var(--ad-band-title) !important;
+    }
+
+    .adv :where(a):focus-visible {
+      outline: 2px solid var(--ad-link);
+      outline-offset: 3px;
+      border-radius: 4px;
+    }
+
+    .adv-contact__panel :where(a):focus-visible {
+      outline-color: var(--ad-band-gold);
+    }
+
+    .adv-sechead {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: clamp(22px, 3vw, 32px);
+    }
+
+    .adv-sechead__title {
+      margin: 0;
+      font-family: var(--font-serif);
+      font-weight: 600;
+      font-size: clamp(25px, 2.7vw, 36px);
+      line-height: 1.08;
+      letter-spacing: -0.014em;
+      color: var(--ad-heading);
+      text-wrap: balance;
+    }
+
+    .adv-sechead__rule {
+      flex: 1 1 auto;
+      height: 1px;
+      background: var(--ad-rule);
+      display: block;
+    }
+
+    /* ----- Breadcrumb ----- */
+
+    .adv-crumbs {
+      padding-block: clamp(16px, 2.4vw, 26px) 0;
+    }
+
+    .adv-crumbs__list {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      font-size: 12.5px;
+      letter-spacing: 0.02em;
+      color: var(--ad-faint);
+    }
+
+    .adv-crumbs__item {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .adv-crumbs__link {
+      color: var(--ad-link) !important;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .adv-crumbs__link:hover {
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .adv-crumbs__sep,
+    .adv-crumbs__current {
+      color: var(--ad-faint);
+    }
+
+    /* ----- Hero ----- */
+
+    .adv-hero {
+      padding-block: clamp(28px, 4.4vw, 56px) clamp(32px, 5vw, 68px);
+    }
+
+    .adv-hero__grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+      gap: clamp(28px, 5vw, 72px);
+      align-items: start;
+    }
+
+    .adv-eyebrow {
+      margin: 0 0 18px;
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ad-olive-text);
+    }
+
+    .adv-eyebrow__dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--ad-olive);
+      display: block;
+      flex: 0 0 auto;
+    }
+
+    .adv-hero__title {
+      margin: 0;
+      font-family: var(--font-serif);
+      font-weight: 700;
+      font-size: clamp(32px, 4.1vw, 54px);
+      line-height: 1.06;
+      letter-spacing: -0.022em;
+      color: var(--ad-heading);
+      max-width: 20ch;
+      text-wrap: balance;
+    }
+
+    .adv-hero__lead {
+      margin: 20px 0 0;
+      font-family: var(--font-serif);
+      font-size: clamp(17px, 1.35vw, 20px);
+      line-height: 1.56;
+      color: var(--ad-body);
+      max-width: 56ch;
+      text-wrap: pretty;
+    }
+
+    .adv-hero__cta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 30px;
+    }
+
+    /* Pannello editoriale */
+
+    .adv-panel {
+      background: var(--ad-surface);
+      border: 1px solid var(--ad-border);
+      border-radius: 16px;
+      padding: 22px 24px 6px;
+      box-shadow: var(--ad-shadow-sm);
+    }
+
+    .adv-panel__title {
+      margin: 0 0 4px;
+      font-size: 11.5px;
+      font-weight: 600;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      color: var(--ad-faint);
+    }
+
+    .adv-panel__list {
+      margin: 0;
+    }
+
+    .adv-panel__row {
+      border-top: 1px solid var(--ad-surface-2);
+      padding: 14px 0;
+    }
+
+    .adv-panel__label {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.004em;
+      color: var(--ad-text);
+    }
+
+    .adv-panel__text {
+      margin: 4px 0 0;
+      font-size: 13.5px;
+      line-height: 1.5;
+      color: var(--ad-soft);
+      text-wrap: pretty;
+    }
+
+    /* ----- Perché collaborare ----- */
+
+    .adv-reasons {
+      padding-bottom: clamp(40px, 6vw, 76px);
+    }
+
+    .adv-reasons__grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: clamp(18px, 2.4vw, 32px);
+    }
+
+    .adv-reason {
+      padding-top: 16px;
+      border-top: 2px solid var(--ad-olive);
+    }
+
+    .adv-reason__title {
+      margin: 0;
+      font-family: var(--font-serif);
+      font-size: 19px;
+      font-weight: 600;
+      line-height: 1.24;
+      letter-spacing: -0.008em;
+      color: var(--ad-heading);
+      text-wrap: balance;
+    }
+
+    .adv-reason__text {
+      margin: 8px 0 0;
+      font-size: 14.5px;
+      line-height: 1.58;
+      color: var(--ad-body);
+      text-wrap: pretty;
+    }
+
+    /* ----- Formule ----- */
+
+    .adv-plans {
+      padding-bottom: clamp(40px, 6vw, 76px);
+    }
+
+    .adv-plans__grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: clamp(16px, 2.2vw, 26px);
+      align-items: stretch;
+    }
+
+    .adv-plan {
+      display: flex;
+      flex-direction: column;
+      padding: clamp(22px, 2.4vw, 30px);
+      background: var(--ad-surface);
+      border: 1px solid var(--ad-border);
+      border-radius: 16px;
+      box-shadow: var(--ad-shadow-sm);
+    }
+
+    .adv-plan--featured {
+      border-color: var(--ad-gold);
+      box-shadow: var(--ad-shadow-lg);
+    }
+
+    .adv-plan__badge {
+      display: inline-flex;
+      align-self: flex-start;
+      align-items: center;
+      margin: 0 0 12px;
+      padding: 5px 11px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--ad-gold) 20%, var(--ad-surface));
+      border: 1px solid color-mix(in srgb, var(--ad-gold) 55%, transparent);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ad-heading);
+    }
+
+    .adv-plan__name {
+      margin: 0;
+      font-family: var(--font-serif);
+      font-size: 21px;
+      font-weight: 600;
+      line-height: 1.22;
+      letter-spacing: -0.01em;
+      color: var(--ad-heading);
+      text-wrap: balance;
+    }
+
+    .adv-plan__price {
+      display: flex;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin: 14px 0 0;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--ad-rule);
+    }
+
+    .adv-plan__amount {
+      font-size: clamp(30px, 3vw, 38px);
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+      color: var(--ad-heading);
+    }
+
+    .adv-plan__unit {
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.03em;
+      color: var(--ad-faint);
+    }
+
+    .adv-plan__text {
+      margin: 16px 0 22px;
+      font-size: 14.5px;
+      line-height: 1.58;
+      color: var(--ad-body);
+      text-wrap: pretty;
+    }
+
+    /* `margin-top: auto` allinea le CTA sul bordo inferiore delle tre card,
+       che restano così confrontabili anche con descrizioni di lunghezza diversa. */
+    .adv-plan__cta {
+      margin-top: auto;
+      align-self: flex-start;
+    }
+
+    .adv-plans__note {
+      margin: clamp(20px, 2.4vw, 28px) 0 0;
+      font-size: 14px;
+      line-height: 1.55;
+      color: var(--ad-soft);
+    }
+
+    /* ----- Altri formati ----- */
+
+    .adv-formats {
+      padding-bottom: clamp(40px, 6vw, 76px);
+    }
+
+    .adv-formats__grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+      gap: clamp(24px, 4vw, 64px);
+      align-items: start;
+      padding-top: clamp(28px, 3.4vw, 44px);
+      border-top: 1px solid var(--ad-rule);
+    }
+
+    .adv-formats__title {
+      margin: 0;
+      font-family: var(--font-serif);
+      font-weight: 600;
+      font-size: clamp(25px, 2.7vw, 36px);
+      line-height: 1.1;
+      letter-spacing: -0.014em;
+      color: var(--ad-heading);
+      text-wrap: balance;
+    }
+
+    .adv-formats__text {
+      margin: 16px 0 0;
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--ad-body);
+      max-width: 46ch;
+      text-wrap: pretty;
+    }
+
+    .adv-formats__cta {
+      margin-top: 24px;
+    }
+
+    .adv-formats__list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .adv-formats__item {
+      position: relative;
+      padding: 15px 0 15px 26px;
+      border-top: 1px solid var(--ad-rule);
+      font-size: 16px;
+      line-height: 1.5;
+      color: var(--ad-text);
+    }
+
+    .adv-formats__item:last-of-type {
+      border-bottom: 1px solid var(--ad-rule);
+    }
+
+    .adv-formats__item::before {
+      content: "";
+      position: absolute;
+      left: 2px;
+      top: 22px;
+      width: 8px;
+      height: 8px;
+      border: 2px solid var(--ad-olive);
+      border-radius: 50%;
+    }
+
+    .adv-formats__note {
+      margin: 18px 0 0;
+      font-size: 14px;
+      line-height: 1.55;
+      color: var(--ad-soft);
+      text-wrap: pretty;
+    }
+
+    /* ----- Come funziona (fascia scura) ----- */
+
+    .adv-steps {
+      background: var(--ad-band);
+      padding-block: clamp(44px, 6vw, 72px);
+    }
+
+    .adv-steps__head {
+      margin-bottom: clamp(24px, 3vw, 38px);
+    }
+
+    .adv-steps__title {
+      margin: 0;
+      font-family: var(--font-serif);
+      font-weight: 600;
+      font-size: clamp(24px, 2.6vw, 34px);
+      line-height: 1.12;
+      letter-spacing: -0.012em;
+      color: var(--ad-band-title);
+    }
+
+    .adv-steps__grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1px;
+      background: var(--ad-band-line);
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .adv-step {
+      background: var(--ad-band);
+      padding: clamp(20px, 2.4vw, 28px) clamp(16px, 2vw, 24px);
+      min-height: 150px;
+    }
+
+    .adv-step__num {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--ad-band-num);
+    }
+
+    .adv-step__title {
+      display: block;
+      margin: 12px 0 0;
+      font-family: var(--font-serif);
+      font-size: 21px;
+      font-weight: 600;
+      letter-spacing: -0.008em;
+      color: var(--ad-band-title);
+    }
+
+    .adv-step__text {
+      margin: 8px 0 0;
+      font-size: 13.5px;
+      line-height: 1.5;
+      color: var(--ad-band-body);
+      text-wrap: pretty;
+    }
+
+    /* ----- Criteri editoriali ----- */
+
+    .adv-criteria {
+      padding-block: clamp(44px, 6vw, 76px);
+    }
+
+    .adv-criteria__grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+      gap: clamp(24px, 4vw, 64px);
+      align-items: start;
+    }
+
+    .adv-criteria__title {
+      margin: 0;
+      font-family: var(--font-serif);
+      font-weight: 600;
+      font-size: clamp(25px, 2.7vw, 36px);
+      line-height: 1.1;
+      letter-spacing: -0.014em;
+      color: var(--ad-heading);
+      text-wrap: balance;
+    }
+
+    .adv-criteria__lead {
+      margin: 16px 0 0;
+      font-size: 15.5px;
+      line-height: 1.6;
+      color: var(--ad-body);
+      max-width: 42ch;
+      text-wrap: pretty;
+    }
+
+    .adv-criteria__list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1px;
+      background: var(--ad-border);
+      border: 1px solid var(--ad-border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .adv-criteria__item {
+      background: var(--ad-surface);
+      padding: clamp(18px, 2vw, 24px);
+      font-size: 15px;
+      line-height: 1.55;
+      color: var(--ad-text);
+      text-wrap: pretty;
+    }
+
+    /* ----- CTA finale ----- */
+
+    .adv-contact {
+      padding-bottom: clamp(48px, 7vw, 88px);
+    }
+
+    .adv-contact__panel {
+      background: var(--ad-band);
+      border: 1px solid var(--ad-band-line);
+      border-radius: 20px;
+      padding: clamp(28px, 4.4vw, 60px);
+      box-shadow: var(--ad-shadow-lg);
+    }
+
+    .adv-contact__title {
+      margin: 0;
+      font-family: var(--font-serif);
+      font-weight: 700;
+      font-size: clamp(27px, 3.2vw, 42px);
+      line-height: 1.08;
+      letter-spacing: -0.018em;
+      color: var(--ad-band-title);
+      text-wrap: balance;
+    }
+
+    .adv-contact__text {
+      margin: 16px 0 0;
+      font-size: clamp(16px, 1.2vw, 18px);
+      line-height: 1.6;
+      color: var(--ad-band-body);
+      max-width: 58ch;
+      text-wrap: pretty;
+    }
+
+    .adv-contact__cta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 28px;
+    }
+
+    .adv-contact__details {
+      list-style: none;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px clamp(24px, 4vw, 56px);
+      margin: 28px 0 0;
+      padding: 22px 0 0;
+      border-top: 1px solid var(--ad-band-line);
+    }
+
+    .adv-contact__label {
+      display: block;
+      font-size: 11.5px;
+      font-weight: 600;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      color: var(--ad-band-num);
+    }
+
+    .adv-contact__value {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      margin-top: 4px;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--ad-band-gold) !important;
+      text-decoration: underline;
+      text-underline-offset: 4px;
+      text-decoration-thickness: 1px;
+      overflow-wrap: anywhere;
+    }
+
+    .adv-contact__value:hover {
+      color: #e8d3a4 !important;
+    }
+
+    /* ----- Breakpoint ----- */
+
+    @media (max-width: 1023px) {
+      .adv-hero__grid,
+      .adv-formats__grid,
+      .adv-criteria__grid {
+        grid-template-columns: 1fr;
+      }
+
+      .adv-hero__title {
+        max-width: 24ch;
+      }
+
+      .adv-reasons__grid,
+      .adv-steps__grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .adv-plans__grid {
+        grid-template-columns: 1fr;
+      }
+
+      .adv-plan__cta,
+      .adv-plan .adv-plan__cta {
+        align-self: stretch;
+      }
+    }
+
+    @media (max-width: 639px) {
+      .adv-hero__title {
+        max-width: none;
+      }
+
+      .adv-reasons__grid,
+      .adv-steps__grid,
+      .adv-criteria__list {
+        grid-template-columns: 1fr;
+      }
+
+      .adv-step {
+        min-height: 0;
+      }
+
+      .adv-hero__cta,
+      .adv-contact__cta {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .adv-formats__cta {
+        display: flex;
+        width: 100%;
+      }
+
+      .adv-panel {
+        padding: 18px 18px 4px;
+      }
+
+      .adv-contact__panel {
+        border-radius: 16px;
+      }
+
+      .adv-contact__details {
+        gap: 16px;
+      }
+
+      /* Target touch ≥ 44px sui link testuali, senza ingrandirne il carattere */
+      .adv-crumbs__link,
+      .adv-crumbs__current {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+      }
+
+      .adv-crumbs {
+        padding-block: 4px 0;
+      }
+
+      .adv-contact__value {
+        min-height: 44px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .adv * {
+        transition: none !important;
+      }
+    }
+  </style>
+</SiteLayout>
