@@ -98,7 +98,6 @@ const HUBS: Record<
     eyebrow: string;
     title: string;
     description: string;
-    metaTitle: string;
   }
 > = {
   "cannabis-news-it": {
@@ -107,7 +106,6 @@ const HUBS: Record<
     title: "Cannabis in Italia: notizie e contesto",
     description:
       "Aggiornamenti e approfondimenti sul dibattito italiano: norme, mercato, politica e società, per seguire i fatti senza perdere il contesto.",
-    metaTitle: "Notizie Italia: cannabis light, CBD, referendum e norme | Canapalandia",
   },
   normativa: {
     label: "Normativa",
@@ -115,7 +113,6 @@ const HUBS: Record<
     title: "Normativa su cannabis, CBD e canapa",
     description:
       "Norme, provvedimenti e aggiornamenti che incidono sulla cannabis light, sul CBD e sulla filiera della canapa in Italia.",
-    metaTitle: "Normativa cannabis, CBD e canapa | Canapalandia",
   },
   "cbd-alimentazione": {
     label: "CBD",
@@ -123,7 +120,6 @@ const HUBS: Record<
     title: "CBD: prodotti, regole e approfondimenti",
     description:
       "Articoli su CBD, mercato, regolazione e ricerca, con attenzione alle fonti e ai cambiamenti che riguardano consumatori e operatori.",
-    metaTitle: "CBD: prodotti, regole e approfondimenti | Canapalandia",
   },
   "canapa-e-ambiente": {
     label: "Canapa",
@@ -131,19 +127,23 @@ const HUBS: Record<
     title: "Canapa e ambiente: filiera, materiali e sostenibilità",
     description:
       "Approfondimenti sulla canapa industriale, sugli impieghi dei materiali, sulla filiera e sul rapporto tra coltivazione e ambiente.",
-    metaTitle: "Canapa e ambiente: filiera e sostenibilità | Canapalandia",
   },
 };
 
 const hub = HUBS[canonicalSlug];
 const displayName = hub?.label ?? categoryName;
 const categoryShouldIndex = isCategoryIndexAllowed(canonicalSlug);
+const isCannabisNewsIt = canonicalSlug === "cannabis-news-it";
 
+// Mantiene invariati i metadati SEO già esistenti: il lavoro corrente riguarda
+// soltanto struttura e presentazione grafica della landing.
 const metadata = {
-  title: hub?.metaTitle ?? `Categoria: ${categoryName}`,
-  description:
-    hub?.description ??
-    `Articoli e approfondimenti nella categoria ${categoryName}.`,
+  title: isCannabisNewsIt
+    ? "Notizie Italia: cannabis light, CBD, referendum e norme | Canapalandia"
+    : `Categoria: ${categoryName}`,
+  description: isCannabisNewsIt
+    ? "Archivio Notizie Italia: analisi su cannabis light, CBD, filiera e politica. Lettura giornalistica — verifica sempre leggi, decreti e comunicati ufficiali, senza trattarla come consulenza legale."
+    : `Articoli nella categoria ${categoryName}.`,
   canonical: `/categoria/${canonicalSlug}/`,
   robots: categoryShouldIndex
     ? { index: true, follow: true }
