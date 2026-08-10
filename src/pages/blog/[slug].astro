@@ -8,6 +8,8 @@ import SupportCTA from "../../components/SupportCTA.astro";
 import Reactions from "../../components/Reactions.astro";
 import BlogSidebar from "../../components/blog/BlogSidebar.astro";
 import RelatedPosts from "../../components/RelatedPosts.astro";
+import PostBodyH1 from "../../components/PostBodyH1.astro";
+import { isPublishedBlogEntry } from "../../lib/blogVisibility";
 import { FEATURES } from "../../lib/consts";
 
 export const prerender = false;
@@ -25,6 +27,11 @@ if (!entry) return new Response(null, { status: 404 });
 
 const publicSlug = (entry.data?.slug || entry.id || "").trim();
 if (!publicSlug || publicSlug !== slug) {
+  return new Response(null, { status: 404, statusText: "Not Found" });
+}
+
+// Un contenuto non pronto, in bozza/test o con data futura non è una pagina pubblica.
+if (!isPublishedBlogEntry(entry)) {
   return new Response(null, { status: 404, statusText: "Not Found" });
 }
 
@@ -164,9 +171,9 @@ const jsonLd = {
           </figure>
         ) : null}
 
-        {/* Contenuto articolo (SCOPED) */}
+        {/* Contenuto articolo (SCOPED). Gli H1 interni MDX diventano H2: l'H1 pagina resta unico. */}
         <div class="post-content" data-post-content>
-          <Content />
+          <Content components={{ h1: PostBodyH1 }} />
         </div>
 
         <aside class="post-editorial-note" aria-label="Nota editoriale">
