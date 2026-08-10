@@ -4,6 +4,18 @@ export type NavigationItem = {
 };
 
 /**
+ * Le quattro categorie che costituiscono l'ossatura editoriale del sito.
+ * L'ordine viene riusato anche nella pagina Blog per evitare gerarchie diverse
+ * tra header e percorsi tematici.
+ */
+export const PRIMARY_EDITORIAL_CATEGORY_SLUGS = [
+  "cannabis-news-it",
+  "Normativa",
+  "cbd-alimentazione",
+  "canapa-e-ambiente",
+] as const;
+
+/**
  * Navigazione editoriale principale.
  *
  * La UI non deve essere generata automaticamente dalle tassonomie del blog:
@@ -26,7 +38,7 @@ export const UTILITY_NAVIGATION: readonly NavigationItem[] = [
 
 /**
  * Il footer può essere più esteso dell'header, ma mantiene in testa gli stessi
- * quattro nuclei editoriali per non creare una seconda architettura mentale.
+ * nuclei editoriali per non creare una seconda architettura mentale.
  */
 export const FOOTER_EXPLORE_NAVIGATION: readonly NavigationItem[] = [
   ...PRIMARY_NAVIGATION,
