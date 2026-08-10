@@ -290,6 +290,14 @@ const useHomeLightBg =
         document.documentElement.dataset.theme = theme;
       })();
     </script>
+
+    <!-- La regola globale dei link in light mode ha specificità maggiore dello stato active dell'header. -->
+    <style is:global>
+      html[data-theme="light"] .nav a[aria-current="page"],
+      html[data-theme="light"] .mobile-menu__content a[aria-current="page"] {
+        color: #f8fbf7 !important;
+      }
+    </style>
   </head>
 
   <body class:list={{ "home-light-bg": useHomeLightBg }}>
