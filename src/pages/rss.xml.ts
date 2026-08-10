@@ -1,7 +1,8 @@
 export const prerender = true;
 
-import { getCollection } from "astro:content";
+import { getCollection, type CollectionEntry } from "astro:content";
 import postsJson from "../../data/wp/out/posts.json";
+import { isPublishedBlogEntry } from "../lib/blogVisibility";
 import { toParams } from "../lib/wp";
 import { getExcerpt } from "../lib/utils";
 
@@ -59,24 +60,16 @@ function buildCanonicalUrl(slug: string): string {
 }
 
 // Helper per convertire post Astro in formato compatibile RSS
-function astroPostToRssItem(entry: any) {
+function astroPostToRssItem(entry: CollectionEntry<"blog">) {
+  if (!isPublishedBlogEntry(entry)) return null;
+
   const slug = entry?.slug ?? entry?.data?.slug ?? "";
   if (!slug) return null;
-  
-  // Escludi draft
-  if (entry?.data?.draft === true || entry?.data?.status === "draft") {
-    return null;
-  }
-  
-  // Escludi se status è "test" (solo "ready" va nel feed)
-  if (entry?.data?.status === "test") {
-    return null;
-  }
-  
+
   const title = entry?.data?.title || "Articolo";
   const description = entry?.data?.description || "";
   const publishDate = entry?.data?.publishDate || entry?.data?.updatedDate;
-  
+
   // Converti Date in stringa per parsing
   let dateStr = "";
   if (publishDate instanceof Date) {
@@ -84,25 +77,25 @@ function astroPostToRssItem(entry: any) {
   } else if (publishDate) {
     dateStr = String(publishDate);
   }
-  
+
   // Costruisci URL canonica: https://canapalandia.com/blog/<slug>/
   const canonicalUrl = buildCanonicalUrl(slug);
   if (!canonicalUrl) return null;
-  
+
   return {
     title,
     description,
     date: dateStr,
-    canonicalUrl, // URL canonica assoluta
+    canonicalUrl,
     slug,
-    isAstro: true, // Flag per distinguere da WP
+    isAstro: true,
   };
 }
 
 export async function GET() {
   // Carica post WordPress (legacy)
   const wpPosts = Array.isArray(postsJson) ? postsJson : [];
-  
+
   // Carica post Astro dalla collection "blog"
   let astroPosts: any[] = [];
   try {
@@ -113,7 +106,7 @@ export async function GET() {
   } catch (err) {
     console.warn("[rss.xml] Errore nel caricamento post Astro:", err);
   }
-  
+
   // Unisci tutti i post e ordina per data DESC
   const allPosts = [...wpPosts, ...astroPosts];
   const sortedPosts = allPosts.slice().sort(sortPostsDesc).slice(0, 50);
@@ -134,7 +127,6 @@ export async function GET() {
         // Gestisci post Astro vs WordPress
         if (p.isAstro) {
           const title = stripHtml(p.title || "Articolo") || "Articolo";
-          // Usa canonicalUrl già costruita (assoluta con trailing slash)
           const link = p.canonicalUrl;
           const pubDate = new Date(p.date || Date.now()).toUTCString();
           const desc = stripHtml(p.description || "");
@@ -150,7 +142,6 @@ export async function GET() {
           );
         } else {
           // Post WordPress (legacy) - mantieni comportamento esistente
-          // Nota: questi potrebbero puntare a path diversi da /blog/
           const title = stripHtml(p?.title?.rendered || p?.title || "Articolo") || "Articolo";
           const link = absUrl(postHref(p));
           const pubDate = new Date(p?.date || p?.modified || Date.now()).toUTCString();
