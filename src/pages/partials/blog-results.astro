@@ -1,6 +1,7 @@
 ---
 import { getCollection, type CollectionEntry } from "astro:content";
 import CardPost from "../../components/CardPost.astro";
+import { isPublishedBlogEntry } from "../../lib/blogVisibility";
 
 export const prerender = false;
 
@@ -60,9 +61,10 @@ const cat = (url.searchParams.get("cat") || "").trim();
 const pageParam = parseInt(url.searchParams.get("page") || "1", 10);
 const page = isNaN(pageParam) || pageParam < 1 ? 1 : pageParam;
 const PER_PAGE = 12;
+const now = new Date();
 
-// Filtra per categoria se presente
-let filtered = postsAll;
+// Parti esclusivamente dai contenuti pubblici.
+let filtered = postsAll.filter((post) => isPublishedBlogEntry(post, now));
 if (cat) {
   filtered = filtered.filter((p) => (p.data.category || "") === cat);
 }

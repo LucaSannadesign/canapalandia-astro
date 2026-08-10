@@ -1,5 +1,6 @@
 ---
 import { getCollection, type CollectionEntry } from "astro:content";
+import { isPublishedBlogEntry } from "../../lib/blogVisibility";
 
 const posts = await getCollection("blog");
 
@@ -10,15 +11,10 @@ function isItalianPost(entry: CollectionEntry<"blog">): boolean {
   return !(entry.id || "").startsWith("en/");
 }
 
-// Solo contenuti italiani pubblicati, ordinati dal più recente.
+// Solo contenuti italiani realmente pubblici, ordinati dal più recente.
+const now = new Date();
 const sortedPosts = posts
-  .filter(
-    (post) =>
-      isItalianPost(post) &&
-      post.data.draft !== true &&
-      post.data.status !== "draft" &&
-      post.data.status !== "test",
-  )
+  .filter((post) => isItalianPost(post) && isPublishedBlogEntry(post, now))
   .sort((a, b) => {
     const dateA = new Date(a.data.publishDate || a.data.date || a.data.pubDate || "1970-01-01");
     const dateB = new Date(b.data.publishDate || b.data.date || b.data.pubDate || "1970-01-01");

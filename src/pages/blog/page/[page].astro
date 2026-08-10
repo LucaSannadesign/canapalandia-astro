@@ -2,6 +2,7 @@
 import { getCollection, type CollectionEntry } from "astro:content";
 import CardPost from "../../../components/CardPost.astro";
 import Layout from "../../../layouts/MigratedLayout.astro";
+import { isPublishedBlogEntry } from "../../../lib/blogVisibility";
 
 export const prerender = true;
 
@@ -81,8 +82,11 @@ export async function getStaticPaths() {
     console.warn("[blog/page] Nessun contenuto trovato in Content Collections");
   }
 
-  // Filtra solo post italiani
-  const italianPosts = postsAll.filter(isItalianPost);
+  // Filtra solo post italiani realmente pubblici
+  const now = new Date();
+  const italianPosts = postsAll.filter(
+    (entry) => isItalianPost(entry) && isPublishedBlogEntry(entry, now),
+  );
 
   // Ordina per publishDate (fallback updatedDate) DESC
   const sortedPosts = italianPosts
@@ -147,8 +151,11 @@ try {
   console.warn("[blog/page] Nessun contenuto trovato in Content Collections");
 }
 
-// Filtra solo post italiani
-const italianPosts = postsAll.filter(isItalianPost);
+// Filtra solo post italiani realmente pubblici
+const now = new Date();
+const italianPosts = postsAll.filter(
+  (entry) => isItalianPost(entry) && isPublishedBlogEntry(entry, now),
+);
 
 // Ordina per publishDate (fallback updatedDate) DESC
 const sortedPosts = italianPosts

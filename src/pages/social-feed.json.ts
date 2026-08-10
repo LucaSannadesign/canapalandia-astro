@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { getCollection } from "astro:content";
+import { isPublishedBlogEntry } from "../lib/blogVisibility";
 
 const siteUrl = "https://canapalandia.com";
 
@@ -30,15 +31,10 @@ export const GET: APIRoute = async () => {
 
   const items = posts
     .filter((post) => {
-      if (post.data.draft === true) return false;
+      if (!isPublishedBlogEntry(post, now)) return false;
       if (post.data.socialShare !== true) return false;
-      if (!post.data.publishDate) return false;
       const publishTs = new Date(String(post.data.publishDate)).getTime();
-      return (
-        !Number.isNaN(publishTs) &&
-        publishTs >= sevenDaysAgo.getTime() &&
-        publishTs <= now.getTime()
-      );
+      return !Number.isNaN(publishTs) && publishTs >= sevenDaysAgo.getTime();
     })
     .sort((a, b) => {
       const da = new Date(String(a.data.publishDate || 0)).getTime();

@@ -3,23 +3,15 @@ export const prerender = false;
 
 import { getCollection, type CollectionEntry } from "astro:content";
 import { isCategoryIndexAllowed } from "../../lib/categoryIndexAllowlist";
+import { normalizeCategorySlug } from "../../lib/categoryUrl";
+import { isPublishedBlogEntry } from "../../lib/blogVisibility";
 import SiteLayout from "../../layouts/SiteLayout.astro";
 import Breadcrumbs from "../../components/Breadcrumbs.astro";
 import CardPost from "../../components/CardPost.astro";
 
 const slug = String(Astro.params.slug ?? "").trim();
 
-function slugifyCategory(value: string): string {
-  return value
-    .trim()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9-]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
-const canonicalSlug = slugifyCategory(slug);
+const canonicalSlug = normalizeCategorySlug(slug);
 if (slug !== canonicalSlug) {
   return Astro.redirect(`/categoria/${canonicalSlug}/`, 301);
 }
@@ -66,8 +58,13 @@ try {
   console.warn("[categoria] Nessun contenuto trovato in Content Collections");
 }
 
+const now = new Date();
 const posts = postsAll
-  .filter((post) => slugifyCategory(post.data.category || "") === canonicalSlug)
+  .filter(
+    (post) =>
+      isPublishedBlogEntry(post, now) &&
+      normalizeCategorySlug(post.data.category || "") === canonicalSlug,
+  )
   .sort((a, b) => {
     const ta = dateOf(a)?.getTime() ?? 0;
     const tb = dateOf(b)?.getTime() ?? 0;
