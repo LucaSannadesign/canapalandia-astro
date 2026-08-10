@@ -2,6 +2,10 @@
 import { getCollection, type CollectionEntry } from "astro:content";
 import Layout from "../layouts/MigratedLayout.astro";
 import HomeActionCards from "../components/HomeActionCards.astro";
+import {
+  PRIMARY_EDITORIAL_CATEGORY_SLUGS,
+  PRIMARY_NAVIGATION,
+} from "../config/navigation";
 
 /* ---------------------------
    Helpers: date
@@ -173,16 +177,8 @@ for (const post of postsAll) {
   }
 }
 
-/* Home: quattro percorsi tematici, come da design (tile numerate 01–04).
-   Gli altri argomenti restano raggiungibili dalla CTA "Esplora tutti gli argomenti". */
-const PERCORSI_SLUGS = [
-  "Normativa",
-  "cbd-alimentazione",
-  "cannabis-news-it",
-  "canapa-e-ambiente",
-] as const;
-
-const percorsi = PERCORSI_SLUGS.map((slug) => categoryMap.get(slug)).filter(
+/* Home: usa la stessa ossatura editoriale dell'header e della pagina Blog. */
+const percorsi = PRIMARY_EDITORIAL_CATEGORY_SLUGS.map((slug) => categoryMap.get(slug)).filter(
   (c): c is CategoryData => c !== undefined && c.count > 0,
 );
 
@@ -192,6 +188,13 @@ const PERCORSI_FALLBACK_BLURB: Record<string, string> = {
   "cbd-alimentazione": "Cannabidiolo, prodotti in commercio e uso consapevole.",
   "cannabis-news-it": "Notizie e sviluppi sul tema cannabis in Italia.",
   "canapa-e-ambiente": "Filiera, materiali, agricoltura e sostenibilità.",
+};
+
+const EDITORIAL_DISPLAY_NAME: Record<string, string> = {
+  "cannabis-news-it": "Notizie",
+  Normativa: "Normativa",
+  "cbd-alimentazione": "CBD",
+  "canapa-e-ambiente": "Canapa",
 };
 
 const CATEGORY_DISPLAY_NAME: Record<string, string> = {
@@ -219,7 +222,7 @@ function categoryLabel(slug: unknown): string {
 }
 
 function percorsiDisplayName(cat: CategoryData): string {
-  return CATEGORY_DISPLAY_NAME[cat.slug] ?? cat.name;
+  return EDITORIAL_DISPLAY_NAME[cat.slug] ?? cat.name;
 }
 
 function percorsiBlurb(cat: CategoryData, maxLen: number): string {
@@ -287,29 +290,35 @@ const updatesPosts = takeUnique(3, usedKeys, publishablePosts, eligiblePosts);
 const latestPosts = takeUnique(6, usedKeys, publishablePosts, eligiblePosts);
 
 /* ---------------------------
-   Inizia da qui: scorciatoie verso route già esistenti
+   Inizia da qui: gli stessi quattro nuclei editoriali dell'header
 --------------------------- */
 
-const startHere = [
-  {
-    href: "/categoria/Normativa/",
-    title: "Cosa è legale oggi",
-    desc: "Il quadro normativo aggiornato, in chiaro.",
+const START_HERE_META: Record<string, { desc: string; shape: string }> = {
+  "/categoria/cannabis-news-it/": {
+    desc: "Aggiornamenti e sviluppi sul tema cannabis in Italia.",
     shape: "square",
   },
-  {
-    href: "/categoria/guide-tutorial/",
-    title: "Guide pratiche",
-    desc: "Termini, prodotti, etichette e buone pratiche.",
+  "/categoria/normativa/": {
+    desc: "Leggi, sentenze e quadro europeo.",
     shape: "circle",
   },
-  {
-    href: "#ultimi",
-    title: "Ultime novità",
-    desc: "Sentenze, studi e decisioni recenti.",
+  "/categoria/cbd-alimentazione/": {
+    desc: "Prodotti, ricerca, sicurezza e regolamentazione.",
     shape: "diamond",
   },
-] as const;
+  "/categoria/canapa-e-ambiente/": {
+    desc: "Filiera, materiali, agricoltura e sostenibilità.",
+    shape: "bar",
+  },
+};
+
+const startHere = PRIMARY_NAVIGATION
+  .filter((item) => item.href.startsWith("/categoria/"))
+  .map((item) => ({
+    href: item.href,
+    title: item.label,
+    ...START_HERE_META[item.href],
+  }));
 
 /* ---------------------------
    Page meta
@@ -981,7 +990,7 @@ const homeJsonLd = {
 
     .hm-start__grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 12px;
     }
 
@@ -1031,6 +1040,17 @@ const homeJsonLd = {
       width: 11px;
       height: 11px;
       transform: rotate(45deg);
+    }
+
+    .hm-shape--bar {
+      width: 14px;
+      height: 2px;
+      border: 0;
+      background: var(--hm-green);
+    }
+
+    html[data-theme="dark"] .hm-shape--bar {
+      background: var(--hm-olive);
     }
 
     .hm-start__body {
@@ -1412,6 +1432,7 @@ const homeJsonLd = {
         max-width: 24ch;
       }
 
+      .hm-start__grid,
       .hm-paths__grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
@@ -1425,14 +1446,6 @@ const homeJsonLd = {
       }
     }
 
-    /* Sotto i 900px le tre schede "Inizia da qui" diventano troppo strette
-       per il titolo su una riga: meglio impilarle. */
-    @media (max-width: 899px) {
-      .hm-start__grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
     @media (max-width: 599px) {
       .hm-hero__title {
         max-width: none;
@@ -1443,6 +1456,7 @@ const homeJsonLd = {
         align-items: stretch;
       }
 
+      .hm-start__grid,
       .hm-paths__grid,
       .hm-latest__grid {
         grid-template-columns: 1fr;
