@@ -4,6 +4,8 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { getCollection, type CollectionEntry } from "astro:content";
 import { CATEGORY_INDEX_ALLOWLIST } from "../lib/categoryIndexAllowlist";
+import { normalizeCategorySlug } from "../lib/categoryUrl";
+import { isPublishedBlogEntry } from "../lib/blogVisibility";
 import { loadWp } from "../lib/wp";
 
 const PAGES_DIR = fileURLToPath(new URL("../pages", import.meta.url));
@@ -188,10 +190,9 @@ function maxLastmodFromPosts(posts: CollectionEntry<"blog">[]): string | undefin
 export const GET: APIRoute = async () => {
   let blogPosts: CollectionEntry<"blog">[] = [];
   try {
-    blogPosts = await getCollection(
-      "blog",
-      ({ data }) => data.draft !== true && data.status !== "draft",
-    );
+    const allPosts = await getCollection("blog");
+    const now = new Date();
+    blogPosts = allPosts.filter((post) => isPublishedBlogEntry(post, now));
   } catch {
     blogPosts = [];
   }
@@ -220,16 +221,19 @@ export const GET: APIRoute = async () => {
     });
   }
 
-  // Categorie IT: solo hub in allowlist con almeno un post (URL slug in minuscolo per canone).
+  // Categorie IT: solo hub in allowlist con almeno un post pubblico.
   for (const slug of CATEGORY_INDEX_ALLOWLIST) {
-    const inCat = blogPosts.filter((p) => (p.data.category || "") === slug);
+    const canonicalCategorySlug = normalizeCategorySlug(slug);
+    const inCat = blogPosts.filter(
+      (p) => normalizeCategorySlug(p.data.category || "") === canonicalCategorySlug,
+    );
     if (inCat.length === 0) continue;
 
-    const relCat = normalizePathKey(`categoria/${slug.toLowerCase()}`);
+    const relCat = normalizePathKey(`categoria/${canonicalCategorySlug}`);
     if (isRedirectSourcePath(relCat)) continue;
     const lastmodCat = maxLastmodFromPosts(inCat);
     urls.push({
-      loc: normalizeUrl(`categoria/${slug.toLowerCase()}`),
+      loc: normalizeUrl(`categoria/${canonicalCategorySlug}`),
       lastmod: lastmodCat,
     });
   }
@@ -244,7 +248,6 @@ export const GET: APIRoute = async () => {
   }
 
   // Genera XML sitemap
-
   const xml =
     `<?xml version="1.0" encoding="UTF-8"?>\n` +
     `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
