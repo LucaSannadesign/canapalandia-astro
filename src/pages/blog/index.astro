@@ -3,6 +3,8 @@ import { getCollection, type CollectionEntry } from "astro:content";
 import CardPost from "../../components/CardPost.astro";
 import Layout from "../../layouts/MigratedLayout.astro";
 import { PRIMARY_EDITORIAL_CATEGORY_SLUGS } from "../../config/navigation";
+import { categoryHref } from "../../lib/categoryUrl";
+import { isPublishedBlogEntry } from "../../lib/blogVisibility";
 
 // Paginazione statica: pagina 1 è sempre prerenderizzata
 
@@ -96,8 +98,11 @@ try {
   console.warn("[blog/index] Nessun contenuto trovato in Content Collections");
 }
 
-// Filtra solo post italiani
-const italianPosts = postsAll.filter(isItalianPost);
+// Filtra solo post italiani realmente pubblici
+const now = new Date();
+const italianPosts = postsAll.filter(
+  (post) => isItalianPost(post) && isPublishedBlogEntry(post, now),
+);
 
 // Ordina per publishDate DESC
 const sortedPosts = italianPosts
@@ -222,10 +227,12 @@ function getCategoryIcon(slug: string): string {
 }
 
 const title = "Blog — Canapalandia";
+const description =
+  "Articoli, guide e aggiornamenti su cannabis light, CBD, normativa e filiera della canapa in Italia.";
 const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/blog/`;
 ---
 
-<Layout title={title} canonical={canonical}>
+<Layout title={title} description={description} canonical={canonical}>
   <div class="page-blog">
     <section class="hero">
       <div class="container hero-inner">
@@ -248,7 +255,7 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/blog/`;
 
           <div class="grid cards">
             {mainCategories.map((cat) => (
-              <a class="card card--topic" href={`/categoria/${cat.slug}/`}>
+              <a class="card card--topic" href={categoryHref(cat.slug)}>
                 <span class="card-icon" aria-hidden="true" set:html={getCategoryIcon(cat.slug)}></span>
                 <div class="card--topic__content">
                   <div class="card--topic__header">
