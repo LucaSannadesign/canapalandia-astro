@@ -1,14 +1,27 @@
 ---
-import { getCollection } from 'astro:content';
+import { getCollection, type CollectionEntry } from "astro:content";
 
-const posts = await getCollection('blog');
+const posts = await getCollection("blog");
 
-// Sort posts by publishDate descending
+function isItalianPost(entry: CollectionEntry<"blog">): boolean {
+  const data = entry.data as any;
+  if (data.lang !== undefined) return data.lang === "it";
+  if (data.locale !== undefined) return data.locale === "it";
+  return !(entry.id || "").startsWith("en/");
+}
+
+// Solo contenuti italiani pubblicati, ordinati dal più recente.
 const sortedPosts = posts
-  .filter((post) => post.data.draft !== true && post.data.status !== "draft" && post.data.status !== "test")
+  .filter(
+    (post) =>
+      isItalianPost(post) &&
+      post.data.draft !== true &&
+      post.data.status !== "draft" &&
+      post.data.status !== "test",
+  )
   .sort((a, b) => {
-    const dateA = new Date(a.data.publishDate || a.data.date || a.data.pubDate || '1970-01-01');
-    const dateB = new Date(b.data.publishDate || b.data.date || b.data.pubDate || '1970-01-01');
+    const dateA = new Date(a.data.publishDate || a.data.date || a.data.pubDate || "1970-01-01");
+    const dateB = new Date(b.data.publishDate || b.data.date || b.data.pubDate || "1970-01-01");
     return dateB.getTime() - dateA.getTime();
   });
 
@@ -16,23 +29,41 @@ const sortedPosts = posts
 const recentPosts = sortedPosts.slice(0, 5);
 
 // Featured: max 5
-const featuredPosts = sortedPosts.filter(post => post.data.featured).slice(0, 5);
+const featuredPosts = sortedPosts.filter((post) => post.data.featured).slice(0, 5);
 
-// Categorie: conta occorrenze
-const categoryCount = sortedPosts.reduce((acc, post) => {
-  const cat = post.data.category || 'Senza categoria';
-  acc[cat] = (acc[cat] || 0) + 1;
-  return acc;
-}, {} as Record<string, number>);
+// La sidebar segue la stessa IA dei quattro hub editoriali principali.
+const EDITORIAL_CATEGORIES = [
+  {
+    source: "cannabis-news-it",
+    label: "Notizie",
+    href: "/categoria/cannabis-news-it/",
+  },
+  {
+    source: "Normativa",
+    label: "Normativa",
+    href: "/categoria/normativa/",
+  },
+  {
+    source: "cbd-alimentazione",
+    label: "CBD",
+    href: "/categoria/cbd-alimentazione/",
+  },
+  {
+    source: "canapa-e-ambiente",
+    label: "Canapa",
+    href: "/categoria/canapa-e-ambiente/",
+  },
+] as const;
 
-const sortedCategories = Object.entries(categoryCount)
-  .sort(([, a], [, b]) => b - a)
-  .slice(0, 10); // top 10
+const editorialCategories = EDITORIAL_CATEGORIES.map((category) => ({
+  ...category,
+  count: sortedPosts.filter((post) => post.data.category === category.source).length,
+})).filter((category) => category.count > 0);
 
-// Tag: conta occorrenze
+// Tag: conta occorrenze solo nei contenuti italiani pubblicati.
 const tagCount = sortedPosts.reduce((acc, post) => {
   const tags = post.data.tags || [];
-  tags.forEach(tag => {
+  tags.forEach((tag) => {
     acc[tag] = (acc[tag] || 0) + 1;
   });
   return acc;
@@ -40,7 +71,7 @@ const tagCount = sortedPosts.reduce((acc, post) => {
 
 const sortedTags = Object.entries(tagCount)
   .sort(([, a], [, b]) => b - a)
-  .slice(0, 10); // top 10
+  .slice(0, 10);
 ---
 
 <aside aria-label="Sidebar del blog" class="sidebar-sticky">
@@ -48,9 +79,9 @@ const sortedTags = Object.entries(tagCount)
   <div class="sidebar-section">
     <h3 class="sidebar-title">Articoli recenti</h3>
     <ul class="sidebar-list recent-posts">
-      {recentPosts.map(post => (
+      {recentPosts.map((post) => (
         <li class="py-[10px]">
-          <a href={`/blog/${(post.data?.slug || post.id?.replace(/\.mdx?$/, '')).trim()}/`} class="sidebar-link block leading-snug">
+          <a href={`/blog/${(post.data?.slug || post.id?.replace(/\.mdx?$/, "")).trim()}/`} class="sidebar-link block leading-snug">
             {post.data.title}
           </a>
         </li>
@@ -63,9 +94,9 @@ const sortedTags = Object.entries(tagCount)
     <div class="sidebar-section">
       <h3 class="sidebar-title">In evidenza</h3>
       <ul class="sidebar-list">
-        {featuredPosts.map(post => (
+        {featuredPosts.map((post) => (
           <li>
-            <a href={`/blog/${(post.data?.slug || post.id?.replace(/\.mdx?$/, '')).trim()}/`} class="sidebar-link">
+            <a href={`/blog/${(post.data?.slug || post.id?.replace(/\.mdx?$/, "")).trim()}/`} class="sidebar-link">
               {post.data.title}
             </a>
           </li>
@@ -76,12 +107,12 @@ const sortedTags = Object.entries(tagCount)
 
   <!-- Categorie -->
   <div class="sidebar-section">
-    <h3 class="sidebar-title">Categorie</h3>
+    <h3 class="sidebar-title">Percorsi principali</h3>
     <ul class="sidebar-list sidebar-categories">
-      {sortedCategories.map(([category, count]) => (
+      {editorialCategories.map((category) => (
         <li class="py-[12px]">
-          <a href={`/blog/?category=${encodeURIComponent(category)}`} class="sidebar-link block leading-snug">
-            {category} ({count})
+          <a href={category.href} class="sidebar-link block leading-snug">
+            {category.label} ({category.count})
           </a>
         </li>
       ))}
@@ -93,21 +124,22 @@ const sortedTags = Object.entries(tagCount)
     <h3 class="sidebar-title">Tag popolari</h3>
     <ul class="sidebar-list">
       {sortedTags.map(([tag, count]) => {
-        // Slugify: lowercase, trim, spazi->-, rimozione caratteri non url-safe
         const tagSlug = tag
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
           .toLowerCase()
           .trim()
-          .replace(/\s+/g, '-')
-          .replace(/[^a-z0-9-]/g, '')
-          .replace(/--+/g, '-')
-          .replace(/^-+|-+$/g, '');
-        return (
+          .replace(/\s+/g, "-")
+          .replace(/[^a-z0-9-]/g, "")
+          .replace(/--+/g, "-")
+          .replace(/^-+|-+$/g, "");
+        return tagSlug ? (
           <li>
             <a href={`/tag/${tagSlug}/`} class="sidebar-link">
               {tag} ({count})
             </a>
           </li>
-        );
+        ) : null;
       })}
     </ul>
   </div>
