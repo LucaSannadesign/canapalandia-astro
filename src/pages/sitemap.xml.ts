@@ -22,6 +22,9 @@ const STRUCTURAL_ROUTES = [
   "/contatti/",
 ] as const;
 
+/** Route Astro fondamentali: esistono per contratto applicativo e non dipendono dal filesystem runtime. */
+const ALWAYS_INCLUDE_STRUCTURAL_ROUTES = new Set<string>(["/", "/blog/"]);
+
 export const prerender = false;
 
 // Base URL: usa SITE da config o fallback
@@ -156,6 +159,7 @@ async function structuralRouteExists(
   route: string,
   wpPagePaths: Set<string>,
 ): Promise<boolean> {
+  if (ALWAYS_INCLUDE_STRUCTURAL_ROUTES.has(route)) return true;
   if (await astroRouteExists(route)) return true;
   const rel = normalizePathKey(route);
   return rel !== "" && wpPagePaths.has(rel);
