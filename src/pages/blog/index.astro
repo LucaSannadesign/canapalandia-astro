@@ -2,6 +2,7 @@
 import { getCollection, type CollectionEntry } from "astro:content";
 import CardPost from "../../components/CardPost.astro";
 import Layout from "../../layouts/MigratedLayout.astro";
+import { PRIMARY_EDITORIAL_CATEGORY_SLUGS } from "../../config/navigation";
 
 // Paginazione statica: pagina 1 è sempre prerenderizzata
 
@@ -164,26 +165,17 @@ for (const post of italianPosts) {
   }
 }
 
-// Ordine di priorità categorie
-const categoryPriority = [
-  "Normativa",
-  "Attualità",
-  "guide-tutorial",
-  "cbd-alimentazione",
-  "canapa-e-ambiente",
-  "cannabis-news-it",
-  "Ricerca",
-  "salute-benessere",
-];
+// I percorsi principali seguono la stessa gerarchia editoriale dell'header.
+const categoryPriority = [...PRIMARY_EDITORIAL_CATEGORY_SLUGS];
 
-// Ordina categorie per priorità (max 8)
+// Mostra solo i quattro hub editoriali principali e solo se hanno contenuti.
 const mainCategories: CategoryData[] = [];
 for (const slug of categoryPriority) {
   const cat = categoryMap.get(slug);
   if (cat && cat.count > 0) {
     mainCategories.push(cat);
   }
-  if (mainCategories.length >= 8) break;
+  if (mainCategories.length >= 4) break;
 }
 
 // Helper per icona categoria
