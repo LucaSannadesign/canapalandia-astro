@@ -42,6 +42,7 @@ export const UTILITY_NAVIGATION: readonly NavigationItem[] = [
  */
 export const FOOTER_EXPLORE_NAVIGATION: readonly NavigationItem[] = [
   ...PRIMARY_NAVIGATION,
+  { label: "Canapalandia Lab", href: "/lab/" },
   { label: "Ribaltatore AI", href: "/ribaltatore/" },
   { label: "Frasi Ribaltate", href: "/frasi-ribaltate/" },
   { label: "Mappa del sito", href: "/mappa-del-sito/" },
