@@ -268,7 +268,7 @@ const useHomeLightBg =
     {/* Twitter Card meta tags */}
     <meta name="twitter:card" content={twitterCard} />
     <meta name="twitter:title" content={twitterTitle} />
-    {twitterDescription ? <meta property="twitter:description" content={twitterDescription} /> : null}
+    {twitterDescription ? <meta name="twitter:description" content={twitterDescription} /> : null}
     <meta name="twitter:image" content={twitterImage} />
     
     {/* Se c'è yoastHeadHtml, inietta il resto (già ripulito da title/canonical/robots) */}
