@@ -1,6 +1,7 @@
 ---
 import { getCollection, type CollectionEntry } from "astro:content";
 import CardPost from "./CardPost.astro";
+import { isPublishedBlogEntry } from "../lib/blogVisibility";
 
 interface Props {
   currentSlug: string;
@@ -79,13 +80,12 @@ let relatedPosts: CollectionEntry<"blog">[] = [];
 try {
   const allPosts = await getCollection("blog");
   const currentSlugNormalized = normalizeText(currentSlug);
+  const now = new Date();
 
   const scored: ScoredPost[] = allPosts
     .filter(
       (p) =>
-        p.data.draft !== true &&
-        p.data.status !== "draft" &&
-        p.data.status !== "test" &&
+        isPublishedBlogEntry(p, now) &&
         normalizeText(publicSlug(p)) !== currentSlugNormalized,
     )
     .map((p) => {
