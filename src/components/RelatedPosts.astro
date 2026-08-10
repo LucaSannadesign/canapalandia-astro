@@ -59,9 +59,13 @@ function normalizeImage(entry: CollectionEntry<"blog">): string {
   return normalizeImgSrc(srcValue);
 }
 
+function publicSlug(entry: CollectionEntry<"blog">): string {
+  return (entry.data?.slug || entry.id || "").trim();
+}
+
 function postHref(entry: CollectionEntry<"blog">): string {
-  const entrySlug = entry?.slug ?? entry?.data?.slug ?? "";
-  if (!entrySlug) return "/";
+  const entrySlug = publicSlug(entry);
+  if (!entrySlug) return "/blog/";
   return `/blog/${entrySlug}/`;
 }
 
@@ -77,7 +81,13 @@ try {
   const currentSlugNormalized = normalizeText(currentSlug);
 
   const scored: ScoredPost[] = allPosts
-    .filter((p) => normalizeText(p.slug) !== currentSlugNormalized)
+    .filter(
+      (p) =>
+        p.data.draft !== true &&
+        p.data.status !== "draft" &&
+        p.data.status !== "test" &&
+        normalizeText(publicSlug(p)) !== currentSlugNormalized,
+    )
     .map((p) => {
       const postCategory = normalizeText(p.data.category);
       const postTags = normalizeTags(p.data.tags);
