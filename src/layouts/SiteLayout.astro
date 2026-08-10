@@ -5,6 +5,11 @@ import SpeedInsights from "@vercel/speed-insights/astro";
 import enhancementsScript from "../scripts/enhancements.js?raw";
 import Newsletter from "../components/widgets/Newsletter.astro";
 import GATag from "../components/GATag.astro";
+import {
+  FOOTER_EXPLORE_NAVIGATION,
+  PRIMARY_NAVIGATION,
+  UTILITY_NAVIGATION,
+} from "../config/navigation";
 
 const THEME_STORAGE_KEY = "canapalandia_theme";
 const { 
@@ -263,7 +268,7 @@ const useHomeLightBg =
     {/* Twitter Card meta tags */}
     <meta name="twitter:card" content={twitterCard} />
     <meta name="twitter:title" content={twitterTitle} />
-    {twitterDescription ? <meta name="twitter:description" content={twitterDescription} /> : null}
+    {twitterDescription ? <meta property="twitter:description" content={twitterDescription} /> : null}
     <meta name="twitter:image" content={twitterImage} />
     
     {/* Se c'è yoastHeadHtml, inietta il resto (già ripulito da title/canonical/robots) */}
@@ -306,12 +311,11 @@ const useHomeLightBg =
         </a>
 
         <nav class="nav" aria-label="Navigazione principale">
-          <a href="/blog/">Blog</a>
-          <a href="/categoria/normativa/">Normativa</a>
-          <a href="/categoria/guide-tutorial/">Guide</a>
-          <a href="/categoria/cbd-alimentazione/">CBD</a>
-          <a href="/categoria/attualita/">Attualità</a>
-          <a href="/cerca/">Cerca</a>
+          {PRIMARY_NAVIGATION.map((item) => (
+            <a href={item.href} aria-current={isCurrent(item.href) ? "page" : undefined}>
+              {item.label}
+            </a>
+          ))}
         </nav>
 
         <div class="header-actions">
@@ -355,7 +359,14 @@ const useHomeLightBg =
             </svg>
           </button>
 
-          <a class="search" href="/cerca/" aria-label="Cerca nel sito">Cerca</a>
+          <a
+            class="search"
+            href={UTILITY_NAVIGATION[0].href}
+            aria-label="Cerca nel sito"
+            aria-current={isCurrent(UTILITY_NAVIGATION[0].href) ? "page" : undefined}
+          >
+            Cerca
+          </a>
 
           <button
             type="button"
@@ -419,12 +430,16 @@ const useHomeLightBg =
     <nav class="mobile-menu" id="mobile-menu" aria-label="Menu mobile" aria-hidden="true">
       <div class="mobile-menu__overlay"></div>
       <div class="mobile-menu__content">
-        <a href="/blog/">Blog</a>
-        <a href="/categoria/normativa/">Normativa</a>
-        <a href="/categoria/guide-tutorial/">Guide</a>
-        <a href="/categoria/cbd-alimentazione/">CBD</a>
-        <a href="/categoria/attualita/">Attualità</a>
-        <a href="/cerca/">Cerca</a>
+        {PRIMARY_NAVIGATION.map((item) => (
+          <a href={item.href} aria-current={isCurrent(item.href) ? "page" : undefined}>
+            {item.label}
+          </a>
+        ))}
+        {UTILITY_NAVIGATION.map((item) => (
+          <a href={item.href} aria-current={isCurrent(item.href) ? "page" : undefined}>
+            {item.label}
+          </a>
+        ))}
       </div>
     </nav>
 
@@ -478,10 +493,11 @@ const useHomeLightBg =
         <nav class="footer-col footer-menu" aria-label="Esplora">
           <h2 class="footer-title">Esplora</h2>
           <div class="footer-links">
-            <a href="/blog/">Blog</a>
-            <a href="/ribaltatore/">Ribaltatore AI</a>
-            <a href="/frasi-ribaltate/">Frasi Ribaltate</a>
-            <a href="/mappa-del-sito/">Mappa del sito</a>
+            {FOOTER_EXPLORE_NAVIGATION.map((item) => (
+              <a href={item.href} aria-current={isCurrent(item.href) ? "page" : undefined}>
+                {item.label}
+              </a>
+            ))}
             <a href="/rss.xml">RSS</a>
           </div>
         </nav>
