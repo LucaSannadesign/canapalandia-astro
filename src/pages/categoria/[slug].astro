@@ -98,6 +98,8 @@ const HUBS: Record<
     eyebrow: string;
     title: string;
     description: string;
+    seoTitle: string;
+    seoDescription: string;
   }
 > = {
   "cannabis-news-it": {
@@ -106,6 +108,9 @@ const HUBS: Record<
     title: "Cannabis in Italia: notizie e contesto",
     description:
       "Aggiornamenti e approfondimenti sul dibattito italiano: norme, mercato, politica e società, per seguire i fatti senza perdere il contesto.",
+    seoTitle: "Notizie Italia: cannabis light, CBD, referendum e norme | Canapalandia",
+    seoDescription:
+      "Archivio Notizie Italia: analisi su cannabis light, CBD, filiera e politica. Verifica sempre leggi, decreti e comunicati ufficiali.",
   },
   normativa: {
     label: "Normativa",
@@ -113,6 +118,9 @@ const HUBS: Record<
     title: "Normativa su cannabis, CBD e canapa",
     description:
       "Norme, provvedimenti e aggiornamenti che incidono sulla cannabis light, sul CBD e sulla filiera della canapa in Italia.",
+    seoTitle: "Normativa cannabis, CBD e canapa in Italia | Canapalandia",
+    seoDescription:
+      "Leggi, decreti, sentenze e aggiornamenti su cannabis light, CBD e canapa in Italia, con attenzione alle fonti e al quadro europeo.",
   },
   "cbd-alimentazione": {
     label: "CBD",
@@ -120,6 +128,9 @@ const HUBS: Record<
     title: "CBD: prodotti, regole e approfondimenti",
     description:
       "Articoli su CBD, mercato, regolazione e ricerca, con attenzione alle fonti e ai cambiamenti che riguardano consumatori e operatori.",
+    seoTitle: "CBD in Italia: regole, sicurezza e approfondimenti | Canapalandia",
+    seoDescription:
+      "Approfondimenti sul CBD in Italia: regole, sicurezza, mercato, ricerca e aggiornamenti per orientarsi tra fonti e cambiamenti normativi.",
   },
   "canapa-e-ambiente": {
     label: "Canapa",
@@ -127,23 +138,19 @@ const HUBS: Record<
     title: "Canapa e ambiente: filiera, materiali e sostenibilità",
     description:
       "Approfondimenti sulla canapa industriale, sugli impieghi dei materiali, sulla filiera e sul rapporto tra coltivazione e ambiente.",
+    seoTitle: "Canapa industriale e ambiente: filiera e sostenibilità | Canapalandia",
+    seoDescription:
+      "Canapa industriale, materiali, agricoltura e sostenibilità: articoli sulla filiera, sugli impieghi e sul rapporto tra canapa e ambiente.",
   },
 };
 
 const hub = HUBS[canonicalSlug];
 const displayName = hub?.label ?? categoryName;
 const categoryShouldIndex = isCategoryIndexAllowed(canonicalSlug);
-const isCannabisNewsIt = canonicalSlug === "cannabis-news-it";
 
-// Mantiene invariati i metadati SEO già esistenti: il lavoro corrente riguarda
-// soltanto struttura e presentazione grafica della landing.
 const metadata = {
-  title: isCannabisNewsIt
-    ? "Notizie Italia: cannabis light, CBD, referendum e norme | Canapalandia"
-    : `Categoria: ${categoryName}`,
-  description: isCannabisNewsIt
-    ? "Archivio Notizie Italia: analisi su cannabis light, CBD, filiera e politica. Lettura giornalistica — verifica sempre leggi, decreti e comunicati ufficiali, senza trattarla come consulenza legale."
-    : `Articoli nella categoria ${categoryName}.`,
+  title: hub?.seoTitle ?? `Categoria: ${categoryName}`,
+  description: hub?.seoDescription ?? `Articoli nella categoria ${categoryName}.`,
   canonical: `/categoria/${canonicalSlug}/`,
   robots: categoryShouldIndex
     ? { index: true, follow: true }
@@ -193,7 +200,7 @@ const metadata = {
           date={formatDate(dateOf(post))}
           title={post.data.title}
           excerpt={post.data.description}
-          category={post.data.category || null}
+          category={displayName}
         />
       ))}
     </div>
