@@ -134,7 +134,7 @@ const jsonLd = {
 
 <SiteLayout metadata={metadata}>
   <script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLd).replace(/</g, "\\u003c")} />
-  <main class="container page-shell">
+  <div class="container page-shell">
     <div class="post-layout">
       <article class="post-main">
         <h1>{entry.data.title}</h1>
@@ -202,7 +202,7 @@ const jsonLd = {
         <BlogSidebar />
       </aside>
     </div>
-  </main>
+  </div>
 
 </SiteLayout>
 
