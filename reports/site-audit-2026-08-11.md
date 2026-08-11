@@ -8,18 +8,20 @@
 - Analytics opzionali spostati dietro consenso esplicito.
 - Footer aggiornato con link di trasparenza e gestione preferenze privacy.
 - Mappa del sito umana aggiornata con Lab e pagine istituzionali.
+- Prima tranche di bonifica sanitaria legacy completata: cinque URL storici ad alto rischio editoriale sono in `legacy-review`, con testo precedente temporaneamente ritirato, `noindex,follow`, esclusione dalle sitemap e avviso editoriale.
 
-## Prossima priorità
+## Bonifica sanitaria legacy — prima tranche
 
-Bonifica controllata dell'archivio legacy, con precedenza ai contenuti sanitari/CBD che presentano titoli o impostazioni potenzialmente fuorvianti. Nessuna cancellazione in massa: per ogni contenuto scegliere tra aggiornamento, consolidamento/redirect o esclusione dall'indice in base a utilità, attualità e qualità delle fonti.
-
-## Candidati prioritari individuati
+Questi contenuti restano raggiungibili sullo slug storico ma non vengono indicizzati finché la revisione non è conclusa:
 
 - `ho-sconfitto-il-cancro-grazie-allolio-di-cannabis.mdx`
 - `cbd-cannabis-cura-contro-la-depressione.mdx`
 - `cbd-salute-mentale-ansia-depressione.mdx`
 - `benefici-cbd-sonno-migliore.mdx`
 - `cannabis-combatte-dipendenza-oppiacei-eroina-cocaina.mdx`
-- vecchie versioni inglesi duplicate o non più strategiche
 
-L'obiettivo è ridurre contenuti YMYL datati o formulati in modo eccessivo senza perdere URL che possono avere storico SEO utile.
+La misura è conservativa: nessuna cancellazione o redirect in massa, per preservare lo storico SEO degli URL mentre i contenuti vengono valutati per aggiornamento, consolidamento o ritiro definitivo.
+
+## Prossima priorità
+
+Continuare la bonifica controllata dell'archivio legacy, estendendo l'inventario ai restanti contenuti sanitari/CBD e alle vecchie versioni inglesi duplicate o non più strategiche. Per ogni contenuto scegliere tra aggiornamento, consolidamento/redirect o esclusione dall'indice in base a utilità, attualità e qualità delle fonti.
