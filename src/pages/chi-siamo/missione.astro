@@ -1,0 +1,54 @@
+---
+import SiteLayout from "../../layouts/SiteLayout.astro";
+import InstitutionalPage from "../../components/InstitutionalPage.astro";
+
+const SITE = import.meta.env.SITE || "https://canapalandia.com";
+const title = "Missione | Canapalandia";
+const description = "La missione editoriale di Canapalandia: informare con chiarezza e fonti verificabili su canapa, CBD, cannabis light, ricerca e normativa.";
+const canonical = `${SITE}/chi-siamo/missione/`;
+---
+
+<SiteLayout title={title} description={description} canonical={canonical}>
+  <InstitutionalPage
+    eyebrow="Chi siamo"
+    title="La nostra missione"
+    lead="Rendere comprensibili temi complessi senza ridurli a slogan: normativa, ricerca, mercato, cultura e usi della canapa raccontati con fonti, contesto e trasparenza."
+    updated="11 agosto 2026"
+  >
+    <h2>Informare prima di convincere</h2>
+    <p>
+      La canapa e la cannabis sono temi in cui informazione, politica, salute, economia e cultura si sovrappongono continuamente. La missione di Canapalandia è aiutare il lettore a distinguere questi piani e a capire cosa sappiamo, cosa è ancora incerto e cosa dipende dal contesto normativo.
+    </p>
+
+    <h2>I principi che guidano il progetto</h2>
+    <ul>
+      <li><strong>Chiarezza:</strong> tradurre documenti tecnici e norme senza alterarne il significato.</li>
+      <li><strong>Fonti:</strong> privilegiare atti ufficiali, studi, autorità pubbliche e documentazione verificabile.</li>
+      <li><strong>Contesto:</strong> evitare che una singola frase, percentuale o sentenza venga presentata come risposta universale.</li>
+      <li><strong>Indipendenza editoriale:</strong> distinguere il lavoro informativo da pubblicità, affiliazioni e contenuti sponsorizzati.</li>
+      <li><strong>Correzione:</strong> aggiornare o correggere i contenuti quando emergono informazioni nuove o errori documentati.</li>
+    </ul>
+
+    <h2>Canapa, CBD e normativa</h2>
+    <p>
+      Il progetto segue la canapa industriale, la cannabis light, il CBD, la ricerca scientifica, il quadro normativo italiano ed europeo e le trasformazioni culturali ed economiche del settore. Quando una questione è controversa o in evoluzione, cerchiamo di esplicitare l'incertezza invece di trasformarla in una certezza editoriale.
+    </p>
+
+    <h2>Strumenti utili, non verdetti</h2>
+    <p>
+      Accanto agli articoli possiamo sviluppare strumenti pratici, come Canapalandia Lab, per rendere più leggibili documenti e dati tecnici. Questi strumenti aiutano a orientarsi, ma non sostituiscono laboratori, medici, avvocati, autorità o altri professionisti qualificati.
+    </p>
+
+    <h2>Un progetto sostenibile</h2>
+    <p>
+      Per continuare a pubblicare, Canapalandia può utilizzare pubblicità, sponsorizzazioni, affiliazioni e sostegno volontario. La sostenibilità economica è compatibile con l'indipendenza soltanto se le relazioni commerciali sono riconoscibili e non vengono confuse con il contenuto editoriale.
+    </p>
+
+    <div class="institutional-links">
+      <a href="/chi-siamo/">Chi siamo</a>
+      <a href="/disclaimer-legale-canapalandia/">Disclaimer legale</a>
+      <a href="/pubblicita/">Pubblicità e collaborazioni</a>
+      <a href="/contatti/">Contatti</a>
+    </div>
+  </InstitutionalPage>
+</SiteLayout>
