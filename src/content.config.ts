@@ -77,6 +77,18 @@ const blog = defineCollection({
       instagramImage: z.string().optional(),
       showShare: z.boolean().optional(), // Disabilita sezione share per singolo post
       showSupportCta: z.boolean().optional(), // Disabilita CTA sostegno per singolo post
+      attachments: z
+        .array(
+          z.object({
+            title: z.string(),
+            url: z.string(),
+            description: z.string().optional(),
+            source: z.string().optional(),
+            date: z.coerce.date().optional(),
+            type: z.enum(["pdf", "document"]).default("pdf"),
+          }),
+        )
+        .default([]),
     })
     .superRefine((data, ctx) => {
       // Se status === "ready", allora publishDate, category e almeno una tra image o coverImage devono essere presenti
