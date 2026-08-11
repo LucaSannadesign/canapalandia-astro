@@ -1,0 +1,72 @@
+---
+import InstitutionalPage from "../../components/InstitutionalPage.astro";
+
+const SITE = import.meta.env.SITE || "https://canapalandia.com";
+const canonical = `${SITE}/chi-siamo/missione/`;
+---
+
+<InstitutionalPage
+  title="Missione | Canapalandia"
+  description="La missione editoriale di Canapalandia: informazione indipendente, fonti verificabili, trasparenza e strumenti utili su canapa, CBD e normativa."
+  canonical={canonical}
+  eyebrow="La nostra missione"
+  heading="Capire meglio la canapa, senza slogan e senza scorciatoie"
+  lead="Vogliamo rendere più comprensibili normative, ricerca, mercato e cultura della canapa, offrendo informazioni verificabili e strumenti pratici senza trasformare l'informazione in una promessa commerciale o terapeutica."
+  currentLabel="Missione"
+  parentLabel="Chi siamo"
+  parentHref="/chi-siamo/"
+>
+  <section>
+    <h2>Informare prima di convincere</h2>
+    <p>
+      Canapa, CBD e cannabis light sono temi in cui politica, scienza, mercato e
+      comunicazione si sovrappongono facilmente. La nostra missione è ridurre la
+      confusione: spiegare cosa sappiamo, cosa non sappiamo e quali fonti permettono
+      al lettore di approfondire.
+    </p>
+  </section>
+
+  <section>
+    <h2>I principi editoriali</h2>
+    <ul>
+      <li><strong>Fonti prima delle opinioni:</strong> documenti ufficiali, studi, sentenze e dati verificabili hanno priorità.</li>
+      <li><strong>Contesto:</strong> una frase isolata o un titolo sensazionalistico raramente bastano a spiegare una questione complessa.</li>
+      <li><strong>Aggiornamento:</strong> normativa e ricerca cambiano; i contenuti più delicati vanno rivisti quando emergono novità sostanziali.</li>
+      <li><strong>Trasparenza:</strong> pubblicità, affiliazioni e contenuti sponsorizzati devono essere riconoscibili.</li>
+      <li><strong>Prudenza:</strong> non trasformiamo studi preliminari, testimonianze o ipotesi in promesse di efficacia.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Non siamo un negozio</h2>
+    <p>
+      La versione attuale di Canapalandia è un progetto editoriale. Non vendiamo
+      direttamente prodotti, non gestiamo ordini e non sostituiamo il produttore,
+      il laboratorio, il medico, il farmacista o un professionista legale.
+    </p>
+  </section>
+
+  <section>
+    <h2>Dall'informazione agli strumenti</h2>
+    <p>
+      Quando ha senso, trasformiamo una spiegazione in uno strumento utilizzabile.
+      <a href="/lab/">Canapalandia Lab</a>, per esempio, aiuta a leggere alcune
+      informazioni presenti in un certificato COA attraverso regole automatiche e
+      senza inviare il documento ai server di Canapalandia.
+    </p>
+    <p>
+      Lo strumento traduce dati riconosciuti, ma non emette giudizi sulla legalità,
+      sulla sicurezza o sulla qualità del prodotto.
+    </p>
+  </section>
+
+  <section>
+    <h2>Una comunità che può correggerci</h2>
+    <p>
+      L'indipendenza non significa essere infallibili. Se trovi un errore, una fonte
+      mancante o un contenuto diventato obsoleto, puoi segnalarlo dalla pagina
+      <a href="/contatti/">Contatti</a>. Le correzioni motivate fanno parte del
+      lavoro editoriale, non sono un problema da nascondere.
+    </p>
+  </section>
+</InstitutionalPage>
