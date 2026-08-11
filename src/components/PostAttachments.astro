@@ -1,0 +1,211 @@
+---
+type Attachment = {
+  title: string;
+  url: string;
+  description?: string;
+  source?: string;
+  date?: Date | string;
+  type?: "pdf" | "document";
+};
+
+type Props = {
+  attachments?: Attachment[];
+};
+
+const { attachments = [] } = Astro.props;
+
+function formatDate(value: Date | string | undefined): string | null {
+  if (!value) return null;
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat("it-IT", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  }).format(date);
+}
+
+function isExternal(url: string): boolean {
+  return /^https?:\/\//i.test(url);
+}
+---
+
+{attachments.length > 0 && (
+  <aside class="post-attachments" aria-labelledby="post-attachments-title">
+    <div class="post-attachments__head">
+      <p class="post-attachments__eyebrow">DOCUMENTI</p>
+      <h2 id="post-attachments-title">Documenti allegati</h2>
+      <p>Certificati, analisi e documenti citati nell'articolo.</p>
+    </div>
+
+    <div class="post-attachments__list">
+      {attachments.map((attachment) => {
+        const dateLabel = formatDate(attachment.date);
+        const external = isExternal(attachment.url);
+        const typeLabel = attachment.type === "document" ? "DOC" : "PDF";
+
+        return (
+          <article class="post-attachment">
+            <span class="post-attachment__type" aria-hidden="true">{typeLabel}</span>
+            <div class="post-attachment__body">
+              <h3>{attachment.title}</h3>
+              {(attachment.source || dateLabel) && (
+                <p class="post-attachment__meta">
+                  {attachment.source && <span>{attachment.source}</span>}
+                  {attachment.source && dateLabel && <span aria-hidden="true"> · </span>}
+                  {dateLabel && <time>{dateLabel}</time>}
+                </p>
+              )}
+              {attachment.description && (
+                <p class="post-attachment__description">{attachment.description}</p>
+              )}
+              <div class="post-attachment__actions">
+                <a
+                  class="post-attachment__open"
+                  href={attachment.url}
+                  target="_blank"
+                  rel={external ? "noopener noreferrer" : "noopener"}
+                >
+                  Apri documento <span aria-hidden="true">↗</span>
+                </a>
+                {!external && (
+                  <a class="post-attachment__download" href={attachment.url} download>
+                    Scarica
+                  </a>
+                )}
+              </div>
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  </aside>
+)}
+
+<style>
+  .post-attachments {
+    margin: 2.25rem 0 0;
+    padding: clamp(1rem, 2.4vw, 1.4rem);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--r-lg, 18px);
+    background: color-mix(in oklab, var(--panel) 88%, transparent);
+  }
+
+  .post-attachments__head {
+    margin-bottom: 1rem;
+  }
+
+  .post-attachments__eyebrow {
+    margin: 0 0 0.35rem;
+    color: var(--brand);
+    font-family: "Archivo", sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+  }
+
+  .post-attachments__head h2 {
+    margin: 0;
+    font-family: "Source Serif 4", serif;
+    font-size: clamp(1.45rem, 2.4vw, 1.9rem);
+    line-height: 1.15;
+  }
+
+  .post-attachments__head > p:last-child {
+    margin: 0.4rem 0 0;
+    color: var(--muted);
+    font-size: var(--text-sm);
+    line-height: 1.55;
+  }
+
+  .post-attachments__list {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .post-attachment {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.9rem;
+    align-items: start;
+    padding: 1rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--r-md, 14px);
+    background: color-mix(in oklab, var(--surface, var(--panel)) 92%, transparent);
+  }
+
+  .post-attachment__type {
+    display: inline-grid;
+    place-items: center;
+    min-width: 2.75rem;
+    height: 2rem;
+    padding: 0 0.5rem;
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--brand) 16%, transparent);
+    color: var(--brand);
+    font-family: "Archivo", sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+  }
+
+  .post-attachment__body h3 {
+    margin: 0;
+    font-family: "Archivo", sans-serif;
+    font-size: 1rem;
+    line-height: 1.35;
+  }
+
+  .post-attachment__meta,
+  .post-attachment__description {
+    margin: 0.35rem 0 0;
+    color: var(--muted);
+    font-size: var(--text-sm);
+    line-height: 1.5;
+  }
+
+  .post-attachment__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    margin-top: 0.75rem;
+  }
+
+  .post-attachment__actions a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: 2.35rem;
+    padding: 0.55rem 0.85rem;
+    border-radius: 999px;
+    font-family: "Archivo", sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .post-attachment__open {
+    background: var(--brand);
+    color: #07140d;
+  }
+
+  .post-attachment__download {
+    border: 1px solid var(--border-subtle);
+    color: var(--text);
+  }
+
+  .post-attachment__actions a:focus-visible {
+    outline: 3px solid color-mix(in oklab, var(--brand) 45%, transparent);
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 560px) {
+    .post-attachment {
+      grid-template-columns: 1fr;
+    }
+
+    .post-attachment__type {
+      justify-self: start;
+    }
+  }
+</style>
