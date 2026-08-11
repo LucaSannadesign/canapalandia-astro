@@ -26,7 +26,7 @@ const STRUCTURAL_ROUTES = [
 ] as const;
 
 /** Route Astro fondamentali: esistono per contratto applicativo e non dipendono dal filesystem runtime. */
-const ALWAYS_INCLUDE_STRUCTURAL_ROUTES = new Set<string>(["/", "/blog/"]);
+const ALWAYS_INCLUDE_STRUCTURAL_ROUTES = new Set<string>(["/", "/blog/", "/lab/"]);
 
 export const prerender = false;
 
