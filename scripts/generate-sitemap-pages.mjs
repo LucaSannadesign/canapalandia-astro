@@ -104,6 +104,7 @@ const main = async () => {
   const fixedRoutes = [
     "/",
     "/blog/",
+    "/lab/",
     "/contatti/",
     "/privacy/",
     "/privacy-policy/",
@@ -155,4 +156,3 @@ main().catch((err) => {
   console.error("[sitemap] Failed to generate sitemap pages:", err);
   process.exit(1);
 });
-
