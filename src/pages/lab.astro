@@ -421,7 +421,8 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/lab/`;
   .lab-page {
     --lab-accent: var(--brand, #2f7d4a);
     --lab-accent-soft: color-mix(in srgb, var(--lab-accent) 14%, transparent);
-    padding: clamp(48px, 7vw, 92px) 0 96px;
+    --lab-copy: color-mix(in srgb, var(--text) 78%, transparent);
+    padding: clamp(44px, 6vw, 76px) 0 84px;
   }
 
   .lab-container {
@@ -429,8 +430,8 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/lab/`;
   }
 
   .lab-hero {
-    max-width: 820px;
-    margin-bottom: 42px;
+    max-width: 880px;
+    margin-bottom: 34px;
   }
 
   .lab-kicker,
@@ -444,27 +445,32 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/lab/`;
 
   .lab-hero h1 {
     margin: 0;
-    max-width: 760px;
-    font-size: clamp(2.35rem, 6vw, 5rem);
+    max-width: 780px;
+    font-size: clamp(2.35rem, 5.4vw, 4.65rem);
     line-height: 0.98;
     letter-spacing: -0.045em;
   }
 
   .lab-lead {
-    max-width: 720px;
-    margin: 24px 0 18px;
-    color: var(--muted);
-    font-size: clamp(1.06rem, 2vw, 1.25rem);
-    line-height: 1.65;
+    max-width: 740px;
+    margin: 22px 0 18px;
+    color: var(--lab-copy);
+    font-size: clamp(1.08rem, 2vw, 1.26rem);
+    line-height: 1.62;
   }
 
   .lab-privacy {
     display: inline-flex;
     align-items: flex-start;
     gap: 9px;
-    color: var(--muted);
-    font-size: 0.88rem;
-    line-height: 1.5;
+    max-width: 660px;
+    padding: 9px 12px;
+    border: 1px solid color-mix(in srgb, var(--brand) 24%, var(--border));
+    border-radius: 9px;
+    background: color-mix(in srgb, var(--panel) 90%, transparent);
+    color: var(--lab-copy);
+    font-size: 0.86rem;
+    line-height: 1.45;
   }
 
   .lab-privacy span {
@@ -475,17 +481,28 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/lab/`;
 
   .lab-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 20px;
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+    gap: 22px;
     align-items: stretch;
   }
 
   .lab-panel {
     border: 1px solid var(--border);
     border-radius: 18px;
-    background: var(--panel);
+    background: color-mix(in srgb, var(--panel) 94%, var(--bg));
     padding: clamp(20px, 3vw, 32px);
     min-width: 0;
+  }
+
+  .lab-input-panel {
+    border-color: color-mix(in srgb, var(--brand) 38%, var(--border));
+    box-shadow: 0 18px 54px color-mix(in srgb, var(--bg) 72%, transparent);
+  }
+
+  .lab-results-panel {
+    display: flex;
+    flex-direction: column;
+    background: color-mix(in srgb, var(--panel) 86%, var(--bg));
   }
 
   .lab-panel__head {
@@ -518,26 +535,27 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/lab/`;
 
   #coa-input {
     width: 100%;
-    min-height: 292px;
+    min-height: 310px;
     resize: vertical;
-    border: 1px solid var(--border);
+    border: 1px solid color-mix(in srgb, var(--text) 16%, var(--border));
     border-radius: 12px;
-    background: color-mix(in srgb, var(--panel) 80%, var(--bg));
+    background: color-mix(in srgb, var(--bg) 72%, var(--panel));
     color: var(--text);
     padding: 18px;
-    font: 500 0.96rem/1.65 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font: 500 0.98rem/1.65 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     outline: none;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
   }
 
   #coa-input:focus {
     border-color: var(--brand);
+    background: color-mix(in srgb, var(--bg) 82%, var(--panel));
     box-shadow: 0 0 0 3px var(--lab-accent-soft);
   }
 
   .lab-help {
     margin: 12px 0 0;
-    color: var(--muted);
+    color: var(--lab-copy);
     font-size: 0.84rem;
     line-height: 1.55;
   }
@@ -551,23 +569,27 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/lab/`;
 
   .lab-primary,
   .lab-secondary {
-    min-height: 46px;
+    min-height: 50px;
     border-radius: 9px;
-    padding: 0 18px;
-    font: 700 0.9rem/1 "Archivo", sans-serif;
+    padding: 0 22px;
+    font: 700 0.92rem/1 "Archivo", sans-serif;
     cursor: pointer;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
   }
 
   .lab-primary {
+    min-width: 190px;
     border: 1px solid var(--brand);
     background: var(--brand);
     color: #fff;
+    box-shadow: 0 9px 24px color-mix(in srgb, var(--brand) 28%, transparent);
   }
 
   .lab-primary:hover {
     background: var(--gold);
     border-color: var(--gold);
     color: var(--gold-ink);
+    transform: translateY(-1px);
   }
 
   .lab-secondary {
@@ -580,21 +602,16 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/lab/`;
     border-color: var(--brand);
   }
 
-  .lab-results-panel {
-    display: flex;
-    flex-direction: column;
-  }
-
   .lab-empty {
-    min-height: 330px;
+    min-height: 350px;
     flex: 1;
     display: grid;
     place-content: center;
     justify-items: center;
     gap: 16px;
     text-align: center;
-    color: var(--muted);
-    border: 1px dashed var(--border);
+    color: var(--lab-copy);
+    border: 1px dashed color-mix(in srgb, var(--text) 18%, var(--border));
     border-radius: 12px;
     padding: 30px;
   }
@@ -613,8 +630,8 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/lab/`;
   .lab-empty__mark {
     display: grid;
     place-items: center;
-    width: 76px;
-    height: 76px;
+    width: 72px;
+    height: 72px;
     border-radius: 50%;
     background: var(--lab-accent-soft);
     color: var(--brand);
@@ -642,7 +659,7 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/lab/`;
   }
 
   .lab-summary span {
-    color: var(--muted);
+    color: var(--lab-copy);
     font-size: 0.82rem;
   }
 
@@ -655,7 +672,7 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/lab/`;
     padding: 14px 15px;
     border: 1px solid var(--border);
     border-radius: 11px;
-    background: color-mix(in srgb, var(--panel) 88%, var(--bg));
+    background: color-mix(in srgb, var(--panel) 90%, var(--bg));
   }
 
   .lab-result__top {
@@ -681,13 +698,13 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/lab/`;
 
   .lab-result p {
     margin: 9px 0 0;
-    color: var(--muted);
+    color: var(--lab-copy);
     font-size: 0.86rem;
     line-height: 1.5;
   }
 
   .lab-result__source {
-    opacity: 0.72;
+    opacity: 0.76;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     font-size: 0.73rem !important;
     overflow-wrap: anywhere;
@@ -724,30 +741,31 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/lab/`;
 
   .lab-term p {
     margin: 0;
-    color: var(--muted);
+    color: var(--lab-copy);
     font-size: 0.82rem;
     line-height: 1.5;
   }
 
   .lab-explainer {
     display: grid;
-    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
-    gap: clamp(30px, 6vw, 90px);
-    margin: 70px 0;
-    padding: 40px 0;
+    grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
+    gap: clamp(28px, 5vw, 72px);
+    margin: 54px 0 46px;
+    padding: 30px 0;
     border-top: 1px solid var(--border);
     border-bottom: 1px solid var(--border);
   }
 
   .lab-explainer__copy {
     display: grid;
-    gap: 16px;
+    gap: 13px;
   }
 
   .lab-explainer__copy p {
     margin: 0;
-    color: var(--muted);
-    line-height: 1.7;
+    color: var(--lab-copy);
+    font-size: 0.96rem;
+    line-height: 1.62;
   }
 
   .lab-explainer__copy strong {
@@ -756,45 +774,45 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/lab/`;
 
   .lab-glossary__head {
     max-width: 680px;
-    margin-bottom: 26px;
+    margin-bottom: 18px;
   }
 
   .lab-glossary__grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 14px;
+    gap: 10px;
   }
 
   .lab-glossary article {
     border: 1px solid var(--border);
-    border-radius: 14px;
-    background: var(--panel);
-    padding: 22px;
+    border-radius: 11px;
+    background: color-mix(in srgb, var(--panel) 88%, var(--bg));
+    padding: 16px 17px;
   }
 
   .lab-glossary article > span {
     display: inline-block;
     color: var(--brand);
-    font: 800 0.76rem/1 "Archivo", sans-serif;
+    font: 800 0.74rem/1 "Archivo", sans-serif;
     letter-spacing: 0.08em;
-    margin-bottom: 14px;
+    margin-bottom: 10px;
   }
 
   .lab-glossary h3 {
-    margin: 0 0 9px;
-    font-size: 1.05rem;
+    margin: 0 0 7px;
+    font-size: 1rem;
   }
 
   .lab-glossary p {
     margin: 0;
-    color: var(--muted);
-    font-size: 0.9rem;
-    line-height: 1.6;
+    color: var(--lab-copy);
+    font-size: 0.86rem;
+    line-height: 1.5;
   }
 
   @media (max-width: 820px) {
     .lab-page {
-      padding-top: 40px;
+      padding-top: 38px;
     }
 
     .lab-grid,
@@ -804,8 +822,8 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/lab/`;
     }
 
     .lab-explainer {
-      gap: 24px;
-      margin: 52px 0;
+      gap: 22px;
+      margin: 44px 0 38px;
     }
 
     .lab-empty {
@@ -833,7 +851,11 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/lab/`;
       text-align: left;
     }
 
-    .lab-actions > button {
+    .lab-primary {
+      flex: 1 1 100%;
+    }
+
+    .lab-secondary {
       flex: 1 1 auto;
     }
   }
