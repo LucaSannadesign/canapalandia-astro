@@ -1,0 +1,70 @@
+---
+import SiteLayout from "../layouts/SiteLayout.astro";
+import InstitutionalPage from "../components/InstitutionalPage.astro";
+
+const SITE = import.meta.env.SITE || "https://canapalandia.com";
+const title = "Disclaimer legale | Canapalandia";
+const description = "Disclaimer di Canapalandia: finalità informative, limiti dei contenuti medici e legali, fonti, affiliazioni e strumenti del sito.";
+const canonical = `${SITE}/disclaimer-legale-canapalandia/`;
+---
+
+<SiteLayout title={title} description={description} canonical={canonical}>
+  <InstitutionalPage
+    eyebrow="Trasparenza"
+    title="Disclaimer legale"
+    lead="Canapalandia informa e aiuta a orientarsi, ma non sostituisce professionisti, autorità, laboratori o fonti normative ufficiali."
+    updated="11 agosto 2026"
+  >
+    <h2>1. Finalità editoriale</h2>
+    <p>
+      Canapalandia è un progetto editoriale indipendente dedicato a canapa, CBD, cannabis light, ricerca, cultura, mercato e normativa. I contenuti pubblicati hanno finalità informative, culturali e di approfondimento.
+    </p>
+
+    <h2>2. Nessuna consulenza medica o sanitaria</h2>
+    <p>
+      Articoli che citano studi, effetti biologici, sicurezza, benessere o utilizzi terapeutici non costituiscono diagnosi, prescrizioni o raccomandazioni sanitarie personali. Le decisioni relative alla salute devono essere valutate con un professionista sanitario qualificato, tenendo conto della situazione individuale e delle informazioni ufficiali disponibili.
+    </p>
+
+    <h2>3. Nessuna consulenza legale</h2>
+    <p>
+      Le informazioni su leggi, sentenze, regolamenti, controlli e procedimenti amministrativi non costituiscono consulenza legale. La normativa sulla canapa e sui cannabinoidi può cambiare rapidamente e può dipendere dalla categoria del prodotto, dall'uso, dal territorio e dal caso concreto. Prima di prendere decisioni con conseguenze giuridiche è necessario verificare le fonti ufficiali aggiornate o rivolgersi a un professionista.
+    </p>
+
+    <h2>4. Ricerca scientifica e incertezza</h2>
+    <p>
+      Uno studio scientifico non equivale automaticamente a una prova definitiva, a un'autorizzazione sanitaria o a una raccomandazione d'uso. Quando possibile, Canapalandia distingue risultati preliminari, valutazioni di autorità, revisioni della letteratura e conclusioni consolidate.
+    </p>
+
+    <h2>5. Fonti e aggiornamenti</h2>
+    <p>
+      Cerchiamo di utilizzare fonti verificabili, con preferenza per documenti ufficiali, autorità pubbliche, testi normativi e pubblicazioni scientifiche. Nonostante le verifiche editoriali, un contenuto può diventare superato o contenere errori. Le segnalazioni documentate vengono valutate e, quando necessario, il contenuto viene corretto o aggiornato.
+    </p>
+
+    <h2>6. Canapalandia Lab e altri strumenti</h2>
+    <p>
+      Canapalandia Lab è uno strumento di lettura automatica di alcuni dati presenti nei certificati di analisi. Non verifica l'autenticità del certificato, non certifica il laboratorio o il prodotto e non stabilisce legalità, sicurezza, qualità o idoneità al consumo. Il risultato dipende dal testo riconosciuto e dalle regole supportate dallo strumento.
+    </p>
+
+    <h2>7. Pubblicità, affiliazioni e partner</h2>
+    <p>
+      Il sito può contenere pubblicità, link affiliati, partnership e contenuti sponsorizzati. Quando applicabile, la natura commerciale viene dichiarata. Un'affiliazione può generare una commissione per Canapalandia, senza costi aggiuntivi per l'utente. Le relazioni commerciali non trasformano i contenuti editoriali in garanzie sui prodotti o servizi di terzi.
+    </p>
+
+    <h2>8. Link e contenuti esterni</h2>
+    <p>
+      I link esterni vengono forniti per documentazione, approfondimento o utilità. Canapalandia non controlla in modo continuativo contenuti, disponibilità, sicurezza o politiche di siti terzi e non può assumersi responsabilità per modifiche successive alla pubblicazione del collegamento.
+    </p>
+
+    <h2>9. Segnalazioni e correzioni</h2>
+    <p>
+      Per segnalare un errore, una fonte aggiornata o un problema puoi utilizzare la <a href="/contatti/">pagina Contatti</a> o scrivere a <a href="mailto:info@canapalandia.com">info@canapalandia.com</a>. Se possibile, indica l'URL della pagina e la fonte che supporta la correzione richiesta.
+    </p>
+
+    <div class="institutional-links">
+      <a href="/chi-siamo/">Chi siamo</a>
+      <a href="/chi-siamo/missione/">Missione</a>
+      <a href="/termini-e-condizioni/">Termini e condizioni</a>
+      <a href="/privacy-policy/">Privacy Policy</a>
+    </div>
+  </InstitutionalPage>
+</SiteLayout>
