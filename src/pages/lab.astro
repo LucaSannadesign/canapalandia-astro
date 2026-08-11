@@ -1,0 +1,1104 @@
+---
+import SiteLayout from "@/layouts/SiteLayout.astro";
+
+const SITE = import.meta.env.SITE || "https://canapalandia.com";
+const title = "Come leggere un certificato COA | Canapalandia Lab";
+const description =
+  "Incolla i risultati di un certificato di analisi (COA) e ottieni una lettura semplice di cannabinoidi, valori, unità e sigle come ND, LOD e LOQ.";
+const canonical = `${SITE}/lab/`;
+const ogImage = `${SITE}/images/logo-canapalandia_1024.webp`;
+const socialImageAlt = "Canapalandia Lab — strumento per leggere un certificato COA";
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": `${SITE}/#website`,
+      url: `${SITE}/`,
+      name: "Canapalandia",
+      inLanguage: "it-IT",
+    },
+    {
+      "@type": "WebPage",
+      "@id": `${canonical}#webpage`,
+      url: canonical,
+      name: title,
+      description,
+      inLanguage: "it-IT",
+      isPartOf: { "@id": `${SITE}/#website` },
+      about: { "@id": `${canonical}#app` },
+    },
+    {
+      "@type": "WebApplication",
+      "@id": `${canonical}#app`,
+      name: "Canapalandia Lab — Lettore COA",
+      url: canonical,
+      description,
+      applicationCategory: "EducationalApplication",
+      operatingSystem: "Any",
+      browserRequirements: "Richiede JavaScript in un browser moderno",
+      isAccessibleForFree: true,
+      publisher: {
+        "@type": "Organization",
+        name: "Canapalandia",
+        url: `${SITE}/`,
+      },
+    },
+  ],
+};
+
+const extraHead = `
+<meta name="author" content="Canapalandia" />
+<meta name="application-name" content="Canapalandia" />
+<meta name="theme-color" content="#14261b" media="(prefers-color-scheme: dark)" />
+<meta name="theme-color" content="#f6f2e7" media="(prefers-color-scheme: light)" />
+<meta property="og:locale" content="it_IT" />
+<meta property="og:image:alt" content="${socialImageAlt}" />
+<meta name="twitter:image:alt" content="${socialImageAlt}" />
+<script type="application/ld+json">${JSON.stringify(structuredData).replace(/</g, "\\u003c")}</script>
+`;
+---
+
+<SiteLayout
+  title={title}
+  description={description}
+  canonical={canonical}
+  robots="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1"
+  ogImage={ogImage}
+  ogType="website"
+  ogSiteName="Canapalandia"
+  twitterCard="summary_large_image"
+  yoastHeadHtml={extraHead}
+  shell={false}
+>
+  <section class="lab-page" aria-labelledby="lab-title">
+    <div class="lab-wrap">
+      <header class="lab-hero">
+        <p class="lab-kicker"><span aria-hidden="true"></span> CANAPALANDIA LAB · BETA</p>
+        <h1 id="lab-title">Capisci meglio il tuo certificato di analisi</h1>
+        <p class="lab-lead">
+          Incolla la parte del COA con i risultati. Il Lab prova a riconoscere
+          cannabinoidi, valori e sigle di laboratorio e li riscrive in modo più
+          comprensibile.
+        </p>
+        <div class="lab-privacy" role="note">
+          <span class="lab-privacy__dot" aria-hidden="true"></span>
+          <span>
+            L'analisi avviene nel browser: il testo incollato non viene inviato al
+            server da questo strumento.
+          </span>
+        </div>
+      </header>
+
+      <div class="lab-grid">
+        <section class="lab-panel lab-input-panel" aria-labelledby="coa-input-title">
+          <div class="lab-panel__head">
+            <div>
+              <p class="lab-step">1 · INCOLLA</p>
+              <h2 id="coa-input-title">Risultati del COA</h2>
+            </div>
+            <button class="lab-link-button" id="load-example" type="button">
+              Usa un esempio
+            </button>
+          </div>
+
+          <label class="sr-only" for="coa-input">Testo del certificato di analisi</label>
+          <textarea
+            id="coa-input"
+            rows="13"
+            spellcheck="false"
+            autocomplete="off"
+            autocapitalize="off"
+            aria-describedby="coa-help"
+            placeholder="Esempio:\nCBD 12,4 %\nCBDA 0,8 %\nΔ9-THC < LOQ\nCBG 0,18 %\nCBN ND"
+          ></textarea>
+
+          <p class="lab-help" id="coa-help">
+            Funziona meglio se copi una riga per ciascun analita. Sono riconosciuti
+            CBD, CBDA, THC/Δ9-THC, THCA, CBG, CBGA, CBC e CBN.
+          </p>
+
+          <div class="lab-actions">
+            <button class="lab-primary" id="analyze-coa" type="button">
+              Leggi i risultati <span aria-hidden="true">→</span>
+            </button>
+            <button class="lab-secondary" id="clear-coa" type="button">
+              Pulisci
+            </button>
+          </div>
+        </section>
+
+        <section
+          class="lab-panel lab-results-panel"
+          aria-labelledby="coa-results-title"
+          aria-live="polite"
+        >
+          <div class="lab-panel__head">
+            <div>
+              <p class="lab-step">2 · CAPIRE</p>
+              <h2 id="coa-results-title">Lettura semplice</h2>
+            </div>
+          </div>
+
+          <div id="coa-empty" class="lab-empty">
+            <div class="lab-empty__mark" aria-hidden="true">COA</div>
+            <p>
+              Incolla i risultati e premi <strong>Leggi i risultati</strong>.
+            </p>
+          </div>
+
+          <div id="coa-output" class="lab-output" hidden>
+            <div id="coa-summary" class="lab-summary"></div>
+            <div id="coa-results" class="lab-result-list"></div>
+            <div id="coa-terms" class="lab-terms"></div>
+          </div>
+        </section>
+      </div>
+
+      <section class="lab-explainer" aria-labelledby="lab-explainer-title">
+        <div>
+          <p class="lab-step">COSA FA DAVVERO</p>
+          <h2 id="lab-explainer-title">Un traduttore, non un verdetto</h2>
+        </div>
+        <div class="lab-explainer__copy">
+          <p>
+            Un COA può essere difficile da leggere perché usa abbreviazioni,
+            soglie analitiche e unità diverse. Questo strumento serve a orientarsi
+            nei dati riportati dal laboratorio.
+          </p>
+          <p class="lab-disclaimer">
+            <strong>Non certifica</strong> la legalità, la sicurezza, la qualità o
+            l'idoneità al consumo di un prodotto e non sostituisce il laboratorio,
+            un professionista sanitario o un parere legale.
+          </p>
+        </div>
+      </section>
+
+      <section class="lab-glossary" aria-labelledby="lab-glossary-title">
+        <div class="lab-glossary__head">
+          <p class="lab-step">MINI GLOSSARIO</p>
+          <h2 id="lab-glossary-title">Tre sigle che compaiono spesso</h2>
+        </div>
+        <div class="lab-glossary__grid">
+          <article>
+            <span>ND</span>
+            <div>
+              <h3>Non rilevato</h3>
+              <p>
+                In molti referti indica che il laboratorio non ha rilevato
+                l'analita secondo il proprio metodo. La definizione precisa va
+                sempre verificata nella legenda del certificato.
+              </p>
+            </div>
+          </article>
+          <article>
+            <span>LOD</span>
+            <div>
+              <h3>Limite di rilevazione</h3>
+              <p>
+                È la soglia sotto la quale il metodo non riesce a distinguere con
+                sufficiente affidabilità la presenza dell'analita.
+              </p>
+            </div>
+          </article>
+          <article>
+            <span>LOQ</span>
+            <div>
+              <h3>Limite di quantificazione</h3>
+              <p>
+                È la soglia sotto la quale il laboratorio può non essere in grado
+                di attribuire una quantità sufficientemente affidabile.
+              </p>
+            </div>
+          </article>
+        </div>
+      </section>
+    </div>
+  </section>
+</SiteLayout>
+
+<script>
+  type ParsedResult = {
+    key: string;
+    label: string;
+    raw: string;
+    value: number | null;
+    unit: string | null;
+    status: "measured" | "nd" | "lod" | "loq" | "unknown";
+  };
+
+  const input = document.querySelector<HTMLTextAreaElement>("#coa-input");
+  const analyzeButton = document.querySelector<HTMLButtonElement>("#analyze-coa");
+  const clearButton = document.querySelector<HTMLButtonElement>("#clear-coa");
+  const exampleButton = document.querySelector<HTMLButtonElement>("#load-example");
+  const emptyState = document.querySelector<HTMLElement>("#coa-empty");
+  const output = document.querySelector<HTMLElement>("#coa-output");
+  const summary = document.querySelector<HTMLElement>("#coa-summary");
+  const resultsContainer = document.querySelector<HTMLElement>("#coa-results");
+  const termsContainer = document.querySelector<HTMLElement>("#coa-terms");
+
+  const analytes = [
+    { key: "THCA", label: "THCA", pattern: /\bTHCA\b/i },
+    {
+      key: "THC",
+      label: "Δ9-THC",
+      pattern: /(?:Δ\s*9|DELTA\s*[- ]?9|D\s*9)?\s*[- ]?THC\b|\bTHC\b/i,
+    },
+    { key: "CBDA", label: "CBDA", pattern: /\bCBDA\b/i },
+    { key: "CBD", label: "CBD", pattern: /\bCBD\b/i },
+    { key: "CBGA", label: "CBGA", pattern: /\bCBGA\b/i },
+    { key: "CBG", label: "CBG", pattern: /\bCBG\b/i },
+    { key: "CBC", label: "CBC", pattern: /\bCBC\b/i },
+    { key: "CBN", label: "CBN", pattern: /\bCBN\b/i },
+  ];
+
+  const descriptions: Record<string, string> = {
+    CBD: "Cannabidiolo, uno dei cannabinoidi più frequentemente riportati nei COA.",
+    CBDA: "Acido cannabidiolico, forma acida precursore del CBD.",
+    THC: "Delta-9-tetraidrocannabinolo, normalmente riportato separatamente dal THCA.",
+    THCA: "Acido tetraidrocannabinolico, forma acida precursore del THC.",
+    CBG: "Cannabigerolo, cannabinoide spesso presente in quantità inferiori rispetto a CBD o THC.",
+    CBGA: "Acido cannabigerolico, precursore biosintetico di diversi cannabinoidi.",
+    CBC: "Cannabicromene, cannabinoide minore che alcuni laboratori includono nel pannello.",
+    CBN: "Cannabinolo, cannabinoide che può comparire nei pannelli analitici anche a basse concentrazioni.",
+  };
+
+  function normalizeNumber(value: string): number | null {
+    const normalized = value.replace(/\s/g, "").replace(",", ".");
+    const parsed = Number.parseFloat(normalized);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  function normalizeUnit(unit: string | undefined): string | null {
+    if (!unit) return null;
+    return unit
+      .replace(/μ/g, "µ")
+      .replace(/UG/gi, "µg")
+      .replace(/\s+/g, "")
+      .toLowerCase()
+      .replace("mg/g", "mg/g")
+      .replace("mg/ml", "mg/ml");
+  }
+
+  function parseStatus(line: string): ParsedResult["status"] {
+    if (/<\s*LOQ\b|\bBELOW\s+LOQ\b/i.test(line)) return "loq";
+    if (/<\s*LOD\b|\bBELOW\s+LOD\b/i.test(line)) return "lod";
+    if (/\b(?:ND|N\.D\.|NOT\s+DETECTED)\b/i.test(line)) return "nd";
+    return "unknown";
+  }
+
+  function parseLine(line: string): ParsedResult | null {
+    const analyte = analytes.find((candidate) => candidate.pattern.test(line));
+    if (!analyte) return null;
+
+    const status = parseStatus(line);
+    const numeric = line.match(
+      /(?:^|\s|[:=])([0-9]+(?:[.,][0-9]+)?)\s*(%|mg\s*\/\s*g|mg\s*\/\s*ml|µg\s*\/\s*g|μg\s*\/\s*g|ug\s*\/\s*g|ppm)(?=\s|$)/i,
+    );
+
+    if (numeric) {
+      return {
+        key: analyte.key,
+        label: analyte.label,
+        raw: line.trim(),
+        value: normalizeNumber(numeric[1]),
+        unit: normalizeUnit(numeric[2]),
+        status: "measured",
+      };
+    }
+
+    if (status !== "unknown") {
+      return {
+        key: analyte.key,
+        label: analyte.label,
+        raw: line.trim(),
+        value: null,
+        unit: null,
+        status,
+      };
+    }
+
+    return null;
+  }
+
+  function parseCoa(text: string): ParsedResult[] {
+    const seen = new Set<string>();
+    const parsed: ParsedResult[] = [];
+
+    for (const line of text.split(/\r?\n/)) {
+      const result = parseLine(line);
+      if (!result || seen.has(result.key)) continue;
+      seen.add(result.key);
+      parsed.push(result);
+    }
+
+    return parsed;
+  }
+
+  function statusText(result: ParsedResult): string {
+    if (result.status === "measured" && result.value !== null) {
+      return `${result.value.toLocaleString("it-IT", { maximumFractionDigits: 4 })}${result.unit ? ` ${result.unit}` : ""}`;
+    }
+    if (result.status === "loq") return "Sotto il limite di quantificazione (LOQ)";
+    if (result.status === "lod") return "Sotto il limite di rilevazione (LOD)";
+    if (result.status === "nd") return "Non rilevato (ND)";
+    return "Valore non interpretato";
+  }
+
+  function statusClass(result: ParsedResult): string {
+    if (result.status === "measured") return "is-measured";
+    if (result.status === "nd") return "is-nd";
+    return "is-threshold";
+  }
+
+  function renderResult(result: ParsedResult): HTMLElement {
+    const article = document.createElement("article");
+    article.className = `lab-result ${statusClass(result)}`;
+
+    const top = document.createElement("div");
+    top.className = "lab-result__top";
+
+    const heading = document.createElement("h3");
+    heading.textContent = result.label;
+
+    const badge = document.createElement("span");
+    badge.className = "lab-result__value";
+    badge.textContent = statusText(result);
+
+    const resultDescription = document.createElement("p");
+    resultDescription.textContent =
+      descriptions[result.key] || "Cannabinoide riportato nel certificato.";
+
+    const source = document.createElement("p");
+    source.className = "lab-result__source";
+    source.textContent = `Riga letta: ${result.raw}`;
+
+    top.append(heading, badge);
+    article.append(top, resultDescription, source);
+    return article;
+  }
+
+  function renderTerms(text: string) {
+    if (!termsContainer) return;
+    termsContainer.innerHTML = "";
+
+    const foundTerms: Array<{ term: string; text: string }> = [];
+    if (/\bLOQ\b/i.test(text)) {
+      foundTerms.push({
+        term: "LOQ",
+        text: "Il valore è vicino o sotto la soglia alla quale il metodo riesce a quantificare con sufficiente affidabilità.",
+      });
+    }
+    if (/\bLOD\b/i.test(text)) {
+      foundTerms.push({
+        term: "LOD",
+        text: "Indica la soglia di rilevazione del metodo. Sotto questa soglia la presenza dell'analita può non essere distinguibile con sufficiente affidabilità.",
+      });
+    }
+    if (/\b(?:ND|N\.D\.|NOT\s+DETECTED)\b/i.test(text)) {
+      foundTerms.push({
+        term: "ND",
+        text: "Di solito significa “non rilevato”, ma il significato esatto dipende dalla legenda e dal metodo del laboratorio.",
+      });
+    }
+
+    if (!foundTerms.length) return;
+
+    const heading = document.createElement("h3");
+    heading.textContent = "Sigle trovate nel testo";
+    termsContainer.appendChild(heading);
+
+    for (const item of foundTerms) {
+      const row = document.createElement("div");
+      row.className = "lab-term";
+      const strong = document.createElement("strong");
+      strong.textContent = item.term;
+      const copy = document.createElement("p");
+      copy.textContent = item.text;
+      row.append(strong, copy);
+      termsContainer.appendChild(row);
+    }
+  }
+
+  function showMessage(message: string, isError = false) {
+    if (!emptyState || !output) return;
+    emptyState.hidden = false;
+    output.hidden = true;
+    emptyState.classList.toggle("is-error", isError);
+    const paragraph = emptyState.querySelector("p");
+    if (paragraph) paragraph.textContent = message;
+  }
+
+  function analyze() {
+    if (!input || !output || !emptyState || !summary || !resultsContainer) return;
+    const text = input.value.trim();
+
+    if (!text) {
+      showMessage("Incolla prima alcune righe del certificato.", true);
+      input.focus();
+      return;
+    }
+
+    const parsed = parseCoa(text);
+    if (!parsed.length) {
+      showMessage(
+        "Non sono riuscito a riconoscere valori leggibili. Prova a copiare le righe con nome del cannabinoide, valore e unità (per esempio: CBD 12,4 %).",
+        true,
+      );
+      return;
+    }
+
+    emptyState.hidden = true;
+    emptyState.classList.remove("is-error");
+    output.hidden = false;
+    resultsContainer.innerHTML = "";
+
+    const measuredCount = parsed.filter((item) => item.status === "measured").length;
+    const thresholdCount = parsed.length - measuredCount;
+    summary.innerHTML = `
+      <strong>${parsed.length} ${parsed.length === 1 ? "voce riconosciuta" : "voci riconosciute"}</strong>
+      <span>${measuredCount} con valore numerico${thresholdCount ? ` · ${thresholdCount} con soglia o ND` : ""}</span>
+    `;
+
+    for (const item of parsed) resultsContainer.appendChild(renderResult(item));
+    renderTerms(text);
+  }
+
+  analyzeButton?.addEventListener("click", analyze);
+
+  clearButton?.addEventListener("click", () => {
+    if (!input) return;
+    input.value = "";
+    showMessage("Incolla i risultati e premi Leggi i risultati.");
+    input.focus();
+  });
+
+  exampleButton?.addEventListener("click", () => {
+    if (!input) return;
+    input.value = [
+      "CBD 12,40 %",
+      "CBDA 0,82 %",
+      "Δ9-THC < LOQ",
+      "THCA 0,05 %",
+      "CBG 0,18 %",
+      "CBN ND",
+    ].join("\n");
+    analyze();
+  });
+</script>
+
+<style>
+  :global(html:has(.lab-page)) {
+    --lab-bg: #f6f2e7;
+    --lab-surface: #fffdf7;
+    --lab-surface-2: #ede7d6;
+    --lab-border: #e3dcc9;
+    --lab-border-strong: #d6ceb8;
+    --lab-heading: #16281a;
+    --lab-text: #1c2a1e;
+    --lab-body: #4a5a4c;
+    --lab-faint: #62705f;
+    --lab-green: #1f4a2c;
+    --lab-green-hover: #2b6139;
+    --lab-olive: #55702c;
+    --lab-gold: #c6a15b;
+    --lab-shadow-sm: 0 1px 2px rgba(28, 42, 30, 0.05);
+    --lab-shadow-focus: 0 0 0 3px rgba(110, 139, 61, 0.2);
+  }
+
+  :global(html[data-theme="dark"]:has(.lab-page)) {
+    --lab-bg: #14261b;
+    --lab-surface: #1b3d23;
+    --lab-surface-2: #16301c;
+    --lab-border: #2e4a35;
+    --lab-border-strong: #3a5a42;
+    --lab-heading: #f4f2e6;
+    --lab-text: #efede0;
+    --lab-body: #c6d3c2;
+    --lab-faint: #9fb79a;
+    --lab-green: #2b6139;
+    --lab-green-hover: #35744a;
+    --lab-olive: #9dc063;
+    --lab-gold: #d8b978;
+    --lab-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.28);
+    --lab-shadow-focus: 0 0 0 3px rgba(157, 192, 99, 0.18);
+  }
+
+  :global(body:has(.lab-page)) {
+    background: var(--lab-bg);
+  }
+
+  :global(body:has(.lab-page) .site-header) {
+    background: color-mix(in srgb, var(--lab-bg) 88%, transparent);
+    border-bottom-color: var(--lab-border);
+  }
+
+  :global(body:has(.lab-page) .site-header .nav a),
+  :global(body:has(.lab-page) .site-header .search),
+  :global(body:has(.lab-page) .site-header .menu-toggle),
+  :global(body:has(.lab-page) .site-header .theme-toggle__btn) {
+    color: var(--lab-text);
+  }
+
+  :global(body:has(.lab-page) .nav a:hover) {
+    background: var(--lab-surface-2);
+    color: var(--lab-olive);
+    box-shadow: none;
+  }
+
+  .lab-page {
+    font-family: var(--font-ui);
+    color: var(--lab-text);
+    background: var(--lab-bg);
+    padding-block: clamp(36px, 6vw, 72px) 80px;
+  }
+
+  .lab-wrap {
+    max-width: 1200px;
+    margin-inline: auto;
+    padding-inline: clamp(16px, 4vw, 40px);
+  }
+
+  .lab-hero {
+    max-width: 820px;
+    margin-bottom: clamp(30px, 4vw, 42px);
+  }
+
+  .lab-kicker,
+  .lab-step {
+    font-family: var(--font-ui);
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .lab-kicker {
+    margin: 0 0 18px;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    color: var(--lab-olive);
+  }
+
+  .lab-kicker > span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--lab-olive);
+    flex: 0 0 auto;
+  }
+
+  .lab-hero h1 {
+    margin: 0;
+    max-width: 19ch;
+    font-family: var(--font-editorial);
+    font-weight: 700;
+    font-size: clamp(34px, 4.6vw, 60px);
+    line-height: 1.04;
+    letter-spacing: -0.024em;
+    color: var(--lab-heading);
+    text-wrap: balance;
+  }
+
+  .lab-lead {
+    max-width: 55ch;
+    margin: 20px 0 0;
+    color: var(--lab-body);
+    font-size: clamp(16.5px, 1.3vw, 19px);
+    line-height: 1.58;
+    text-wrap: pretty;
+  }
+
+  .lab-privacy {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 10px;
+    max-width: 660px;
+    margin-top: 20px;
+    padding: 11px 14px;
+    border: 1px solid var(--lab-border);
+    border-radius: 12px;
+    background: var(--lab-surface);
+    color: var(--lab-faint);
+    font-size: 13.5px;
+    line-height: 1.48;
+    box-shadow: var(--lab-shadow-sm);
+  }
+
+  .lab-privacy__dot {
+    width: 7px;
+    height: 7px;
+    margin-top: 0.43em;
+    border-radius: 50%;
+    background: var(--lab-olive);
+    flex: 0 0 auto;
+  }
+
+  .lab-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+    gap: 18px;
+    align-items: stretch;
+  }
+
+  .lab-panel {
+    min-width: 0;
+    padding: clamp(20px, 2.7vw, 30px);
+    border: 1px solid var(--lab-border);
+    border-radius: 16px;
+    background: var(--lab-surface);
+    box-shadow: var(--lab-shadow-sm);
+  }
+
+  .lab-input-panel {
+    border-color: var(--lab-border-strong);
+  }
+
+  .lab-results-panel {
+    display: flex;
+    flex-direction: column;
+    background: color-mix(in srgb, var(--lab-surface) 86%, var(--lab-surface-2));
+  }
+
+  .lab-panel__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 18px;
+    margin-bottom: 18px;
+  }
+
+  .lab-step {
+    margin: 0 0 7px;
+    font-size: 11.5px;
+    line-height: 1.2;
+    letter-spacing: 0.13em;
+    color: var(--lab-faint);
+  }
+
+  .lab-panel h2,
+  .lab-explainer h2,
+  .lab-glossary h2 {
+    margin: 0;
+    font-family: var(--font-editorial);
+    font-weight: 700;
+    color: var(--lab-heading);
+    letter-spacing: -0.012em;
+  }
+
+  .lab-panel h2 {
+    font-size: clamp(24px, 2.5vw, 31px);
+    line-height: 1.1;
+  }
+
+  .lab-link-button {
+    flex: none;
+    min-height: 36px;
+    padding: 0 13px;
+    border: 1px solid var(--lab-border-strong);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--lab-olive);
+    font: 600 13px/1 var(--font-ui);
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  }
+
+  .lab-link-button:hover {
+    background: var(--lab-surface-2);
+    border-color: var(--lab-olive);
+  }
+
+  #coa-input {
+    width: 100%;
+    min-height: 300px;
+    resize: vertical;
+    padding: 18px;
+    border: 1px solid var(--lab-border-strong);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--lab-surface-2) 55%, var(--lab-surface));
+    color: var(--lab-text);
+    font: 500 15px/1.65 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  }
+
+  #coa-input::placeholder {
+    color: var(--lab-faint);
+    opacity: 0.8;
+  }
+
+  #coa-input:focus {
+    border-color: var(--lab-olive);
+    background: var(--lab-surface);
+    box-shadow: var(--lab-shadow-focus);
+  }
+
+  .lab-help {
+    margin: 11px 0 0;
+    color: var(--lab-faint);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .lab-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+  }
+
+  .lab-primary,
+  .lab-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    min-height: 48px;
+    padding: 0 22px;
+    border-radius: 999px;
+    font: 600 15px/1 var(--font-ui);
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  .lab-primary {
+    min-width: 190px;
+    border: 1px solid var(--lab-green);
+    background: var(--lab-green);
+    color: #fffdf7;
+  }
+
+  .lab-primary:hover {
+    background: var(--lab-green-hover);
+    border-color: var(--lab-green-hover);
+    color: #fffdf7;
+  }
+
+  .lab-secondary {
+    border: 1px solid var(--lab-border-strong);
+    background: transparent;
+    color: var(--lab-olive);
+  }
+
+  .lab-secondary:hover {
+    background: var(--lab-surface-2);
+    border-color: var(--lab-olive);
+  }
+
+  .lab-page :where(button):focus-visible,
+  .lab-page :where(textarea):focus-visible {
+    outline: 2px solid var(--lab-olive);
+    outline-offset: 3px;
+  }
+
+  .lab-empty {
+    min-height: 326px;
+    flex: 1;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 15px;
+    padding: 28px;
+    border: 1px dashed var(--lab-border-strong);
+    border-radius: 12px;
+    color: var(--lab-faint);
+    text-align: center;
+  }
+
+  .lab-empty.is-error {
+    color: var(--lab-text);
+    border-color: var(--lab-gold);
+  }
+
+  .lab-empty p {
+    max-width: 38ch;
+    margin: 0;
+    line-height: 1.55;
+  }
+
+  .lab-empty__mark {
+    display: grid;
+    place-items: center;
+    width: 62px;
+    height: 62px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--lab-olive) 15%, var(--lab-surface));
+    color: var(--lab-olive);
+    font: 700 12px/1 var(--font-ui);
+    letter-spacing: 0.11em;
+  }
+
+  .lab-output {
+    display: grid;
+    gap: 14px;
+  }
+
+  .lab-summary {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--lab-border);
+  }
+
+  .lab-summary strong {
+    color: var(--lab-text);
+    font-size: 15px;
+  }
+
+  .lab-summary span {
+    color: var(--lab-faint);
+    font-size: 12.5px;
+  }
+
+  .lab-result-list {
+    display: grid;
+    gap: 9px;
+  }
+
+  .lab-result {
+    padding: 13px 14px;
+    border: 1px solid var(--lab-border);
+    border-radius: 12px;
+    background: var(--lab-surface);
+  }
+
+  .lab-result__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .lab-result h3 {
+    margin: 0;
+    color: var(--lab-heading);
+    font: 700 15px/1.2 var(--font-ui);
+  }
+
+  .lab-result__value {
+    padding: 5px 9px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--lab-olive) 13%, var(--lab-surface));
+    color: var(--lab-text);
+    font: 600 12px/1.2 var(--font-ui);
+    text-align: right;
+  }
+
+  .lab-result p {
+    margin: 8px 0 0;
+    color: var(--lab-body);
+    font-size: 13px;
+    line-height: 1.48;
+  }
+
+  .lab-result__source {
+    color: var(--lab-faint) !important;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 11.5px !important;
+    overflow-wrap: anywhere;
+  }
+
+  .lab-terms {
+    display: grid;
+    gap: 8px;
+    margin-top: 3px;
+    padding-top: 14px;
+    border-top: 1px solid var(--lab-border);
+  }
+
+  .lab-terms:empty {
+    display: none;
+  }
+
+  .lab-terms h3 {
+    margin: 0 0 3px;
+    color: var(--lab-heading);
+    font: 700 14px/1.2 var(--font-ui);
+  }
+
+  .lab-term {
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    gap: 9px;
+    align-items: start;
+  }
+
+  .lab-term strong {
+    color: var(--lab-olive);
+    font: 700 12px/1.5 var(--font-ui);
+  }
+
+  .lab-term p {
+    margin: 0;
+    color: var(--lab-body);
+    font-size: 12.5px;
+    line-height: 1.5;
+  }
+
+  .lab-explainer {
+    display: grid;
+    grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
+    gap: clamp(28px, 5vw, 72px);
+    margin: clamp(46px, 6vw, 68px) 0 40px;
+    padding: 30px 0;
+    border-top: 1px solid var(--lab-border);
+    border-bottom: 1px solid var(--lab-border);
+  }
+
+  .lab-explainer h2,
+  .lab-glossary h2 {
+    font-size: clamp(27px, 3vw, 38px);
+    line-height: 1.08;
+  }
+
+  .lab-explainer__copy {
+    display: grid;
+    align-content: start;
+    gap: 12px;
+  }
+
+  .lab-explainer__copy p {
+    max-width: 62ch;
+    margin: 0;
+    color: var(--lab-body);
+    font-size: 15.5px;
+    line-height: 1.62;
+  }
+
+  .lab-disclaimer {
+    padding-left: 14px;
+    border-left: 3px solid var(--lab-gold);
+  }
+
+  .lab-explainer__copy strong {
+    color: var(--lab-text);
+  }
+
+  .lab-glossary__head {
+    max-width: 680px;
+    margin-bottom: 18px;
+  }
+
+  .lab-glossary__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .lab-glossary article {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 13px;
+    align-items: start;
+    padding: 16px;
+    border: 1px solid var(--lab-border);
+    border-radius: 12px;
+    background: var(--lab-surface);
+    box-shadow: var(--lab-shadow-sm);
+  }
+
+  .lab-glossary article > span {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 9px;
+    background: color-mix(in srgb, var(--lab-olive) 14%, var(--lab-surface));
+    color: var(--lab-olive);
+    font: 700 11px/1 var(--font-ui);
+    letter-spacing: 0.06em;
+  }
+
+  .lab-glossary h3 {
+    margin: 1px 0 5px;
+    color: var(--lab-heading);
+    font: 700 15px/1.25 var(--font-ui);
+  }
+
+  .lab-glossary p {
+    margin: 0;
+    color: var(--lab-body);
+    font-size: 13px;
+    line-height: 1.48;
+  }
+
+  @media (max-width: 820px) {
+    .lab-grid,
+    .lab-explainer,
+    .lab-glossary__grid {
+      grid-template-columns: 1fr;
+    }
+
+    .lab-grid {
+      gap: 14px;
+    }
+
+    .lab-explainer {
+      gap: 20px;
+      margin-top: 44px;
+    }
+
+    .lab-empty {
+      min-height: 220px;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .lab-page {
+      padding-top: 30px;
+    }
+
+    .lab-wrap {
+      padding-inline: 14px;
+    }
+
+    .lab-panel {
+      padding: 18px;
+      border-radius: 14px;
+    }
+
+    .lab-panel__head {
+      gap: 12px;
+    }
+
+    .lab-link-button {
+      min-height: 34px;
+      padding-inline: 10px;
+    }
+
+    .lab-result__top,
+    .lab-summary {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .lab-result__value {
+      text-align: left;
+    }
+
+    .lab-primary {
+      flex: 1 1 100%;
+    }
+
+    .lab-secondary {
+      flex: 1 1 auto;
+    }
+
+    .lab-glossary article {
+      grid-template-columns: 38px minmax(0, 1fr);
+      gap: 11px;
+    }
+
+    .lab-glossary article > span {
+      width: 36px;
+      height: 36px;
+    }
+  }
+</style>
