@@ -166,14 +166,15 @@ const jsonLd = {
           <aside class="post-legacy-warning" aria-label="Articolo d'archivio in revisione">
             <strong>Articolo d'archivio in revisione editoriale</strong>
             <p>
-              Questo contenuto storico può contenere formulazioni, fonti o indicazioni non più aggiornate.
-              Non usarlo per decisioni sanitarie o terapeutiche: la redazione lo sta riesaminando.
+              Questo contenuto storico conteneva formulazioni o indicazioni che richiedono una verifica con fonti aggiornate.
+              Il testo precedente è stato temporaneamente ritirato dalla consultazione e dall'indicizzazione.
+              Non usare questa pagina per decisioni sanitarie o terapeutiche.
               <a href="/disclaimer-legale-canapalandia/"> Consulta il disclaimer.</a>
             </p>
           </aside>
         ) : null}
 
-        {coverSrc ? (
+        {!isLegacyReview && coverSrc ? (
           <figure class="post-hero">
             <img
               class="post-hero__img"
@@ -187,12 +188,20 @@ const jsonLd = {
           </figure>
         ) : null}
 
-        {/* Contenuto articolo (SCOPED). Gli H1 interni MDX diventano H2: l'H1 pagina resta unico. */}
-        <div class="post-content" data-post-content>
-          <Content components={{ h1: PostBodyH1 }} />
-        </div>
+        {isLegacyReview ? (
+          <div class="post-content post-content--legacy" data-post-content>
+            <p>
+              La redazione sta riesaminando fonti, formulazioni e contesto di questo articolo prima di renderlo nuovamente disponibile.
+              Nel frattempo puoi consultare gli articoli più recenti del sito e il disclaimer editoriale.
+            </p>
+          </div>
+        ) : (
+          <div class="post-content" data-post-content>
+            <Content components={{ h1: PostBodyH1 }} />
+          </div>
+        )}
 
-        <PostAttachments attachments={entry.data.attachments} />
+        {!isLegacyReview ? <PostAttachments attachments={entry.data.attachments} /> : null}
 
         <aside class="post-editorial-note" aria-label="Nota editoriale">
           <p>
@@ -207,13 +216,13 @@ const jsonLd = {
         <hr class="post-separator" aria-hidden="true" />
 
         {/* Reazioni */}
-        {FEATURES.REACTIONS && <Reactions slug={slug} />}
+        {!isLegacyReview && FEATURES.REACTIONS && <Reactions slug={slug} />}
 
         {/* Social Share */}
-        <PostShare url={canonicalUrl} title={postTitle} showShare={showShare} />
+        {!isLegacyReview ? <PostShare url={canonicalUrl} title={postTitle} showShare={showShare} /> : null}
 
         {/* CTA Sostienici */}
-        <SupportCTA supportUrl="/sostieni-la-nostra-causa/" showSupportCta={showSupportCta} />
+        {!isLegacyReview ? <SupportCTA supportUrl="/sostieni-la-nostra-causa/" showSupportCta={showSupportCta} /> : null}
 
         {/* Articoli correlati */}
         <RelatedPosts
@@ -266,6 +275,10 @@ const jsonLd = {
     width: 100%;
     line-height: 1.7;
     font-size: clamp(1.0625rem, 0.4vw + 1rem, 1.1875rem);
+  }
+
+  .post-main .post-content--legacy {
+    margin-top: 1.25rem;
   }
 
   /* Spazio verticale consistente tra blocchi */
