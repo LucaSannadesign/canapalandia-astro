@@ -238,13 +238,9 @@ function percorsiBlurb(cat: CategoryData, maxLen: number): string {
    Candidabili: solo post pubblicati (no bozze, no contenuti di test, no date future)
    e con uno slug utilizzabile per il link.
 
-   `usedKeys` è l'unica fonte di verità anti-duplicazione: è condiviso da tutte le
-   sezioni e viene riempito in modo progressivo, così lo stesso `entry.id` non può
-   comparire due volte nella pagina.
-
-   Ordine di assegnazione: "In evidenza" per prima (così i post marcati
-   `homeFeatured` mantengono la priorità redazionale), poi "In aggiornamento",
-   infine "Ultimi articoli".
+   `usedKeys` deduplica le sezioni editoriali di priorità ("In evidenza" e
+   "In aggiornamento"). "Ultimi articoli" resta invece una cronologia pura,
+   indipendente dalle apparizioni dello stesso contenuto nelle sezioni precedenti.
 --------------------------- */
 
 const publishablePosts = eligiblePosts.filter((p) => isPublished(p) && getSlug(p) !== "");
@@ -286,8 +282,8 @@ const featuredSide = featuredPick.slice(1, 4);
 // 2) In aggiornamento (hero): 3 titoli recenti non già usati
 const updatesPosts = takeUnique(3, usedKeys, publishablePosts, eligiblePosts);
 
-// 3) Ultimi articoli: 6 post non già usati
-const latestPosts = takeUnique(6, usedKeys, publishablePosts, eligiblePosts);
+// 3) Ultimi articoli: cronologia pura dei 6 post pubblicati più recenti
+const latestPosts = publishablePosts.slice(0, 6);
 
 /* ---------------------------
    Inizia da qui: gli stessi quattro nuclei editoriali dell'header
