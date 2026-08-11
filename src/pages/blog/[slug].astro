@@ -36,6 +36,10 @@ if (!isPublishedBlogEntry(entry)) {
   return new Response(null, { status: 404, statusText: "Not Found" });
 }
 
+// I contenuti legacy in revisione restano raggiungibili per preservare lo storico URL,
+// ma non devono essere indicizzati finché la revisione editoriale non è conclusa.
+const isLegacyReview = entry.data.editorialStatus === "legacy-review";
+
 // MODIFICA 3: Usata la nuova funzione render(entry)
 const { Content } = await render(entry);
 
@@ -83,7 +87,7 @@ const metadata = {
   title: entry.data.title,
   description: entry.data.description || "",
   canonical: `${SITE_URL}/blog/${slug}/`,
-  robots: { index: true, follow: true },
+  robots: { index: !isLegacyReview, follow: true },
   ogType: "article",
   ogSiteName: "Canapalandia",
   ogImage: postImage || undefined,
@@ -157,6 +161,17 @@ const jsonLd = {
             Di <strong>{entry.data.author || "Canapalandia"}</strong>
           </p>
         </div>
+
+        {isLegacyReview ? (
+          <aside class="post-legacy-warning" aria-label="Articolo d'archivio in revisione">
+            <strong>Articolo d'archivio in revisione editoriale</strong>
+            <p>
+              Questo contenuto storico può contenere formulazioni, fonti o indicazioni non più aggiornate.
+              Non usarlo per decisioni sanitarie o terapeutiche: la redazione lo sta riesaminando.
+              <a href="/disclaimer-legale-canapalandia/"> Consulta il disclaimer.</a>
+            </p>
+          </aside>
+        ) : null}
 
         {coverSrc ? (
           <figure class="post-hero">
@@ -427,6 +442,33 @@ const jsonLd = {
       gap: 0.5rem 1rem;
       margin-bottom: 1rem;
     }
+  }
+
+  .post-legacy-warning {
+    margin: 0 0 1.5rem;
+    padding: 1rem 1.1rem;
+    border: 1px solid color-mix(in oklab, #c58a2a 55%, var(--border));
+    border-left-width: 4px;
+    border-radius: var(--r-md);
+    background: color-mix(in oklab, #c58a2a 12%, var(--panel));
+  }
+
+  .post-legacy-warning strong {
+    display: block;
+    margin-bottom: 0.35rem;
+    color: var(--text);
+  }
+
+  .post-legacy-warning p {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--text-sm);
+    line-height: 1.55;
+  }
+
+  .post-legacy-warning a {
+    color: var(--brand);
+    font-weight: var(--font-medium);
   }
 
   .post-editorial-note {
