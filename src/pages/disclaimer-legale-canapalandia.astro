@@ -1,0 +1,96 @@
+---
+import InstitutionalPage from "../components/InstitutionalPage.astro";
+
+const SITE = import.meta.env.SITE || "https://canapalandia.com";
+const canonical = `${SITE}/disclaimer-legale-canapalandia/`;
+---
+
+<InstitutionalPage
+  title="Disclaimer legale | Canapalandia"
+  description="Disclaimer di Canapalandia: finalità informative, limiti dei contenuti medici e legali, fonti, affiliazioni e strumenti del sito."
+  canonical={canonical}
+  eyebrow="Trasparenza"
+  heading="Disclaimer legale"
+  lead="Canapalandia informa e aiuta a orientarsi, ma non sostituisce professionisti, autorità, laboratori o fonti normative ufficiali."
+  currentLabel="Disclaimer legale"
+>
+  <section>
+    <h2>Finalità editoriale</h2>
+    <p>
+      Canapalandia è un progetto editoriale dedicato a canapa, CBD, cannabis light,
+      ricerca, cultura, mercato e normativa. I contenuti pubblicati hanno finalità
+      informative, culturali e di approfondimento.
+    </p>
+  </section>
+
+  <section>
+    <h2>Nessuna consulenza medica o sanitaria</h2>
+    <p>
+      Articoli che citano studi, effetti biologici, sicurezza, benessere o utilizzi
+      terapeutici non costituiscono diagnosi, prescrizioni o raccomandazioni sanitarie
+      personali. Le decisioni relative alla salute devono essere valutate con un
+      professionista sanitario qualificato e con le fonti ufficiali pertinenti.
+    </p>
+  </section>
+
+  <section>
+    <h2>Nessuna consulenza legale</h2>
+    <p>
+      Le informazioni su leggi, sentenze, regolamenti, controlli e procedimenti
+      amministrativi non costituiscono consulenza legale. La normativa sulla canapa e
+      sui cannabinoidi può cambiare rapidamente e può dipendere dalla categoria del
+      prodotto, dall'uso, dal territorio e dal caso concreto. Prima di prendere
+      decisioni con conseguenze giuridiche è necessario verificare le fonti ufficiali
+      aggiornate o rivolgersi a un professionista.
+    </p>
+  </section>
+
+  <section>
+    <h2>Ricerca scientifica, fonti e aggiornamenti</h2>
+    <p>
+      Uno studio scientifico non equivale automaticamente a una prova definitiva, a
+      un'autorizzazione sanitaria o a una raccomandazione d'uso. Quando possibile,
+      Canapalandia distingue risultati preliminari, valutazioni di autorità, revisioni
+      della letteratura e conclusioni più consolidate.
+    </p>
+    <p>
+      Cerchiamo di privilegiare documenti ufficiali, autorità pubbliche, testi
+      normativi e pubblicazioni scientifiche. Un contenuto può tuttavia diventare
+      superato o contenere errori: le segnalazioni documentate vengono valutate e,
+      quando necessario, il contenuto viene corretto o aggiornato.
+    </p>
+  </section>
+
+  <section>
+    <h2>Canapalandia Lab e altri strumenti</h2>
+    <p>
+      Canapalandia Lab è uno strumento di lettura automatica di alcuni dati presenti
+      nei certificati di analisi. Non verifica l'autenticità del certificato, non
+      certifica il laboratorio o il prodotto e non stabilisce legalità, sicurezza,
+      qualità o idoneità al consumo. Il risultato dipende dal testo riconosciuto e
+      dalle regole supportate dallo strumento.
+    </p>
+  </section>
+
+  <section>
+    <h2>Pubblicità, affiliazioni e partner</h2>
+    <p>
+      Il sito può contenere pubblicità, link affiliati, partnership e contenuti
+      sponsorizzati. Quando applicabile, la natura commerciale viene dichiarata. Un
+      link affiliato può generare una commissione per Canapalandia senza costi
+      aggiuntivi per l'utente. Le relazioni commerciali non costituiscono garanzia sui
+      prodotti o servizi di terzi.
+    </p>
+  </section>
+
+  <section>
+    <h2>Segnalazioni e correzioni</h2>
+    <p>
+      Per segnalare un errore, una fonte aggiornata o un problema puoi utilizzare la
+      <a href="/contatti/">pagina Contatti</a> o scrivere a
+      <a href="mailto:info@canapalandia.com">info@canapalandia.com</a>. Se possibile,
+      indica l'URL della pagina e la fonte che supporta la correzione richiesta.
+    </p>
+    <p class="institutional-note">Ultimo aggiornamento sostanziale: 11 agosto 2026.</p>
+  </section>
+</InstitutionalPage>
