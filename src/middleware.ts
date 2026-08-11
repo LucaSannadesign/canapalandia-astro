@@ -219,7 +219,30 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     return gone410();
   }
 
-  const response = await next();
+  let response = await next();
+
+  // Lab-only enhancement: load the final PDF report polisher without touching the core COA parser.
+  if (
+    pathNoSlash.toLowerCase() === "lab" &&
+    response.status === 200 &&
+    (response.headers.get("content-type") || "").includes("text/html")
+  ) {
+    const html = await response.text();
+    const scriptTag = '<script src="/scripts/lab-report-final-polish.js" defer></script>';
+    const enhancedHtml = html.includes(scriptTag)
+      ? html
+      : html.includes("</body>")
+        ? html.replace("</body>", `${scriptTag}</body>`)
+        : `${html}${scriptTag}`;
+
+    const headers = new Headers(response.headers);
+    headers.delete("content-length");
+    response = new Response(enhancedHtml, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
+  }
 
   const hostname = context.url.hostname;
   const isPreviewOrLocalhost =
