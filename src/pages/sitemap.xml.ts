@@ -14,6 +14,7 @@ const PAGES_DIR = fileURLToPath(new URL("../pages", import.meta.url));
 const STRUCTURAL_ROUTES = [
   "/",
   "/blog/",
+  "/lab/",
   "/chi-siamo/",
   "/missione/",
   "/la-nostra-storia/",
