@@ -1,10 +1,8 @@
 ---
 import "../styles/app.css";
-import Analytics from '@vercel/analytics/astro';
-import SpeedInsights from "@vercel/speed-insights/astro";
 import enhancementsScript from "../scripts/enhancements.js?raw";
 import Newsletter from "../components/widgets/Newsletter.astro";
-import GATag from "../components/GATag.astro";
+import PrivacyConsent from "../components/PrivacyConsent.astro";
 import {
   FOOTER_EXPLORE_NAVIGATION,
   PRIMARY_NAVIGATION,
@@ -240,17 +238,6 @@ const useHomeLightBg =
       rel="stylesheet"
     />
 
-    <!-- Google Analytics 4 -->
-    <GATag />
-
-    <!-- Ahrefs Analytics -->
-    <script
-      is:inline
-      src="https://analytics.ahrefs.com/analytics.js"
-      data-key="GQJf5NXsoIXET0VGyxgtkw"
-      async
-    ></script>
-
     {/* Renderizza SEMPRE title, canonical, robots, description */}
     <title>{titleFinal}</title>
     {descriptionFinal ? <meta name="description" content={descriptionFinal} /> : null}
@@ -392,17 +379,8 @@ const useHomeLightBg =
               xmlns="http://www.w3.org/2000/svg"
               aria-hidden="true"
             >
-              <path
-                d="M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"></path>
-              <path
-                d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"></path>
+              <path d="M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
             </svg>
 
             <!-- Luna: visibile quando sei in LIGHT -->
@@ -413,12 +391,7 @@ const useHomeLightBg =
               xmlns="http://www.w3.org/2000/svg"
               aria-hidden="true"
             >
-              <path
-                d="M21 13.2A8.5 8.5 0 1 1 10.8 3a6.8 6.8 0 0 0 10.2 10.2Z"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"></path>
+              <path d="M21 13.2A8.5 8.5 0 1 1 10.8 3a6.8 6.8 0 0 0 10.2 10.2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
             </svg>
           </button>
 
@@ -517,82 +490,34 @@ const useHomeLightBg =
             {!isSupportPage ? (
               <a href="/sostieni-la-nostra-causa/" aria-current={isCurrent("/sostieni-la-nostra-causa/") ? "page" : undefined}>Sostieni</a>
             ) : null}
+            <a href="/chi-siamo/" aria-current={isCurrent("/chi-siamo/") ? "page" : undefined}>Chi siamo</a>
             <a href="/contatti/" aria-current={isCurrent("/contatti/") ? "page" : undefined}>Contatti</a>
             <a href="/pubblicita/" aria-current={isCurrent("/pubblicita/") ? "page" : undefined}>Guest post e collaborazioni</a>
+            <a href="/disclaimer-legale-canapalandia/" aria-current={isCurrent("/disclaimer-legale-canapalandia/") ? "page" : undefined}>Disclaimer</a>
+            <a href="/privacy-policy/" aria-current={isCurrent("/privacy-policy/") ? "page" : undefined}>Privacy</a>
+            <a href="/cookie-policy/" aria-current={isCurrent("/cookie-policy/") ? "page" : undefined}>Cookie</a>
+            <a href="/termini-e-condizioni/" aria-current={isCurrent("/termini-e-condizioni/") ? "page" : undefined}>Termini</a>
+            <a href="/cookie-policy/" data-open-privacy-consent>Preferenze privacy</a>
           </nav>
 
           <nav class="social-links footer-social" aria-label="Canali social">
-            <a
-              href="https://www.facebook.com/canapalandia.official"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Facebook Canapalandia"
-            >
-              <img
-                src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/facebook.svg"
-                alt=""
-                aria-hidden="true"
-              />
+            <a href="https://www.facebook.com/canapalandia.official" target="_blank" rel="noopener noreferrer" aria-label="Facebook Canapalandia">
+              <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/facebook.svg" alt="" aria-hidden="true" />
             </a>
-            <a
-              href="https://www.instagram.com/canapalandia/"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Instagram Canapalandia"
-            >
-              <img
-                src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/instagram.svg"
-                alt=""
-                aria-hidden="true"
-              />
+            <a href="https://www.instagram.com/canapalandia/" target="_blank" rel="noopener noreferrer" aria-label="Instagram Canapalandia">
+              <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/instagram.svg" alt="" aria-hidden="true" />
             </a>
-            <a
-              href="https://www.youtube.com/@canapalandia"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="YouTube Canapalandia"
-            >
-              <img
-                src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/youtube.svg"
-                alt=""
-                aria-hidden="true"
-              />
+            <a href="https://www.youtube.com/@canapalandia" target="_blank" rel="noopener noreferrer" aria-label="YouTube Canapalandia">
+              <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/youtube.svg" alt="" aria-hidden="true" />
             </a>
-            <a
-              href="https://www.linkedin.com/company/canapalandia/"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="LinkedIn Canapalandia"
-            >
-              <img
-                src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/linkedin.svg"
-                alt=""
-                aria-hidden="true"
-              />
+            <a href="https://www.linkedin.com/company/canapalandia/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn Canapalandia">
+              <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/linkedin.svg" alt="" aria-hidden="true" />
             </a>
-            <a
-              href="https://t.me/Canapalandia"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Telegram Canapalandia"
-            >
-              <img
-                src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/telegram.svg"
-                alt=""
-                aria-hidden="true"
-              />
+            <a href="https://t.me/Canapalandia" target="_blank" rel="noopener noreferrer" aria-label="Telegram Canapalandia">
+              <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/telegram.svg" alt="" aria-hidden="true" />
             </a>
-            <a
-              href="https://wa.me/393403223494"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="WhatsApp Canapalandia"
-            >
-              <img
-                src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/whatsapp.svg"
-                alt=""
-                aria-hidden="true"
-              />
+            <a href="https://wa.me/393403223494" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp Canapalandia">
+              <img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/whatsapp.svg" alt="" aria-hidden="true" />
             </a>
           </nav>
         </section>
@@ -914,9 +839,7 @@ const useHomeLightBg =
 
     <script is:inline set:html={enhancementsScript}></script>
 
-    <Analytics />
-
-    <SpeedInsights />
+    <PrivacyConsent />
 
   </body>
 </html>

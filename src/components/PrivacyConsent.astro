@@ -1,0 +1,288 @@
+---
+const GA_ID = import.meta.env.PUBLIC_GA_ID || "";
+const AHREFS_KEY = "GQJf5NXsoIXET0VGyxgtkw";
+---
+
+<div
+  id="privacy-consent"
+  class="privacy-consent"
+  data-ga-id={GA_ID}
+  data-ahrefs-key={AHREFS_KEY}
+  hidden
+>
+  <div
+    class="privacy-consent__panel"
+    role="dialog"
+    aria-labelledby="privacy-consent-title"
+    aria-describedby="privacy-consent-copy"
+  >
+    <button
+      class="privacy-consent__close"
+      type="button"
+      data-consent-reject
+      aria-label="Continua senza analytics"
+    >×</button>
+
+    <div class="privacy-consent__content">
+      <p class="privacy-consent__eyebrow">Privacy</p>
+      <h2 id="privacy-consent-title">Scegli se aiutarci con le statistiche</h2>
+      <p id="privacy-consent-copy">
+        Per impostazione predefinita usiamo solo ciò che serve al funzionamento del sito.
+        Con il tuo consenso possiamo attivare strumenti di misurazione per capire quali
+        contenuti funzionano meglio e migliorare Canapalandia.
+      </p>
+      <p class="privacy-consent__services">
+        Misurazione opzionale: Google Analytics, Ahrefs Analytics, Vercel Web Analytics e Speed Insights.
+      </p>
+      <a class="privacy-consent__details" href="/cookie-policy/">Dettagli nella Cookie Policy</a>
+    </div>
+
+    <div class="privacy-consent__actions">
+      <button class="privacy-consent__button privacy-consent__button--ghost" type="button" data-consent-reject>
+        Rifiuta
+      </button>
+      <button class="privacy-consent__button privacy-consent__button--primary" type="button" data-consent-accept>
+        Accetta analytics
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .privacy-consent {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 10000;
+    padding: 18px;
+    pointer-events: none;
+  }
+  .privacy-consent__panel {
+    position: relative;
+    width: min(920px, 100%);
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 22px;
+    align-items: end;
+    padding: 24px 26px;
+    border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--panel) 97%, transparent);
+    color: var(--text);
+    box-shadow: 0 22px 60px rgba(0, 0, 0, .28);
+    backdrop-filter: blur(14px);
+    pointer-events: auto;
+  }
+  .privacy-consent__content { max-width: 650px; }
+  .privacy-consent__eyebrow {
+    margin: 0 0 6px;
+    font: 700 11px/1.2 var(--font-ui, "Archivo", sans-serif);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--brand);
+  }
+  .privacy-consent h2 {
+    margin: 0 36px 8px 0;
+    font: 700 clamp(20px, 2.5vw, 27px)/1.12 var(--font-serif, "Source Serif 4", serif);
+    color: var(--text);
+  }
+  .privacy-consent p {
+    margin: 0;
+    font: 400 14px/1.55 var(--font-ui, "Archivo", sans-serif);
+  }
+  .privacy-consent__services {
+    margin-top: 8px !important;
+    color: var(--muted);
+    font-size: 12.5px !important;
+  }
+  .privacy-consent__details {
+    display: inline-block;
+    margin-top: 10px;
+    font: 600 12.5px/1.3 var(--font-ui, "Archivo", sans-serif);
+  }
+  .privacy-consent__actions {
+    display: flex;
+    gap: 9px;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+  .privacy-consent__button,
+  .privacy-consent__close {
+    font-family: var(--font-ui, "Archivo", sans-serif);
+    cursor: pointer;
+  }
+  .privacy-consent__button {
+    min-height: 42px;
+    padding: 0 16px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .privacy-consent__button--ghost { background: transparent; color: var(--text); }
+  .privacy-consent__button--primary { border-color: var(--brand); background: var(--brand); color: #fff; }
+  .privacy-consent__button:focus-visible,
+  .privacy-consent__close:focus-visible,
+  .privacy-consent__details:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 3px;
+  }
+  .privacy-consent__close {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    width: 34px;
+    height: 34px;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-size: 27px;
+    line-height: 1;
+  }
+  @media (max-width: 760px) {
+    .privacy-consent { padding: 10px; }
+    .privacy-consent__panel {
+      grid-template-columns: 1fr;
+      gap: 16px;
+      padding: 20px;
+      border-radius: 14px;
+    }
+    .privacy-consent__actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      width: 100%;
+    }
+    .privacy-consent__button { width: 100%; }
+  }
+  @media (max-width: 430px) {
+    .privacy-consent__actions { grid-template-columns: 1fr; }
+  }
+</style>
+
+<script>
+  import { inject as injectVercelAnalytics } from "@vercel/analytics";
+  import { injectSpeedInsights } from "@vercel/speed-insights";
+
+  const STORAGE_KEY = "canapalandia_privacy_consent_v1";
+  const CONSENT_VERSION = 1;
+  const SIX_MONTHS_MS = 1000 * 60 * 60 * 24 * 183;
+
+  type ConsentChoice = { version: number; analytics: boolean; timestamp: number };
+  const root = document.getElementById("privacy-consent");
+
+  const readChoice = (): ConsentChoice | null => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as ConsentChoice;
+      if (parsed?.version !== CONSENT_VERSION) return null;
+      if (typeof parsed.analytics !== "boolean" || typeof parsed.timestamp !== "number") return null;
+      if (Date.now() - parsed.timestamp > SIX_MONTHS_MS) return null;
+      return parsed;
+    } catch {
+      return null;
+    }
+  };
+
+  const saveChoice = (analytics: boolean) => {
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ version: CONSENT_VERSION, analytics, timestamp: Date.now() }),
+      );
+    } catch {}
+  };
+
+  const loadGoogleAnalytics = (gaId: string) => {
+    if (!gaId || document.querySelector("script[data-consent-google-analytics]")) return;
+    const win = window as typeof window & { dataLayer?: unknown[]; gtag?: (...args: unknown[]) => void };
+    win.dataLayer = win.dataLayer || [];
+    win.gtag = (...args: unknown[]) => { win.dataLayer?.push(args); };
+    win.gtag("js", new Date());
+    win.gtag("consent", "update", { analytics_storage: "granted" });
+    win.gtag("config", gaId);
+
+    const script = document.createElement("script");
+    script.async = true;
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(gaId)}`;
+    script.dataset.consentGoogleAnalytics = "1";
+    document.head.appendChild(script);
+  };
+
+  const loadAhrefsAnalytics = (key: string) => {
+    if (!key || document.querySelector("script[data-consent-ahrefs-analytics]")) return;
+    const script = document.createElement("script");
+    script.async = true;
+    script.src = "https://analytics.ahrefs.com/analytics.js";
+    script.dataset.key = key;
+    script.dataset.consentAhrefsAnalytics = "1";
+    document.head.appendChild(script);
+  };
+
+  let vercelInjected = false;
+  const loadVercelMeasurement = () => {
+    if (vercelInjected) return;
+    vercelInjected = true;
+    try { injectVercelAnalytics({ mode: "production" }); } catch {}
+    try { injectSpeedInsights(); } catch {}
+  };
+
+  const activateAnalytics = () => {
+    if (!(root instanceof HTMLElement)) return;
+    loadGoogleAnalytics(root.dataset.gaId || "");
+    loadAhrefsAnalytics(root.dataset.ahrefsKey || "");
+    loadVercelMeasurement();
+  };
+
+  const clearGoogleAnalyticsCookies = () => {
+    const names = document.cookie
+      .split(";")
+      .map((part) => part.split("=")[0]?.trim())
+      .filter((name) => name && (name === "_ga" || name.startsWith("_ga_") || name === "_gid" || name.startsWith("_gat")));
+    const domains = [window.location.hostname, `.${window.location.hostname}`, ".canapalandia.com", "canapalandia.com"];
+    for (const name of names) {
+      for (const domain of domains) {
+        document.cookie = `${name}=; Max-Age=0; path=/; domain=${domain}; SameSite=Lax`;
+      }
+      document.cookie = `${name}=; Max-Age=0; path=/; SameSite=Lax`;
+    }
+  };
+
+  const showPanel = () => {
+    if (!(root instanceof HTMLElement)) return;
+    root.hidden = false;
+  };
+  const hidePanel = () => { if (root instanceof HTMLElement) root.hidden = true; };
+
+  const choose = (analytics: boolean, reloadOnRevoke = false) => {
+    saveChoice(analytics);
+    hidePanel();
+    if (analytics) {
+      activateAnalytics();
+      return;
+    }
+    clearGoogleAnalyticsCookies();
+    if (reloadOnRevoke) window.location.reload();
+  };
+
+  if (root instanceof HTMLElement) {
+    const existing = readChoice();
+    if (existing?.analytics) activateAnalytics();
+    else if (!existing) showPanel();
+
+    root.querySelectorAll<HTMLElement>("[data-consent-accept]").forEach((button) => {
+      button.addEventListener("click", () => choose(true));
+    });
+    root.querySelectorAll<HTMLElement>("[data-consent-reject]").forEach((button) => {
+      button.addEventListener("click", () => choose(false, Boolean(readChoice()?.analytics)));
+    });
+  }
+
+  document.querySelectorAll<HTMLElement>("[data-open-privacy-consent]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      showPanel();
+    });
+  });
+</script>
