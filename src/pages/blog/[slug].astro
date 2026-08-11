@@ -36,6 +36,10 @@ if (!isPublishedBlogEntry(entry)) {
   return new Response(null, { status: 404, statusText: "Not Found" });
 }
 
+// I contenuti legacy in revisione restano raggiungibili per preservare lo storico URL,
+// ma non devono essere indicizzati finché la revisione editoriale non è conclusa.
+const isLegacyReview = entry.data.editorialStatus === "legacy-review";
+
 // MODIFICA 3: Usata la nuova funzione render(entry)
 const { Content } = await render(entry);
 
@@ -83,7 +87,7 @@ const metadata = {
   title: entry.data.title,
   description: entry.data.description || "",
   canonical: `${SITE_URL}/blog/${slug}/`,
-  robots: { index: true, follow: true },
+  robots: { index: !isLegacyReview, follow: true },
   ogType: "article",
   ogSiteName: "Canapalandia",
   ogImage: postImage || undefined,
@@ -158,7 +162,19 @@ const jsonLd = {
           </p>
         </div>
 
-        {coverSrc ? (
+        {isLegacyReview ? (
+          <aside class="post-legacy-warning" aria-label="Articolo d'archivio in revisione">
+            <strong>Articolo d'archivio in revisione editoriale</strong>
+            <p>
+              Questo contenuto storico conteneva formulazioni o indicazioni che richiedono una verifica con fonti aggiornate.
+              Il testo precedente è stato temporaneamente ritirato dalla consultazione e dall'indicizzazione.
+              Non usare questa pagina per decisioni sanitarie o terapeutiche.
+              <a href="/disclaimer-legale-canapalandia/"> Consulta il disclaimer.</a>
+            </p>
+          </aside>
+        ) : null}
+
+        {!isLegacyReview && coverSrc ? (
           <figure class="post-hero">
             <img
               class="post-hero__img"
@@ -172,12 +188,20 @@ const jsonLd = {
           </figure>
         ) : null}
 
-        {/* Contenuto articolo (SCOPED). Gli H1 interni MDX diventano H2: l'H1 pagina resta unico. */}
-        <div class="post-content" data-post-content>
-          <Content components={{ h1: PostBodyH1 }} />
-        </div>
+        {isLegacyReview ? (
+          <div class="post-content post-content--legacy" data-post-content>
+            <p>
+              La redazione sta riesaminando fonti, formulazioni e contesto di questo articolo prima di renderlo nuovamente disponibile.
+              Nel frattempo puoi consultare gli articoli più recenti del sito e il disclaimer editoriale.
+            </p>
+          </div>
+        ) : (
+          <div class="post-content" data-post-content>
+            <Content components={{ h1: PostBodyH1 }} />
+          </div>
+        )}
 
-        <PostAttachments attachments={entry.data.attachments} />
+        {!isLegacyReview ? <PostAttachments attachments={entry.data.attachments} /> : null}
 
         <aside class="post-editorial-note" aria-label="Nota editoriale">
           <p>
@@ -192,13 +216,13 @@ const jsonLd = {
         <hr class="post-separator" aria-hidden="true" />
 
         {/* Reazioni */}
-        {FEATURES.REACTIONS && <Reactions slug={slug} />}
+        {!isLegacyReview && FEATURES.REACTIONS && <Reactions slug={slug} />}
 
         {/* Social Share */}
-        <PostShare url={canonicalUrl} title={postTitle} showShare={showShare} />
+        {!isLegacyReview ? <PostShare url={canonicalUrl} title={postTitle} showShare={showShare} /> : null}
 
         {/* CTA Sostienici */}
-        <SupportCTA supportUrl="/sostieni-la-nostra-causa/" showSupportCta={showSupportCta} />
+        {!isLegacyReview ? <SupportCTA supportUrl="/sostieni-la-nostra-causa/" showSupportCta={showSupportCta} /> : null}
 
         {/* Articoli correlati */}
         <RelatedPosts
@@ -251,6 +275,10 @@ const jsonLd = {
     width: 100%;
     line-height: 1.7;
     font-size: clamp(1.0625rem, 0.4vw + 1rem, 1.1875rem);
+  }
+
+  .post-main .post-content--legacy {
+    margin-top: 1.25rem;
   }
 
   /* Spazio verticale consistente tra blocchi */
@@ -427,6 +455,33 @@ const jsonLd = {
       gap: 0.5rem 1rem;
       margin-bottom: 1rem;
     }
+  }
+
+  .post-legacy-warning {
+    margin: 0 0 1.5rem;
+    padding: 1rem 1.1rem;
+    border: 1px solid color-mix(in oklab, #c58a2a 55%, var(--border));
+    border-left-width: 4px;
+    border-radius: var(--r-md);
+    background: color-mix(in oklab, #c58a2a 12%, var(--panel));
+  }
+
+  .post-legacy-warning strong {
+    display: block;
+    margin-bottom: 0.35rem;
+    color: var(--text);
+  }
+
+  .post-legacy-warning p {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--text-sm);
+    line-height: 1.55;
+  }
+
+  .post-legacy-warning a {
+    color: var(--brand);
+    font-weight: var(--font-medium);
   }
 
   .post-editorial-note {

@@ -48,6 +48,7 @@ const blog = defineCollection({
       author: z.string().optional(),
       draft: z.boolean().optional(), // Mantenuto per compatibilità
       status: z.enum(["ready", "draft", "test"]).default("ready"),
+      editorialStatus: z.enum(["current", "legacy-review"]).default("current"),
       category: z.enum(BLOG_CATEGORY_WHITELIST).optional(),
       categories: z.array(z.string()).optional(), // Tutte le categorie (se disponibili)
       tags: z

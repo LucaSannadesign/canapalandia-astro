@@ -5,7 +5,7 @@ import { getCollection } from 'astro:content';
 const posts = await getCollection('blog');
 
 const sortedPosts = posts
-  .filter(post => !post.data.draft)
+  .filter(post => !post.data.draft && post.data.editorialStatus !== 'legacy-review')
   .sort((a, b) => {
     const dateA = new Date(a.data.publishDate || a.data.date || a.data.pubDate || '1970-01-01');
     const dateB = new Date(b.data.publishDate || b.data.date || b.data.pubDate || '1970-01-01');
