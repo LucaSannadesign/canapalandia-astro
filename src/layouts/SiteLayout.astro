@@ -1,10 +1,8 @@
 ---
 import "../styles/app.css";
-import Analytics from '@vercel/analytics/astro';
-import SpeedInsights from "@vercel/speed-insights/astro";
 import enhancementsScript from "../scripts/enhancements.js?raw";
 import Newsletter from "../components/widgets/Newsletter.astro";
-import GATag from "../components/GATag.astro";
+import PrivacyConsent from "../components/PrivacyConsent.astro";
 import {
   FOOTER_EXPLORE_NAVIGATION,
   PRIMARY_NAVIGATION,
@@ -26,13 +24,6 @@ const {
   twitterCard: twitterCardProp,
 } = Astro.props;
 
-// Supporto metadata object: se presente, usa quello, altrimenti props dirette
-const titleFinal = titleProp ?? metadata?.title ?? "Canapalandia";
-const descriptionFinal = descriptionProp ?? metadata?.description ?? "";
-const canonicalRaw = canonicalProp ?? metadata?.canonical;
-const robotsRaw = robotsProp ?? metadata?.robots;
-
-// Normalizza robots: oggetto -> stringa
 function normalizeRobots(robots: unknown): string {
   if (typeof robots === "string") return robots;
   if (robots && typeof robots === "object" && "index" in robots && "follow" in robots) {
@@ -44,6 +35,10 @@ function normalizeRobots(robots: unknown): string {
   return "";
 }
 
+const titleFinal = titleProp ?? metadata?.title ?? "Canapalandia";
+const descriptionFinal = descriptionProp ?? metadata?.description ?? "";
+const canonicalRaw = canonicalProp ?? metadata?.canonical;
+const robotsRaw = robotsProp ?? metadata?.robots;
 const robotsNormalized = normalizeRobots(robotsRaw);
 const currentPath = Astro.url.pathname;
 const isTagArchivePath =
@@ -57,73 +52,34 @@ function isCurrent(path: string): boolean {
   return currentPath === path || currentPath.startsWith(path);
 }
 
-// Default robots: index,follow
 const robotsDefault = "index,follow";
-
-// Esclusione CTA per pagina sostegno
-// Verifica se siamo sulla pagina "sostieni-la-nostra-causa"
 const isSupportPage = Astro.url.pathname.includes("/sostieni-la-nostra-causa");
 
-// Detection production: hostname-based (robusto, indipendente da VERCEL_ENV)
 function isProductionEnvironment(): boolean {
   const hostname = Astro.url.hostname;
-  
-  // PRIORITÀ 1: Blocca preview Vercel e localhost (indipendente da VERCEL_ENV)
-  // Se hostname termina con ".vercel.app" o contiene "vercel.app" => NON production
-  if (hostname.endsWith(".vercel.app") || hostname.includes("vercel.app")) {
-    return false;
-  }
-  // Blocca localhost e 127.0.0.1
-  if (hostname === "localhost" || hostname.startsWith("127.0.0.1")) {
-    return false;
-  }
-  
-  // PRIORITÀ 2: Verifica se hostname è nella allowlist production
+  if (hostname.endsWith(".vercel.app") || hostname.includes("vercel.app")) return false;
+  if (hostname === "localhost" || hostname.startsWith("127.0.0.1")) return false;
   const productionHostnames = ["canapalandia.com", "www.canapalandia.com"];
-  if (productionHostnames.includes(hostname)) {
-    return true;
-  }
-  
-  // PRIORITÀ 3: Fallback VERCEL_ENV (solo se hostname non è riconosciuto)
+  if (productionHostnames.includes(hostname)) return true;
   const vercelEnv = import.meta.env.VERCEL_ENV;
   if (vercelEnv === "production") return true;
   if (vercelEnv === "preview" || vercelEnv === "development") return false;
-  
-  // Default: non production (sicurezza)
   return false;
 }
 
 const isProduction = isProductionEnvironment();
-
-// Calcola robotsFinal: sempre presente, dinamico in base all'hostname
-// - Preview Vercel (*.vercel.app) e localhost => "noindex,nofollow"
-// - Production (canapalandia.com) => usa robotsNormalized o "index,follow"
-const robotsFinal = isProduction 
-  ? (robotsNormalized || robotsDefault)
-  : "noindex,nofollow";
-
-// Tag archive: forza sempre noindex,follow.
+const robotsFinal = isProduction ? (robotsNormalized || robotsDefault) : "noindex,nofollow";
 const robotsFinalWithTagPolicy = isTagArchivePath ? "noindex,follow" : robotsFinal;
 
-// Normalizza canonical: se relativo, rendilo assoluto
 function isFileLikePath(pathname: string): boolean {
-  // Evita di aggiungere trailing slash a file tipo "/favicon.ico", "/robots.txt", ecc.
   return /\.[a-z0-9]+$/i.test(pathname);
 }
 
 function normalizeCanonicalPath(pathname: string): string {
   if (!pathname) return "/";
-  // Root: non aggiungere "bonus" slash
   if (pathname === "/") return "/";
-
   let p = pathname.startsWith("/") ? pathname : `/${pathname}`;
-
-  // Se sembra un file, lascialo invariato (nessun trailing slash)
   if (isFileLikePath(p)) return p;
-
-  // Normalizza in modo che:
-  // - non ci siano slash multipli finali
-  // - ci sia esattamente 1 "/" finale
   p = p.replace(/\/+$/, "");
   p = p.replace(/^\/+/, "/");
   return `${p}/`;
@@ -131,27 +87,20 @@ function normalizeCanonicalPath(pathname: string): string {
 
 function normalizeCanonical(canonical: string | undefined): string | undefined {
   if (!canonical) return undefined;
-
   const base = import.meta.env.SITE || Astro.url.origin;
-
-  // Se già assoluto, normalizza solo pathname (trailing slash)
   if (canonical.startsWith("http://") || canonical.startsWith("https://")) {
     const u = new URL(canonical);
     u.pathname = normalizeCanonicalPath(u.pathname);
     return u.toString();
   }
-
-  // Se relativo, rendilo assoluto usando base
   const canonicalPath = canonical.startsWith("/") ? canonical : `/${canonical}`;
   return `${base}${normalizeCanonicalPath(canonicalPath)}`;
 }
 
-// Calcola canonicalFinal: usa canonical fornito, altrimenti SITE + pathname
-const canonicalFinal = canonicalRaw 
+const canonicalFinal = canonicalRaw
   ? normalizeCanonical(canonicalRaw)
   : normalizeCanonical(`${import.meta.env.SITE || "https://canapalandia.com"}${Astro.url.pathname}`);
 
-// Redirect 301: /path senza "/" finale -> /path/ finale
 const SITE_BASE_FOR_CANONICAL = import.meta.env.SITE || "https://canapalandia.com";
 const requestedPath = Astro.url.pathname;
 const requestedCanonicalPath = normalizeCanonicalPath(requestedPath);
@@ -159,43 +108,25 @@ if (requestedPath !== requestedCanonicalPath && !isFileLikePath(requestedPath)) 
   return Astro.redirect(`${SITE_BASE_FOR_CANONICAL}${requestedCanonicalPath}`, 301);
 }
 
-// Pulizia yoastHeadHtml: rimuovi title, canonical, robots duplicati
 function cleanYoastHead(html: string | undefined): string {
   if (!html) return "";
   let cleaned = html;
-  // Rimuovi <title>...</title>
   cleaned = cleaned.replace(/<title[^>]*>[\s\S]*?<\/title>/gi, "");
-  // Rimuovi <link rel="canonical" ...>
   cleaned = cleaned.replace(/<link[^>]*rel=["']canonical["'][^>]*>/gi, "");
-  // Rimuovi <meta name="robots" ...>
   cleaned = cleaned.replace(/<meta[^>]*name=["']robots["'][^>]*>/gi, "");
   return cleaned.trim();
 }
 
 const yoastHeadCleaned = cleanYoastHead(yoastHeadHtml);
-
-// Base site URL
 const SITE_URL = import.meta.env.SITE || "https://canapalandia.com";
 
-// Helper per normalizzare og:image (preferisce JPG/PNG su WEBP per Telegram)
 function normalizeOgImage(imagePath: string | undefined | null): string {
-  if (!imagePath) {
-    // Fallback: usa logo come default OG image
-    return `${SITE_URL}/images/logo-canapalandia_1024.webp`;
-  }
-  
-  // Se già assoluto, ritorna così
-  if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
-    return imagePath;
-  }
-  
-  // Normalizza path relativo
+  if (!imagePath) return `${SITE_URL}/images/logo-canapalandia_1024.webp`;
+  if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) return imagePath;
   const normalizedPath = imagePath.startsWith("/") ? imagePath : `/${imagePath}`;
-  
   return `${SITE_URL}${normalizedPath}`;
 }
 
-// Calcola valori OG/Twitter
 const ogType = ogTypeProp ?? metadata?.ogType ?? "website";
 const ogSiteName = ogSiteNameProp ?? metadata?.ogSiteName ?? "Canapalandia";
 const ogTitle = titleFinal;
@@ -219,19 +150,11 @@ const useHomeLightBg =
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <script is:inline>
-      document.documentElement.classList.add("js");
-    </script>
+    <script is:inline>document.documentElement.classList.add("js");</script>
     <link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/favicons/favicon-192.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/favicons/apple-touch-icon.png" />
-    <!-- RSS feed -->
-    <link
-      rel="alternate"
-      type="application/rss+xml"
-      title="Canapalandia RSS"
-      href="/rss.xml"
-    />
+    <link rel="alternate" type="application/rss+xml" title="Canapalandia RSS" href="/rss.xml" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -240,58 +163,36 @@ const useHomeLightBg =
       rel="stylesheet"
     />
 
-    <!-- Google Analytics 4 -->
-    <GATag />
-
-    <!-- Ahrefs Analytics -->
-    <script
-      is:inline
-      src="https://analytics.ahrefs.com/analytics.js"
-      data-key="GQJf5NXsoIXET0VGyxgtkw"
-      async
-    ></script>
-
-    {/* Renderizza SEMPRE title, canonical, robots, description */}
     <title>{titleFinal}</title>
     {descriptionFinal ? <meta name="description" content={descriptionFinal} /> : null}
     {canonicalFinal ? <link rel="canonical" href={canonicalFinal} /> : null}
     <meta name="robots" content={robotsFinalWithTagPolicy} />
-    
-    {/* OpenGraph meta tags */}
+
     <meta property="og:type" content={ogType} />
     <meta property="og:site_name" content={ogSiteName} />
     <meta property="og:title" content={ogTitle} />
     {ogDescription ? <meta property="og:description" content={ogDescription} /> : null}
     <meta property="og:url" content={ogUrl} />
     <meta property="og:image" content={ogImage} />
-    
-    {/* Twitter Card meta tags */}
     <meta name="twitter:card" content={twitterCard} />
     <meta name="twitter:title" content={twitterTitle} />
     {twitterDescription ? <meta name="twitter:description" content={twitterDescription} /> : null}
     <meta name="twitter:image" content={twitterImage} />
-    
-    {/* Se c'è yoastHeadHtml, inietta il resto (già ripulito da title/canonical/robots) */}
-    {yoastHeadCleaned ? (
-      <Fragment set:html={yoastHeadCleaned} />
-    ) : null}
 
-    <!-- Imposta subito il tema (evita flash) -->
+    {yoastHeadCleaned ? <Fragment set:html={yoastHeadCleaned} /> : null}
+
     <script is:inline define:vars={{ THEME_STORAGE_KEY }}>
       (() => {
         const key = THEME_STORAGE_KEY;
-        // Default brand: dark, salvo scelta esplicita dell'utente.
         let theme = "dark";
         try {
           const saved = localStorage.getItem(key);
           if (saved === "dark" || saved === "light") theme = saved;
         } catch {}
-
         document.documentElement.dataset.theme = theme;
       })();
     </script>
 
-    <!-- La regola globale dei link in light mode ha specificità maggiore dello stato active dell'header. -->
     <style is:global>
       html[data-theme="light"] .nav a[aria-current="page"],
       html[data-theme="light"] .mobile-menu__content a[aria-current="page"] {
@@ -307,194 +208,75 @@ const useHomeLightBg =
     <header class="site-header" data-overlay>
       <div class="container header-inner">
         <a class="brand" href="/" aria-label="Canapalandia, Home">
-          <img
-            class="brand-logo"
-            src="/images/logo-canapalandia.svg"
-            alt="Canapalandia"
-            height="28"
-            loading="eager"
-            decoding="async"
-          />
+          <img class="brand-logo" src="/images/logo-canapalandia.svg" alt="Canapalandia" height="28" loading="eager" decoding="async" />
           <span class="sr-only">Canapalandia</span>
         </a>
 
         <nav class="nav" aria-label="Navigazione principale">
           {PRIMARY_NAVIGATION.map((item) => (
-            <a href={item.href} aria-current={isCurrent(item.href) ? "page" : undefined}>
-              {item.label}
-            </a>
+            <a href={item.href} aria-current={isCurrent(item.href) ? "page" : undefined}>{item.label}</a>
           ))}
         </nav>
 
         <div class="header-actions">
-          <button
-            type="button"
-            class="menu-toggle"
-            data-menu-toggle
-            aria-label="Apri menu"
-            aria-expanded="false"
-            aria-controls="mobile-menu"
-          >
+          <button type="button" class="menu-toggle" data-menu-toggle aria-label="Apri menu" aria-expanded="false" aria-controls="mobile-menu">
             <span class="sr-only">Apri menu</span>
-            <svg
-              class="menu-toggle__icon menu-toggle__icon--hamburger"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true"
-            >
-              <path
-                d="M3 12h18M3 6h18M3 18h18"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-              />
+            <svg class="menu-toggle__icon menu-toggle__icon--hamburger" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M3 12h18M3 6h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
             </svg>
-            <svg
-              class="menu-toggle__icon menu-toggle__icon--close"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true"
-            >
-              <path
-                d="M18 6L6 18M6 6l12 12"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
+            <svg class="menu-toggle__icon menu-toggle__icon--close" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </button>
 
-          <a
-            class="search"
-            href={UTILITY_NAVIGATION[0].href}
-            aria-label="Cerca nel sito"
-            aria-current={isCurrent(UTILITY_NAVIGATION[0].href) ? "page" : undefined}
-          >
-            Cerca
-          </a>
+          <a class="search" href={UTILITY_NAVIGATION[0].href} aria-label="Cerca nel sito" aria-current={isCurrent(UTILITY_NAVIGATION[0].href) ? "page" : undefined}>Cerca</a>
 
-          <button
-            type="button"
-            class="theme-toggle__btn"
-            data-theme-toggle
-            aria-label="Cambia tema"
-          >
+          <button type="button" class="theme-toggle__btn" data-theme-toggle aria-label="Cambia tema">
             <span class="sr-only">Cambia tema</span>
-
-            <!-- Sole: visibile quando sei in DARK -->
-            <svg
-              class="theme-toggle__icon theme-toggle__icon--sun"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true"
-            >
-              <path
-                d="M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"></path>
-              <path
-                d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"></path>
+            <svg class="theme-toggle__icon theme-toggle__icon--sun" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
             </svg>
-
-            <!-- Luna: visibile quando sei in LIGHT -->
-            <svg
-              class="theme-toggle__icon theme-toggle__icon--moon"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true"
-            >
-              <path
-                d="M21 13.2A8.5 8.5 0 1 1 10.8 3a6.8 6.8 0 0 0 10.2 10.2Z"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"></path>
+            <svg class="theme-toggle__icon theme-toggle__icon--moon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M21 13.2A8.5 8.5 0 1 1 10.8 3a6.8 6.8 0 0 0 10.2 10.2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
             </svg>
           </button>
 
-          <a
-            class="header-cta"
-            href="/pubblicita/"
-            aria-current={isCurrent("/pubblicita/") ? "page" : undefined}
-          >
-            <span class="header-cta__mark" aria-hidden="true"></span>
-            Pubblicità
+          <a class="header-cta" href="/pubblicita/" aria-current={isCurrent("/pubblicita/") ? "page" : undefined}>
+            <span class="header-cta__mark" aria-hidden="true"></span>Pubblicità
           </a>
         </div>
       </div>
     </header>
 
-    <!-- Menu mobile (fuori dall'header per evitare stacking context) -->
     <nav class="mobile-menu" id="mobile-menu" aria-label="Menu mobile" aria-hidden="true">
       <div class="mobile-menu__overlay"></div>
       <div class="mobile-menu__content">
         {PRIMARY_NAVIGATION.map((item) => (
-          <a href={item.href} aria-current={isCurrent(item.href) ? "page" : undefined}>
-            {item.label}
-          </a>
+          <a href={item.href} aria-current={isCurrent(item.href) ? "page" : undefined}>{item.label}</a>
         ))}
         {UTILITY_NAVIGATION.map((item) => (
-          <a href={item.href} aria-current={isCurrent(item.href) ? "page" : undefined}>
-            {item.label}
-          </a>
+          <a href={item.href} aria-current={isCurrent(item.href) ? "page" : undefined}>{item.label}</a>
         ))}
       </div>
     </nav>
 
     <main id="contenuto">
-      {
-        shell ? (
-          <div class="container page-shell">
-            <slot />
-          </div>
-        ) : (
-          <slot />
-        )
-      }
+      {shell ? <div class="container page-shell"><slot /></div> : <slot />}
     </main>
 
     <footer class="site-footer">
-      <div class="container pt-10">
-        <Newsletter />
-      </div>
+      <div class="container pt-10"><Newsletter /></div>
 
       <div class="container footer-inner">
         <section class="footer-col footer-brand" aria-label="Brand Canapalandia">
           <a class="footer-logo" href="/" aria-label="Canapalandia, Home">
-            <img
-              src="/images/logo-canapalandia.svg"
-              alt="Canapalandia"
-              class="footer-logo__img"
-              height="32"
-              loading="lazy"
-              decoding="async"
-            />
+            <img src="/images/logo-canapalandia.svg" alt="Canapalandia" class="footer-logo__img" height="32" loading="lazy" decoding="async" />
           </a>
-
-          <p class="footer-tagline">
-            Informazione e cultura su cannabis light, CBD e canapa legale in
-            Italia.
-          </p>
-
+          <p class="footer-tagline">Informazione e cultura su cannabis light, CBD e canapa legale in Italia.</p>
           <p class="footer-credits">
             Sito realizzato da{" "}
-            <a
-              href="https://www.lswebagency.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              LS Web Agency
-            </a>
+            <a href="https://www.lswebagency.com/" target="_blank" rel="noopener noreferrer">LS Web Agency</a>
           </p>
         </section>
 
@@ -502,9 +284,7 @@ const useHomeLightBg =
           <h2 class="footer-title">Esplora</h2>
           <div class="footer-links">
             {FOOTER_EXPLORE_NAVIGATION.map((item) => (
-              <a href={item.href} aria-current={isCurrent(item.href) ? "page" : undefined}>
-                {item.label}
-              </a>
+              <a href={item.href} aria-current={isCurrent(item.href) ? "page" : undefined}>{item.label}</a>
             ))}
             <a href="/rss.xml">RSS</a>
           </div>
@@ -514,197 +294,80 @@ const useHomeLightBg =
           <h2 class="footer-title">Supporto</h2>
           <nav class="footer-links" aria-label="Link di supporto">
             <a href="/cerca/" aria-current={isCurrent("/cerca/") ? "page" : undefined}>Cerca</a>
-            {!isSupportPage ? (
-              <a href="/sostieni-la-nostra-causa/" aria-current={isCurrent("/sostieni-la-nostra-causa/") ? "page" : undefined}>Sostieni</a>
-            ) : null}
+            {!isSupportPage ? <a href="/sostieni-la-nostra-causa/" aria-current={isCurrent("/sostieni-la-nostra-causa/") ? "page" : undefined}>Sostieni</a> : null}
+            <a href="/chi-siamo/" aria-current={isCurrent("/chi-siamo/") ? "page" : undefined}>Chi siamo</a>
             <a href="/contatti/" aria-current={isCurrent("/contatti/") ? "page" : undefined}>Contatti</a>
             <a href="/pubblicita/" aria-current={isCurrent("/pubblicita/") ? "page" : undefined}>Guest post e collaborazioni</a>
+            <a href="/disclaimer-legale-canapalandia/" aria-current={isCurrent("/disclaimer-legale-canapalandia/") ? "page" : undefined}>Disclaimer</a>
+            <a href="/privacy-policy/" aria-current={isCurrent("/privacy-policy/") ? "page" : undefined}>Privacy</a>
+            <a href="/cookie-policy/" aria-current={isCurrent("/cookie-policy/") ? "page" : undefined}>Cookie</a>
+            <a href="/termini-e-condizioni/" aria-current={isCurrent("/termini-e-condizioni/") ? "page" : undefined}>Termini</a>
+            <a href="/cookie-policy/" data-open-privacy-consent>Preferenze privacy</a>
           </nav>
 
           <nav class="social-links footer-social" aria-label="Canali social">
-            <a
-              href="https://www.facebook.com/canapalandia.official"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Facebook Canapalandia"
-            >
-              <img
-                src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/facebook.svg"
-                alt=""
-                aria-hidden="true"
-              />
-            </a>
-            <a
-              href="https://www.instagram.com/canapalandia/"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Instagram Canapalandia"
-            >
-              <img
-                src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/instagram.svg"
-                alt=""
-                aria-hidden="true"
-              />
-            </a>
-            <a
-              href="https://www.youtube.com/@canapalandia"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="YouTube Canapalandia"
-            >
-              <img
-                src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/youtube.svg"
-                alt=""
-                aria-hidden="true"
-              />
-            </a>
-            <a
-              href="https://www.linkedin.com/company/canapalandia/"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="LinkedIn Canapalandia"
-            >
-              <img
-                src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/linkedin.svg"
-                alt=""
-                aria-hidden="true"
-              />
-            </a>
-            <a
-              href="https://t.me/Canapalandia"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Telegram Canapalandia"
-            >
-              <img
-                src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/telegram.svg"
-                alt=""
-                aria-hidden="true"
-              />
-            </a>
-            <a
-              href="https://wa.me/393403223494"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="WhatsApp Canapalandia"
-            >
-              <img
-                src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/whatsapp.svg"
-                alt=""
-                aria-hidden="true"
-              />
-            </a>
+            <a href="https://www.facebook.com/canapalandia.official" target="_blank" rel="noopener noreferrer" aria-label="Facebook Canapalandia"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/facebook.svg" alt="" aria-hidden="true" /></a>
+            <a href="https://www.instagram.com/canapalandia/" target="_blank" rel="noopener noreferrer" aria-label="Instagram Canapalandia"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/instagram.svg" alt="" aria-hidden="true" /></a>
+            <a href="https://www.youtube.com/@canapalandia" target="_blank" rel="noopener noreferrer" aria-label="YouTube Canapalandia"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/youtube.svg" alt="" aria-hidden="true" /></a>
+            <a href="https://www.linkedin.com/company/canapalandia/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn Canapalandia"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/linkedin.svg" alt="" aria-hidden="true" /></a>
+            <a href="https://t.me/Canapalandia" target="_blank" rel="noopener noreferrer" aria-label="Telegram Canapalandia"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/telegram.svg" alt="" aria-hidden="true" /></a>
+            <a href="https://wa.me/393403223494" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp Canapalandia"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/whatsapp.svg" alt="" aria-hidden="true" /></a>
           </nav>
         </section>
 
-        <div class="footer-copy">
-          © {new Date().getFullYear()} Canapalandia. Tutti i diritti riservati.
-        </div>
+        <div class="footer-copy">© {new Date().getFullYear()} Canapalandia. Tutti i diritti riservati.</div>
       </div>
     </footer>
 
-    <!-- Scroll to top button (fixed, appare dopo scroll) -->
     <a href="#top" class="scroll-to-top" aria-label="Torna in cima alla pagina" aria-hidden="true">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M18 15l-6-6-6 6" />
-      </svg>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6" /></svg>
       <span class="sr-only">Torna in cima</span>
     </a>
 
-    <!-- Scroll to top script -->
     <script is:inline>
       (() => {
         const scrollTopBtn = document.querySelector(".scroll-to-top");
         if (!scrollTopBtn) return;
-
         const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
         const SHOW_AFTER_PX = 350;
-
-        // Mostra/nascondi in base a scrollY
         const updateVisibility = () => {
           const y = window.scrollY || document.documentElement.scrollTop || 0;
           const shouldShow = y > SHOW_AFTER_PX;
           scrollTopBtn.classList.toggle("is-visible", shouldShow);
           scrollTopBtn.setAttribute("aria-hidden", shouldShow ? "false" : "true");
         };
-
-        // Throttle scroll listener
         let ticking = false;
         window.addEventListener("scroll", () => {
           if (!ticking) {
-            window.requestAnimationFrame(() => {
-              updateVisibility();
-              ticking = false;
-            });
+            window.requestAnimationFrame(() => { updateVisibility(); ticking = false; });
             ticking = true;
           }
         });
-
-        // Click handler
         scrollTopBtn.addEventListener("click", (e) => {
           e.preventDefault();
           const topAnchor = document.getElementById("top");
-          window.scrollTo({
-            top: 0,
-            behavior: prefersReducedMotion ? "auto" : "smooth"
-          });
-          // Focus sull'anchor per accessibilità
-          if (topAnchor) {
-            setTimeout(() => {
-              topAnchor.focus();
-            }, prefersReducedMotion ? 0 : 100);
-          }
+          window.scrollTo({ top: 0, behavior: prefersReducedMotion ? "auto" : "smooth" });
+          if (topAnchor) setTimeout(() => { topAnchor.focus(); }, prefersReducedMotion ? 0 : 100);
         });
-
-        // Inizializza visibilità
         updateVisibility();
       })();
     </script>
 
-    <!-- Toggle click -->
     <script is:inline define:vars={{ THEME_STORAGE_KEY }}>
       (() => {
         const key = THEME_STORAGE_KEY;
         const root = document.documentElement;
         const btn = document.querySelector("[data-theme-toggle]");
         if (!btn) return;
-
-        const safeGet = () => {
-          try {
-            return localStorage.getItem(key);
-          } catch {
-            return null;
-          }
-        };
-        const safeSet = (v) => {
-          try {
-            localStorage.setItem(key, v);
-          } catch {}
-        };
-
-        const systemPref = () =>
-          window.matchMedia &&
-          window.matchMedia("(prefers-color-scheme: dark)").matches
-            ? "dark"
-            : "light";
-
+        const safeGet = () => { try { return localStorage.getItem(key); } catch { return null; } };
+        const safeSet = (v) => { try { localStorage.setItem(key, v); } catch {} };
+        const systemPref = () => window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
         const normalize = (v) => (v === "dark" || v === "light" ? v : null);
-
         const apply = (theme) => {
           root.dataset.theme = theme;
-          btn.setAttribute(
-            "aria-label",
-            theme === "dark"
-              ? "Passa a modalità chiara"
-              : "Passa a modalità scura",
-          );
+          btn.setAttribute("aria-label", theme === "dark" ? "Passa a modalità chiara" : "Passa a modalità scura");
         };
-
-        // tema iniziale (dataset > saved > system)
-        apply(
-          normalize(root.dataset.theme) || normalize(safeGet()) || systemPref(),
-        );
-
+        apply(normalize(root.dataset.theme) || normalize(safeGet()) || systemPref());
         btn.addEventListener("click", () => {
           const current = root.dataset.theme === "dark" ? "dark" : "light";
           const next = current === "dark" ? "light" : "dark";
@@ -714,106 +377,59 @@ const useHomeLightBg =
       })();
     </script>
 
-    <!-- Calcola altezza navbar dinamicamente -->
     <script is:inline>
       (() => {
         const headerInner = document.querySelector(".site-header .header-inner");
         if (!headerInner) return;
-
         const updateNavHeight = () => {
           const height = headerInner.offsetHeight || 72;
           document.documentElement.style.setProperty("--nav-h", `${height}px`);
         };
-
-        // Aggiorna all'avvio
         updateNavHeight();
-
-        // Aggiorna su resize (con debounce via rAF)
         let resizeTicking = false;
-        const onResize = () => {
+        window.addEventListener("resize", () => {
           if (!resizeTicking) {
-            requestAnimationFrame(() => {
-              updateNavHeight();
-              resizeTicking = false;
-            });
+            requestAnimationFrame(() => { updateNavHeight(); resizeTicking = false; });
             resizeTicking = true;
           }
-        };
-
-        window.addEventListener("resize", onResize, { passive: true });
-
-        // Aggiorna anche quando lo stato scrolled cambia (padding cambia)
+        }, { passive: true });
         const header = document.querySelector(".site-header");
         if (header) {
-          const observer = new MutationObserver(() => {
-            requestAnimationFrame(updateNavHeight);
-          });
-          observer.observe(header, {
-            attributes: true,
-            attributeFilter: ["class", "data-scrolled"],
-          });
+          const observer = new MutationObserver(() => requestAnimationFrame(updateNavHeight));
+          observer.observe(header, { attributes: true, attributeFilter: ["class", "data-scrolled"] });
         }
       })();
     </script>
 
-    <!-- Header scroll animation -->
     <script is:inline>
       (() => {
         const header = document.querySelector(".site-header");
         if (!header) return;
-
         const SCROLL_THRESHOLD = 10;
         const DIRECTION_THRESHOLD = 4;
-        const prefersReduced = window.matchMedia(
-          "(prefers-reduced-motion: reduce)",
-        ).matches;
-
         let lastY = 0;
         let ticking = false;
-
         const updateHeader = () => {
           const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
           const isScrolled = scrollY > SCROLL_THRESHOLD;
-          // Richiesto: toggle classe su <html> quando scrollY > 10
           document.documentElement.classList.toggle("scrolled", isScrolled);
-          
-          // Calcola direzione
           let direction = "none";
-          if (scrollY > lastY + DIRECTION_THRESHOLD) {
-            direction = "down";
-          } else if (scrollY < lastY - DIRECTION_THRESHOLD) {
-            direction = "up";
-          }
-          
-          // Aggiorna attributi header
+          if (scrollY > lastY + DIRECTION_THRESHOLD) direction = "down";
+          else if (scrollY < lastY - DIRECTION_THRESHOLD) direction = "up";
           header.setAttribute("data-scrolled", isScrolled ? "true" : "false");
-          if (direction !== "none") {
-            header.setAttribute("data-dir", direction);
-          }
-          
-          // Mantieni compatibilità con classe esistente
+          if (direction !== "none") header.setAttribute("data-dir", direction);
           header.classList.toggle("is-scrolled", isScrolled);
-          
           lastY = scrollY;
           ticking = false;
         };
-
         const onScroll = () => {
-          if (!ticking) {
-            requestAnimationFrame(updateHeader);
-            ticking = true;
-          }
+          if (!ticking) { requestAnimationFrame(updateHeader); ticking = true; }
         };
-
-        // Aggiorna subito per evitare flash
         updateHeader();
-
-        // Usa passive listener per performance
         window.addEventListener("scroll", onScroll, { passive: true });
       })();
     </script>
 
-    <!-- Menu mobile toggle -->
     <script is:inline>
       (() => {
         const menuToggle = document.querySelector("[data-menu-toggle]");
@@ -821,91 +437,42 @@ const useHomeLightBg =
         const overlay = mobileMenu?.querySelector(".mobile-menu__overlay");
         const menuContent = mobileMenu?.querySelector(".mobile-menu__content");
         const menuLinks = mobileMenu?.querySelectorAll("a");
-
         if (!menuToggle || !mobileMenu) return;
-
-        // Salva il primo link per focus trap
         const firstLink = menuLinks?.[0];
-
         const closeMenu = () => {
           menuToggle.setAttribute("aria-expanded", "false");
           menuToggle.setAttribute("aria-label", "Apri menu");
           mobileMenu.setAttribute("aria-hidden", "true");
           document.documentElement.classList.remove("menu-open");
           document.body.classList.remove("menu-open");
-          // Ritorna focus al toggle button
           menuToggle.focus();
         };
-
         const openMenu = () => {
           menuToggle.setAttribute("aria-expanded", "true");
           menuToggle.setAttribute("aria-label", "Chiudi menu");
           mobileMenu.setAttribute("aria-hidden", "false");
           document.documentElement.classList.add("menu-open");
           document.body.classList.add("menu-open");
-          // Focus trap: metti focus al primo link
-          if (firstLink) {
-            requestAnimationFrame(() => {
-              firstLink.focus();
-            });
-          }
+          if (firstLink) requestAnimationFrame(() => firstLink.focus());
         };
-
-        const toggleMenu = () => {
-          const isExpanded = menuToggle.getAttribute("aria-expanded") === "true";
-          if (isExpanded) {
-            closeMenu();
-          } else {
-            openMenu();
-          }
-        };
-
-        menuToggle.addEventListener("click", toggleMenu);
-
-        // Chiudi menu quando clicchi sull'overlay
-        if (overlay) {
-          overlay.addEventListener("click", closeMenu);
-        }
-
-        // Chiudi menu quando clicchi su un link
-        if (menuLinks) {
-          menuLinks.forEach((link) => {
-            link.addEventListener("click", closeMenu);
-          });
-        }
-
-        // Chiudi menu con ESC
+        menuToggle.addEventListener("click", () => menuToggle.getAttribute("aria-expanded") === "true" ? closeMenu() : openMenu());
+        overlay?.addEventListener("click", closeMenu);
+        menuLinks?.forEach((link) => link.addEventListener("click", closeMenu));
         document.addEventListener("keydown", (e) => {
-          if (e.key === "Escape" && menuToggle.getAttribute("aria-expanded") === "true") {
-            closeMenu();
-          }
+          if (e.key === "Escape" && menuToggle.getAttribute("aria-expanded") === "true") closeMenu();
         });
-
-        // Focus trap: mantieni focus dentro il menu quando è aperto
         if (menuContent) {
           menuContent.addEventListener("keydown", (e) => {
-            if (e.key !== "Tab" || menuToggle.getAttribute("aria-expanded") !== "true") {
-              return;
-            }
-
-            const focusableElements = menuContent.querySelectorAll(
-              'a, button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-            );
+            if (e.key !== "Tab" || menuToggle.getAttribute("aria-expanded") !== "true") return;
+            const focusableElements = menuContent.querySelectorAll('a, button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
             const firstElement = focusableElements[0];
             const lastElement = focusableElements[focusableElements.length - 1];
-
-            if (e.shiftKey) {
-              // Shift + Tab
-              if (document.activeElement === firstElement) {
-                e.preventDefault();
-                lastElement?.focus();
-              }
-            } else {
-              // Tab
-              if (document.activeElement === lastElement) {
-                e.preventDefault();
-                firstElement?.focus();
-              }
+            if (e.shiftKey && document.activeElement === firstElement) {
+              e.preventDefault();
+              (lastElement as HTMLElement)?.focus();
+            } else if (!e.shiftKey && document.activeElement === lastElement) {
+              e.preventDefault();
+              (firstElement as HTMLElement)?.focus();
             }
           });
         }
@@ -913,10 +480,6 @@ const useHomeLightBg =
     </script>
 
     <script is:inline set:html={enhancementsScript}></script>
-
-    <Analytics />
-
-    <SpeedInsights />
-
+    <PrivacyConsent />
   </body>
 </html>
