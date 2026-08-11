@@ -1,0 +1,66 @@
+---
+import SiteLayout from "../layouts/SiteLayout.astro";
+import InstitutionalPage from "../components/InstitutionalPage.astro";
+
+const SITE = import.meta.env.SITE || "https://canapalandia.com";
+const title = "Chi siamo | Canapalandia";
+const description = "Scopri chi cura Canapalandia, come lavoriamo, come finanziamo il progetto e quali criteri usiamo per informare su canapa, CBD e normativa.";
+const canonical = `${SITE}/chi-siamo/`;
+---
+
+<SiteLayout title={title} description={description} canonical={canonical}>
+  <InstitutionalPage
+    eyebrow="Trasparenza editoriale"
+    title="Chi siamo"
+    lead="Canapalandia è un progetto editoriale indipendente dedicato a canapa, CBD, cannabis light, normativa, ricerca e cultura. Oggi non vende prodotti e non opera come e-commerce o marketplace."
+    updated="11 agosto 2026"
+  >
+    <h2>Da blog a progetto editoriale</h2>
+    <p>
+      Canapalandia nasce nel 2016 come blog dedicato alla canapa. Nel tempo il progetto è cambiato più volte, insieme al settore e al quadro normativo. La versione attuale del sito ha una funzione editoriale: pubblicare notizie, analisi, guide e strumenti che aiutino a orientarsi tra fonti scientifiche, norme, decisioni pubbliche e comunicazione commerciale.
+    </p>
+    <p>
+      Il progetto è curato da <strong>Luca Sanna</strong>. Alcuni articoli sono firmati personalmente, altri sono pubblicati a nome della redazione Canapalandia quando rappresentano un lavoro editoriale del progetto.
+    </p>
+
+    <div class="institutional-note">
+      <p>
+        <strong>Nota importante:</strong> alcune vecchie pagine e alcuni contenuti dell'archivio possono riflettere fasi precedenti del progetto. Le pagine istituzionali aggiornate descrivono il funzionamento attuale di Canapalandia.
+      </p>
+    </div>
+
+    <h2>Come lavoriamo</h2>
+    <ul>
+      <li>cerchiamo di privilegiare fonti primarie, documenti ufficiali, studi scientifici e atti normativi;</li>
+      <li>distinguiamo, quando possibile, tra fatti verificabili, interpretazioni e opinioni;</li>
+      <li>indichiamo date, fonti e aggiornamenti quando il tema può cambiare nel tempo;</li>
+      <li>correggiamo gli errori segnalati quando una verifica conferma la necessità di intervenire;</li>
+      <li>evitiamo di presentare contenuti informativi come consulenza medica o legale.</li>
+    </ul>
+
+    <h2>Come si sostiene il progetto</h2>
+    <p>
+      Canapalandia può finanziarsi attraverso pubblicità, contenuti sponsorizzati chiaramente segnalati, partnership, link di affiliazione e sostegno volontario dei lettori. Queste attività servono a sostenere i costi del progetto e non modificano l'obbligo di distinguere contenuti editoriali e comunicazione commerciale.
+    </p>
+    <p>
+      Le proposte commerciali vengono valutate prima della pubblicazione. Un pagamento non garantisce l'accettazione di un contenuto incompatibile con la linea editoriale o contenente affermazioni che non possiamo sostenere.
+    </p>
+
+    <h2>Cosa non siamo</h2>
+    <p>
+      Canapalandia non è un laboratorio di analisi, non è uno studio medico o legale e non è un'autorità pubblica. Gli strumenti del sito, compreso Canapalandia Lab, hanno finalità informative e non certificano legalità, sicurezza, qualità o idoneità al consumo di un prodotto.
+    </p>
+
+    <h2>Segnalazioni e correzioni</h2>
+    <p>
+      Per segnalare un errore, proporre una fonte, chiedere una correzione o contattarci per una collaborazione puoi usare la <a href="/contatti/">pagina Contatti</a> o scrivere a <a href="mailto:info@canapalandia.com">info@canapalandia.com</a>.
+    </p>
+
+    <div class="institutional-links">
+      <a href="/chi-siamo/missione/">La nostra missione</a>
+      <a href="/disclaimer-legale-canapalandia/">Disclaimer legale</a>
+      <a href="/pubblicita/">Pubblicità e collaborazioni</a>
+      <a href="/privacy-policy/">Privacy Policy</a>
+    </div>
+  </InstitutionalPage>
+</SiteLayout>
