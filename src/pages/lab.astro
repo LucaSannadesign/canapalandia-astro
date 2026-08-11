@@ -224,7 +224,7 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/lab/`;
 
     const status = parseStatus(line);
     const numeric = line.match(
-      /(?:^|\s|[:=])([0-9]+(?:[.,][0-9]+)?)\s*(%|mg\s*\/\s*g|mg\s*\/\s*ml|µg\s*\/\s*g|μg\s*\/\s*g|ug\s*\/\s*g|ppm)\b/i,
+      /(?:^|\s|[:=])([0-9]+(?:[.,][0-9]+)?)\s*(%|mg\s*\/\s*g|mg\s*\/\s*ml|µg\s*\/\s*g|μg\s*\/\s*g|ug\s*\/\s*g|ppm)(?=\s|$)/i,
     );
 
     if (numeric) {
