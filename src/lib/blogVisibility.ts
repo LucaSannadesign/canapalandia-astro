@@ -9,10 +9,11 @@ export function blogPublishDate(entry: CollectionEntry<"blog">): Date | null {
 }
 
 /**
- * Un post è pubblico solo se è esplicitamente pronto, non è marcato draft
- * e la sua data di pubblicazione non è futura.
+ * Un post è raggiungibile sul suo URL se è esplicitamente pronto, non è marcato
+ * draft e la sua data di pubblicazione non è futura. Questo include i contenuti
+ * `legacy-review`, che devono conservare lo storico URL durante la revisione.
  */
-export function isPublishedBlogEntry(
+export function isReachableBlogEntry(
   entry: CollectionEntry<"blog">,
   now: Date = new Date(),
 ): boolean {
@@ -21,4 +22,19 @@ export function isPublishedBlogEntry(
 
   const publishDate = blogPublishDate(entry);
   return publishDate !== null && publishDate.getTime() <= now.getTime();
+}
+
+/**
+ * Un post è pubblicabile nei percorsi editoriali solo se è raggiungibile e non
+ * è in quarantena editoriale. Le pagine `legacy-review` restano quindi vive sul
+ * loro URL ma non vengono proposte in feed, archivi, correlati o automazioni.
+ */
+export function isPublishedBlogEntry(
+  entry: CollectionEntry<"blog">,
+  now: Date = new Date(),
+): boolean {
+  return (
+    isReachableBlogEntry(entry, now) &&
+    entry.data.editorialStatus !== "legacy-review"
+  );
 }
