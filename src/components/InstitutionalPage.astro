@@ -1,0 +1,122 @@
+---
+type Props = {
+  eyebrow?: string;
+  title: string;
+  lead?: string;
+  updated?: string;
+};
+
+const { eyebrow = "Canapalandia", title, lead, updated } = Astro.props;
+---
+
+<article class="institutional">
+  <header class="institutional__hero">
+    <p class="institutional__eyebrow">{eyebrow}</p>
+    <h1>{title}</h1>
+    {lead ? <p class="institutional__lead">{lead}</p> : null}
+    {updated ? <p class="institutional__updated">Ultimo aggiornamento: {updated}</p> : null}
+  </header>
+
+  <div class="institutional__content">
+    <slot />
+  </div>
+</article>
+
+<style>
+  .institutional {
+    width: min(860px, 100%);
+    margin: 0 auto;
+    padding: clamp(32px, 6vw, 72px) 0 clamp(56px, 8vw, 96px);
+  }
+
+  .institutional__hero {
+    padding-bottom: 28px;
+    margin-bottom: 32px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .institutional__eyebrow {
+    margin: 0 0 9px;
+    color: var(--brand);
+    font: 700 12px/1.2 var(--font-ui, "Archivo", sans-serif);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+  }
+
+  .institutional h1 {
+    margin: 0;
+    max-width: 760px;
+    color: var(--text);
+    font: 700 clamp(38px, 7vw, 64px)/.98 var(--font-serif, "Source Serif 4", serif);
+    letter-spacing: -.025em;
+  }
+
+  .institutional__lead {
+    max-width: 720px;
+    margin: 18px 0 0;
+    color: var(--muted);
+    font: 400 clamp(17px, 2vw, 20px)/1.55 var(--font-ui, "Archivo", sans-serif);
+  }
+
+  .institutional__updated {
+    margin: 16px 0 0;
+    color: var(--muted);
+    font: 600 12px/1.4 var(--font-ui, "Archivo", sans-serif);
+  }
+
+  .institutional__content :global(h2) {
+    margin: 38px 0 12px;
+    color: var(--text);
+    font: 700 clamp(25px, 4vw, 34px)/1.12 var(--font-serif, "Source Serif 4", serif);
+  }
+
+  .institutional__content :global(h3) {
+    margin: 28px 0 9px;
+    color: var(--text);
+    font: 700 20px/1.25 var(--font-serif, "Source Serif 4", serif);
+  }
+
+  .institutional__content :global(p),
+  .institutional__content :global(li) {
+    color: var(--text);
+    font: 400 16px/1.72 var(--font-ui, "Archivo", sans-serif);
+  }
+
+  .institutional__content :global(p) { margin: 0 0 18px; }
+
+  .institutional__content :global(ul),
+  .institutional__content :global(ol) {
+    margin: 0 0 22px;
+    padding-left: 1.3rem;
+  }
+
+  .institutional__content :global(li + li) { margin-top: 8px; }
+
+  .institutional__content :global(a) {
+    color: var(--brand);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+
+  .institutional__content :global(.institutional-note) {
+    margin: 28px 0;
+    padding: 18px 20px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--panel);
+  }
+
+  .institutional__content :global(.institutional-links) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px 16px;
+    margin-top: 26px;
+    padding-top: 22px;
+    border-top: 1px solid var(--border);
+  }
+
+  @media (max-width: 720px) {
+    .institutional { padding-inline: 2px; }
+    .institutional__hero { margin-bottom: 24px; }
+  }
+</style>
