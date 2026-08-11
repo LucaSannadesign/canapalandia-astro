@@ -1,32 +1,93 @@
 ---
 import SiteLayout from "@/layouts/SiteLayout.astro";
 
-const title = "Canapalandia Lab: capisci un certificato COA | Canapalandia";
+const SITE = import.meta.env.SITE || "https://canapalandia.com";
+const title = "Come leggere un certificato COA | Canapalandia Lab";
 const description =
-  "Incolla i risultati di un certificato di analisi (COA) e ottieni una lettura semplice di cannabinoidi, sigle come ND, LOD e LOQ e unità di misura.";
-const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/lab/`;
+  "Incolla i risultati di un certificato di analisi (COA) e ottieni una lettura semplice di cannabinoidi, valori, unità e sigle come ND, LOD e LOQ.";
+const canonical = `${SITE}/lab/`;
+const ogImage = `${SITE}/images/logo-canapalandia_1024.webp`;
+const socialImageAlt = "Canapalandia Lab — strumento per leggere un certificato COA";
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": `${SITE}/#website`,
+      url: `${SITE}/`,
+      name: "Canapalandia",
+      inLanguage: "it-IT",
+    },
+    {
+      "@type": "WebPage",
+      "@id": `${canonical}#webpage`,
+      url: canonical,
+      name: title,
+      description,
+      inLanguage: "it-IT",
+      isPartOf: { "@id": `${SITE}/#website` },
+      about: { "@id": `${canonical}#app` },
+    },
+    {
+      "@type": "WebApplication",
+      "@id": `${canonical}#app`,
+      name: "Canapalandia Lab — Lettore COA",
+      url: canonical,
+      description,
+      applicationCategory: "EducationalApplication",
+      operatingSystem: "Any",
+      browserRequirements: "Richiede JavaScript in un browser moderno",
+      isAccessibleForFree: true,
+      publisher: {
+        "@type": "Organization",
+        name: "Canapalandia",
+        url: `${SITE}/`,
+      },
+    },
+  ],
+};
+
+const extraHead = `
+<meta name="author" content="Canapalandia" />
+<meta name="application-name" content="Canapalandia" />
+<meta name="theme-color" content="#14261b" media="(prefers-color-scheme: dark)" />
+<meta name="theme-color" content="#f6f2e7" media="(prefers-color-scheme: light)" />
+<meta property="og:locale" content="it_IT" />
+<meta property="og:image:alt" content="${socialImageAlt}" />
+<meta name="twitter:image:alt" content="${socialImageAlt}" />
+<script type="application/ld+json">${JSON.stringify(structuredData).replace(/</g, "\\u003c")}</script>
+`;
 ---
 
 <SiteLayout
   title={title}
   description={description}
   canonical={canonical}
+  robots="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1"
+  ogImage={ogImage}
+  ogType="website"
+  ogSiteName="Canapalandia"
+  twitterCard="summary_large_image"
+  yoastHeadHtml={extraHead}
   shell={false}
 >
   <section class="lab-page" aria-labelledby="lab-title">
-    <div class="container lab-container">
+    <div class="lab-wrap">
       <header class="lab-hero">
-        <p class="lab-kicker">CANAPALANDIA LAB · BETA</p>
+        <p class="lab-kicker"><span aria-hidden="true"></span> CANAPALANDIA LAB · BETA</p>
         <h1 id="lab-title">Capisci meglio il tuo certificato di analisi</h1>
         <p class="lab-lead">
-          Incolla qui la parte del COA con i risultati. Il Lab prova a riconoscere
+          Incolla la parte del COA con i risultati. Il Lab prova a riconoscere
           cannabinoidi, valori e sigle di laboratorio e li riscrive in modo più
           comprensibile.
         </p>
         <div class="lab-privacy" role="note">
-          <span aria-hidden="true">●</span>
-          L'analisi avviene nel browser: il testo incollato non viene inviato al
-          server da questo strumento.
+          <span class="lab-privacy__dot" aria-hidden="true"></span>
+          <span>
+            L'analisi avviene nel browser: il testo incollato non viene inviato al
+            server da questo strumento.
+          </span>
         </div>
       </header>
 
@@ -47,17 +108,20 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/lab/`;
             id="coa-input"
             rows="13"
             spellcheck="false"
+            autocomplete="off"
+            autocapitalize="off"
+            aria-describedby="coa-help"
             placeholder="Esempio:\nCBD 12,4 %\nCBDA 0,8 %\nΔ9-THC < LOQ\nCBG 0,18 %\nCBN ND"
           ></textarea>
 
-          <p class="lab-help">
+          <p class="lab-help" id="coa-help">
             Funziona meglio se copi una riga per ciascun analita. Sono riconosciuti
             CBD, CBDA, THC/Δ9-THC, THCA, CBG, CBGA, CBC e CBN.
           </p>
 
           <div class="lab-actions">
             <button class="lab-primary" id="analyze-coa" type="button">
-              Leggi i risultati
+              Leggi i risultati <span aria-hidden="true">→</span>
             </button>
             <button class="lab-secondary" id="clear-coa" type="button">
               Pulisci
@@ -103,7 +167,7 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/lab/`;
             soglie analitiche e unità diverse. Questo strumento serve a orientarsi
             nei dati riportati dal laboratorio.
           </p>
-          <p>
+          <p class="lab-disclaimer">
             <strong>Non certifica</strong> la legalità, la sicurezza, la qualità o
             l'idoneità al consumo di un prodotto e non sostituisce il laboratorio,
             un professionista sanitario o un parere legale.
@@ -119,28 +183,34 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/lab/`;
         <div class="lab-glossary__grid">
           <article>
             <span>ND</span>
-            <h3>Non rilevato</h3>
-            <p>
-              In molti referti indica che il laboratorio non ha rilevato
-              l'analita secondo il proprio metodo. La definizione precisa va
-              sempre verificata nella legenda del certificato.
-            </p>
+            <div>
+              <h3>Non rilevato</h3>
+              <p>
+                In molti referti indica che il laboratorio non ha rilevato
+                l'analita secondo il proprio metodo. La definizione precisa va
+                sempre verificata nella legenda del certificato.
+              </p>
+            </div>
           </article>
           <article>
             <span>LOD</span>
-            <h3>Limite di rilevazione</h3>
-            <p>
-              È la soglia sotto la quale il metodo non riesce a distinguere con
-              sufficiente affidabilità la presenza dell'analita.
-            </p>
+            <div>
+              <h3>Limite di rilevazione</h3>
+              <p>
+                È la soglia sotto la quale il metodo non riesce a distinguere con
+                sufficiente affidabilità la presenza dell'analita.
+              </p>
+            </div>
           </article>
           <article>
             <span>LOQ</span>
-            <h3>Limite di quantificazione</h3>
-            <p>
-              È la soglia sotto la quale il laboratorio può non essere in grado
-              di attribuire una quantità sufficientemente affidabile.
-            </p>
+            <div>
+              <h3>Limite di quantificazione</h3>
+              <p>
+                È la soglia sotto la quale il laboratorio può non essere in grado
+                di attribuire una quantità sufficientemente affidabile.
+              </p>
+            </div>
           </article>
         </div>
       </section>
@@ -289,22 +359,23 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/lab/`;
     const top = document.createElement("div");
     top.className = "lab-result__top";
 
-    const title = document.createElement("h3");
-    title.textContent = result.label;
+    const heading = document.createElement("h3");
+    heading.textContent = result.label;
 
     const badge = document.createElement("span");
     badge.className = "lab-result__value";
     badge.textContent = statusText(result);
 
-    const description = document.createElement("p");
-    description.textContent = descriptions[result.key] || "Cannabinoide riportato nel certificato.";
+    const resultDescription = document.createElement("p");
+    resultDescription.textContent =
+      descriptions[result.key] || "Cannabinoide riportato nel certificato.";
 
     const source = document.createElement("p");
     source.className = "lab-result__source";
     source.textContent = `Riga letta: ${result.raw}`;
 
-    top.append(title, badge);
-    article.append(top, description, source);
+    top.append(heading, badge);
+    article.append(top, resultDescription, source);
     return article;
   }
 
@@ -418,146 +489,258 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/lab/`;
 </script>
 
 <style>
-  .lab-page {
-    --lab-accent: var(--brand, #2f7d4a);
-    --lab-accent-soft: color-mix(in srgb, var(--lab-accent) 14%, transparent);
-    --lab-copy: color-mix(in srgb, var(--text) 78%, transparent);
-    padding: clamp(44px, 6vw, 76px) 0 84px;
+  :global(html:has(.lab-page)) {
+    --lab-bg: #f6f2e7;
+    --lab-surface: #fffdf7;
+    --lab-surface-2: #ede7d6;
+    --lab-border: #e3dcc9;
+    --lab-border-strong: #d6ceb8;
+    --lab-heading: #16281a;
+    --lab-text: #1c2a1e;
+    --lab-body: #4a5a4c;
+    --lab-faint: #62705f;
+    --lab-green: #1f4a2c;
+    --lab-green-hover: #2b6139;
+    --lab-olive: #55702c;
+    --lab-gold: #c6a15b;
+    --lab-shadow-sm: 0 1px 2px rgba(28, 42, 30, 0.05);
+    --lab-shadow-focus: 0 0 0 3px rgba(110, 139, 61, 0.2);
   }
 
-  .lab-container {
-    max-width: 1180px;
+  :global(html[data-theme="dark"]:has(.lab-page)) {
+    --lab-bg: #14261b;
+    --lab-surface: #1b3d23;
+    --lab-surface-2: #16301c;
+    --lab-border: #2e4a35;
+    --lab-border-strong: #3a5a42;
+    --lab-heading: #f4f2e6;
+    --lab-text: #efede0;
+    --lab-body: #c6d3c2;
+    --lab-faint: #9fb79a;
+    --lab-green: #2b6139;
+    --lab-green-hover: #35744a;
+    --lab-olive: #9dc063;
+    --lab-gold: #d8b978;
+    --lab-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.28);
+    --lab-shadow-focus: 0 0 0 3px rgba(157, 192, 99, 0.18);
+  }
+
+  :global(body:has(.lab-page)) {
+    background: var(--lab-bg);
+  }
+
+  :global(body:has(.lab-page) .site-header) {
+    background: color-mix(in srgb, var(--lab-bg) 88%, transparent);
+    border-bottom-color: var(--lab-border);
+  }
+
+  :global(body:has(.lab-page) .site-header .nav a),
+  :global(body:has(.lab-page) .site-header .search),
+  :global(body:has(.lab-page) .site-header .menu-toggle),
+  :global(body:has(.lab-page) .site-header .theme-toggle__btn) {
+    color: var(--lab-text);
+  }
+
+  :global(body:has(.lab-page) .nav a:hover) {
+    background: var(--lab-surface-2);
+    color: var(--lab-olive);
+    box-shadow: none;
+  }
+
+  .lab-page {
+    font-family: var(--font-ui);
+    color: var(--lab-text);
+    background: var(--lab-bg);
+    padding-block: clamp(36px, 6vw, 72px) 80px;
+  }
+
+  .lab-wrap {
+    max-width: 1200px;
+    margin-inline: auto;
+    padding-inline: clamp(16px, 4vw, 40px);
   }
 
   .lab-hero {
-    max-width: 880px;
-    margin-bottom: 34px;
+    max-width: 820px;
+    margin-bottom: clamp(30px, 4vw, 42px);
   }
 
   .lab-kicker,
   .lab-step {
-    margin: 0 0 10px;
-    font: 700 0.76rem/1.2 "Archivo", sans-serif;
-    letter-spacing: 0.14em;
+    font-family: var(--font-ui);
+    font-weight: 600;
     text-transform: uppercase;
-    color: var(--brand);
+  }
+
+  .lab-kicker {
+    margin: 0 0 18px;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    color: var(--lab-olive);
+  }
+
+  .lab-kicker > span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--lab-olive);
+    flex: 0 0 auto;
   }
 
   .lab-hero h1 {
     margin: 0;
-    max-width: 780px;
-    font-size: clamp(2.35rem, 5.4vw, 4.65rem);
-    line-height: 0.98;
-    letter-spacing: -0.045em;
+    max-width: 19ch;
+    font-family: var(--font-editorial);
+    font-weight: 700;
+    font-size: clamp(34px, 4.6vw, 60px);
+    line-height: 1.04;
+    letter-spacing: -0.024em;
+    color: var(--lab-heading);
+    text-wrap: balance;
   }
 
   .lab-lead {
-    max-width: 740px;
-    margin: 22px 0 18px;
-    color: var(--lab-copy);
-    font-size: clamp(1.08rem, 2vw, 1.26rem);
-    line-height: 1.62;
+    max-width: 55ch;
+    margin: 20px 0 0;
+    color: var(--lab-body);
+    font-size: clamp(16.5px, 1.3vw, 19px);
+    line-height: 1.58;
+    text-wrap: pretty;
   }
 
   .lab-privacy {
     display: inline-flex;
     align-items: flex-start;
-    gap: 9px;
+    gap: 10px;
     max-width: 660px;
-    padding: 9px 12px;
-    border: 1px solid color-mix(in srgb, var(--brand) 24%, var(--border));
-    border-radius: 9px;
-    background: color-mix(in srgb, var(--panel) 90%, transparent);
-    color: var(--lab-copy);
-    font-size: 0.86rem;
-    line-height: 1.45;
+    margin-top: 20px;
+    padding: 11px 14px;
+    border: 1px solid var(--lab-border);
+    border-radius: 12px;
+    background: var(--lab-surface);
+    color: var(--lab-faint);
+    font-size: 13.5px;
+    line-height: 1.48;
+    box-shadow: var(--lab-shadow-sm);
   }
 
-  .lab-privacy span {
-    color: var(--brand);
-    font-size: 0.8rem;
-    transform: translateY(0.2em);
+  .lab-privacy__dot {
+    width: 7px;
+    height: 7px;
+    margin-top: 0.43em;
+    border-radius: 50%;
+    background: var(--lab-olive);
+    flex: 0 0 auto;
   }
 
   .lab-grid {
     display: grid;
     grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
-    gap: 22px;
+    gap: 18px;
     align-items: stretch;
   }
 
   .lab-panel {
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    background: color-mix(in srgb, var(--panel) 94%, var(--bg));
-    padding: clamp(20px, 3vw, 32px);
     min-width: 0;
+    padding: clamp(20px, 2.7vw, 30px);
+    border: 1px solid var(--lab-border);
+    border-radius: 16px;
+    background: var(--lab-surface);
+    box-shadow: var(--lab-shadow-sm);
   }
 
   .lab-input-panel {
-    border-color: color-mix(in srgb, var(--brand) 38%, var(--border));
-    box-shadow: 0 18px 54px color-mix(in srgb, var(--bg) 72%, transparent);
+    border-color: var(--lab-border-strong);
   }
 
   .lab-results-panel {
     display: flex;
     flex-direction: column;
-    background: color-mix(in srgb, var(--panel) 86%, var(--bg));
+    background: color-mix(in srgb, var(--lab-surface) 86%, var(--lab-surface-2));
   }
 
   .lab-panel__head {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    gap: 20px;
-    margin-bottom: 20px;
+    gap: 18px;
+    margin-bottom: 18px;
+  }
+
+  .lab-step {
+    margin: 0 0 7px;
+    font-size: 11.5px;
+    line-height: 1.2;
+    letter-spacing: 0.13em;
+    color: var(--lab-faint);
   }
 
   .lab-panel h2,
   .lab-explainer h2,
   .lab-glossary h2 {
     margin: 0;
-    font-size: clamp(1.45rem, 3vw, 2rem);
-    line-height: 1.12;
+    font-family: var(--font-editorial);
+    font-weight: 700;
+    color: var(--lab-heading);
+    letter-spacing: -0.012em;
+  }
+
+  .lab-panel h2 {
+    font-size: clamp(24px, 2.5vw, 31px);
+    line-height: 1.1;
   }
 
   .lab-link-button {
     flex: none;
-    appearance: none;
-    border: 0;
+    min-height: 36px;
+    padding: 0 13px;
+    border: 1px solid var(--lab-border-strong);
+    border-radius: 999px;
     background: transparent;
-    color: var(--brand);
-    font: 700 0.82rem/1 "Archivo", sans-serif;
+    color: var(--lab-olive);
+    font: 600 13px/1 var(--font-ui);
     cursor: pointer;
-    padding: 7px 0;
-    border-bottom: 1px solid currentColor;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  }
+
+  .lab-link-button:hover {
+    background: var(--lab-surface-2);
+    border-color: var(--lab-olive);
   }
 
   #coa-input {
     width: 100%;
-    min-height: 310px;
+    min-height: 300px;
     resize: vertical;
-    border: 1px solid color-mix(in srgb, var(--text) 16%, var(--border));
-    border-radius: 12px;
-    background: color-mix(in srgb, var(--bg) 72%, var(--panel));
-    color: var(--text);
     padding: 18px;
-    font: 500 0.98rem/1.65 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    border: 1px solid var(--lab-border-strong);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--lab-surface-2) 55%, var(--lab-surface));
+    color: var(--lab-text);
+    font: 500 15px/1.65 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     outline: none;
     transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
   }
 
+  #coa-input::placeholder {
+    color: var(--lab-faint);
+    opacity: 0.8;
+  }
+
   #coa-input:focus {
-    border-color: var(--brand);
-    background: color-mix(in srgb, var(--bg) 82%, var(--panel));
-    box-shadow: 0 0 0 3px var(--lab-accent-soft);
+    border-color: var(--lab-olive);
+    background: var(--lab-surface);
+    box-shadow: var(--lab-shadow-focus);
   }
 
   .lab-help {
-    margin: 12px 0 0;
-    color: var(--lab-copy);
-    font-size: 0.84rem;
-    line-height: 1.55;
+    margin: 11px 0 0;
+    color: var(--lab-faint);
+    font-size: 13px;
+    line-height: 1.5;
   }
 
   .lab-actions {
@@ -569,79 +752,89 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/lab/`;
 
   .lab-primary,
   .lab-secondary {
-    min-height: 50px;
-    border-radius: 9px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    min-height: 48px;
     padding: 0 22px;
-    font: 700 0.92rem/1 "Archivo", sans-serif;
+    border-radius: 999px;
+    font: 600 15px/1 var(--font-ui);
     cursor: pointer;
-    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease,
+      transform 0.2s ease;
   }
 
   .lab-primary {
     min-width: 190px;
-    border: 1px solid var(--brand);
-    background: var(--brand);
-    color: #fff;
-    box-shadow: 0 9px 24px color-mix(in srgb, var(--brand) 28%, transparent);
+    border: 1px solid var(--lab-green);
+    background: var(--lab-green);
+    color: #fffdf7;
   }
 
   .lab-primary:hover {
-    background: var(--gold);
-    border-color: var(--gold);
-    color: var(--gold-ink);
-    transform: translateY(-1px);
+    background: var(--lab-green-hover);
+    border-color: var(--lab-green-hover);
+    color: #fffdf7;
   }
 
   .lab-secondary {
-    border: 1px solid var(--border);
+    border: 1px solid var(--lab-border-strong);
     background: transparent;
-    color: var(--text);
+    color: var(--lab-olive);
   }
 
   .lab-secondary:hover {
-    border-color: var(--brand);
+    background: var(--lab-surface-2);
+    border-color: var(--lab-olive);
+  }
+
+  .lab-page :where(button):focus-visible,
+  .lab-page :where(textarea):focus-visible {
+    outline: 2px solid var(--lab-olive);
+    outline-offset: 3px;
   }
 
   .lab-empty {
-    min-height: 350px;
+    min-height: 326px;
     flex: 1;
     display: grid;
     place-content: center;
     justify-items: center;
-    gap: 16px;
-    text-align: center;
-    color: var(--lab-copy);
-    border: 1px dashed color-mix(in srgb, var(--text) 18%, var(--border));
+    gap: 15px;
+    padding: 28px;
+    border: 1px dashed var(--lab-border-strong);
     border-radius: 12px;
-    padding: 30px;
+    color: var(--lab-faint);
+    text-align: center;
   }
 
   .lab-empty.is-error {
-    color: var(--text);
-    border-color: color-mix(in srgb, var(--gold) 55%, var(--border));
+    color: var(--lab-text);
+    border-color: var(--lab-gold);
   }
 
   .lab-empty p {
-    max-width: 470px;
+    max-width: 38ch;
     margin: 0;
-    line-height: 1.6;
+    line-height: 1.55;
   }
 
   .lab-empty__mark {
     display: grid;
     place-items: center;
-    width: 72px;
-    height: 72px;
+    width: 62px;
+    height: 62px;
     border-radius: 50%;
-    background: var(--lab-accent-soft);
-    color: var(--brand);
-    font: 800 0.92rem/1 "Archivo", sans-serif;
-    letter-spacing: 0.08em;
+    background: color-mix(in srgb, var(--lab-olive) 15%, var(--lab-surface));
+    color: var(--lab-olive);
+    font: 700 12px/1 var(--font-ui);
+    letter-spacing: 0.11em;
   }
 
   .lab-output {
     display: grid;
-    gap: 16px;
+    gap: 14px;
   }
 
   .lab-summary {
@@ -650,29 +843,30 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/lab/`;
     justify-content: space-between;
     gap: 12px;
     flex-wrap: wrap;
-    padding-bottom: 15px;
-    border-bottom: 1px solid var(--border);
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--lab-border);
   }
 
   .lab-summary strong {
-    font-size: 1rem;
+    color: var(--lab-text);
+    font-size: 15px;
   }
 
   .lab-summary span {
-    color: var(--lab-copy);
-    font-size: 0.82rem;
+    color: var(--lab-faint);
+    font-size: 12.5px;
   }
 
   .lab-result-list {
     display: grid;
-    gap: 10px;
+    gap: 9px;
   }
 
   .lab-result {
-    padding: 14px 15px;
-    border: 1px solid var(--border);
-    border-radius: 11px;
-    background: color-mix(in srgb, var(--panel) 90%, var(--bg));
+    padding: 13px 14px;
+    border: 1px solid var(--lab-border);
+    border-radius: 12px;
+    background: var(--lab-surface);
   }
 
   .lab-result__top {
@@ -684,38 +878,39 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/lab/`;
 
   .lab-result h3 {
     margin: 0;
-    font: 800 0.98rem/1.2 "Archivo", sans-serif;
+    color: var(--lab-heading);
+    font: 700 15px/1.2 var(--font-ui);
   }
 
   .lab-result__value {
-    border-radius: 999px;
     padding: 5px 9px;
-    background: var(--lab-accent-soft);
-    color: var(--text);
-    font: 700 0.76rem/1.2 "Archivo", sans-serif;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--lab-olive) 13%, var(--lab-surface));
+    color: var(--lab-text);
+    font: 600 12px/1.2 var(--font-ui);
     text-align: right;
   }
 
   .lab-result p {
-    margin: 9px 0 0;
-    color: var(--lab-copy);
-    font-size: 0.86rem;
-    line-height: 1.5;
+    margin: 8px 0 0;
+    color: var(--lab-body);
+    font-size: 13px;
+    line-height: 1.48;
   }
 
   .lab-result__source {
-    opacity: 0.76;
+    color: var(--lab-faint) !important;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    font-size: 0.73rem !important;
+    font-size: 11.5px !important;
     overflow-wrap: anywhere;
   }
 
   .lab-terms {
     display: grid;
-    gap: 9px;
-    margin-top: 4px;
-    padding-top: 16px;
-    border-top: 1px solid var(--border);
+    gap: 8px;
+    margin-top: 3px;
+    padding-top: 14px;
+    border-top: 1px solid var(--lab-border);
   }
 
   .lab-terms:empty {
@@ -724,25 +919,26 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/lab/`;
 
   .lab-terms h3 {
     margin: 0 0 3px;
-    font-size: 0.94rem;
+    color: var(--lab-heading);
+    font: 700 14px/1.2 var(--font-ui);
   }
 
   .lab-term {
     display: grid;
-    grid-template-columns: 52px 1fr;
-    gap: 10px;
+    grid-template-columns: 48px 1fr;
+    gap: 9px;
     align-items: start;
   }
 
   .lab-term strong {
-    color: var(--brand);
-    font: 800 0.82rem/1.5 "Archivo", sans-serif;
+    color: var(--lab-olive);
+    font: 700 12px/1.5 var(--font-ui);
   }
 
   .lab-term p {
     margin: 0;
-    color: var(--lab-copy);
-    font-size: 0.82rem;
+    color: var(--lab-body);
+    font-size: 12.5px;
     line-height: 1.5;
   }
 
@@ -750,26 +946,39 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/lab/`;
     display: grid;
     grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
     gap: clamp(28px, 5vw, 72px);
-    margin: 54px 0 46px;
+    margin: clamp(46px, 6vw, 68px) 0 40px;
     padding: 30px 0;
-    border-top: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
+    border-top: 1px solid var(--lab-border);
+    border-bottom: 1px solid var(--lab-border);
+  }
+
+  .lab-explainer h2,
+  .lab-glossary h2 {
+    font-size: clamp(27px, 3vw, 38px);
+    line-height: 1.08;
   }
 
   .lab-explainer__copy {
     display: grid;
-    gap: 13px;
+    align-content: start;
+    gap: 12px;
   }
 
   .lab-explainer__copy p {
+    max-width: 62ch;
     margin: 0;
-    color: var(--lab-copy);
-    font-size: 0.96rem;
+    color: var(--lab-body);
+    font-size: 15.5px;
     line-height: 1.62;
   }
 
+  .lab-disclaimer {
+    padding-left: 14px;
+    border-left: 3px solid var(--lab-gold);
+  }
+
   .lab-explainer__copy strong {
-    color: var(--text);
+    color: var(--lab-text);
   }
 
   .lab-glossary__head {
@@ -784,46 +993,56 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/lab/`;
   }
 
   .lab-glossary article {
-    border: 1px solid var(--border);
-    border-radius: 11px;
-    background: color-mix(in srgb, var(--panel) 88%, var(--bg));
-    padding: 16px 17px;
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 13px;
+    align-items: start;
+    padding: 16px;
+    border: 1px solid var(--lab-border);
+    border-radius: 12px;
+    background: var(--lab-surface);
+    box-shadow: var(--lab-shadow-sm);
   }
 
   .lab-glossary article > span {
-    display: inline-block;
-    color: var(--brand);
-    font: 800 0.74rem/1 "Archivo", sans-serif;
-    letter-spacing: 0.08em;
-    margin-bottom: 10px;
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 9px;
+    background: color-mix(in srgb, var(--lab-olive) 14%, var(--lab-surface));
+    color: var(--lab-olive);
+    font: 700 11px/1 var(--font-ui);
+    letter-spacing: 0.06em;
   }
 
   .lab-glossary h3 {
-    margin: 0 0 7px;
-    font-size: 1rem;
+    margin: 1px 0 5px;
+    color: var(--lab-heading);
+    font: 700 15px/1.25 var(--font-ui);
   }
 
   .lab-glossary p {
     margin: 0;
-    color: var(--lab-copy);
-    font-size: 0.86rem;
-    line-height: 1.5;
+    color: var(--lab-body);
+    font-size: 13px;
+    line-height: 1.48;
   }
 
   @media (max-width: 820px) {
-    .lab-page {
-      padding-top: 38px;
-    }
-
     .lab-grid,
     .lab-explainer,
     .lab-glossary__grid {
       grid-template-columns: 1fr;
     }
 
+    .lab-grid {
+      gap: 14px;
+    }
+
     .lab-explainer {
-      gap: 22px;
-      margin: 44px 0 38px;
+      gap: 20px;
+      margin-top: 44px;
     }
 
     .lab-empty {
@@ -832,13 +1051,26 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/lab/`;
   }
 
   @media (max-width: 520px) {
+    .lab-page {
+      padding-top: 30px;
+    }
+
+    .lab-wrap {
+      padding-inline: 14px;
+    }
+
     .lab-panel {
-      border-radius: 14px;
       padding: 18px;
+      border-radius: 14px;
     }
 
     .lab-panel__head {
       gap: 12px;
+    }
+
+    .lab-link-button {
+      min-height: 34px;
+      padding-inline: 10px;
     }
 
     .lab-result__top,
@@ -857,6 +1089,16 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/lab/`;
 
     .lab-secondary {
       flex: 1 1 auto;
+    }
+
+    .lab-glossary article {
+      grid-template-columns: 38px minmax(0, 1fr);
+      gap: 11px;
+    }
+
+    .lab-glossary article > span {
+      width: 36px;
+      height: 36px;
     }
   }
 </style>
