@@ -1,0 +1,222 @@
+---
+import SiteLayout from "../layouts/SiteLayout.astro";
+
+type Props = {
+  title: string;
+  description: string;
+  canonical: string;
+  eyebrow: string;
+  heading: string;
+  lead: string;
+  currentLabel: string;
+  parentLabel?: string;
+  parentHref?: string;
+};
+
+const {
+  title,
+  description,
+  canonical,
+  eyebrow,
+  heading,
+  lead,
+  currentLabel,
+  parentLabel,
+  parentHref,
+} = Astro.props;
+
+const SITE = import.meta.env.SITE || "https://canapalandia.com";
+const itemListElement = [
+  { "@type": "ListItem", position: 1, name: "Home", item: `${SITE}/` },
+  ...(parentLabel && parentHref
+    ? [{ "@type": "ListItem", position: 2, name: parentLabel, item: `${SITE}${parentHref}` }]
+    : []),
+  {
+    "@type": "ListItem",
+    position: parentLabel && parentHref ? 3 : 2,
+    name: currentLabel,
+    item: canonical,
+  },
+];
+
+const breadcrumbJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement,
+};
+---
+
+<SiteLayout title={title} description={description} canonical={canonical} shell={false}>
+  <script type="application/ld+json" set:html={JSON.stringify(breadcrumbJsonLd)} />
+
+  <main class="institutional">
+    <div class="institutional__wrap">
+      <nav class="institutional__crumbs" aria-label="Percorso di navigazione">
+        <a href="/">Home</a>
+        <span aria-hidden="true">→</span>
+        {parentLabel && parentHref ? (
+          <>
+            <a href={parentHref}>{parentLabel}</a>
+            <span aria-hidden="true">→</span>
+          </>
+        ) : null}
+        <span aria-current="page">{currentLabel}</span>
+      </nav>
+
+      <header class="institutional__hero">
+        <p class="institutional__eyebrow">{eyebrow}</p>
+        <h1>{heading}</h1>
+        <p class="institutional__lead">{lead}</p>
+      </header>
+
+      <article class="institutional__content">
+        <slot />
+      </article>
+    </div>
+  </main>
+</SiteLayout>
+
+<style>
+  .institutional {
+    --inst-bg: #f6f2e7;
+    --inst-surface: #fffdf7;
+    --inst-text: #253229;
+    --inst-heading: #14261b;
+    --inst-muted: #617066;
+    --inst-accent: #667c2f;
+    --inst-border: #d9d3c2;
+    min-height: 70vh;
+    background: var(--inst-bg);
+    color: var(--inst-text);
+    padding: 34px 0 72px;
+  }
+
+  :global(html[data-theme="dark"]) .institutional {
+    --inst-bg: #0f1b14;
+    --inst-surface: #16251b;
+    --inst-text: #e7eadf;
+    --inst-heading: #fffdf7;
+    --inst-muted: #aab5ab;
+    --inst-accent: #b5c46d;
+    --inst-border: #314237;
+  }
+
+  .institutional__wrap {
+    width: min(920px, calc(100% - 36px));
+    margin: 0 auto;
+  }
+
+  .institutional__crumbs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 34px;
+    color: var(--inst-muted);
+    font: 500 12px/1.4 var(--font-ui, "Archivo", sans-serif);
+  }
+
+  .institutional__crumbs a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .institutional__crumbs a:hover {
+    color: var(--inst-accent);
+  }
+
+  .institutional__hero {
+    max-width: 790px;
+    margin-bottom: 34px;
+  }
+
+  .institutional__eyebrow {
+    margin: 0 0 12px;
+    color: var(--inst-accent);
+    font: 700 12px/1.2 var(--font-ui, "Archivo", sans-serif);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+  }
+
+  .institutional__hero h1 {
+    margin: 0;
+    color: var(--inst-heading);
+    font: 700 clamp(38px, 6vw, 62px)/.98 var(--font-serif, "Source Serif 4", serif);
+    letter-spacing: -.025em;
+  }
+
+  .institutional__lead {
+    max-width: 730px;
+    margin: 20px 0 0;
+    color: var(--inst-muted);
+    font: 400 clamp(18px, 2.3vw, 22px)/1.5 var(--font-serif, "Source Serif 4", serif);
+  }
+
+  .institutional__content {
+    display: grid;
+    gap: 20px;
+  }
+
+  :global(.institutional__content section) {
+    padding: clamp(22px, 4vw, 34px);
+    border: 1px solid var(--inst-border);
+    border-radius: 16px;
+    background: var(--inst-surface);
+  }
+
+  :global(.institutional__content h2) {
+    margin: 0 0 12px;
+    color: var(--inst-heading);
+    font: 700 clamp(24px, 3vw, 32px)/1.1 var(--font-serif, "Source Serif 4", serif);
+  }
+
+  :global(.institutional__content h3) {
+    margin: 22px 0 8px;
+    color: var(--inst-heading);
+    font: 700 18px/1.25 var(--font-ui, "Archivo", sans-serif);
+  }
+
+  :global(.institutional__content p),
+  :global(.institutional__content li) {
+    color: var(--inst-text);
+    font: 400 16px/1.72 var(--font-ui, "Archivo", sans-serif);
+  }
+
+  :global(.institutional__content p) {
+    margin: 0 0 14px;
+  }
+
+  :global(.institutional__content p:last-child) {
+    margin-bottom: 0;
+  }
+
+  :global(.institutional__content ul) {
+    margin: 12px 0 0;
+    padding-left: 22px;
+  }
+
+  :global(.institutional__content li + li) {
+    margin-top: 8px;
+  }
+
+  :global(.institutional__content a) {
+    color: var(--inst-accent);
+    text-underline-offset: 3px;
+  }
+
+  :global(.institutional__content .institutional-note) {
+    border-left: 3px solid var(--inst-accent);
+    padding-left: 16px;
+    color: var(--inst-muted);
+  }
+
+  @media (max-width: 620px) {
+    .institutional {
+      padding-top: 24px;
+    }
+
+    .institutional__wrap {
+      width: min(100% - 26px, 920px);
+    }
+  }
+</style>
