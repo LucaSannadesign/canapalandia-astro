@@ -49,7 +49,7 @@ const breadcrumbJsonLd = {
 <SiteLayout title={title} description={description} canonical={canonical} shell={false}>
   <script type="application/ld+json" set:html={JSON.stringify(breadcrumbJsonLd)} />
 
-  <main class="institutional">
+  <div class="institutional">
     <div class="institutional__wrap">
       <nav class="institutional__crumbs" aria-label="Percorso di navigazione">
         <a href="/">Home</a>
@@ -73,7 +73,7 @@ const breadcrumbJsonLd = {
         <slot />
       </article>
     </div>
-  </main>
+  </div>
 </SiteLayout>
 
 <style>
