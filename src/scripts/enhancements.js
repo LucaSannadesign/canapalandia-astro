@@ -378,7 +378,7 @@
       const pdf = await task.promise;
 
       if (pdf.numPages > maxPdfPages) {
-        await pdf.destroy();
+        await task.destroy();
         throw new Error(`Il PDF ha ${pdf.numPages} pagine. Per sicurezza il limite è ${maxPdfPages} pagine.`);
       }
 
@@ -393,7 +393,7 @@
       }
 
       const pageCount = pdf.numPages;
-      await pdf.destroy();
+      await task.destroy();
       return { text: pages.join("\n\n"), pageCount };
     };
 
