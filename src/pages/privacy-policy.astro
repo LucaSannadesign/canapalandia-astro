@@ -1,0 +1,109 @@
+---
+import SiteLayout from "../layouts/SiteLayout.astro";
+import InstitutionalPage from "../components/InstitutionalPage.astro";
+
+const SITE = import.meta.env.SITE || "https://canapalandia.com";
+const title = "Privacy Policy | Canapalandia";
+const description = "Informativa privacy di Canapalandia: dati di navigazione, contatti, newsletter, analytics, Canapalandia Lab e diritti degli utenti.";
+const canonical = `${SITE}/privacy-policy/`;
+---
+
+<SiteLayout title={title} description={description} canonical={canonical}>
+  <InstitutionalPage
+    eyebrow="Privacy"
+    title="Privacy Policy"
+    lead="Questa informativa descrive quali dati personali possono essere trattati quando utilizzi canapalandia.com e per quali finalità."
+    updated="11 agosto 2026"
+  >
+    <h2>1. Titolare del trattamento</h2>
+    <p>
+      Il progetto editoriale Canapalandia è gestito da <strong>Luca Sanna</strong>. Per richieste relative alla privacy puoi scrivere a <a href="mailto:info@canapalandia.com">info@canapalandia.com</a> oppure utilizzare la <a href="/contatti/">pagina Contatti</a>.
+    </p>
+
+    <h2>2. Dati trattati durante la navigazione</h2>
+    <p>
+      Come avviene normalmente per un sito web, l'infrastruttura tecnica può trattare dati necessari a consegnare le pagine, garantire sicurezza, prevenire abusi e diagnosticare problemi tecnici. Possono rientrare in questa categoria indirizzo IP, data e ora della richiesta, URL richiesto, informazioni sul browser o sul dispositivo e dati tecnici di log.
+    </p>
+    <p>
+      Il sito è ospitato tramite Vercel e può essere distribuito attraverso infrastrutture di rete e CDN necessarie al funzionamento del servizio.
+    </p>
+
+    <h2>3. Modulo di contatto</h2>
+    <p>
+      Se utilizzi il modulo Contatti vengono richiesti nome, indirizzo email, oggetto e testo del messaggio. Il modulo viene gestito tecnicamente tramite <strong>Formspree</strong>. I dati vengono utilizzati per ricevere e rispondere alla richiesta e per gli eventuali follow-up collegati.
+    </p>
+    <p>
+      La base del trattamento dipende dalla natura della richiesta e può consistere nell'esecuzione di misure richieste dall'interessato, nella gestione del rapporto o nel legittimo interesse a rispondere a comunicazioni e segnalazioni. I dati vengono conservati per il tempo necessario a gestire la richiesta e gli eventuali adempimenti connessi.
+    </p>
+
+    <h2>4. Newsletter</h2>
+    <p>
+      L'iscrizione alla newsletter è volontaria e richiede un consenso esplicito. Il sistema invia a <strong>Buttondown</strong> l'indirizzo email e, per finalità tecniche e anti-abuso, può trasmettere anche l'indirizzo IP associato alla richiesta di iscrizione.
+    </p>
+    <p>
+      I dati della newsletter vengono utilizzati per inviare aggiornamenti editoriali e restano trattati fino alla cancellazione, alla revoca del consenso o alla cessazione del servizio, salvo eventuali obblighi di conservazione applicabili. Puoi revocare il consenso utilizzando il link di disiscrizione presente nelle comunicazioni o contattandoci.
+    </p>
+
+    <h2>5. Analytics e misurazione</h2>
+    <p>
+      Canapalandia può utilizzare Google Analytics, Ahrefs Analytics, Vercel Web Analytics e Vercel Speed Insights per comprendere l'utilizzo del sito e misurarne prestazioni e contenuti. Gli strumenti di misurazione opzionali vengono attivati <strong>solo dopo la scelta positiva dell'utente</strong> tramite il pannello privacy.
+    </p>
+    <p>
+      Se rifiuti gli analytics, il sito resta utilizzabile e gli strumenti di misurazione opzionali non vengono caricati. La scelta viene memorizzata localmente sul dispositivo per evitare di riproporre continuamente la richiesta e viene nuovamente richiesta periodicamente o quando cambia in modo sostanziale la configurazione.
+    </p>
+    <p>
+      Per modificare la scelta puoi usare il comando <strong>Preferenze privacy</strong> disponibile nel footer. Per maggiori dettagli consulta la <a href="/cookie-policy/">Cookie Policy</a>.
+    </p>
+
+    <h2>6. Canapalandia Lab</h2>
+    <p>
+      Nel Canapalandia Lab, il file PDF/TXT o il testo del certificato COA viene elaborato nel browser dell'utente dalla funzionalità del Lab. Il contenuto del certificato non viene inviato ai server di Canapalandia da questo strumento e il report PDF viene generato sul dispositivo.
+    </p>
+    <p>
+      Il browser può scaricare codice di librerie tecniche da CDN esterne necessarie all'elaborazione, ma il file del certificato non viene caricato su tali servizi dalla funzione di analisi.
+    </p>
+
+    <h2>7. Fornitori e destinatari</h2>
+    <p>
+      Per erogare il sito possiamo utilizzare fornitori tecnici quali Vercel, Formspree, Buttondown e, previo consenso per le funzioni di misurazione, Google e Ahrefs. A seconda del servizio e del contesto, tali soggetti possono operare come responsabili del trattamento o come titolari autonomi secondo le rispettive condizioni e informative.
+    </p>
+
+    <h2>8. Trasferimenti e servizi internazionali</h2>
+    <p>
+      Alcuni fornitori possono trattare dati tramite infrastrutture localizzate anche fuori dallo Spazio Economico Europeo. Quando applicabile, il trattamento deve avvenire secondo i meccanismi e le garanzie previsti dalla normativa europea sulla protezione dei dati e dalle condizioni contrattuali del singolo fornitore.
+    </p>
+
+    <h2>9. Basi giuridiche</h2>
+    <ul>
+      <li><strong>funzionamento e sicurezza del sito:</strong> necessità tecnica e legittimo interesse alla sicurezza e all'erogazione del servizio;</li>
+      <li><strong>richieste di contatto:</strong> gestione della richiesta dell'utente e, ove applicabile, misure precontrattuali o legittimo interesse alla comunicazione;</li>
+      <li><strong>newsletter:</strong> consenso;</li>
+      <li><strong>analytics opzionali:</strong> consenso.</li>
+    </ul>
+
+    <h2>10. Diritti dell'interessato</h2>
+    <p>
+      Nei casi previsti dal Regolamento (UE) 2016/679 puoi chiedere accesso ai dati, rettifica, cancellazione, limitazione del trattamento, portabilità, opporti a determinati trattamenti e revocare un consenso già prestato senza pregiudicare la liceità del trattamento precedente alla revoca.
+    </p>
+    <p>
+      Puoi inoltre proporre reclamo al Garante per la protezione dei dati personali se ritieni che il trattamento dei tuoi dati violi la normativa applicabile.
+    </p>
+
+    <h2>11. Dati che scegli di non inviare</h2>
+    <p>
+      Evita di inserire nei moduli informazioni particolarmente sensibili o non necessarie alla richiesta. Non è necessario fornire dati sanitari, documenti personali o informazioni relative a sostanze o condotte individuali per utilizzare i normali contenuti editoriali del sito.
+    </p>
+
+    <h2>12. Modifiche a questa informativa</h2>
+    <p>
+      La Privacy Policy può essere aggiornata quando cambiano servizi, fornitori o modalità di trattamento. La data riportata in alto identifica l'ultima revisione sostanziale.
+    </p>
+
+    <div class="institutional-links">
+      <a href="/cookie-policy/">Cookie Policy</a>
+      <a href="/termini-e-condizioni/">Termini e condizioni</a>
+      <a href="/disclaimer-legale-canapalandia/">Disclaimer</a>
+      <a href="/contatti/">Contatti</a>
+    </div>
+  </InstitutionalPage>
+</SiteLayout>
