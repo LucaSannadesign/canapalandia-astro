@@ -1,0 +1,86 @@
+---
+import SiteLayout from "../layouts/SiteLayout.astro";
+import InstitutionalPage from "../components/InstitutionalPage.astro";
+
+const SITE = import.meta.env.SITE || "https://canapalandia.com";
+const title = "Termini e condizioni | Canapalandia";
+const description = "Condizioni d'uso del sito Canapalandia, progetto editoriale dedicato a canapa, CBD, cannabis light, ricerca e normativa.";
+const canonical = `${SITE}/termini-e-condizioni/`;
+---
+
+<SiteLayout title={title} description={description} canonical={canonical}>
+  <InstitutionalPage
+    eyebrow="Condizioni d'uso"
+    title="Termini e condizioni"
+    lead="Queste condizioni regolano l'uso del sito canapalandia.com nella sua attuale funzione editoriale e informativa."
+    updated="11 agosto 2026"
+  >
+    <div class="institutional-note">
+      <p>
+        <strong>Canapalandia oggi non è un e-commerce, non vende prodotti e non opera come marketplace o servizio di dropshipping.</strong> Eventuali vecchi testi che descrivevano tali attività non rappresentano più il funzionamento del sito.
+      </p>
+    </div>
+
+    <h2>1. Finalità del sito</h2>
+    <p>
+      Canapalandia pubblica contenuti editoriali, notizie, analisi, guide, opinioni e strumenti informativi relativi a canapa, CBD, cannabis light, ricerca, cultura, sostenibilità e normativa. L'accesso ai contenuti pubblici del sito è generalmente gratuito.
+    </p>
+
+    <h2>2. Natura delle informazioni</h2>
+    <p>
+      I contenuti hanno finalità informative e culturali. Non costituiscono consulenza medica, sanitaria, legale, fiscale o professionale. Quando una decisione può avere conseguenze personali, sanitarie o giuridiche, l'utente deve verificare le fonti aggiornate e rivolgersi a un professionista qualificato.
+    </p>
+
+    <h2>3. Normativa e contenuti soggetti a cambiamento</h2>
+    <p>
+      Leggi, regolamenti, orientamenti amministrativi, decisioni giudiziarie e conoscenze scientifiche possono cambiare. Canapalandia cerca di aggiornare i contenuti rilevanti, ma non può garantire che ogni pagina rifletta in ogni momento l'ultima evoluzione disponibile.
+    </p>
+
+    <h2>4. Proprietà intellettuale</h2>
+    <p>
+      Salvo diversa indicazione, testi, elementi grafici, struttura editoriale e materiali originali del sito sono protetti dalla normativa applicabile sul diritto d'autore. Citazioni brevi e collegamenti al sito sono consentiti nei limiti di legge e con attribuzione della fonte. Materiali di terzi restano di proprietà dei rispettivi titolari.
+    </p>
+
+    <h2>5. Link esterni, affiliazioni e contenuti sponsorizzati</h2>
+    <p>
+      Il sito può contenere link a siti esterni, link affiliati, pubblicità o contenuti sponsorizzati. Quando previsto, la natura commerciale viene segnalata. Canapalandia non controlla in modo continuativo siti, prodotti o servizi di terzi e non è responsabile dei loro contenuti, disponibilità o condizioni di vendita.
+    </p>
+
+    <h2>6. Collaborazioni commerciali</h2>
+    <p>
+      Guest post, campagne, banner, partnership e altri servizi promozionali sono regolati dalle condizioni concordate con il singolo inserzionista o partner. Le presenti condizioni d'uso del sito non sostituiscono eventuali accordi commerciali specifici.
+    </p>
+
+    <h2>7. Strumenti interattivi</h2>
+    <p>
+      Gli strumenti messi a disposizione sul sito, incluso Canapalandia Lab, elaborano dati secondo le funzioni descritte nelle rispettive pagine. I risultati sono informativi e non costituiscono certificazioni, perizie o valutazioni professionali.
+    </p>
+
+    <h2>8. Uso corretto del sito</h2>
+    <p>
+      L'utente si impegna a non utilizzare il sito per attività illecite, per tentare accessi non autorizzati, interferire con il funzionamento dei servizi o utilizzare contenuti e strumenti in modo tale da danneggiare il sito o terzi.
+    </p>
+
+    <h2>9. Disponibilità e responsabilità</h2>
+    <p>
+      Canapalandia può modificare, sospendere o riorganizzare pagine e funzionalità. Pur impegnandosi a mantenere il sito affidabile, non garantisce assenza assoluta di errori, interruzioni o incompatibilità tecniche.
+    </p>
+
+    <h2>10. Segnalazioni</h2>
+    <p>
+      Per segnalare errori, contenuti potenzialmente lesivi, problemi tecnici o richieste relative a diritti sui contenuti puoi usare la <a href="/contatti/">pagina Contatti</a> o scrivere a <a href="mailto:info@canapalandia.com">info@canapalandia.com</a>.
+    </p>
+
+    <h2>11. Modifiche</h2>
+    <p>
+      Queste condizioni possono essere aggiornate per riflettere cambiamenti del sito, dei servizi o del quadro normativo. La data riportata in alto indica l'ultima revisione sostanziale.
+    </p>
+
+    <div class="institutional-links">
+      <a href="/chi-siamo/">Chi siamo</a>
+      <a href="/disclaimer-legale-canapalandia/">Disclaimer</a>
+      <a href="/privacy-policy/">Privacy Policy</a>
+      <a href="/cookie-policy/">Cookie Policy</a>
+    </div>
+  </InstitutionalPage>
+</SiteLayout>
