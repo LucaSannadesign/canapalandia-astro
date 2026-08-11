@@ -1,83 +1,76 @@
 ---
-import Layout from "../layouts/MigratedLayout.astro";
+import SiteLayout from "../layouts/SiteLayout.astro";
+import InstitutionalPage from "../components/InstitutionalPage.astro";
 
-const title = "Cookie Policy — Canapalandia";
-const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/cookie-policy/`;
+const SITE = import.meta.env.SITE || "https://canapalandia.com";
+const title = "Cookie Policy | Canapalandia";
+const description = "Cookie Policy di Canapalandia: strumenti tecnici, analytics opzionali, durata della scelta e modalità per modificare il consenso.";
+const canonical = `${SITE}/cookie-policy/`;
 ---
 
-<Layout title={title} canonical={canonical}>
-  <main class="container page-shell">
-    <article class="wp-page">
-      <h1>Cookie Policy</h1>
+<SiteLayout title={title} description={description} canonical={canonical}>
+  <InstitutionalPage
+    eyebrow="Privacy"
+    title="Cookie Policy"
+    lead="Per impostazione predefinita Canapalandia utilizza solo ciò che serve al funzionamento del sito. Gli strumenti di misurazione opzionali vengono attivati soltanto dopo il tuo consenso."
+    updated="11 agosto 2026"
+  >
+    <h2>1. Cosa intendiamo per cookie e strumenti simili</h2>
+    <p>
+      I cookie sono piccoli dati che un sito può memorizzare nel browser. Esistono anche tecnologie diverse dai cookie, come localStorage, identificatori tecnici e script di misurazione. In questa pagina usiamo il termine “strumenti” per comprendere entrambe le categorie.
+    </p>
 
-      <p>
-        Questa Cookie Policy descrive come Canapalandia utilizza i cookie e tecnologie simili sul sito web canapalandia.com.
-      </p>
+    <h2>2. Strumenti necessari</h2>
+    <p>
+      Alcune informazioni vengono conservate localmente perché servono a ricordare scelte effettuate dall'utente e non sono utilizzate per profilazione pubblicitaria.
+    </p>
+    <ul>
+      <li><strong>Preferenza del tema:</strong> ricorda se hai scelto modalità chiara o scura.</li>
+      <li><strong>Scelta privacy:</strong> ricorda se hai accettato o rifiutato la categoria analytics, evitando di riproporre il pannello a ogni pagina.</li>
+    </ul>
 
-      <h2>Cosa sono i cookie</h2>
-      <p>
-        I cookie sono piccoli file di testo che vengono memorizzati sul tuo dispositivo (computer, tablet, smartphone) quando visiti un sito web. I cookie permettono al sito di ricordare le tue azioni e preferenze per un periodo di tempo, così non devi reinserirle ogni volta che torni sul sito o navighi da una pagina all'altra.
-      </p>
+    <h2>3. Analytics opzionali</h2>
+    <p>
+      Soltanto dopo un consenso positivo il sito può attivare la categoria di misurazione, che comprende:
+    </p>
+    <ul>
+      <li><strong>Google Analytics 4:</strong> analisi statistica dell'utilizzo del sito;</li>
+      <li><strong>Ahrefs Analytics:</strong> analisi del traffico e delle performance dei contenuti;</li>
+      <li><strong>Vercel Web Analytics:</strong> statistiche aggregate sull'utilizzo del sito;</li>
+      <li><strong>Vercel Speed Insights:</strong> misurazione delle prestazioni reali e dei Core Web Vitals.</li>
+    </ul>
+    <p>
+      Se scegli “Rifiuta” o chiudi il pannello, questi strumenti opzionali non vengono caricati dalla configurazione di Canapalandia. La navigazione e i contenuti restano disponibili.
+    </p>
 
-      <h2>Cookie tecnici</h2>
-      <p>
-        Utilizziamo cookie tecnici necessari per il funzionamento del sito, come:
-      </p>
-      <ul>
-        <li><strong>Preferenze tema:</strong> per ricordare se preferisci il tema chiaro o scuro</li>
-        <li><strong>Consenso cookie:</strong> per salvare le tue preferenze sui cookie</li>
-      </ul>
-      <p>
-        Questi cookie non richiedono il tuo consenso esplicito in quanto sono essenziali per il funzionamento del sito.
-      </p>
+    <h2>4. Come viene memorizzata la scelta</h2>
+    <p>
+      La preferenza viene salvata nel browser con una registrazione locale che contiene la versione della scelta, l'esito relativo agli analytics e la data. La configurazione è impostata per richiedere nuovamente la scelta dopo circa sei mesi oppure quando viene modificata la versione del sistema di consenso.
+    </p>
+    <p>
+      Se cancelli i dati del browser, utilizzi la navigazione privata o cambi dispositivo, la scelta potrebbe essere richiesta di nuovo.
+    </p>
 
-      <h2>Cookie di analytics</h2>
-      <p>
-        Utilizziamo Google Analytics 4 per analizzare come i visitatori utilizzano il sito. Questi cookie ci aiutano a:
-      </p>
-      <ul>
-        <li>Comprendere quali pagine sono più visitate</li>
-        <li>Migliorare l'esperienza utente</li>
-        <li>Ottimizzare i contenuti</li>
-      </ul>
-      <p>
-        I dati raccolti sono anonimi e aggregati. Puoi gestire le preferenze per i cookie di analytics tramite il banner dei cookie o le impostazioni del tuo browser.
-      </p>
+    <h2>5. Come cambiare idea</h2>
+    <p>
+      Puoi riaprire in qualsiasi momento il pannello tramite il comando <strong>Preferenze privacy</strong> nel footer del sito. Se revochi un consenso già concesso, la pagina viene ricaricata per interrompere i successivi caricamenti degli strumenti opzionali e vengono rimossi, quando tecnicamente individuabili, i cookie Google Analytics del dominio.
+    </p>
 
-      <h2>Come gestire le preferenze</h2>
-      <p>
-        Puoi modificare le tue preferenze sui cookie in qualsiasi momento:
-      </p>
-      <ul>
-        <li>Attraverso il banner dei cookie che appare in basso alla pagina</li>
-        <li>Attraverso le impostazioni del tuo browser (es. Chrome, Firefox, Safari)</li>
-      </ul>
-      <p>
-        Tieni presente che disabilitare alcuni cookie potrebbe limitare alcune funzionalità del sito.
-      </p>
+    <h2>6. Servizi esterni incorporati</h2>
+    <p>
+      Alcune pagine possono caricare risorse tecniche da servizi esterni, ad esempio font, icone, CDN o librerie JavaScript. Questi caricamenti sono distinti dalla categoria analytics descritta sopra e possono comportare normali richieste di rete verso il fornitore necessario a visualizzare o eseguire la risorsa.
+    </p>
 
-      <h2>Cookie di terze parti</h2>
-      <p>
-        Il sito può includere contenuti e servizi di terze parti che utilizzano i propri cookie, come:
-      </p>
-      <ul>
-        <li><strong>Google Analytics:</strong> per l'analisi del traffico (solo con consenso)</li>
-      </ul>
-      <p>
-        Questi servizi hanno le proprie policy sui cookie. Ti invitiamo a consultarle per maggiori informazioni.
-      </p>
+    <h2>7. Informazioni aggiuntive</h2>
+    <p>
+      Per conoscere le categorie di dati trattati, i fornitori coinvolti e i diritti dell'utente consulta la <a href="/privacy-policy/">Privacy Policy</a>. Per richieste specifiche puoi scrivere a <a href="mailto:info@canapalandia.com">info@canapalandia.com</a> o usare la <a href="/contatti/">pagina Contatti</a>.
+    </p>
 
-      <h2>Contatti</h2>
-      <p>
-        Per domande o chiarimenti sulla Cookie Policy, puoi contattarci tramite la <a href="/contatti/">pagina contatti</a>.
-      </p>
-      <p>
-        Per informazioni sulla privacy, consulta la nostra <a href="/privacy-policy/">Privacy Policy</a>.
-      </p>
-
-      <p>
-        <em>Ultimo aggiornamento: {new Date().toLocaleDateString('it-IT', { year: 'numeric', month: 'long', day: 'numeric' })}</em>
-      </p>
-    </article>
-  </main>
-</Layout>
+    <div class="institutional-links">
+      <a href="/privacy-policy/">Privacy Policy</a>
+      <a href="/termini-e-condizioni/">Termini e condizioni</a>
+      <a href="/chi-siamo/">Chi siamo</a>
+      <a href="/contatti/">Contatti</a>
+    </div>
+  </InstitutionalPage>
+</SiteLayout>
