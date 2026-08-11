@@ -193,7 +193,9 @@ export const GET: APIRoute = async () => {
   try {
     const allPosts = await getCollection("blog");
     const now = new Date();
-    blogPosts = allPosts.filter((post) => isPublishedBlogEntry(post, now));
+    blogPosts = allPosts.filter(
+      (post) => isPublishedBlogEntry(post, now) && post.data.editorialStatus !== "legacy-review",
+    );
   } catch {
     blogPosts = [];
   }
