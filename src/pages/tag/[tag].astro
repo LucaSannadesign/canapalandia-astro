@@ -5,6 +5,7 @@ import { getCollection, type CollectionEntry } from "astro:content";
 import SiteLayout from "../../layouts/SiteLayout.astro";
 import Breadcrumbs from "../../components/Breadcrumbs.astro";
 import CardPost from "../../components/CardPost.astro";
+import { isPublishedBlogEntry } from "../../lib/blogVisibility";
 // tagIndexPolicy: usata solo slugifyTagForUrl; tagArchiveShouldIndex non si applica (tutti i tag restano noindex).
 import { slugifyTagForUrl } from "../../lib/tagIndexPolicy";
 
@@ -43,17 +44,16 @@ function getPostImage(entry: CollectionEntry<"blog">): string | undefined {
 // Carica tutti i post
 let postsAll: CollectionEntry<"blog">[] = [];
 try {
-  postsAll = await getCollection(
-    "blog",
-    ({ data }) => data.draft !== true && data.status !== "draft",
-  );
+  postsAll = await getCollection("blog");
 } catch (err) {
   console.warn("[tag] Nessun contenuto trovato in Content Collections");
 }
 
-// Filtra per tag (slug coerente con link interni: spazi → -, come BlogSidebar)
+// Filtra per tag e usa la stessa regola di discoverability del resto del blog.
+const now = new Date();
 const posts = postsAll
   .filter((p) => {
+    if (!isPublishedBlogEntry(p, now)) return false;
     const tags = p.data.tags || [];
     return tags.some((t) => slugifyTagForUrl(String(t)) === tagKey);
   })

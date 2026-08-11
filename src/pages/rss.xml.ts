@@ -6,7 +6,6 @@ import { isPublishedBlogEntry } from "../lib/blogVisibility";
 import { toParams } from "../lib/wp";
 import { getExcerpt } from "../lib/utils";
 
-// Usa import.meta.env.SITE (configurato in astro.config.mjs) o fallback
 const SITE_URL = import.meta.env.SITE || "https://canapalandia.com";
 
 function stripHtml(input: unknown) {
@@ -45,13 +44,11 @@ function sortPostsDesc(a: any, b: any) {
   return db - da;
 }
 
-// Helper per normalizzare slug (rimuove slash iniziali/finali)
 function normalizeSlug(slug: string | undefined | null): string {
   if (!slug) return "";
   return String(slug).trim().replace(/^\/+|\/+$/g, "");
 }
 
-// Helper per costruire URL canonica post blog Astro
 function buildCanonicalUrl(slug: string): string {
   const normalizedSlug = normalizeSlug(slug);
   if (!normalizedSlug) return "";
@@ -59,7 +56,6 @@ function buildCanonicalUrl(slug: string): string {
   return new URL(canonicalPath, SITE_URL).toString();
 }
 
-// Helper per convertire post Astro in formato compatibile RSS
 function astroPostToRssItem(entry: CollectionEntry<"blog">) {
   if (!isPublishedBlogEntry(entry)) return null;
 
@@ -70,7 +66,6 @@ function astroPostToRssItem(entry: CollectionEntry<"blog">) {
   const description = entry?.data?.description || "";
   const publishDate = entry?.data?.publishDate || entry?.data?.updatedDate;
 
-  // Converti Date in stringa per parsing
   let dateStr = "";
   if (publishDate instanceof Date) {
     dateStr = publishDate.toISOString();
@@ -78,7 +73,6 @@ function astroPostToRssItem(entry: CollectionEntry<"blog">) {
     dateStr = String(publishDate);
   }
 
-  // Costruisci URL canonica: https://canapalandia.com/blog/<slug>/
   const canonicalUrl = buildCanonicalUrl(slug);
   if (!canonicalUrl) return null;
 
@@ -92,22 +86,37 @@ function astroPostToRssItem(entry: CollectionEntry<"blog">) {
   };
 }
 
-export async function GET() {
-  // Carica post WordPress (legacy)
-  const wpPosts = Array.isArray(postsJson) ? postsJson : [];
+function wpPostLeafSlug(post: any): string {
+  const direct = normalizeSlug(post?.slug);
+  if (direct) return direct.split("/").pop() || "";
+  const path = normalizeSlug(toParams(post?.yoast_head_json?.canonical || post?.link || ""));
+  return path.split("/").filter(Boolean).pop() || "";
+}
 
-  // Carica post Astro dalla collection "blog"
-  let astroPosts: any[] = [];
+export async function GET() {
+  let blogEntries: CollectionEntry<"blog">[] = [];
   try {
-    const blogEntries = await getCollection("blog");
-    astroPosts = blogEntries
-      .map(astroPostToRssItem)
-      .filter((item): item is NonNullable<typeof item> => item !== null);
+    blogEntries = await getCollection("blog");
   } catch (err) {
     console.warn("[rss.xml] Errore nel caricamento post Astro:", err);
   }
 
-  // Unisci tutti i post e ordina per data DESC
+  const legacyReviewSlugs = new Set(
+    blogEntries
+      .filter((entry) => entry.data.editorialStatus === "legacy-review")
+      .map((entry) => normalizeSlug(entry.data.slug || entry.id).split("/").pop() || "")
+      .filter(Boolean),
+  );
+
+  // Rimuove anche le copie provenienti dall'export WordPress degli stessi URL in revisione.
+  const wpPosts = (Array.isArray(postsJson) ? postsJson : []).filter(
+    (post) => !legacyReviewSlugs.has(wpPostLeafSlug(post)),
+  );
+
+  const astroPosts = blogEntries
+    .map(astroPostToRssItem)
+    .filter((item): item is NonNullable<typeof item> => item !== null);
+
   const allPosts = [...wpPosts, ...astroPosts];
   const sortedPosts = allPosts.slice().sort(sortPostsDesc).slice(0, 50);
 
@@ -124,7 +133,6 @@ export async function GET() {
     `    <atom:link href="${escapeXml(absUrl("/rss.xml"))}" rel="self" type="application/rss+xml" />\n` +
     sortedPosts
       .map((p: any) => {
-        // Gestisci post Astro vs WordPress
         if (p.isAstro) {
           const title = stripHtml(p.title || "Articolo") || "Articolo";
           const link = p.canonicalUrl;
@@ -141,7 +149,6 @@ export async function GET() {
             `    </item>\n`
           );
         } else {
-          // Post WordPress (legacy) - mantieni comportamento esistente
           const title = stripHtml(p?.title?.rendered || p?.title || "Articolo") || "Articolo";
           const link = absUrl(postHref(p));
           const pubDate = new Date(p?.date || p?.modified || Date.now()).toUTCString();

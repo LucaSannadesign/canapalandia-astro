@@ -10,7 +10,7 @@ import BlogSidebar from "../../components/blog/BlogSidebar.astro";
 import RelatedPosts from "../../components/RelatedPosts.astro";
 import PostBodyH1 from "../../components/PostBodyH1.astro";
 import PostAttachments from "../../components/PostAttachments.astro";
-import { isPublishedBlogEntry } from "../../lib/blogVisibility";
+import { isReachableBlogEntry } from "../../lib/blogVisibility";
 import { FEATURES } from "../../lib/consts";
 
 export const prerender = false;
@@ -32,7 +32,8 @@ if (!publicSlug || publicSlug !== slug) {
 }
 
 // Un contenuto non pronto, in bozza/test o con data futura non è una pagina pubblica.
-if (!isPublishedBlogEntry(entry)) {
+// I contenuti legacy-review fanno eccezione solo alla discoverability: l'URL resta raggiungibile.
+if (!isReachableBlogEntry(entry)) {
   return new Response(null, { status: 404, statusText: "Not Found" });
 }
 
