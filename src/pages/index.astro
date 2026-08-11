@@ -141,13 +141,14 @@ const eligiblePosts = sortedPosts.filter((p) => {
   return d !== null && d >= MIN_DATE;
 });
 
-/** Post pubblicabile: niente bozze, niente contenuti di test, niente date future. */
+/** Post pubblicabile: niente bozze, test, date future o contenuti in revisione legacy. */
 const NOW = new Date();
 
 function isPublished(post: CollectionEntry<"blog">): boolean {
-  const { draft, status } = post.data;
+  const { draft, status, editorialStatus } = post.data;
   if (draft === true) return false;
   if (status === "draft" || status === "test") return false;
+  if (editorialStatus === "legacy-review") return false;
   const d = getPublishDate(post);
   return d !== null && d.getTime() <= NOW.getTime();
 }
@@ -165,6 +166,7 @@ type CategoryData = {
 
 const categoryMap = new Map<string, CategoryData>();
 for (const post of postsAll) {
+  if (!isPublished(post)) continue;
   const cat = post.data.category;
   if (cat && typeof cat === "string" && cat.trim()) {
     const slug = cat.trim();
