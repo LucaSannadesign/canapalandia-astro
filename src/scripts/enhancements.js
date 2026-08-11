@@ -492,8 +492,26 @@
         let page;
         let y;
 
+        const pdfSafe = (value, activeFont = font) => {
+          let safe = "";
+          for (const char of String(value ?? "")) {
+            try {
+              activeFont.encodeText(char);
+              safe += char;
+            } catch {
+              if (char === "Δ") safe += "Delta-";
+              else if (char === "–" || char === "—") safe += "-";
+              else if (char === "“" || char === "”") safe += '"';
+              else if (char === "‘" || char === "’") safe += "'";
+              else if (char === "→") safe += "->";
+              else safe += "?";
+            }
+          }
+          return safe;
+        };
+
         const wrapText = (text, activeFont, size, maxWidth) => {
-          const words = String(text || "").split(/\s+/).filter(Boolean);
+          const words = pdfSafe(text, activeFont).split(/\s+/).filter(Boolean);
           const lines = [];
           let line = "";
           for (const word of words) {
@@ -573,9 +591,11 @@
           const blockHeight = 38 + descLines.length * 11 + sourceLines.length * 10;
           ensureSpace(blockHeight + 12);
           page.drawRectangle({ x: margin, y: y - blockHeight + 8, width: contentWidth, height: blockHeight, color: cream, borderColor: border, borderWidth: 0.6 });
-          page.drawText(item.analyte, { x: margin + 12, y: y - 8, size: 11, font: bold, color: green });
-          const valueWidth = bold.widthOfTextAtSize(item.value, 9.2);
-          page.drawText(item.value, { x: pageSize[0] - margin - 12 - valueWidth, y: y - 8, size: 9.2, font: bold, color: textColor });
+          const safeAnalyte = pdfSafe(item.analyte, bold);
+          const safeValue = pdfSafe(item.value, bold);
+          page.drawText(safeAnalyte, { x: margin + 12, y: y - 8, size: 11, font: bold, color: green });
+          const valueWidth = bold.widthOfTextAtSize(safeValue, 9.2);
+          page.drawText(safeValue, { x: pageSize[0] - margin - 12 - valueWidth, y: y - 8, size: 9.2, font: bold, color: textColor });
           let blockY = y - 25;
           for (const line of descLines) {
             page.drawText(line, { x: margin + 12, y: blockY, size: 8.6, font, color: muted });
@@ -595,7 +615,7 @@
           y -= 17;
           for (const item of data.terms) {
             ensureSpace(42);
-            page.drawText(item.term, { x: margin, y, size: 9.5, font: bold, color: green });
+            page.drawText(pdfSafe(item.term, bold), { x: margin, y, size: 9.5, font: bold, color: green });
             y -= 13;
             drawWrapped(item.text, { size: 8.7, color: muted });
             y -= 6;
