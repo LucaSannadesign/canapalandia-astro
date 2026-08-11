@@ -1,6 +1,7 @@
 ---
 export const prerender = false;
 
+import { getCollection } from "astro:content";
 import MigratedLayout from "../layouts/MigratedLayout.astro";
 import { loadWp } from "../lib/wp";
 import { getExcerpt } from "../lib/utils";
@@ -27,7 +28,6 @@ function timeOf(e: any): number {
 
 function hrefOf(e: any): string {
   const p = String(e?.path ?? "").replace(/^\/+|\/+$/g, "");
-  // Assicura che href sia sempre assoluto (inizia con /)
   return p ? `/${p}/` : "/";
 }
 
@@ -40,6 +40,10 @@ function matchesAllTokens(haystack: string, tokens: string[]): boolean {
   return tokens.every((t) => h.includes(t));
 }
 
+function normalizePath(value: unknown): string {
+  return String(value ?? "").trim().replace(/^\/+|\/+$/g, "");
+}
+
 const q = (Astro.url.searchParams.get("q") ?? Astro.url.searchParams.get("s") ?? "").trim();
 const hasQuery = Astro.url.searchParams.has("q") || Astro.url.searchParams.has("s");
 
@@ -47,8 +51,26 @@ const hasQuery = Astro.url.searchParams.has("q") || Astro.url.searchParams.has("
 const robots = hasQuery ? "noindex,follow" : "index,follow";
 const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/cerca/`;
 
+// Gli articoli in legacy-review non devono ricomparire dalla vecchia ricerca WP.
+const legacyReviewEntries = await getCollection(
+  "blog",
+  ({ data }) => data.editorialStatus === "legacy-review",
+);
+const legacyReviewSlugs = new Set(
+  legacyReviewEntries
+    .map((entry) => normalizePath(entry.data.slug || entry.id).split("/").pop() || "")
+    .filter(Boolean),
+);
+
+function isLegacyReviewWpEntry(e: any): boolean {
+  if (e?.kind !== "post") return false;
+  const path = normalizePath(e?.path || e?.slug || e?.link);
+  const leaf = path.split("/").filter(Boolean).pop() || "";
+  return legacyReviewSlugs.has(leaf);
+}
+
 const { entries } = await loadWp();
-const list = Array.isArray(entries) ? entries : [];
+const list = Array.isArray(entries) ? entries.filter((e) => !isLegacyReviewWpEntry(e)) : [];
 
 const posts = list.filter((e) => e?.kind === "post");
 const latest = posts.slice().sort((a, b) => timeOf(b) - timeOf(a)).slice(0, 9);
