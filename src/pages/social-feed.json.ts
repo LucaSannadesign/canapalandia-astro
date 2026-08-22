@@ -46,15 +46,19 @@ export const GET: APIRoute = async () => {
     .map((post) => {
       const slug = post.data.slug || post.id;
       const socialHashtags = buildSocialHashtags(post.data.socialHashtags, post.data.tags);
+      const socialHashtagsText = formatSocialHashtags(socialHashtags);
+      const description = String(post.data.description || "").trim();
       return {
         title: post.data.title || "",
-        description: post.data.description || "",
+        // Keep hashtags in the existing description field so Make scenarios
+        // with a cached Iterator schema receive them without remapping.
+        description: [description, socialHashtagsText].filter(Boolean).join("\n\n"),
         url: normalizePostUrl(String(slug || "")),
         image: normalizeImage(post.data.image, post.data.coverImage),
         category: post.data.category || "",
         tags: Array.isArray(post.data.tags) ? post.data.tags : [],
         socialHashtags,
-        socialHashtagsText: formatSocialHashtags(socialHashtags),
+        socialHashtagsText,
         publishDate: post.data.publishDate
           ? new Date(String(post.data.publishDate)).toISOString()
           : "",
