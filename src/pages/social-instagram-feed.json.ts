@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { getCollection } from "astro:content";
 import { isPublishedBlogEntry } from "../lib/blogVisibility";
+import { buildSocialHashtags, formatSocialHashtags } from "../lib/socialHashtags";
 
 const siteUrl = "https://canapalandia.com";
 
@@ -46,6 +47,7 @@ export const GET: APIRoute = async () => {
     .slice(0, 1)
     .map((post) => {
       const slug = post.data.slug || post.id;
+      const socialHashtags = buildSocialHashtags(post.data.socialHashtags, post.data.tags);
       return {
         title: post.data.title || "",
         description: post.data.description || "",
@@ -53,6 +55,8 @@ export const GET: APIRoute = async () => {
         image: normalizeImage(post.data.instagramImage, post.data.image, post.data.coverImage),
         category: post.data.category || "",
         tags: Array.isArray(post.data.tags) ? post.data.tags : [],
+        socialHashtags,
+        socialHashtagsText: formatSocialHashtags(socialHashtags),
         publishDate: post.data.publishDate
           ? new Date(String(post.data.publishDate)).toISOString()
           : "",

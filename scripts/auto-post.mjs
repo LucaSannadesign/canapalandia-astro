@@ -119,7 +119,7 @@ function ensurePostSlug(post) {
   return post.slug;
 }
 
-function renderFrontmatter(post) {
+function renderFrontmatter(post, socialHashtags = []) {
   const tags = Array.isArray(post.tags) ? post.tags.slice(0, 3) : [];
   const siteUrl = process.env.SITE_URL || "https://canapalandia.com";
   const canonical = `${siteUrl.replace(/\/+$/, "")}/blog/${post.slug}/`;
@@ -143,6 +143,7 @@ function renderFrontmatter(post) {
     `author: "Canapalandia"\n` +
     `category: "${fmEsc(post.category || "Blog")}"\n` +
     `tags: ${JSON.stringify(tags)}\n` +
+    `socialHashtags: ${JSON.stringify(socialHashtags)}\n` +
     `image: "${fmEsc(image)}"\n` +
     `focusKeyword: "${fmEsc(focusKeyword)}"\n` +
     `canonical: "${fmEsc(canonical)}"\n` +
@@ -295,18 +296,117 @@ async function generateBodyWithOpenAI(post) {
   const data = await res.json();
 
   // Estrazione testo dall'array output (messages -> content -> output_text) :contentReference[oaicite:3]{index=3}
+  const body = extractResponseText(data);
+  if (!body) throw new Error("Empty model output");
+  return ensureCta(body);
+}
+
+function extractResponseText(data) {
   const chunks = [];
-  for (const item of data.output || []) {
+  for (const item of data?.output || []) {
     if (item?.type === "message" && item?.role === "assistant") {
-      for (const c of item.content || []) {
-        if (c?.type === "output_text" && typeof c.text === "string") chunks.push(c.text);
+      for (const content of item.content || []) {
+        if (content?.type === "output_text" && typeof content.text === "string") {
+          chunks.push(content.text);
+        }
       }
     }
   }
+  return chunks.join("\n").trim();
+}
 
-  const body = chunks.join("\n").trim();
-  if (!body) throw new Error("Empty model output");
-  return ensureCta(body);
+const HASHTAG_ACRONYMS = new Set(["ai", "cbd", "coa", "efsa", "thc", "ue", "usa"]);
+
+function topicToHashtag(value) {
+  return String(value ?? "")
+    .trim()
+    .replace(/^#+/, "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .split(/[^a-zA-Z0-9]+/)
+    .filter(Boolean)
+    .map((part) => {
+      const lower = part.toLowerCase();
+      if (HASHTAG_ACRONYMS.has(lower)) return lower.toUpperCase();
+      return `${lower.charAt(0).toUpperCase()}${lower.slice(1)}`;
+    })
+    .join("");
+}
+
+function normalizeSocialHashtags(values, post) {
+  const candidates = [
+    "Canapalandia",
+    ...(Array.isArray(values) ? values : []),
+    ...(Array.isArray(post.tags) ? post.tags.map(topicToHashtag) : []),
+  ];
+  const seen = new Set();
+
+  return candidates
+    .map((value) => String(value ?? "")
+      .replace(/^#+/, "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9_]/g, ""))
+    .filter(Boolean)
+    .filter((value) => {
+      const key = value.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, 5);
+}
+
+async function generateSocialHashtagsWithOpenAI(post, body) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  const fallback = normalizeSocialHashtags([], post);
+  if (!apiKey) {
+    console.warn("[auto-post] OPENAI_API_KEY missing, fallback social hashtags.");
+    return fallback;
+  }
+
+  const model = process.env.OPENAI_MODEL_DEFAULT || "gpt-5-mini";
+  const tags = Array.isArray(post.tags) ? post.tags.join(", ") : "";
+  const excerpt = extractBodyExcerpt(body).slice(0, 600);
+  const input = `
+Titolo: ${post.title}
+Descrizione: ${post.description || ""}
+Categoria: ${post.category || ""}
+Tag editoriali: ${tags}
+Estratto: ${excerpt}
+
+Genera esattamente cinque hashtag per il post social:
+- #Canapalandia deve essere sempre il primo;
+- gli altri quattro devono dipendere dall'argomento specifico di questa bozza;
+- inserisci un Paese, una città o un'istituzione solo se è centrale nel contenuto;
+- non riutilizzare un gruppo generico fisso;
+- niente spazi, trattini, claim sanitari o hashtag promozionali;
+- restituisci soltanto gli hashtag su una riga, senza spiegazioni.
+`.trim();
+
+  const res = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      instructions: "Sei il social editor di Canapalandia. Genera hashtag pertinenti e prudenti in italiano.",
+      input,
+      max_output_tokens: 120,
+    }),
+  });
+
+  if (!res.ok) {
+    console.warn(`[auto-post] OpenAI hashtag error ${res.status}, using fallback.`);
+    return fallback;
+  }
+
+  const text = extractResponseText(await res.json());
+  const generated = text.match(/#[\p{L}\p{N}_]+/gu) || [];
+  const normalized = normalizeSocialHashtags(generated, post);
+  return normalized.length >= 2 ? normalized : fallback;
 }
 
 // Estrae estratto testuale dal body MDX (primi 700-900 caratteri, senza markdown pesante)
@@ -623,9 +723,10 @@ async function main() {
     }
 
 
-    const frontmatter = renderFrontmatter(post);
-    const jsonLdBlock = buildJsonLd(post);
     const body = await generateBodyWithOpenAI(post);
+    const socialHashtags = await generateSocialHashtagsWithOpenAI(post, body);
+    const frontmatter = renderFrontmatter(post, socialHashtags);
+    const jsonLdBlock = buildJsonLd(post);
     const mdx = frontmatter + jsonLdBlock + "\n\n" + body + "\n";
 
     if (dryRun) {

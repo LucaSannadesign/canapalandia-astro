@@ -76,6 +76,17 @@ const blog = defineCollection({
       socialEvergreen: z.boolean().optional(),
       instagramShare: z.boolean().optional(),
       instagramImage: z.string().optional(),
+      // Generati dall'AI per la singola bozza; senza # e mai riutilizzati come set fisso.
+      socialHashtags: z
+        .array(
+          z
+            .string()
+            .trim()
+            .min(1)
+            .regex(/^#?[\p{L}\p{N}_]+$/u, "Hashtag non valido"),
+        )
+        .max(5)
+        .optional(),
       showShare: z.boolean().optional(), // Disabilita sezione share per singolo post
       showSupportCta: z.boolean().optional(), // Disabilita CTA sostegno per singolo post
       attachments: z
