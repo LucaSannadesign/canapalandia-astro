@@ -16,7 +16,7 @@ La fonte di verità operativa per il punto 3 è il tab **Diario distribuzione** 
 - `In coda`: evento pronto per essere processato.
 - `Feed pronto`: il feed espone correttamente il contenuto, ma non abbiamo ancora conferma della piattaforma.
 - `Pubblicato`: la piattaforma ha restituito un ID/URL di post valido.
-- `Da verificare`: evento storico o ambiguo da riconciliare.
+- `Da verificare`: evento storico o ambiguo in HOLD; non deve essere ripubblicato automaticamente.
 - `Errore`: tentativo fallito; compilare `ultimo_errore` e incrementare `tentativi`.
 - `Saltato`: evento volontariamente non distribuito.
 - `Archiviato`: evento chiuso e non più operativo.
@@ -27,7 +27,9 @@ Endpoint:
 
 `/social-queue-feed.json`
 
-Espone tutti gli eventi di lancio Facebook/Instagram eleggibili negli ultimi 30 giorni, fino a 100 eventi, con:
+Espone gli eventi di lancio Facebook/Instagram eleggibili negli ultimi **14 giorni**, fino a 100 eventi. La finestra iniziale è volutamente prudente: permette di recuperare interruzioni brevi senza ripescare in massa vecchi post durante la migrazione.
+
+Ogni evento contiene:
 
 - `eventId` stabile;
 - `channel`;
@@ -63,26 +65,31 @@ socialCampaign: "nome_campagna"
 
 Se i campi non sono presenti, i feed usano `description` come fallback. Gli hashtag vengono aggiunti separatamente dal formatter già esistente.
 
+Il Calendario editoriale contiene gli equivalenti `copy_facebook`, `copy_instagram` e `social_campaign`.
+
 ## Flusso Make consigliato
 
 1. HTTP GET su `/social-queue-feed.json`.
 2. Iterator sugli eventi.
 3. Cerca `eventId` nel tab `Diario distribuzione`.
-4. Se lo stato è `Pubblicato`, interrompi quel ramo.
-5. Se l'evento non esiste, crea una riga con stato `In coda`.
-6. Pubblica sul canale indicato.
-7. In caso di successo, salva:
+4. Se l'evento esiste con stato `Pubblicato`, `Da verificare`, `Saltato` o `Archiviato`, interrompi quel ramo: non pubblicare automaticamente.
+5. Se l'evento non esiste, crea una riga con stato `In coda` e prosegui.
+6. Se esiste con stato `In coda`, può essere processato. Un evento `Errore` può essere ritentato solo secondo la policy di retry definita nello scenario.
+7. Pubblica sul canale indicato.
+8. In caso di successo, salva:
    - `stato = Pubblicato`;
    - `pubblicato_at`;
    - `post_url`;
    - `external_id`;
    - `tentativi`;
    - `ultimo_aggiornamento`.
-8. In caso di errore, salva:
+9. In caso di errore, salva:
    - `stato = Errore`;
    - `ultimo_errore`;
    - `tentativi + 1`;
    - `ultimo_aggiornamento`.
+
+Durante la migrazione, gli eventi storici di cui non è possibile dimostrare l'esito sulla piattaforma devono essere registrati come `Da verificare`, non come `In coda`.
 
 ## Evergreen
 
