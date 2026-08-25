@@ -32,13 +32,15 @@ function normalizeImage(
 export const GET: APIRoute = async () => {
   const posts = await getCollection("blog");
   const now = new Date();
-  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  // Finestra di recupero prudente: abbastanza lunga per assorbire interruzioni brevi,
+  // ma evita di ripescare in massa vecchi post durante la migrazione da Make.
+  const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
 
   const events = posts
     .filter((post) => {
       if (!isPublishedBlogEntry(post, now)) return false;
       const publishTs = new Date(String(post.data.publishDate)).getTime();
-      if (Number.isNaN(publishTs) || publishTs < thirtyDaysAgo.getTime()) return false;
+      if (Number.isNaN(publishTs) || publishTs < fourteenDaysAgo.getTime()) return false;
       return post.data.socialShare === true || post.data.instagramShare === true;
     })
     .sort((a, b) => {
