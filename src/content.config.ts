@@ -76,6 +76,10 @@ const blog = defineCollection({
       socialEvergreen: z.boolean().optional(),
       instagramShare: z.boolean().optional(),
       instagramImage: z.string().optional(),
+      // Copy e campagna possono essere diversi per canale; i feed usano description come fallback.
+      facebookCopy: z.string().trim().min(1).optional(),
+      instagramCopy: z.string().trim().min(1).optional(),
+      socialCampaign: z.string().trim().min(1).optional(),
       // Generati dall'AI per la singola bozza; senza # e mai riutilizzati come set fisso.
       socialHashtags: z
         .array(
