@@ -2,14 +2,14 @@ import type { APIRoute } from "astro";
 import { getCollection } from "astro:content";
 import { isPublishedBlogEntry } from "../lib/blogVisibility";
 import { buildSocialHashtags, formatSocialHashtags } from "../lib/socialHashtags";
-
-const siteUrl = "https://canapalandia.com";
-
-function toAbsoluteUrl(value: string): string {
-  if (/^https?:\/\//i.test(value)) return value;
-  const normalized = value.startsWith("/") ? value : `/${value}`;
-  return `${siteUrl}${normalized}`;
-}
+import {
+  buildCanonicalPostUrl,
+  buildPlatformCopy,
+  buildSocialCampaign,
+  buildSocialEventId,
+  buildTrackedPostUrl,
+  toAbsoluteUrl,
+} from "../lib/socialDistribution";
 
 function normalizeImage(instagramImage?: unknown, image?: unknown, coverImage?: unknown): string {
   const candidate =
@@ -17,13 +17,7 @@ function normalizeImage(instagramImage?: unknown, image?: unknown, coverImage?: 
     (typeof image === "string" && image.trim()) ||
     (typeof coverImage === "string" && coverImage.trim()) ||
     "";
-  if (!candidate) return "";
   return toAbsoluteUrl(candidate);
-}
-
-function normalizePostUrl(slug: string): string {
-  const clean = slug.trim().replace(/^\/+|\/+$/g, "");
-  return `${siteUrl}/${clean}/`;
 }
 
 export const GET: APIRoute = async () => {
@@ -44,23 +38,35 @@ export const GET: APIRoute = async () => {
       const db = new Date(String(b.data.publishDate || 0)).getTime();
       return db - da;
     })
+    // Compatibilità con lo scenario Make esistente: espone ancora un solo item.
+    // La nuova coda multi-item è /social-queue-feed.json.
     .slice(0, 1)
     .map((post) => {
-      const slug = post.data.slug || post.id;
+      const slug = String(post.data.slug || post.id || "");
       const socialHashtags = buildSocialHashtags(post.data.socialHashtags, post.data.tags);
       const socialHashtagsText = formatSocialHashtags(socialHashtags);
-      const description = String(post.data.description || "").trim();
+      const canonicalUrl = buildCanonicalPostUrl(slug);
+      const variant = "launch";
+      const campaign = buildSocialCampaign(slug, post.data.socialCampaign, variant);
+
       return {
+        eventId: buildSocialEventId(slug, "instagram", post.data.publishDate, variant),
+        channel: "instagram",
+        variant,
         title: post.data.title || "",
-        // Keep hashtags in the existing description field so Make scenarios
-        // with a cached Iterator schema receive them without remapping.
-        description: [description, socialHashtagsText].filter(Boolean).join("\n\n"),
-        url: normalizePostUrl(String(slug || "")),
+        // Mantiene il campo description per la compatibilità con il mapping Make corrente.
+        description: buildPlatformCopy(post.data, "instagram", socialHashtagsText),
+        canonicalUrl,
+        url: buildTrackedPostUrl(canonicalUrl, "instagram", campaign, variant),
         image: normalizeImage(post.data.instagramImage, post.data.image, post.data.coverImage),
         category: post.data.category || "",
         tags: Array.isArray(post.data.tags) ? post.data.tags : [],
         socialHashtags,
         socialHashtagsText,
+        utmSource: "instagram",
+        utmMedium: "social",
+        utmCampaign: campaign,
+        utmContent: variant,
         publishDate: post.data.publishDate
           ? new Date(String(post.data.publishDate)).toISOString()
           : "",
