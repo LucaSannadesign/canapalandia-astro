@@ -1,27 +1,21 @@
 import type { APIRoute } from "astro";
 import { getCollection } from "astro:content";
 import { isPublishedBlogEntry } from "../lib/blogVisibility";
-
-const siteUrl = "https://canapalandia.com";
-
-function toAbsoluteUrl(value: string): string {
-  if (/^https?:\/\//i.test(value)) return value;
-  const normalized = value.startsWith("/") ? value : `/${value}`;
-  return `${siteUrl}${normalized}`;
-}
+import { buildSocialHashtags, formatSocialHashtags } from "../lib/socialHashtags";
+import {
+  buildCanonicalPostUrl,
+  buildPlatformCopy,
+  buildSocialCampaign,
+  buildTrackedPostUrl,
+  toAbsoluteUrl,
+} from "../lib/socialDistribution";
 
 function normalizeImage(image?: unknown, coverImage?: unknown): string {
   const candidate =
     (typeof image === "string" && image.trim()) ||
     (typeof coverImage === "string" && coverImage.trim()) ||
     "";
-  if (!candidate) return "";
   return toAbsoluteUrl(candidate);
-}
-
-function normalizePostUrl(slug: string): string {
-  const clean = slug.trim().replace(/^\/+|\/+$/g, "");
-  return `${siteUrl}/${clean}/`;
 }
 
 export const GET: APIRoute = async () => {
@@ -44,14 +38,32 @@ export const GET: APIRoute = async () => {
     })
     .slice(0, 1)
     .map((post) => {
-      const slug = post.data.slug || post.id;
+      const slug = String(post.data.slug || post.id || "");
+      const socialHashtags = buildSocialHashtags(post.data.socialHashtags, post.data.tags);
+      const socialHashtagsText = formatSocialHashtags(socialHashtags);
+      const canonicalUrl = buildCanonicalPostUrl(slug);
+      const variant = "evergreen";
+      const campaign = buildSocialCampaign(slug, post.data.socialCampaign, variant);
+
       return {
+        // Non è un eventId definitivo: ogni rilancio evergreen deve essere creato nel Diario
+        // con un proprio ID (es. EV1, EV2...) per consentire più pubblicazioni nel tempo.
+        contentKey: slug,
+        channel: "facebook",
+        variant,
         title: post.data.title || "",
-        description: post.data.description || "",
-        url: normalizePostUrl(String(slug || "")),
+        description: buildPlatformCopy(post.data, "facebook", socialHashtagsText),
+        canonicalUrl,
+        url: buildTrackedPostUrl(canonicalUrl, "facebook", campaign, variant),
         image: normalizeImage(post.data.image, post.data.coverImage),
         category: post.data.category || "",
         tags: Array.isArray(post.data.tags) ? post.data.tags : [],
+        socialHashtags,
+        socialHashtagsText,
+        utmSource: "facebook",
+        utmMedium: "social",
+        utmCampaign: campaign,
+        utmContent: variant,
         publishDate: post.data.publishDate
           ? new Date(String(post.data.publishDate)).toISOString()
           : "",
