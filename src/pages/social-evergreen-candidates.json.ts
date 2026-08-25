@@ -6,6 +6,7 @@ import {
   getAutopilotPolicy,
   getAutopilotState,
   getBaseAutopilotScore,
+  getEffectiveContentDate,
 } from "../lib/socialAutopilot";
 import {
   buildCanonicalPostUrl,
@@ -43,14 +44,26 @@ export const GET: APIRoute = async () => {
     .filter((post) => {
       if (!isPublishedBlogEntry(post, now)) return false;
       if (post.data.socialEvergreen !== true) return false;
-      const publishTs = new Date(String(post.data.publishDate)).getTime();
-      return !Number.isNaN(publishTs) && publishTs >= sixMonthsAgo.getTime();
+      const effectiveDate = getEffectiveContentDate(
+        post.data.publishDate,
+        post.data.updatedDate,
+      );
+      return Boolean(effectiveDate && effectiveDate >= sixMonthsAgo);
     })
     .map((post) => {
       const slug = String(post.data.slug || post.id || "");
-      const policy = getAutopilotPolicy(post.data.category);
-      const ageDays = ageInDays(post.data.publishDate, now);
-      const autopilotState = getAutopilotState(policy, post.data.publishDate, now);
+      const effectiveDate =
+        getEffectiveContentDate(post.data.publishDate, post.data.updatedDate) ||
+        post.data.publishDate ||
+        now;
+      const policy = getAutopilotPolicy({
+        slug,
+        title: post.data.title,
+        category: post.data.category,
+        tags: post.data.tags,
+      });
+      const ageDays = ageInDays(effectiveDate, now);
+      const autopilotState = getAutopilotState(policy, effectiveDate, now);
       const canonicalUrl = buildCanonicalPostUrl(slug);
 
       return {
@@ -69,6 +82,10 @@ export const GET: APIRoute = async () => {
         publishDate: post.data.publishDate
           ? new Date(String(post.data.publishDate)).toISOString()
           : "",
+        updatedDate: post.data.updatedDate
+          ? new Date(String(post.data.updatedDate)).toISOString()
+          : "",
+        effectiveDate: new Date(String(effectiveDate)).toISOString(),
         ageDays,
         contentClass: policy.contentClass,
         autopilotState,
@@ -78,11 +95,7 @@ export const GET: APIRoute = async () => {
         maxRepostsSixMonths: policy.maxRepostsSixMonths,
         requiresFreshnessCheck: policy.requiresFreshnessCheck,
         allowedAngles: policy.allowedAngles,
-        basePriorityScore: getBaseAutopilotScore(
-          policy,
-          post.data.publishDate,
-          now,
-        ),
+        basePriorityScore: getBaseAutopilotScore(policy, effectiveDate, now),
       };
     })
     .sort((a, b) => {
