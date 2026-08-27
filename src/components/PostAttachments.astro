@@ -87,7 +87,7 @@ function isExternal(url: string): boolean {
     margin: 2.25rem 0 0;
     padding: clamp(1rem, 2.4vw, 1.4rem);
     border: 1px solid var(--border-subtle);
-    border-radius: var(--r-lg, 18px);
+    border-radius: var(--r-md);
     background: color-mix(in oklab, var(--panel) 88%, transparent);
   }
 
@@ -130,7 +130,7 @@ function isExternal(url: string): boolean {
     align-items: start;
     padding: 1rem;
     border: 1px solid var(--border-subtle);
-    border-radius: var(--r-md, 14px);
+    border-radius: var(--r-md);
     background: color-mix(in oklab, var(--surface, var(--panel)) 92%, transparent);
   }
 
@@ -140,7 +140,7 @@ function isExternal(url: string): boolean {
     min-width: 2.75rem;
     height: 2rem;
     padding: 0 0.5rem;
-    border-radius: 999px;
+    border-radius: var(--r-full);
     background: color-mix(in oklab, var(--brand) 16%, transparent);
     color: var(--brand);
     font-family: "Archivo", sans-serif;
@@ -177,7 +177,7 @@ function isExternal(url: string): boolean {
     gap: 0.35rem;
     min-height: 2.35rem;
     padding: 0.55rem 0.85rem;
-    border-radius: 999px;
+    border-radius: var(--r-md);
     font-family: "Archivo", sans-serif;
     font-size: 0.82rem;
     font-weight: 700;

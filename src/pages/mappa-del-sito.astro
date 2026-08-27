@@ -33,7 +33,7 @@ const groupedPosts = sortedPosts.reduce((acc, post) => {
     .sitemap-hero p { font-size: 1.2rem; margin-bottom: 2rem; opacity: 0.9; }
     .search-input {
       width: 100%; max-width: 400px; padding: 0.75rem 1rem;
-      border: 2px solid var(--brand); border-radius: 8px; font-size: 1rem;
+      border: 2px solid var(--brand); border-radius: var(--r-md); font-size: 1rem;
       background: var(--panel); color: var(--text); margin: 0 auto; display: block;
     }
     .search-input::placeholder { color: var(--muted); }
@@ -43,7 +43,7 @@ const groupedPosts = sortedPosts.reduce((acc, post) => {
       gap: 2rem; padding: 0 2rem; max-width: 1200px; margin: 0 auto;
     }
     .sitemap-card, .accordion {
-      background: var(--card-bg); border-radius: 12px; box-shadow: var(--shadow-sm);
+      background: var(--card-bg); border-radius: var(--r-md); box-shadow: var(--shadow-sm);
       overflow: hidden; transition: transform 0.2s ease;
     }
     .sitemap-card:hover, .accordion:hover { transform: translateY(-2px); }

@@ -167,7 +167,7 @@
         .lab-file-reader { margin: 0 0 18px; }
         .lab-file-reader__drop {
           display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: center;
-          padding: 16px 17px; border: 1px dashed var(--lab-border-strong); border-radius: 12px;
+          padding: 16px 17px; border: 1px dashed var(--lab-border-strong); border-radius: var(--r-md);
           background: color-mix(in srgb, var(--lab-surface-2) 48%, var(--lab-surface));
           transition: border-color .2s ease, background .2s ease, box-shadow .2s ease;
         }
@@ -178,7 +178,7 @@
         .lab-file-reader__button,
         .lab-report-button {
           display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 15px;
-          border: 1px solid var(--lab-border-strong); border-radius: 999px; background: var(--lab-surface);
+          border: 1px solid var(--lab-border-strong); border-radius: var(--r-md); background: var(--lab-surface);
           color: var(--lab-olive); font: 600 13px/1 var(--font-ui); cursor: pointer; white-space: nowrap;
         }
         .lab-file-reader__button:hover,

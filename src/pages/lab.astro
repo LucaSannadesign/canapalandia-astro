@@ -619,7 +619,7 @@ const extraHead = `
     margin-top: 20px;
     padding: 11px 14px;
     border: 1px solid var(--lab-border);
-    border-radius: 12px;
+    border-radius: var(--r-md);
     background: var(--lab-surface);
     color: var(--lab-faint);
     font-size: 13.5px;
@@ -647,7 +647,7 @@ const extraHead = `
     min-width: 0;
     padding: clamp(20px, 2.7vw, 30px);
     border: 1px solid var(--lab-border);
-    border-radius: 16px;
+    border-radius: var(--r-lg);
     background: var(--lab-surface);
     box-shadow: var(--lab-shadow-sm);
   }
@@ -698,7 +698,7 @@ const extraHead = `
     min-height: 36px;
     padding: 0 13px;
     border: 1px solid var(--lab-border-strong);
-    border-radius: 999px;
+    border-radius: var(--r-md);
     background: transparent;
     color: var(--lab-olive);
     font: 600 13px/1 var(--font-ui);
@@ -717,7 +717,7 @@ const extraHead = `
     resize: vertical;
     padding: 18px;
     border: 1px solid var(--lab-border-strong);
-    border-radius: 12px;
+    border-radius: var(--r-md);
     background: color-mix(in srgb, var(--lab-surface-2) 55%, var(--lab-surface));
     color: var(--lab-text);
     font: 500 15px/1.65 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -758,7 +758,7 @@ const extraHead = `
     gap: 9px;
     min-height: 48px;
     padding: 0 22px;
-    border-radius: 999px;
+    border-radius: var(--r-md);
     font: 600 15px/1 var(--font-ui);
     cursor: pointer;
     transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease,
@@ -804,7 +804,7 @@ const extraHead = `
     gap: 15px;
     padding: 28px;
     border: 1px dashed var(--lab-border-strong);
-    border-radius: 12px;
+    border-radius: var(--r-md);
     color: var(--lab-faint);
     text-align: center;
   }
@@ -865,7 +865,7 @@ const extraHead = `
   .lab-result {
     padding: 13px 14px;
     border: 1px solid var(--lab-border);
-    border-radius: 12px;
+    border-radius: var(--r-md);
     background: var(--lab-surface);
   }
 
@@ -884,7 +884,7 @@ const extraHead = `
 
   .lab-result__value {
     padding: 5px 9px;
-    border-radius: 999px;
+    border-radius: var(--r-full);
     background: color-mix(in srgb, var(--lab-olive) 13%, var(--lab-surface));
     color: var(--lab-text);
     font: 600 12px/1.2 var(--font-ui);
@@ -999,7 +999,7 @@ const extraHead = `
     align-items: start;
     padding: 16px;
     border: 1px solid var(--lab-border);
-    border-radius: 12px;
+    border-radius: var(--r-md);
     background: var(--lab-surface);
     box-shadow: var(--lab-shadow-sm);
   }
@@ -1009,7 +1009,7 @@ const extraHead = `
     place-items: center;
     width: 40px;
     height: 40px;
-    border-radius: 9px;
+    border-radius: var(--r-md);
     background: color-mix(in srgb, var(--lab-olive) 14%, var(--lab-surface));
     color: var(--lab-olive);
     font: 700 11px/1 var(--font-ui);
@@ -1061,7 +1061,7 @@ const extraHead = `
 
     .lab-panel {
       padding: 18px;
-      border-radius: 14px;
+      border-radius: var(--r-md);
     }
 
     .lab-panel__head {

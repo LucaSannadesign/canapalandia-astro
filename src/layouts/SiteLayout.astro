@@ -16,6 +16,7 @@ const {
   canonical: canonicalProp, 
   yoastHeadHtml, 
   shell = true, 
+  newsletter = true,
   robots: robotsProp,
   metadata,
   ogImage: ogImageProp,
@@ -234,7 +235,7 @@ const useHomeLightBg =
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap"
       rel="stylesheet"
     />
 
@@ -421,6 +422,36 @@ const useHomeLightBg =
             {item.label}
           </a>
         ))}
+
+        <button
+          type="button"
+          class="mobile-menu__toggle-theme"
+          data-theme-toggle
+          aria-label="Cambia tema"
+        >
+          <svg
+            class="theme-toggle__icon theme-toggle__icon--sun"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+          >
+            <path d="M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+          </svg>
+
+          <svg
+            class="theme-toggle__icon theme-toggle__icon--moon"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+          >
+            <path d="M21 13.2A8.5 8.5 0 1 1 10.8 3a6.8 6.8 0 0 0 10.2 10.2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+
+          <span>Cambia tema</span>
+        </button>
       </div>
     </nav>
 
@@ -437,9 +468,11 @@ const useHomeLightBg =
     </main>
 
     <footer class="site-footer">
-      <div class="container pt-10">
-        <Newsletter />
-      </div>
+      {newsletter ? (
+        <div class="container pt-10">
+          <Newsletter />
+        </div>
+      ) : null}
 
       <div class="container footer-inner">
         <section class="footer-col footer-brand" aria-label="Brand Canapalandia">
@@ -591,8 +624,10 @@ const useHomeLightBg =
       (() => {
         const key = THEME_STORAGE_KEY;
         const root = document.documentElement;
-        const btn = document.querySelector("[data-theme-toggle]");
-        if (!btn) return;
+        const buttons = Array.from(
+          document.querySelectorAll("[data-theme-toggle]"),
+        );
+        if (!buttons.length) return;
 
         const safeGet = () => {
           try {
@@ -617,12 +652,11 @@ const useHomeLightBg =
 
         const apply = (theme) => {
           root.dataset.theme = theme;
-          btn.setAttribute(
-            "aria-label",
+          const label =
             theme === "dark"
               ? "Passa a modalità chiara"
-              : "Passa a modalità scura",
-          );
+              : "Passa a modalità scura";
+          buttons.forEach((b) => b.setAttribute("aria-label", label));
         };
 
         // tema iniziale (dataset > saved > system)
@@ -630,12 +664,14 @@ const useHomeLightBg =
           normalize(root.dataset.theme) || normalize(safeGet()) || systemPref(),
         );
 
-        btn.addEventListener("click", () => {
-          const current = root.dataset.theme === "dark" ? "dark" : "light";
-          const next = current === "dark" ? "light" : "dark";
-          apply(next);
-          safeSet(next);
-        });
+        buttons.forEach((b) =>
+          b.addEventListener("click", () => {
+            const current = root.dataset.theme === "dark" ? "dark" : "light";
+            const next = current === "dark" ? "light" : "dark";
+            apply(next);
+            safeSet(next);
+          }),
+        );
       })();
     </script>
 

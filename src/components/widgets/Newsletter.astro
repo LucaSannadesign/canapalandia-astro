@@ -48,7 +48,7 @@
     .newsletter-content {
         background: var(--panel);
         border: 1px solid color-mix(in oklab, var(--border) 84%, var(--gold) 16%);
-        border-radius: 22px;
+        border-radius: var(--r-lg);
         padding: clamp(2rem, 4vw, 2.8rem) clamp(1.3rem, 3.5vw, 2.4rem);
         box-shadow: 0 14px 36px rgba(0, 0, 0, 0.2);
         position: relative;
@@ -121,7 +121,7 @@
         min-width: 0;
         height: 50px;
         padding: 0 20px;
-        border-radius: 12px;
+        border-radius: var(--r-md);
         border: 1.5px solid color-mix(in oklab, var(--border) 80%, var(--gold) 20%);
         background: color-mix(in oklab, var(--panel-2) 84%, transparent);
         color: var(--text);
@@ -198,7 +198,7 @@
     .btn-submit {
         height: 50px;
         padding: 0 28px;
-        border-radius: 12px;
+        border-radius: var(--r-md);
         border: 1px solid color-mix(in oklab, var(--gold) 60%, rgba(255, 255, 255, 0.2));
         background: linear-gradient(135deg, var(--gold), var(--gold-2));
         color: #1f1706;
@@ -329,7 +329,7 @@
     @media (max-width: 767px) {
         .newsletter-content {
             padding: 2rem 1.5rem;
-            border-radius: 20px;
+            border-radius: var(--r-lg);
         }
 
         .newsletter-title {
@@ -403,7 +403,7 @@
         width: 1.1rem;
         height: 1.1rem;
         accent-color: var(--gold);
-        border-radius: 4px;
+        border-radius: var(--r-xs);
     }
 
     html[data-theme="dark"] .newsletter-widget .consent input[type="checkbox"] {

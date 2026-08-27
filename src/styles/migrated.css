@@ -83,7 +83,7 @@ a {
   justify-content: center;
   width: 40px;
   height: 40px;
-  border-radius: 999px;
+  border-radius: var(--r-md);
   border: 1px solid var(--border);
   background: var(--card);
   color: var(--fg);
@@ -137,7 +137,7 @@ html, body { background: var(--bg); color: var(--fg); }
 }
 
 .theme-toggle__btn{
-  width:40px;height:40px;border-radius:999px;
+  width:40px;height:40px;border-radius: var(--r-md);
   border:1px solid var(--border);
   background:var(--card); color:var(--fg);
   display:inline-flex;align-items:center;justify-content:center;

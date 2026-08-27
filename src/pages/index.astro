@@ -2,60 +2,63 @@
 import { getCollection, type CollectionEntry } from "astro:content";
 import Layout from "../layouts/MigratedLayout.astro";
 import HomeActionCards from "../components/HomeActionCards.astro";
-import {
-  PRIMARY_EDITORIAL_CATEGORY_SLUGS,
-  PRIMARY_NAVIGATION,
-} from "../config/navigation";
+import { PRIMARY_NAVIGATION } from "../config/navigation";
 
-/* ---------------------------
-   Helpers: date
---------------------------- */
+type Post = CollectionEntry<"blog">;
 
-// Unica funzione per normalizzare una data (elimina dateOf e dateValue duplicate)
-function getPublishDate(post: CollectionEntry<"blog">): Date | null {
+/* ============================================================
+   Home "magazine" — implementazione del design
+   `Canapalandia Homepage.dc.html` (Claude Design, opzione 1a/1b/1c).
+   Superficie carta, titoli Newsreader, UI Archivo, radius 3px,
+   divider a filo, nessuna ombra. I token sono locali alla home.
+   ============================================================ */
+
+/* ---------- Date ---------- */
+
+function getPublishDate(post: Post): Date | null {
   const raw = post.data.publishDate;
   if (!raw) return null;
   const d = raw instanceof Date ? raw : new Date(String(raw));
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-function dateValue(post: CollectionEntry<"blog">): number {
+function dateValue(post: Post): number {
   return getPublishDate(post)?.getTime() ?? 0;
 }
 
-const formatDate = (d: Date | null): string => {
-  if (!d) return "";
-  return d.toLocaleDateString("it-IT", { year: "numeric", month: "long", day: "numeric" });
-};
+const formatDateLong = (d: Date | null): string =>
+  d ? d.toLocaleDateString("it-IT", { year: "numeric", month: "long", day: "numeric" }) : "";
 
-/** Data compatta per le card ("31 lug 2026"). */
-const formatDateShort = (d: Date | null): string => {
-  if (!d) return "";
-  return d.toLocaleDateString("it-IT", { year: "numeric", month: "short", day: "numeric" });
-};
+/** "12 mag 2026" */
+const formatDateShort = (d: Date | null): string =>
+  d ? d.toLocaleDateString("it-IT", { year: "numeric", month: "short", day: "numeric" }) : "";
 
-/* ---------------------------
-   Helpers: slug / immagine
---------------------------- */
+/** "12 mag" — usata nelle liste compatte */
+const formatDayMonth = (d: Date | null): string =>
+  d ? d.toLocaleDateString("it-IT", { month: "short", day: "numeric" }) : "";
 
-function getSlug(post: CollectionEntry<"blog">): string {
+/** "MAG 2026" — cronologia normativa */
+const formatMonthYear = (d: Date | null): string =>
+  d
+    ? d
+        .toLocaleDateString("it-IT", { year: "numeric", month: "short" })
+        .replace(".", "")
+        .toUpperCase()
+    : "";
+
+/* ---------- Slug, link, immagini ---------- */
+
+function getSlug(post: Post): string {
   return post.slug ?? post.data.slug ?? "";
 }
 
-/**
- * Identificatore stabile del contenuto, usato per la deduplicazione tra le sezioni.
- * `entry.id` è generato dal loader della collection (percorso del file) ed è sempre
- * presente: a differenza di `getSlug()` non dipende da un campo del frontmatter.
- */
-function getKey(post: CollectionEntry<"blog">): string {
+/** Identificatore stabile (percorso file): usato per deduplicare le sezioni. */
+function getKey(post: Post): string {
   return post.id;
 }
 
-// FIX: tipizzato correttamente, niente più `any`
-function postHref(entry: CollectionEntry<"blog">): string {
-  const slug = getSlug(entry);
-  if (!slug) throw new Error(`Missing slug for post: ${entry.data.title}`);
-  return `/blog/${slug}/`;
+function postHref(post: Post): string {
+  return `/blog/${getSlug(post)}/`;
 }
 
 function normalizeImgSrc(src: unknown): string {
@@ -66,9 +69,8 @@ function normalizeImgSrc(src: unknown): string {
   return `/${s}`;
 }
 
-function normalizeImage(entry: CollectionEntry<"blog">): string {
-  const raw = entry.data.image || entry.data.coverImage || "";
-  // FIX: type guard pulito, niente cast a `any`
+function normalizeImage(post: Post): string {
+  const raw = post.data.image || post.data.coverImage || "";
   const srcValue =
     raw && typeof raw === "object" && "src" in raw
       ? (raw as Record<string, unknown>)["src"]
@@ -76,137 +78,102 @@ function normalizeImage(entry: CollectionEntry<"blog">): string {
   return normalizeImgSrc(srcValue);
 }
 
-/* ---------------------------
-   Helpers: selezione post
---------------------------- */
-
-function pickUnique(
-  posts: CollectionEntry<"blog">[],
-  usedKeys: Set<string>,
-  n: number
-): CollectionEntry<"blog">[] {
-  const result: CollectionEntry<"blog">[] = [];
-  for (const post of posts) {
-    if (result.length >= n) break;
-    const key = getKey(post);
-    // lo slug resta necessario per costruire il link, la dedup usa `key`
-    if (key && !usedKeys.has(key) && getSlug(post)) {
-      result.push(post);
-      usedKeys.add(key);
-    }
-  }
-  return result;
+function imageAlt(post: Post): string {
+  return post.data.coverAlt || post.data.title;
 }
+
+/** Tempo di lettura stimato dal corpo dell'articolo (200 parole/minuto). */
+function readingMinutes(post: Post): number {
+  const words = String(post.body ?? "").trim().split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.round(words / 200));
+}
+
+/** Ripulisce una riga Markdown/MDX lasciando il solo testo leggibile. */
+function stripInlineMarkdown(line: string): string {
+  return line
+    .replace(/`{1,3}[^`]*`{1,3}/g, "")
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/<[^>]+>/g, "")
+    .replace(/[*_]{1,3}([^*_]+)[*_]{1,3}/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Righe che non appartengono al corpo discorsivo dell'articolo. */
+function isProseLine(line: string): boolean {
+  const l = line.trim();
+  if (!l) return false;
+  return !/^(#{1,6}\s|>|[-*+]\s|\d+\.\s|\||:::|import\s|export\s|<)/.test(l);
+}
+
+const ABSTRACT_MIN = 250;
+const ABSTRACT_MAX = 350;
 
 /**
- * Preleva `n` post attingendo alle sorgenti in ordine di priorità, saltando
- * tutto ciò che è già stato assegnato a una sezione precedente (`usedKeys`).
+ * Abstract editoriale per l'apertura: i primi paragrafi discorsivi
+ * dell'articolo, ripuliti dal Markdown e tagliati su un confine di frase.
+ * Salta il paragrafo che ripete il sommario già mostrato sopra.
  */
-function takeUnique(
-  n: number,
-  usedKeys: Set<string>,
-  ...sources: CollectionEntry<"blog">[][]
-): CollectionEntry<"blog">[] {
-  const result: CollectionEntry<"blog">[] = [];
-  for (const source of sources) {
-    if (result.length >= n) break;
-    pickUnique(source, usedKeys, n - result.length).forEach((p) => result.push(p));
+function editorialAbstract(post: Post): string {
+  const dek = String(post.data.description ?? "").toLowerCase().slice(0, 40);
+  const paragraphs: string[] = [];
+  let current: string[] = [];
+  let inCode = false;
+
+  for (const raw of String(post.body ?? "").split(/\r?\n/)) {
+    if (/^\s*```/.test(raw)) {
+      inCode = !inCode;
+      continue;
+    }
+    if (inCode) continue;
+    if (isProseLine(raw)) {
+      current.push(raw);
+      continue;
+    }
+    if (current.length) {
+      paragraphs.push(current.join(" "));
+      current = [];
+    }
   }
-  return result;
-}
+  if (current.length) paragraphs.push(current.join(" "));
 
-/* ---------------------------
-   Data: carica e ordina post
---------------------------- */
-
-let postsAll: CollectionEntry<"blog">[] = [];
-try {
-  postsAll = await getCollection("blog");
-} catch {
-  console.warn("[index] Nessun contenuto trovato in Content Collections");
-}
-
-const sortedPosts = postsAll
-  .slice()
-  .sort((a, b) => dateValue(b) - dateValue(a));
-
-/* ---------------------------
-   Filtro: solo post dal 2025 in poi
---------------------------- */
-
-const MIN_DATE = new Date("2025-01-01T00:00:00.000Z");
-
-const eligiblePosts = sortedPosts.filter((p) => {
-  const d = getPublishDate(p);
-  return d !== null && d >= MIN_DATE;
-});
-
-/** Post pubblicabile: niente bozze, test, date future o contenuti in revisione legacy. */
-const NOW = new Date();
-
-function isPublished(post: CollectionEntry<"blog">): boolean {
-  const { draft, status, editorialStatus } = post.data;
-  if (draft === true) return false;
-  if (status === "draft" || status === "test") return false;
-  if (editorialStatus === "legacy-review") return false;
-  const d = getPublishDate(post);
-  return d !== null && d.getTime() <= NOW.getTime();
-}
-
-/* ---------------------------
-   Categorie (singolo ciclo su postsAll)
---------------------------- */
-
-type CategoryData = {
-  slug: string;
-  name: string;
-  count: number;
-  description?: string;
-};
-
-const categoryMap = new Map<string, CategoryData>();
-for (const post of postsAll) {
-  if (!isPublished(post)) continue;
-  const cat = post.data.category;
-  if (cat && typeof cat === "string" && cat.trim()) {
-    const slug = cat.trim();
-    const existing = categoryMap.get(slug);
-    categoryMap.set(slug, {
-      slug,
-      name: slug.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" "),
-      count: (existing?.count ?? 0) + 1,
-    });
+  let text = "";
+  for (const paragraph of paragraphs) {
+    const clean = stripInlineMarkdown(paragraph);
+    if (clean.length < 40) continue;
+    if (dek && clean.toLowerCase().startsWith(dek)) continue;
+    text = text ? `${text} ${clean}` : clean;
+    if (text.length >= ABSTRACT_MIN) break;
   }
+
+  if (text.length < 80) return "";
+  if (text.length <= ABSTRACT_MAX) return text;
+
+  // Taglio su fine frase; in mancanza, su confine di parola.
+  const window = text.slice(0, ABSTRACT_MAX);
+  const sentenceEnd = Math.max(
+    window.lastIndexOf(". "),
+    window.lastIndexOf("! "),
+    window.lastIndexOf("? "),
+  );
+  if (sentenceEnd > ABSTRACT_MIN - 60) return window.slice(0, sentenceEnd + 1);
+  return `${window.slice(0, window.lastIndexOf(" "))}…`;
 }
 
-/* Home: usa la stessa ossatura editoriale dell'header e della pagina Blog. */
-const percorsi = PRIMARY_EDITORIAL_CATEGORY_SLUGS.map((slug) => categoryMap.get(slug)).filter(
-  (c): c is CategoryData => c !== undefined && c.count > 0,
-);
+/* ---------- Etichette categoria ---------- */
 
-/** Una riga editoriale se il CMS non espone description sulla categoria */
-const PERCORSI_FALLBACK_BLURB: Record<string, string> = {
-  Normativa: "Leggi italiane, sentenze e quadro europeo.",
-  "cbd-alimentazione": "Cannabidiolo, prodotti in commercio e uso consapevole.",
-  "cannabis-news-it": "Notizie e sviluppi sul tema cannabis in Italia.",
-  "canapa-e-ambiente": "Filiera, materiali, agricoltura e sostenibilità.",
-};
-
-const EDITORIAL_DISPLAY_NAME: Record<string, string> = {
-  "cannabis-news-it": "Notizie",
+const CATEGORY_BADGE: Record<string, string> = {
+  "cannabis-news-it": "Cannabis news",
   Normativa: "Normativa",
   "cbd-alimentazione": "CBD",
   "canapa-e-ambiente": "Canapa",
-};
-
-const CATEGORY_DISPLAY_NAME: Record<string, string> = {
-  Normativa: "Normativa",
-  "cbd-alimentazione": "CBD e alimentazione",
-  "cannabis-news-it": "Cannabis News",
-  "salute-benessere": "Salute e benessere",
-  "guide-tutorial": "Guide e tutorial",
-  "coltivazione-legale": "Coltivazione legale",
-  "canapa-e-ambiente": "Canapa e ambiente",
+  "salute-benessere": "Salute",
+  "guide-tutorial": "Guide",
+  "cannabis-e-innovazione": "Innovazione",
+  Attualità: "Attualità",
+  Ricerca: "Ricerca",
+  "cbd-bellezza-cura-pelle": "CBD e pelle",
 };
 
 function prettifySlug(slug: string): string {
@@ -216,39 +183,103 @@ function prettifySlug(slug: string): string {
     .join(" ");
 }
 
-/** Etichetta leggibile di una categoria reale; stringa vuota se assente. */
 function categoryLabel(slug: unknown): string {
   if (typeof slug !== "string" || !slug.trim()) return "";
   const key = slug.trim();
-  return CATEGORY_DISPLAY_NAME[key] ?? prettifySlug(key);
+  return CATEGORY_BADGE[key] ?? prettifySlug(key);
 }
 
-function percorsiDisplayName(cat: CategoryData): string {
-  return EDITORIAL_DISPLAY_NAME[cat.slug] ?? cat.name;
+/* ---------- Caricamento e filtri ---------- */
+
+let postsAll: Post[] = [];
+try {
+  postsAll = await getCollection("blog");
+} catch {
+  console.warn("[index] Nessun contenuto trovato in Content Collections");
 }
 
-function percorsiBlurb(cat: CategoryData, maxLen: number): string {
-  const raw = cat.description?.trim();
-  if (raw) {
-    return raw.length > maxLen ? `${raw.slice(0, maxLen).trimEnd()}…` : raw;
+const NOW = new Date();
+
+function isPublished(post: Post): boolean {
+  const { draft, status, editorialStatus } = post.data;
+  if (draft === true) return false;
+  if (status === "draft" || status === "test") return false;
+  if (editorialStatus === "legacy-review") return false;
+  const d = getPublishDate(post);
+  return d !== null && d.getTime() <= NOW.getTime();
+}
+
+/**
+ * Le traduzioni inglesi vivono nella stessa collection ma con categorie
+ * dedicate: la home è italiana, quindi le escludiamo esplicitamente.
+ */
+const EN_CATEGORIES = new Set([
+  "cannabis-news",
+  "cannabis-legalization",
+  "cbd-and-nutrition",
+  "cannabis-and-innovation",
+  "medical-cannabis",
+  "hemp-sustainability",
+  "health-wellness",
+]);
+
+function isItalian(post: Post): boolean {
+  const category = post.data.category;
+  return !(typeof category === "string" && EN_CATEGORIES.has(category));
+}
+
+/** Tutti i post italiani pubblicabili e linkabili, dal più recente. */
+const published = postsAll
+  .filter((p) => isPublished(p) && isItalian(p) && getSlug(p) !== "")
+  .sort((a, b) => dateValue(b) - dateValue(a));
+
+/** Finestra editoriale principale: dal 2025 in poi. `published` resta il fallback. */
+const MIN_DATE = new Date("2025-01-01T00:00:00.000Z");
+const recent = published.filter((p) => (getPublishDate(p) as Date) >= MIN_DATE);
+
+/**
+ * Le sezioni tematiche sono archivi, non cronologie: attingono a tutto lo
+ * storico pubblicato, così restano piene anche quando le sezioni di apertura
+ * hanno già consumato gli articoli più recenti della stessa categoria.
+ */
+function byCategory(slug: string): Post[] {
+  return published.filter((p) => p.data.category === slug);
+}
+
+/* ---------- Selezione editoriale (deduplicata) ---------- */
+
+const used = new Set<string>();
+
+/**
+ * Prende `n` post attingendo alle sorgenti in ordine di priorità e saltando
+ * quanto già assegnato a una sezione precedente. `recent` e `published`
+ * chiudono sempre la catena, così nessun blocco resta vuoto.
+ */
+function takeFrom(n: number, ...sources: Post[][]): Post[] {
+  const out: Post[] = [];
+  for (const source of sources) {
+    for (const post of source) {
+      if (out.length >= n) return out;
+      const key = getKey(post);
+      if (!used.has(key)) {
+        used.add(key);
+        out.push(post);
+      }
+    }
   }
-  return PERCORSI_FALLBACK_BLURB[cat.slug] ?? "Articoli e guide su questo tema.";
+  return out;
 }
 
-/* ---------------------------
-   Selezione editoriale
-   Candidabili: solo post pubblicati (no bozze, no contenuti di test, no date future)
-   e con uno slug utilizzabile per il link.
+/**
+ * Come `takeFrom`, ma con la cronologia generale in coda: le sezioni non
+ * tematiche (hero, ultime notizie) non devono mai restare vuote.
+ */
+function take(n: number, ...sources: Post[][]): Post[] {
+  return takeFrom(n, ...sources, recent, published);
+}
 
-   `usedKeys` deduplica le sezioni editoriali di priorità ("In evidenza" e
-   "In aggiornamento"). "Ultimi articoli" resta invece una cronologia pura,
-   indipendente dalle apparizioni dello stesso contenuto nelle sezioni precedenti.
---------------------------- */
-
-const publishablePosts = eligiblePosts.filter((p) => isPublished(p) && getSlug(p) !== "");
-
-// Candidati manuali (homeFeatured === true): rank crescente, poi più recente
-const featuredCandidatesManual = publishablePosts
+// Pool "in evidenza": prima le scelte manuali, poi le notizie.
+const featuredManual = published
   .filter((p) => p.data.homeFeatured === true)
   .sort((a, b) => {
     const rankA = a.data.homeFeaturedRank ?? 999;
@@ -256,73 +287,77 @@ const featuredCandidatesManual = publishablePosts
     if (rankA !== rankB) return rankA - rankB;
     return dateValue(b) - dateValue(a);
   });
+const news = byCategory("cannabis-news-it");
 
-// Candidati automatici: categoria "cannabis-news-it", non già manuali
-const manualKeys = new Set(featuredCandidatesManual.map(getKey));
-const featuredCandidatesAuto = publishablePosts
-  .filter((p) => p.data.category === "cannabis-news-it" && !manualKeys.has(getKey(p)))
-  .sort((a, b) => dateValue(b) - dateValue(a));
+// L'ordine di queste chiamate definisce la priorità: ogni sezione prende i
+// contenuti più recenti ancora liberi. Le sezioni tematiche usano `takeFrom`,
+// così non pescano mai fuori dalla loro area editoriale.
 
-// Pool deduplicato: manuali prima, poi auto
-const featuredPool: CollectionEntry<"blog">[] = [];
-const featuredPoolKeys = new Set<string>();
-for (const post of [...featuredCandidatesManual, ...featuredCandidatesAuto]) {
-  const key = getKey(post);
-  if (key && !featuredPoolKeys.has(key)) {
-    featuredPool.push(post);
-    featuredPoolKeys.add(key);
-  }
+// 1. Hero
+const hero = take(1, featuredManual, news)[0] ?? null;
+const heroSide = take(2, featuredManual, news);
+
+// 2. "In aggiornamento" (rotazione) e "Ultima ora": cronologia pura
+const ticker = take(3);
+const ultimaOra = take(3);
+
+// 3. In evidenza
+const evidenzaLead = take(1, featuredManual, news)[0] ?? null;
+const evidenzaList = take(3);
+
+// 4. Ultime notizie
+const ultime = take(4);
+
+// 5. Osservatorio normativa
+const normativa = byCategory("Normativa");
+const normLead = takeFrom(1, normativa)[0] ?? null;
+const normLinks = takeFrom(2, normativa);
+const normTimeline = takeFrom(4, normativa);
+
+// 6. CBD
+const cbdPosts = takeFrom(3, byCategory("cbd-alimentazione"), byCategory("cbd-bellezza-cura-pelle"));
+
+// 7. Canapa
+const canapa = byCategory("canapa-e-ambiente");
+const canapaMain = takeFrom(2, canapa);
+const canapaList = takeFrom(4, canapa);
+
+// 8. Approfondimenti e guide: contenuti lunghi, non cronologia
+const guide = takeFrom(
+  4,
+  byCategory("guide-tutorial"),
+  byCategory("salute-benessere"),
+  byCategory("cbd-alimentazione"),
+  byCategory("canapa-e-ambiente"),
+);
+
+/* ---------- Apertura: abstract e metadata dell'articolo di testa ---------- */
+
+const heroAbstract = hero ? editorialAbstract(hero) : "";
+
+/** "Aggiornato il …" quando la revisione è successiva alla pubblicazione. */
+function heroDateLabel(post: Post): string {
+  const published = getPublishDate(post);
+  const rawUpdated = post.data.updatedDate;
+  const updated = rawUpdated
+    ? rawUpdated instanceof Date
+      ? rawUpdated
+      : new Date(String(rawUpdated))
+    : null;
+  const isNewer =
+    updated !== null &&
+    !Number.isNaN(updated.getTime()) &&
+    published !== null &&
+    updated.getTime() - published.getTime() > 86_400_000;
+  return isNewer
+    ? `Aggiornato il ${formatDateLong(updated)}`
+    : formatDateLong(published);
 }
 
-const usedKeys = new Set<string>();
+/* ---------- Meta ---------- */
 
-// 1) In evidenza: 1 articolo principale + 3 correlati
-const featuredPick = takeUnique(4, usedKeys, featuredPool, publishablePosts, eligiblePosts);
-const featuredMain = featuredPick[0] ?? null;
-const featuredSide = featuredPick.slice(1, 4);
-
-// 2) In aggiornamento (hero): 3 titoli recenti non già usati
-const updatesPosts = takeUnique(3, usedKeys, publishablePosts, eligiblePosts);
-
-// 3) Ultimi articoli: cronologia pura dei 6 post pubblicati più recenti
-const latestPosts = publishablePosts.slice(0, 6);
-
-/* ---------------------------
-   Inizia da qui: gli stessi quattro nuclei editoriali dell'header
---------------------------- */
-
-const START_HERE_META: Record<string, { desc: string; shape: string }> = {
-  "/categoria/cannabis-news-it/": {
-    desc: "Aggiornamenti e sviluppi sul tema cannabis in Italia.",
-    shape: "square",
-  },
-  "/categoria/normativa/": {
-    desc: "Leggi, sentenze e quadro europeo.",
-    shape: "circle",
-  },
-  "/categoria/cbd-alimentazione/": {
-    desc: "Prodotti, ricerca, sicurezza e regolamentazione.",
-    shape: "diamond",
-  },
-  "/categoria/canapa-e-ambiente/": {
-    desc: "Filiera, materiali, agricoltura e sostenibilità.",
-    shape: "bar",
-  },
-};
-
-const startHere = PRIMARY_NAVIGATION
-  .filter((item) => item.href.startsWith("/categoria/"))
-  .map((item) => ({
-    href: item.href,
-    title: item.label,
-    ...START_HERE_META[item.href],
-  }));
-
-/* ---------------------------
-   Page meta
---------------------------- */
-
-const title = "Cannabis light, CBD e canapa in Italia | Notizie, normativa e guide - Canapalandia";
+const title =
+  "Cannabis light, CBD e canapa in Italia | Notizie, normativa e guide - Canapalandia";
 const description =
   "Osservatorio editoriale su cannabis light, CBD e canapa in Italia: normativa, notizie, guide e analisi per orientarti senza sensazionalismi.";
 const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/`;
@@ -357,1122 +392,2155 @@ const homeJsonLd = {
 };
 ---
 
-<Layout title={title} description={description} canonical={canonical} shell={false}>
+<Layout
+  title={title}
+  description={description}
+  canonical={canonical}
+  shell={false}
+  newsletter={false}
+>
   <script type="application/ld+json" set:html={JSON.stringify(homeJsonLd)} />
 
-  <div class="page-home hm">
-    <!-- ===== HERO ===== -->
-    <section class="hm-hero" aria-labelledby="hero-title">
-      <div class="hm-wrap hm-hero__grid">
-        <div class="hm-hero__intro">
-          <p class="hm-eyebrow">
-            <span class="hm-eyebrow__dot" aria-hidden="true"></span>
-            Osservatorio indipendente su canapa e CBD
+  <div class="cl">
+    <!-- ===== UTILITY BAR (livello 2: deve quasi sparire) ===== -->
+    <div class="cl-strip">
+      <div class="cl-wrap cl-strip__inner">
+        <p class="cl-strip__tag">
+          Magazine indipendente su cannabis, canapa, CBD e normativa
+        </p>
+        <p class="cl-strip__links">
+          <a href="#newsletter">Newsletter</a>
+          <span class="cl-strip__sep" aria-hidden="true">·</span>
+          <a href="/chi-siamo/">Chi siamo</a>
+        </p>
+      </div>
+    </div>
+
+    <!-- ===== IN AGGIORNAMENTO (una notizia alla volta) ===== -->
+    {ticker.length > 0 && (
+      <section class="cl-brief" aria-label="Ultimi aggiornamenti" data-brief>
+        <div class="cl-wrap cl-brief__inner">
+          <p class="cl-brief__label">
+            <span class="cl-dot cl-dot--ocra" aria-hidden="true"></span>
+            In aggiornamento
           </p>
 
-          <h1 id="hero-title" class="hm-hero__title">
-            Cannabis light, CBD e canapa, spiegate senza slogan.
-          </h1>
-
-          <p class="hm-hero__lead">
-            Notizie verificate, normativa italiana ed europea, ricerca scientifica e guide
-            pratiche. Quello che è legale oggi, cosa dicono gli studi e cosa resta da chiarire.
-          </p>
-
-          <div class="hm-hero__cta">
-            <a class="hm-btn hm-btn--primary" href="#ultimi">
-              Ultime notizie <span aria-hidden="true">→</span>
-            </a>
-            <a class="hm-btn hm-btn--ghost" href="#percorsi">Percorsi tematici</a>
-          </div>
-        </div>
-
-        {updatesPosts.length > 0 && (
-          <aside class="hm-updates" aria-labelledby="updates-title">
-            <h2 id="updates-title" class="hm-updates__title">In aggiornamento</h2>
-            <ul class="hm-updates__list">
-              {updatesPosts.map((p) => (
-                <li class="hm-updates__item">
-                  <a class="hm-updates__link" href={postHref(p)}>
-                    {categoryLabel(p.data.category) && (
-                      <span class="hm-kicker">{categoryLabel(p.data.category)}</span>
-                    )}
-                    <span class="hm-updates__headline">{p.data.title}</span>
-                  </a>
+          <div class="cl-brief__viewport" data-brief-viewport aria-live="off">
+            <ul class="cl-brief__list">
+              {ticker.map((p, i) => (
+                <li class="cl-brief__item" data-brief-item hidden={i !== 0}>
+                  <a class="cl-brief__link" href={postHref(p)}>{p.data.title}</a>
                 </li>
               ))}
             </ul>
-          </aside>
-        )}
-      </div>
-    </section>
-
-    <!-- ===== INIZIA DA QUI ===== -->
-    <section class="hm-start" aria-labelledby="start-title">
-      <div class="hm-wrap">
-        <h2 id="start-title" class="hm-overline">Inizia da qui</h2>
-        <div class="hm-start__grid">
-          {startHere.map((item) => (
-            <a class="hm-start__card" href={item.href}>
-              <span class="hm-start__icon" aria-hidden="true">
-                <span class={`hm-shape hm-shape--${item.shape}`}></span>
-              </span>
-              <span class="hm-start__body">
-                <span class="hm-start__title">{item.title}</span>
-                <span class="hm-start__desc">{item.desc}</span>
-              </span>
-              <span class="hm-start__arrow" aria-hidden="true">→</span>
-            </a>
-          ))}
-        </div>
-      </div>
-    </section>
-
-    <!-- ===== PERCORSI TEMATICI ===== -->
-    {percorsi.length > 0 && (
-      <section id="percorsi" class="hm-paths" aria-labelledby="paths-title">
-        <div class="hm-wrap">
-          <div class="hm-paths__head">
-            <div>
-              <p class="hm-overline hm-overline--gold">Percorsi tematici</p>
-              <h2 id="paths-title" class="hm-paths__title">Quattro strade per orientarti</h2>
-            </div>
-            <a class="hm-paths__all" href="/blog/">
-              Esplora tutti gli argomenti <span aria-hidden="true">→</span>
-            </a>
           </div>
 
-          <div class="hm-paths__grid">
-            {percorsi.map((cat, i) => (
-              <a
-                class="hm-paths__tile"
-                href={`/categoria/${cat.slug}/`}
-                aria-label={`${percorsiDisplayName(cat)}, ${cat.count} articoli`}
+          {ticker.length > 1 && (
+            <p class="cl-brief__nav">
+              <span class="cl-brief__count" data-brief-count>
+                01 / {String(ticker.length).padStart(2, "0")}
+              </span>
+              <button
+                type="button"
+                class="cl-brief__btn"
+                data-brief-prev
+                aria-label="Aggiornamento precedente"
               >
-                <span class="hm-paths__num" aria-hidden="true">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <span class="hm-paths__name">{percorsiDisplayName(cat)}</span>
-                <span class="hm-paths__desc">{percorsiBlurb(cat, 88)}</span>
-              </a>
-            ))}
-          </div>
+                <span aria-hidden="true">←</span>
+              </button>
+              <button
+                type="button"
+                class="cl-brief__btn"
+                data-brief-next
+                aria-label="Aggiornamento successivo"
+              >
+                <span aria-hidden="true">→</span>
+              </button>
+            </p>
+          )}
         </div>
       </section>
     )}
 
-    <!-- ===== IN EVIDENZA ===== -->
-    <section id="in-evidenza" class="hm-featured" aria-labelledby="featured-title">
-      <div class="hm-wrap">
-        <div class="hm-sechead">
-          <h2 id="featured-title" class="hm-sechead__title">In evidenza</h2>
-          <span class="hm-sechead__rule" aria-hidden="true"></span>
-        </div>
+    <!-- ===== HERO ===== -->
+    {hero && (
+      <section class="cl-hero" aria-labelledby="hero-title">
+        <div class="cl-wrap cl-hero__grid">
+          <article class="cl-lead">
+            <a class="cl-lead__media" href={postHref(hero)} tabindex="-1" aria-hidden="true">
+              <img
+                src={normalizeImage(hero)}
+                alt=""
+                width="880"
+                height="495"
+                loading="eager"
+                fetchpriority="high"
+                decoding="async"
+                referrerpolicy="no-referrer"
+                onerror="this.onerror=null;this.src='/images/placeholder.svg';"
+              />
+            </a>
+            {categoryLabel(hero.data.category) && (
+              <p class="cl-lead__kicker">
+                <span class="cl-badge">{categoryLabel(hero.data.category)}</span>
+              </p>
+            )}
+            <h1 id="hero-title" class="cl-lead__title">
+              <a href={postHref(hero)}>{hero.data.title}</a>
+            </h1>
+            {hero.data.description && <p class="cl-lead__dek">{hero.data.description}</p>}
+            {heroAbstract && <p class="cl-lead__abstract">{heroAbstract}</p>}
+            <p class="cl-lead__meta cl-metaline">
+              {readingMinutes(hero)} min di lettura · {heroDateLabel(hero)}
+            </p>
+            <p class="cl-lead__foot">
+              <a class="cl-btn cl-btn--primary" href={postHref(hero)}>
+                Leggi l'articolo <span aria-hidden="true">→</span>
+              </a>
+              <span class="cl-byline">di {hero.data.author || "Redazione Canapalandia"}</span>
+            </p>
+          </article>
 
-        {featuredMain ? (
-          <div class="hm-featured__grid">
-            <article class="hm-lead">
-              <a class="hm-lead__link" href={postHref(featuredMain)}>
-                <span class="hm-lead__media">
+          <aside class="cl-rail" aria-label="Altre letture">
+            {heroSide[0] && (
+              <article class="cl-rail__top">
+                <a class="cl-rail__media" href={postHref(heroSide[0])} tabindex="-1" aria-hidden="true">
                   <img
-                    src={normalizeImage(featuredMain)}
-                    alt={featuredMain.data.coverAlt || featuredMain.data.title}
-                    width="800"
-                    height="450"
-                    loading="eager"
+                    src={normalizeImage(heroSide[0])}
+                    alt=""
+                    width="372"
+                    height="248"
+                    loading="lazy"
                     decoding="async"
                     referrerpolicy="no-referrer"
                     onerror="this.onerror=null;this.src='/images/placeholder.svg';"
                   />
-                </span>
-                <span class="hm-lead__body">
-                  <span class="hm-meta">
-                    {categoryLabel(featuredMain.data.category) && (
-                      <span class="hm-kicker">{categoryLabel(featuredMain.data.category)}</span>
-                    )}
-                    <span class="hm-meta__dot" aria-hidden="true"></span>
-                    <span class="hm-meta__date">{formatDate(getPublishDate(featuredMain))}</span>
-                  </span>
-                  <span class="hm-lead__title">{featuredMain.data.title}</span>
-                  {featuredMain.data.description && (
-                    <span class="hm-lead__excerpt">{featuredMain.data.description}</span>
-                  )}
-                  <span class="hm-readmore">
-                    Leggi l'analisi <span aria-hidden="true">→</span>
-                  </span>
-                </span>
-              </a>
-            </article>
+                </a>
+                <p class="cl-kicker">{categoryLabel(heroSide[0].data.category)}</p>
+                <h2 class="cl-rail__title">
+                  <a href={postHref(heroSide[0])}>{heroSide[0].data.title}</a>
+                </h2>
+                <p class="cl-metaline">{formatDateLong(getPublishDate(heroSide[0]))}</p>
+              </article>
+            )}
 
-            {featuredSide.length > 0 && (
-              <div class="hm-side">
-                <h3 class="hm-overline">Da leggere insieme</h3>
-                <ul class="hm-side__list">
-                  {featuredSide.map((p) => (
-                    <li class="hm-side__item">
-                      <a class="hm-side__link" href={postHref(p)}>
-                        <span class="hm-side__thumb">
-                          <img
-                            src={normalizeImage(p)}
-                            alt={p.data.coverAlt || p.data.title}
-                            width="176"
-                            height="132"
-                            loading="lazy"
-                            decoding="async"
-                            referrerpolicy="no-referrer"
-                            onerror="this.onerror=null;this.src='/images/placeholder.svg';"
-                          />
-                        </span>
-                        <span class="hm-side__body">
-                          {categoryLabel(p.data.category) && (
-                            <span class="hm-kicker">{categoryLabel(p.data.category)}</span>
-                          )}
-                          <span class="hm-side__title">{p.data.title}</span>
-                          <span class="hm-side__date">{formatDate(getPublishDate(p))}</span>
-                        </span>
+            {heroSide[1] && (
+              <article class="cl-rail__second">
+                <p class="cl-kicker">{categoryLabel(heroSide[1].data.category)}</p>
+                <h2 class="cl-rail__title">
+                  <a href={postHref(heroSide[1])}>{heroSide[1].data.title}</a>
+                </h2>
+                {heroSide[1].data.description && (
+                  <p class="cl-rail__dek">{heroSide[1].data.description}</p>
+                )}
+                <p class="cl-metaline">{formatDateLong(getPublishDate(heroSide[1]))}</p>
+              </article>
+            )}
+
+            {ultimaOra.length > 0 && (
+              <div class="cl-flash">
+                <p class="cl-flash__head">
+                  <span class="cl-dot cl-dot--lime" aria-hidden="true"></span>
+                  Ultima ora
+                </p>
+                <ul class="cl-flash__list">
+                  {ultimaOra.map((p) => (
+                    <li class="cl-flash__item">
+                      <a href={postHref(p)}>
+                        <span class="cl-flash__date">{formatDayMonth(getPublishDate(p))}</span>
+                        <span class="cl-flash__title">{p.data.title}</span>
                       </a>
                     </li>
                   ))}
                 </ul>
               </div>
             )}
-          </div>
-        ) : (
-          <p class="hm-empty">Contenuti in importazione. Torna presto!</p>
-        )}
-      </div>
-    </section>
-
-    <!-- ===== ULTIMI ARTICOLI ===== -->
-    <section id="ultimi" class="hm-latest" aria-labelledby="latest-title">
-      <div class="hm-wrap">
-        <div class="hm-sechead hm-sechead--split">
-          <h2 id="latest-title" class="hm-sechead__title">Ultimi articoli</h2>
-          <a class="hm-latest__all" href="/blog/">
-            Archivio completo <span aria-hidden="true">→</span>
-          </a>
+          </aside>
         </div>
+      </section>
+    )}
 
-        {latestPosts.length > 0 ? (
-          <div class="hm-latest__grid">
-            {latestPosts.map((p) => (
-              <article class="hm-card">
-                <a class="hm-card__link" href={postHref(p)}>
-                  <span class="hm-card__media">
+    <!-- ===== IN EVIDENZA ===== -->
+    {evidenzaLead && (
+      <section id="in-evidenza" class="cl-highlight" aria-labelledby="highlight-title">
+        <div class="cl-wrap">
+          <div class="cl-sechead cl-sechead--rule">
+            <h2 id="highlight-title" class="cl-sechead__title">In evidenza</h2>
+            <span class="cl-sechead__aside">Da leggere insieme</span>
+          </div>
+
+          <div class="cl-highlight__grid">
+            <article class="cl-inchiesta">
+              <a class="cl-inchiesta__media" href={postHref(evidenzaLead)} tabindex="-1" aria-hidden="true">
+                <img
+                  src={normalizeImage(evidenzaLead)}
+                  alt=""
+                  width="760"
+                  height="326"
+                  loading="lazy"
+                  decoding="async"
+                  referrerpolicy="no-referrer"
+                  onerror="this.onerror=null;this.src='/images/placeholder.svg';"
+                />
+              </a>
+              <div class="cl-inchiesta__body">
+                <div>
+                  <p class="cl-kicker cl-kicker--ocra">
+                    {categoryLabel(evidenzaLead.data.category) || "Approfondimento"}
+                  </p>
+                  <h3 class="cl-inchiesta__title">
+                    <a href={postHref(evidenzaLead)}>{evidenzaLead.data.title}</a>
+                  </h3>
+                </div>
+                {evidenzaLead.data.description && (
+                  <p class="cl-inchiesta__dek">{evidenzaLead.data.description}</p>
+                )}
+              </div>
+            </article>
+
+            <ul class="cl-stack">
+              {evidenzaList.map((p) => (
+                <li class="cl-stack__item">
+                  <a class="cl-stack__link" href={postHref(p)}>
+                    <span class="cl-stack__thumb">
+                      <img
+                        src={normalizeImage(p)}
+                        alt=""
+                        width="104"
+                        height="104"
+                        loading="lazy"
+                        decoding="async"
+                        referrerpolicy="no-referrer"
+                        onerror="this.onerror=null;this.src='/images/placeholder.svg';"
+                      />
+                    </span>
+                    <span class="cl-stack__body">
+                      <span class="cl-kicker">{categoryLabel(p.data.category)}</span>
+                      <span class="cl-stack__title">{p.data.title}</span>
+                      <span class="cl-metaline">{formatDateLong(getPublishDate(p))}</span>
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
+    )}
+
+    <!-- ===== ULTIME NOTIZIE ===== -->
+    {ultime.length > 0 && (
+      <section id="ultime" class="cl-latest" aria-labelledby="latest-title">
+        <div class="cl-wrap">
+          <div class="cl-sechead">
+            <h2 id="latest-title" class="cl-sechead__title">Ultime notizie</h2>
+            <a class="cl-morelink" href="/blog/">Tutte le notizie →</a>
+          </div>
+
+          <div class="cl-grid4">
+            {ultime.map((p) => (
+              <article class="cl-card">
+                <a class="cl-card__media" href={postHref(p)} tabindex="-1" aria-hidden="true">
+                  <img
+                    src={normalizeImage(p)}
+                    alt=""
+                    width="300"
+                    height="225"
+                    loading="lazy"
+                    decoding="async"
+                    referrerpolicy="no-referrer"
+                    onerror="this.onerror=null;this.src='/images/placeholder.svg';"
+                  />
+                </a>
+                <p class="cl-kicker">{categoryLabel(p.data.category)}</p>
+                <h3 class="cl-card__title">
+                  <a href={postHref(p)}>{p.data.title}</a>
+                </h3>
+                <p class="cl-metaline">
+                  {formatDateShort(getPublishDate(p))} · {readingMinutes(p)} min
+                </p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+    )}
+
+    <!-- ===== OSSERVATORIO NORMATIVA ===== -->
+    {normLead && (
+      <section id="normativa" class="cl-observatory" aria-labelledby="observatory-title">
+        <div class="cl-wrap">
+          <div class="cl-observatory__head">
+            <div>
+              <p class="cl-kicker cl-kicker--lime">Osservatorio</p>
+              <h2 id="observatory-title" class="cl-observatory__title">Normativa</h2>
+            </div>
+            <p class="cl-observatory__intro">
+              Leggi italiane, sentenze, regolamenti europei. Aggiornato dalla redazione con i
+              riferimenti ufficiali.
+            </p>
+          </div>
+
+          <div class="cl-observatory__grid">
+            <div class="cl-observatory__col">
+              <article class="cl-observatory__lead">
+                <h3 class="cl-observatory__leadTitle">
+                  <a href={postHref(normLead)}>{normLead.data.title}</a>
+                </h3>
+                {normLead.data.description && (
+                  <p class="cl-observatory__dek">{normLead.data.description}</p>
+                )}
+                <p class="cl-observatory__meta">
+                  Aggiornato · {formatDateLong(getPublishDate(normLead))}
+                </p>
+              </article>
+
+              {normLinks.length > 0 && (
+                <ul class="cl-observatory__links">
+                  {normLinks.map((p) => (
+                    <li>
+                      <a href={postHref(p)}>
+                        <span class="cl-observatory__flag" aria-hidden="true">IT</span>
+                        <span>{p.data.title}</span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div class="cl-observatory__divider" aria-hidden="true"></div>
+
+            <div class="cl-observatory__col">
+              <p class="cl-kicker cl-kicker--faint">Cronologia essenziale</p>
+              <ul class="cl-timeline">
+                {normTimeline.map((p) => (
+                  <li class="cl-timeline__item">
+                    <a href={postHref(p)}>
+                      <span class="cl-timeline__when">{formatMonthYear(getPublishDate(p))}</span>
+                      <span class="cl-timeline__what">{p.data.title}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+              <a class="cl-btn cl-btn--outlineLime" href="/categoria/normativa/">
+                Tutta la sezione Normativa <span aria-hidden="true">→</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+    )}
+
+    <!-- ===== CBD ===== -->
+    {cbdPosts.length > 0 && (
+      <section id="cbd" class="cl-cbd" aria-labelledby="cbd-title">
+        <div class="cl-wrap cl-cbd__grid">
+          <div>
+            <div class="cl-sechead">
+              <h2 id="cbd-title" class="cl-sechead__title">CBD</h2>
+              <span class="cl-sechead__aside cl-sechead__aside--plain">
+                Ricerca, prodotti, uso consapevole
+              </span>
+            </div>
+            <div class="cl-grid3">
+              {cbdPosts.map((p) => (
+                <article class="cl-tall">
+                  <a class="cl-tall__media" href={postHref(p)} tabindex="-1" aria-hidden="true">
                     <img
                       src={normalizeImage(p)}
-                      alt={p.data.coverAlt || p.data.title}
-                      width="400"
-                      height="225"
+                      alt=""
+                      width="260"
+                      height="347"
                       loading="lazy"
                       decoding="async"
                       referrerpolicy="no-referrer"
                       onerror="this.onerror=null;this.src='/images/placeholder.svg';"
                     />
+                  </a>
+                  <h3 class="cl-tall__title">
+                    <a href={postHref(p)}>{p.data.title}</a>
+                  </h3>
+                  <p class="cl-metaline">
+                    {categoryLabel(p.data.category)} · {readingMinutes(p)} min
+                  </p>
+                </article>
+              ))}
+            </div>
+          </div>
+
+          <aside class="cl-note" aria-label="Nota della redazione">
+            <p class="cl-kicker">Nota della redazione</p>
+            <p class="cl-note__text">
+              Canapalandia è un progetto informativo: non vendiamo prodotti e non forniamo
+              indicazioni mediche. Su CBD e cannabinoidi riportiamo studi, fonti normative e
+              posizioni ufficiali, segnalando sempre cosa resta incerto.
+            </p>
+            <a class="cl-note__link" href="/disclaimer-legale-canapalandia/">
+              Leggi il disclaimer <span aria-hidden="true">→</span>
+            </a>
+          </aside>
+        </div>
+      </section>
+    )}
+
+    <!-- ===== CANAPA ===== -->
+    {canapaMain.length > 0 && (
+      <section id="canapa" class="cl-hemp" aria-labelledby="hemp-title">
+        <div class="cl-wrap">
+          <div class="cl-sechead">
+            <h2 id="hemp-title" class="cl-sechead__title">Canapa</h2>
+            <span class="cl-sechead__aside cl-sechead__aside--plain">
+              Filiera · agricoltura · materiali · sostenibilità
+            </span>
+          </div>
+
+          <div class="cl-hemp__grid">
+            {canapaMain.map((p) => (
+              <article class="cl-portrait">
+                <a class="cl-portrait__media" href={postHref(p)} tabindex="-1" aria-hidden="true">
+                  <img
+                    src={normalizeImage(p)}
+                    alt=""
+                    width="360"
+                    height="432"
+                    loading="lazy"
+                    decoding="async"
+                    referrerpolicy="no-referrer"
+                    onerror="this.onerror=null;this.src='/images/placeholder.svg';"
+                  />
+                </a>
+                <p class="cl-kicker">{categoryLabel(p.data.category)}</p>
+                <h3 class="cl-portrait__title">
+                  <a href={postHref(p)}>{p.data.title}</a>
+                </h3>
+              </article>
+            ))}
+
+            {canapaList.length > 0 && (
+              <div class="cl-hemp__side">
+                <p class="cl-kicker cl-kicker--faint">Dalla filiera</p>
+                <ul class="cl-linklist">
+                  {canapaList.map((p) => (
+                    <li>
+                      <a href={postHref(p)}>{p.data.title}</a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+    )}
+
+    <!-- ===== APPROFONDIMENTI E GUIDE ===== -->
+    {guide.length > 0 && (
+      <section id="guide" class="cl-guides" aria-labelledby="guides-title">
+        <div class="cl-wrap cl-guides__grid">
+          <div class="cl-guides__intro">
+            <h2 id="guides-title" class="cl-guides__title">Approfondimenti<br />e guide</h2>
+            <p class="cl-guides__text">
+              Contenuti lunghi, aggiornati nel tempo. Il punto di partenza se arrivi ora su un
+              tema.
+            </p>
+            <a class="cl-morelink" href="/blog/">Tutte le guide →</a>
+          </div>
+
+          <ol class="cl-guides__list">
+            {guide.map((p, i) => (
+              <li class="cl-guides__item">
+                <a href={postHref(p)}>
+                  <span class="cl-guides__num" aria-hidden="true">
+                    {String(i + 1).padStart(2, "0")}
                   </span>
-                  <span class="hm-card__body">
-                    <span class="hm-meta">
-                      {categoryLabel(p.data.category) && (
-                        <span class="hm-kicker">{categoryLabel(p.data.category)}</span>
-                      )}
-                      <span class="hm-meta__dot" aria-hidden="true"></span>
-                      <span class="hm-meta__date">{formatDateShort(getPublishDate(p))}</span>
-                    </span>
-                    <span class="hm-card__title">{p.data.title}</span>
-                    {p.data.description && (
-                      <span class="hm-card__excerpt">{p.data.description}</span>
-                    )}
-                    <span class="hm-readmore hm-card__more">
-                      Leggi <span aria-hidden="true">→</span>
+                  <span>
+                    <span class="cl-guides__itemTitle">{p.data.title}</span>
+                    <span class="cl-metaline">
+                      Aggiornata · {readingMinutes(p)} min
                     </span>
                   </span>
                 </a>
-              </article>
+              </li>
             ))}
+          </ol>
+        </div>
+      </section>
+    )}
+
+    <!-- ===== NEWSLETTER ===== -->
+    <section id="newsletter" class="cl-news" aria-labelledby="news-title">
+      <div class="cl-wrap cl-news__grid">
+        <div>
+          <p class="cl-kicker cl-kicker--lime">Newsletter · gratuita</p>
+          <h2 id="news-title" class="cl-news__title">
+            Gli aggiornamenti su cannabis, CBD, normativa e canapa, via email.
+          </h2>
+          <p class="cl-news__text">
+            Una selezione redazionale: cosa è cambiato, cosa vale la pena leggere e i riferimenti
+            normativi ufficiali.
+          </p>
+        </div>
+
+        <form class="cl-news__form" id="homeNewsletter" method="post" action="/api/newsletter">
+          <input
+            class="cl-news__hp"
+            type="text"
+            name="hp"
+            tabindex="-1"
+            autocomplete="off"
+            aria-hidden="true"
+          />
+          <div class="cl-news__row">
+            <label class="sr-only" for="homeNewsletterEmail">Indirizzo email</label>
+            <input
+              id="homeNewsletterEmail"
+              class="cl-news__input"
+              type="email"
+              name="email"
+              placeholder="nome@email.it"
+              autocomplete="email"
+              required
+            />
+            <button class="cl-news__submit" type="submit">Iscrivimi</button>
           </div>
-        ) : (
-          <p class="hm-empty">Contenuti in importazione. Torna presto!</p>
-        )}
+          <label class="cl-news__consent">
+            <input type="checkbox" name="consent" value="true" required />
+            <span>
+              Acconsento al trattamento dei dati secondo la
+              <a href="/privacy-policy/">Privacy Policy</a>.
+            </span>
+          </label>
+          <p class="cl-news__feedback" id="homeNewsletterFeedback" role="status" aria-live="polite"></p>
+        </form>
       </div>
     </section>
 
-    <HomeActionCards />
+    <!-- ===== STRUMENTI E SOSTEGNO ===== -->
+    <div class="cl-actions">
+      <HomeActionCards />
+    </div>
+
+    <!-- ===== PARTNERSHIP ===== -->
+    <section class="cl-partners" aria-label="Pubblicità e partnership">
+      <div class="cl-wrap cl-partners__inner">
+        <p class="cl-partners__label">
+          <span class="cl-kicker cl-kicker--faint">Pubblicità e partnership</span>
+          <span class="cl-partners__text">
+            Spazi editoriali chiaramente segnalati, separati dai contenuti della redazione.
+          </span>
+        </p>
+        <a class="cl-btn cl-btn--outlineOcra" href="/pubblicita/">
+          Diventa partner <span aria-hidden="true">→</span>
+        </a>
+      </div>
+    </section>
   </div>
+</Layout>
 
-  <style>
-    /* ============================================================
-       Homepage — design approvato (Claude Design "Canapalandia Homepage")
-       Palette crema in light, adattamento verde profondo in dark.
-       Tutti i token sono locali alla home: nessuna pagina interna è toccata.
-    ============================================================ */
+<script>
+  /* ---------- In aggiornamento: rotazione di una notizia alla volta ----------
+     Nessuna libreria: fade + 6px verticali, 300ms, permanenza 6,5s.
+     L'avanzamento automatico si ferma su hover, su focus, quando la scheda
+     non è visibile e quando l'utente chiede meno movimento. */
+  const brief = document.querySelector<HTMLElement>("[data-brief]");
 
-    :global(html:has(.hm)) {
-      /* Superfici */
-      --hm-bg: #f6f2e7;
-      --hm-surface: #fffdf7;
-      --hm-surface-2: #ede7d6;
-      --hm-band: #1b3d23;
-      --hm-band-hover: #23502c;
+  if (brief) {
+    const items = Array.from(brief.querySelectorAll<HTMLElement>("[data-brief-item]"));
+    const viewport = brief.querySelector<HTMLElement>("[data-brief-viewport]");
+    const counter = brief.querySelector<HTMLElement>("[data-brief-count]");
+    const prev = brief.querySelector<HTMLButtonElement>("[data-brief-prev]");
+    const next = brief.querySelector<HTMLButtonElement>("[data-brief-next]");
 
-      /* Bordi */
-      --hm-border: #e3dcc9;
-      --hm-border-strong: #d6ceb8;
-      --hm-rule: #ded6c2;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const DWELL = 6500;
+    const STEP = 300;
 
-      /* Testo */
-      --hm-heading: #16281a;
-      --hm-text: #1c2a1e;
-      --hm-body: #4a5a4c;
-      --hm-soft: #5f6e60;
-      --hm-faint: #62705f;
+    let index = 0;
+    let timer: number | undefined;
+    let paused = false;
 
-      /* Accenti */
-      --hm-green: #1f4a2c;
-      --hm-green-hover: #2b6139;
-      --hm-olive: #6e8b3d;
-      --hm-olive-text: #55702c;
-      --hm-gold: #c6a15b;
-      /* Colore dei link testuali: separato dal fondo dei bottoni, così resta
-         leggibile anche quando le superfici diventano scure */
-      --hm-link: #1f4a2c;
-      --hm-link-hover: #55702c;
+    const pad = (n: number) => String(n).padStart(2, "0");
 
-      /* Testo sulla fascia scura */
-      --hm-band-title: #fffdf7;
-      --hm-band-body: #bfcdbb;
-      --hm-band-num: #9fb79a;
-      --hm-band-gold: #d8b978;
-      --hm-band-line: rgba(255, 253, 247, 0.16);
+    const go = (target: number, manual: boolean) => {
+      if (items.length < 2) return;
+      const nextIndex = (target + items.length) % items.length;
+      if (nextIndex === index) return;
 
-      --hm-shadow-sm: 0 1px 2px rgba(28, 42, 30, 0.05);
-      --hm-shadow-lg: 0 1px 2px rgba(28, 42, 30, 0.05), 0 18px 40px -28px rgba(28, 42, 30, 0.35);
-    }
+      const current = items[index];
+      const upcoming = items[nextIndex];
 
-    /* Dark: stessa struttura su superfici verde profondo (non un'inversione) */
-    :global(html[data-theme="dark"]:has(.hm)) {
-      --hm-bg: #14261b;
-      --hm-surface: #1b3d23;
-      --hm-surface-2: #16301c;
-      --hm-band: #101e15;
-      --hm-band-hover: #17301f;
+      // Annuncia il cambio solo quando è l'utente a chiederlo: la rotazione
+      // automatica resterebbe rumorosa per uno screen reader.
+      viewport?.setAttribute("aria-live", manual ? "polite" : "off");
 
-      --hm-border: #2e4a35;
-      --hm-border-strong: #3a5a42;
-      --hm-rule: #2e4a35;
+      current.classList.add("is-leave");
+      window.setTimeout(() => {
+        current.hidden = true;
+        current.classList.remove("is-leave");
+      }, STEP);
 
-      --hm-heading: #f4f2e6;
-      --hm-text: #efede0;
-      --hm-body: #c6d3c2;
-      --hm-soft: #bfcdbb;
-      --hm-faint: #9fb79a;
+      upcoming.hidden = false;
+      upcoming.classList.add("is-enter");
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => upcoming.classList.remove("is-enter"));
+      });
 
-      --hm-green: #2b6139;
-      --hm-green-hover: #35744a;
-      --hm-olive: #8fb05a;
-      --hm-olive-text: #9dc063;
-      --hm-gold: #d8b978;
-      --hm-link: #9dc063;
-      --hm-link-hover: #bcd98a;
+      index = nextIndex;
+      if (counter) counter.textContent = `${pad(index + 1)} / ${pad(items.length)}`;
+    };
 
-      --hm-band-title: #fffdf7;
-      --hm-band-body: #bfcdbb;
-      --hm-band-num: #9fb79a;
-      --hm-band-gold: #d8b978;
-      --hm-band-line: rgba(255, 253, 247, 0.14);
+    const stop = () => {
+      if (timer !== undefined) window.clearInterval(timer);
+      timer = undefined;
+    };
 
-      --hm-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.28);
-      --hm-shadow-lg: 0 1px 2px rgba(0, 0, 0, 0.3), 0 18px 40px -28px rgba(0, 0, 0, 0.7);
-    }
+    const start = () => {
+      stop();
+      if (paused || reduceMotion.matches || items.length < 2) return;
+      timer = window.setInterval(() => go(index + 1, false), DWELL);
+    };
 
-    /* Sfondo pagina + header allineati alla palette della home */
-    :global(html:has(.hm) body) {
-      background: var(--hm-bg);
-    }
+    const setPaused = (value: boolean) => {
+      paused = value;
+      if (value) stop();
+      else start();
+    };
 
-    :global(body:has(.hm) .site-header) {
-      background: color-mix(in srgb, var(--hm-bg) 88%, transparent);
-      border-bottom-color: var(--hm-border);
-    }
+    prev?.addEventListener("click", () => {
+      go(index - 1, true);
+      start();
+    });
+    next?.addEventListener("click", () => {
+      go(index + 1, true);
+      start();
+    });
 
-    :global(body:has(.hm) .site-header .nav a),
-    :global(body:has(.hm) .site-header .search),
-    :global(body:has(.hm) .site-header .menu-toggle),
-    :global(body:has(.hm) .site-header .theme-toggle__btn) {
-      color: var(--hm-text);
-    }
+    brief.addEventListener("pointerenter", () => setPaused(true));
+    brief.addEventListener("pointerleave", () => setPaused(false));
+    brief.addEventListener("focusin", () => setPaused(true));
+    brief.addEventListener("focusout", () => setPaused(false));
+    document.addEventListener("visibilitychange", () => setPaused(document.hidden));
+    reduceMotion.addEventListener("change", start);
 
-    :global(body:has(.hm) .nav a:hover) {
-      background: var(--hm-surface-2);
-      color: var(--hm-link);
-      box-shadow: none;
-    }
+    start();
+  }
 
-    /* Su mobile main#contenuto aggiunge padding: la home lo gestisce da sé */
-    @media (max-width: 767px) {
-      :global(main#contenuto:has(.hm)) {
-        padding-inline: 0 !important;
+  const form = document.getElementById("homeNewsletter") as HTMLFormElement | null;
+  const feedback = document.getElementById("homeNewsletterFeedback");
+
+  form?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!feedback) return;
+
+    const submit = form.querySelector("button[type=submit]") as HTMLButtonElement | null;
+    const payload = Object.fromEntries(new FormData(form).entries());
+
+    feedback.textContent = "Invio in corso…";
+    feedback.dataset.state = "pending";
+    if (submit) submit.disabled = true;
+
+    try {
+      const response = await fetch("/api/newsletter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (response.ok) {
+        feedback.textContent = data.message || "Iscrizione registrata. Controlla la tua email.";
+        feedback.dataset.state = "ok";
+        form.reset();
+      } else {
+        feedback.textContent = data.message || "Iscrizione non riuscita. Riprova più tardi.";
+        feedback.dataset.state = "error";
       }
-    }
-
-    .hm {
-      font-family: var(--font-ui);
-      color: var(--hm-text);
-      background: var(--hm-bg);
-      overflow-x: hidden;
-    }
-
-    .hm-wrap {
-      max-width: 1200px;
-      margin-inline: auto;
-      padding-inline: clamp(16px, 4vw, 40px);
-    }
-
-    /* ----- Elementi condivisi ----- */
-
-    /* Etichette di servizio: restano in Archivo anche se rese come h2/h3
-       (la regola globale su h1-h3 imposta il serif editoriale). */
-    .hm-overline,
-    .hm-updates__title {
-      font-family: var(--font-ui);
-    }
-
-    .hm-overline {
-      margin: 0 0 16px;
-      font-size: 12.5px;
-      font-weight: 600;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--hm-faint);
-    }
-
-    .hm-overline--gold {
-      margin: 0 0 8px;
-      color: var(--hm-band-gold);
-    }
-
-    .hm-kicker {
-      font-size: 11.5px;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--hm-olive-text);
-    }
-
-    .hm-meta {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      min-width: 0;
-      flex-wrap: wrap;
-    }
-
-    .hm-meta__dot {
-      width: 3px;
-      height: 3px;
-      border-radius: 50%;
-      background: var(--hm-border-strong);
-      flex-shrink: 0;
-    }
-
-    .hm-meta__date {
-      font-size: 11.5px;
-      font-weight: 500;
-      letter-spacing: 0.04em;
-      color: var(--hm-faint);
-      white-space: nowrap;
-    }
-
-    .hm-readmore {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 14.5px;
-      font-weight: 600;
-      color: var(--hm-link);
-      white-space: nowrap;
-    }
-
-    .hm-empty {
-      margin: 0;
-      padding: 24px;
-      border: 1px solid var(--hm-border);
-      border-radius: 14px;
-      background: var(--hm-surface);
-      color: var(--hm-body);
-    }
-
-    .hm-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 9px;
-      min-height: 48px;
-      padding: 0 22px;
-      border-radius: 999px;
-      border: 1px solid transparent;
-      font-size: 15px;
-      font-weight: 600;
-      text-decoration: none;
-      white-space: nowrap;
-      transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
-    }
-
-    .hm-btn--primary {
-      background: var(--hm-green);
-      color: #fffdf7;
-    }
-
-    .hm-btn--primary:hover {
-      background: var(--hm-green-hover);
-      color: #fffdf7;
-    }
-
-    .hm-btn--ghost {
-      background: transparent;
-      border-color: var(--hm-border-strong);
-      color: var(--hm-link);
-    }
-
-    .hm-btn--ghost:hover {
-      background: var(--hm-surface-2);
-      color: var(--hm-link-hover);
-    }
-
-    /* I link della home sono <a>: la regola globale
-       `html[data-theme="light"] a:not(.btn)...` di app.css ha specificità
-       superiore e forzerebbe il colore del testo a --ink-light. */
-    .hm-btn--primary,
-    .hm-btn--primary:hover {
-      color: #fffdf7 !important;
-    }
-
-    .hm-btn--ghost,
-    .hm-latest__all {
-      color: var(--hm-link) !important;
-    }
-
-    .hm-btn--ghost:hover,
-    .hm-latest__all:hover {
-      color: var(--hm-link-hover) !important;
-    }
-
-    .hm-paths__all {
-      color: var(--hm-band-gold) !important;
-    }
-
-    .hm-paths__all:hover {
-      color: #e8d3a4 !important;
-    }
-
-    .hm :where(a):focus-visible {
-      outline: 2px solid var(--hm-link);
-      outline-offset: 3px;
-      border-radius: 4px;
-    }
-
-    /* ----- Hero ----- */
-
-    .hm-hero {
-      padding-block: clamp(36px, 6vw, 76px) clamp(28px, 4vw, 52px);
-    }
-
-    .hm-hero__grid {
-      display: grid;
-      grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
-      gap: clamp(28px, 5vw, 72px);
-      align-items: start;
-    }
-
-    .hm-eyebrow {
-      margin: 0 0 18px;
-      display: inline-flex;
-      align-items: center;
-      gap: 9px;
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--hm-olive-text);
-    }
-
-    .hm-eyebrow__dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--hm-olive);
-      display: block;
-      flex: 0 0 auto;
-    }
-
-    .hm-hero__title {
-      margin: 0;
-      font-family: var(--font-editorial);
-      font-weight: 700;
-      font-size: clamp(34px, 4.6vw, 60px);
-      line-height: 1.04;
-      letter-spacing: -0.024em;
-      color: var(--hm-heading);
-      max-width: 19ch;
-      text-wrap: balance;
-    }
-
-    .hm-hero__lead {
-      margin: 20px 0 0;
-      font-size: clamp(16.5px, 1.3vw, 19px);
-      line-height: 1.58;
-      color: var(--hm-body);
-      max-width: 52ch;
-      text-wrap: pretty;
-    }
-
-    .hm-hero__cta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-top: 30px;
-    }
-
-    .hm-updates {
-      background: var(--hm-surface);
-      border: 1px solid var(--hm-border);
-      border-radius: 16px;
-      padding: 22px 24px 8px;
-      box-shadow: var(--hm-shadow-sm);
-    }
-
-    .hm-updates__title {
-      margin: 0 0 4px;
-      font-size: 11.5px;
-      font-weight: 600;
-      letter-spacing: 0.13em;
-      text-transform: uppercase;
-      color: var(--hm-faint);
-    }
-
-    .hm-updates__list {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-    }
-
-    .hm-updates__item {
-      border-top: 1px solid var(--hm-surface-2);
-      padding: 15px 0;
-    }
-
-    .hm-updates__link {
-      display: block;
-      text-decoration: none;
-    }
-
-    .hm-updates__headline {
-      display: block;
-      margin-top: 5px;
-      font-size: 16px;
-      font-weight: 600;
-      line-height: 1.32;
-      letter-spacing: -0.006em;
-      color: var(--hm-text);
-      text-wrap: pretty;
-    }
-
-    .hm-updates__link:hover .hm-updates__headline {
-      color: var(--hm-link);
-    }
-
-    /* ----- Inizia da qui ----- */
-
-    .hm-start {
-      padding-bottom: clamp(40px, 6vw, 76px);
-    }
-
-    .hm-start__grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 12px;
-    }
-
-    .hm-start__card {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      min-height: 76px;
-      padding: 16px 18px;
-      background: var(--hm-surface);
-      border: 1px solid var(--hm-border);
-      border-radius: 12px;
-      text-decoration: none;
-      transition: border-color 0.2s ease;
-    }
-
-    .hm-start__card:hover {
-      border-color: var(--hm-olive);
-    }
-
-    .hm-start__icon {
-      flex: 0 0 auto;
-      width: 34px;
-      height: 34px;
-      border-radius: 9px;
-      background: color-mix(in srgb, var(--hm-olive) 16%, var(--hm-surface));
-      display: grid;
-      place-items: center;
-    }
-
-    .hm-shape {
-      display: block;
-      width: 12px;
-      height: 12px;
-      border: 2px solid var(--hm-green);
-    }
-
-    html[data-theme="dark"] .hm-shape {
-      border-color: var(--hm-olive);
-    }
-
-    .hm-shape--circle {
-      border-radius: 50%;
-    }
-
-    .hm-shape--diamond {
-      width: 11px;
-      height: 11px;
-      transform: rotate(45deg);
-    }
-
-    .hm-shape--bar {
-      width: 14px;
-      height: 2px;
-      border: 0;
-      background: var(--hm-green);
-    }
-
-    html[data-theme="dark"] .hm-shape--bar {
-      background: var(--hm-olive);
-    }
-
-    .hm-start__body {
-      flex: 1 1 auto;
-      min-width: 0;
-    }
-
-    .hm-start__title {
-      display: block;
-      font-size: 15.5px;
-      font-weight: 600;
-      color: var(--hm-text);
-    }
-
-    .hm-start__desc {
-      display: block;
-      margin-top: 3px;
-      font-size: 13px;
-      line-height: 1.4;
-      color: var(--hm-soft);
-    }
-
-    .hm-start__arrow {
-      flex: 0 0 auto;
-      color: var(--hm-olive-text);
-      font-size: 16px;
-    }
-
-    /* ----- Percorsi tematici (fascia scura) ----- */
-
-    .hm-paths {
-      background: var(--hm-band);
-      padding-block: clamp(44px, 6vw, 72px);
-    }
-
-    .hm-paths__head {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: flex-end;
-      justify-content: space-between;
-      gap: 16px;
-      margin-bottom: clamp(24px, 3vw, 38px);
-    }
-
-    .hm-paths__title {
-      margin: 0;
-      font-family: var(--font-editorial);
-      font-weight: 600;
-      font-size: clamp(24px, 2.6vw, 34px);
-      line-height: 1.12;
-      letter-spacing: -0.012em;
-      color: var(--hm-band-title);
-    }
-
-    .hm-paths__all {
-      font-size: 14.5px;
-      font-weight: 600;
-      color: var(--hm-band-gold);
-      text-decoration: none;
-      white-space: nowrap;
-    }
-
-    .hm-paths__all:hover {
-      color: #e8d3a4;
-    }
-
-    .hm-paths__grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 1px;
-      background: var(--hm-band-line);
-    }
-
-    .hm-paths__tile {
-      display: block;
-      padding: clamp(20px, 2.4vw, 28px) clamp(16px, 2vw, 24px);
-      background: var(--hm-band);
-      min-height: 150px;
-      text-decoration: none;
-      transition: background 0.2s ease;
-    }
-
-    .hm-paths__tile:hover {
-      background: var(--hm-band-hover);
-    }
-
-    .hm-paths__num {
-      display: block;
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      color: var(--hm-band-num);
-    }
-
-    .hm-paths__name {
-      display: block;
-      margin-top: 12px;
-      font-family: var(--font-editorial);
-      font-size: 21px;
-      font-weight: 600;
-      letter-spacing: -0.008em;
-      color: var(--hm-band-title);
-    }
-
-    .hm-paths__desc {
-      display: block;
-      margin-top: 8px;
-      font-size: 13.5px;
-      line-height: 1.5;
-      color: var(--hm-band-body);
-    }
-
-    /* ----- Intestazioni di sezione ----- */
-
-    .hm-sechead {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: clamp(22px, 3vw, 32px);
-    }
-
-    .hm-sechead--split {
-      flex-wrap: wrap;
-      justify-content: space-between;
-    }
-
-    .hm-sechead__title {
-      margin: 0;
-      font-family: var(--font-editorial);
-      font-weight: 600;
-      font-size: clamp(25px, 2.7vw, 36px);
-      line-height: 1.08;
-      letter-spacing: -0.014em;
-      color: var(--hm-heading);
-    }
-
-    .hm-sechead__rule {
-      flex: 1 1 auto;
-      height: 1px;
-      background: var(--hm-rule);
-      display: block;
-    }
-
-    /* ----- In evidenza ----- */
-
-    .hm-featured {
-      padding-block: clamp(44px, 6vw, 84px) clamp(24px, 3vw, 40px);
-    }
-
-    .hm-featured__grid {
-      display: grid;
-      grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-      gap: clamp(24px, 3.5vw, 48px);
-      align-items: start;
-    }
-
-    .hm-lead {
-      background: var(--hm-surface);
-      border: 1px solid var(--hm-border);
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: var(--hm-shadow-lg);
-    }
-
-    .hm-lead__link {
-      display: block;
-      text-decoration: none;
-    }
-
-    .hm-lead__media {
-      display: block;
-      aspect-ratio: 16 / 9;
-      background: var(--hm-surface-2);
-      overflow: hidden;
-    }
-
-    .hm-lead__media img,
-    .hm-card__media img,
-    .hm-side__thumb img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-
-    .hm-lead__body {
-      display: block;
-      padding: clamp(20px, 2.4vw, 30px);
-    }
-
-    .hm-lead__title {
-      display: block;
-      margin-top: 12px;
-      font-family: var(--font-editorial);
-      font-size: clamp(24px, 2.4vw, 34px);
-      font-weight: 700;
-      line-height: 1.14;
-      letter-spacing: -0.018em;
-      color: var(--hm-heading);
-      text-wrap: pretty;
-    }
-
-    .hm-lead__excerpt {
-      display: block;
-      margin-top: 14px;
-      font-size: 16.5px;
-      line-height: 1.62;
-      color: var(--hm-body);
-      max-width: 58ch;
-      text-wrap: pretty;
-    }
-
-    .hm-lead__link:hover .hm-lead__title {
-      color: var(--hm-link);
-    }
-
-    .hm-lead .hm-readmore {
-      margin-top: 18px;
-    }
-
-    .hm-side__list {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-    }
-
-    .hm-side__item {
-      border-top: 1px solid var(--hm-rule);
-      padding: 18px 0;
-    }
-
-    .hm-side__item:last-child {
-      border-bottom: 1px solid var(--hm-rule);
-    }
-
-    .hm-side__link {
-      display: flex;
-      gap: 14px;
+    } catch {
+      feedback.textContent = "Connessione non riuscita. Riprova più tardi.";
+      feedback.dataset.state = "error";
+    } finally {
+      if (submit) submit.disabled = false;
+    }
+  });
+</script>
+
+<style>
+  /* ============================================================
+     Token della home — design "Canapalandia Homepage" (1c).
+     Verde identitario mantenuto, superficie editoriale = carta.
+     Radius 3px, divider a filo, nessuna ombra.
+     ============================================================ */
+
+  :global(html:has(.cl)) {
+    /* Superfici */
+    --cl-surface: #fdfcf8;
+    --cl-paper: #f2efe4;
+    --cl-mint: #edf0e4;
+    --cl-band-dark: #14261a;
+    --cl-band-sage: #3f6b4a;
+
+    /* Linee */
+    --cl-rule: #dfd9c7;
+    --cl-rule-soft: #e4dfd0;
+    --cl-rule-strong: #14261a;
+
+    /* Testo */
+    --cl-heading: #14261a;
+    --cl-text: #23261f;
+    --cl-body: #4a4735;
+    --cl-body-soft: #5c594a;
+    --cl-muted: #6b6858;
+
+    /* Accenti */
+    --cl-kicker: #3f6b4a;
+    --cl-ocra: #b5762a;
+    --cl-lime: #c6e36a;
+
+    /* Etichette e bottoni: il pill verde è lo stesso di `.header-cta` */
+    --cl-badge-bg: #14261a;
+    --cl-badge-fg: #fdfcf8;
+    --cl-btn-bg: #1f4a2c;
+    --cl-btn-bg-hover: #2b6139;
+    --cl-btn-fg: #fffdf7;
+
+    /* Raggi: derivati dalla scala globale (--r-xs 2 / --r-sm 3 / --r-md 4).
+       La pill resta solo sul badge di categoria. */
+    --cl-r-hero: var(--r-md);
+    --cl-r-media: var(--r-sm);
+    --cl-r-thumb: var(--r-xs);
+    --cl-r-module: var(--r-md);
+    --cl-r-field: var(--r-md);
+    --cl-r-pill: var(--r-full);
+
+    /* Spazi: multipli della scala --space-* (8/12/16/24/32/48) del progetto */
+    --cl-section: clamp(40px, 5vw, 64px);
+    --cl-band: clamp(32px, 4vw, 48px);
+    /* Stacco fra la fascia "In aggiornamento" e l'apertura: più corto del
+       ritmo fra sezioni, così l'hero sale. */
+    --cl-hero-top: clamp(20px, 2.4vw, 32px);
+    --cl-col-gap: clamp(24px, 3.4vw, 48px);
+    --cl-card-gap: clamp(20px, 2.6vw, 32px);
+    --cl-head-gap: var(--space-2xl);
+
+    /* Testo sulle fasce scure: identico nei due temi */
+    --cl-on-dark-title: #fdfcf8;
+    --cl-on-dark-text: #e9ede4;
+    --cl-on-dark-soft: #a7b79f;
+    --cl-on-dark-faint: #7e9276;
+    --cl-on-dark-line: rgba(255, 255, 255, 0.14);
+
+    --cl-serif: "Newsreader", Georgia, "Times New Roman", serif;
+  }
+
+  /* Dark: stessa architettura su superfici verde profondo (non un'inversione) */
+  :global(html[data-theme="dark"]:has(.cl)) {
+    --cl-surface: #14261b;
+    --cl-paper: #122219;
+    --cl-mint: #16301c;
+    --cl-band-dark: #0e2015;
+    --cl-band-sage: #2f5539;
+
+    --cl-rule: #2c4634;
+    --cl-rule-soft: #27402f;
+    --cl-rule-strong: #3c5c44;
+
+    --cl-heading: #f4f2e6;
+    --cl-text: #efede0;
+    --cl-body: #c6d3c2;
+    --cl-body-soft: #bfcdbb;
+    --cl-muted: #9fb79a;
+
+    --cl-kicker: #9dc063;
+    --cl-ocra: #d8a05a;
+
+    --cl-badge-bg: #c6e36a;
+    --cl-badge-fg: #0e2015;
+  }
+
+  /* Header e footer restano i componenti globali: nessuna variante di colore,
+     radius o interazione riservata alla home. */
+
+  /* Su mobile main#contenuto aggiunge padding: la home lo gestisce da sé */
+  @media (max-width: 767px) {
+    :global(main#contenuto:has(.cl)) {
+      padding-inline: 0 !important;
+    }
+  }
+
+  /* ---------- Base ---------- */
+
+  .cl {
+    font-family: var(--font-ui);
+    color: var(--cl-text);
+    background: var(--cl-surface);
+    overflow-x: hidden;
+  }
+
+  /* app.css colora ogni link con un selettore molto specifico
+     (`a:not(.btn):not(.cardLink)…`): lo neutralizziamo una volta sola e
+     distribuiamo il colore con una custom property, così ogni blocco può
+     dichiarare il proprio link senza rincorrere la specificità. */
+  :global(
+      .cl.cl
+        a:not(.btn):not(.cardLink):not(.blog-filters__link):not(.filter-chip):not(.tax-chip)
+    ) {
+    color: var(--cl-link, inherit);
+    text-decoration: none;
+    transition: color 160ms ease;
+  }
+
+  :global(
+      .cl.cl
+        a:not(.btn):not(.cardLink):not(.blog-filters__link):not(.filter-chip):not(.tax-chip):hover
+    ) {
+    color: var(--cl-link-hover, var(--cl-kicker));
+  }
+
+  .cl-wrap {
+    max-width: 1240px;
+    margin-inline: auto;
+    padding-inline: clamp(16px, 4vw, 56px);
+  }
+
+  /* Le regole di base valgono sui blocchi editoriali della home, non sui
+     componenti globali annidati (HomeActionCards), che conservano tipografia,
+     raggi e colori del resto del sito. */
+  .cl :where(img):not(.cl-actions *) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .cl :where(h1, h2, h3, h4):not(.cl-actions *) {
+    font-family: var(--cl-serif);
+    font-weight: 500;
+    color: var(--cl-heading);
+    text-wrap: pretty;
+    margin: 0;
+  }
+
+  /* ---------- Elementi condivisi ---------- */
+
+  .cl-kicker {
+    margin: 0;
+    font-family: var(--font-ui);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--cl-kicker);
+  }
+
+  .cl-kicker--ocra {
+    color: var(--cl-ocra);
+  }
+
+  .cl-kicker--lime {
+    color: var(--cl-lime);
+  }
+
+  .cl-kicker--faint {
+    color: var(--cl-muted);
+    letter-spacing: 0.16em;
+  }
+
+  .cl-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--cl-badge-fg);
+    background: var(--cl-badge-bg);
+    padding: 5px 12px;
+    border-radius: var(--cl-r-pill);
+  }
+
+  .cl-metaline {
+    margin: 0;
+    font-size: 11.5px;
+    color: var(--cl-muted);
+  }
+
+  .cl-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    display: inline-block;
+    flex: none;
+  }
+
+  .cl-dot--ocra {
+    background: var(--cl-ocra);
+  }
+
+  .cl-dot--lime {
+    background: var(--cl-lime);
+  }
+
+  /* Stessa grammatica di `.header-cta`: Archivo semibold, hover -1px */
+  .cl-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    height: 44px;
+    padding: 0 var(--space-xl);
+    border-radius: var(--r-md);
+    font-family: var(--font-ui);
+    font-size: 14px;
+    font-weight: var(--font-semibold);
+    line-height: 1;
+    white-space: nowrap;
+    border: 1px solid transparent;
+    transition: background 200ms ease, border-color 200ms ease, transform 150ms ease;
+  }
+
+  .cl-btn:hover {
+    transform: translateY(-1px);
+  }
+
+  .cl-btn--primary {
+    background: var(--cl-btn-bg);
+    --cl-link: var(--cl-btn-fg);
+    --cl-link-hover: var(--cl-btn-fg);
+  }
+
+  .cl-btn--primary:hover {
+    background: var(--cl-btn-bg-hover);
+  }
+
+  .cl-btn--outlineLime {
+    border-color: var(--cl-lime);
+    --cl-link: var(--cl-lime);
+    --cl-link-hover: #0e2015;
+  }
+
+  .cl-btn--outlineLime:hover {
+    background: var(--cl-lime);
+  }
+
+  .cl-btn--outlineOcra {
+    height: 42px;
+    border-color: var(--cl-ocra);
+    font-size: 13px;
+    --cl-link: var(--cl-ocra);
+    --cl-link-hover: #fff9ef;
+  }
+
+  .cl-btn--outlineOcra:hover {
+    background: var(--cl-ocra);
+  }
+
+  .cl-morelink {
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    --cl-link: var(--cl-kicker);
+  }
+
+  .cl-sechead {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-xl);
+    border-bottom: 1px solid var(--cl-rule-strong);
+    padding-bottom: var(--space-md);
+    margin-bottom: var(--cl-head-gap);
+  }
+
+  .cl-sechead--rule {
+    border-bottom-width: 2px;
+  }
+
+  .cl-sechead__title {
+    font-size: clamp(24px, 3vw, 30px);
+    letter-spacing: -0.01em;
+  }
+
+  .cl-sechead--rule .cl-sechead__title {
+    font-size: clamp(25px, 3.2vw, 32px);
+  }
+
+  .cl-sechead__aside {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--cl-muted);
+  }
+
+  .cl-sechead__aside--plain {
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  /* ---------- Utility bar ----------
+     Livello 2 della gerarchia: deve leggersi come nota di servizio, non
+     come seconda navigazione. Superficie di pagina, testo attenuato,
+     un solo separatore. */
+
+  .cl-strip {
+    background: var(--cl-surface);
+    border-bottom: 1px solid var(--cl-rule-soft);
+    font-size: 11.5px;
+    letter-spacing: 0.01em;
+    --cl-link: var(--cl-muted);
+    --cl-link-hover: var(--cl-kicker);
+  }
+
+  .cl-strip__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-lg);
+    min-height: 34px;
+    padding-block: 6px;
+  }
+
+  .cl-strip p {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    color: var(--cl-muted);
+  }
+
+  .cl-strip__sep {
+    opacity: 0.4;
+  }
+
+  /* ---------- In aggiornamento ----------
+     Una sola notizia per volta: titolo intero, contatore e controlli.
+     Fascia compatta e riconoscibile, subordinata all'header. */
+
+  .cl-brief {
+    background: var(--cl-paper);
+    border-bottom: 1px solid var(--cl-rule);
+  }
+
+  .cl-brief__inner {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-xl);
+    min-height: 52px;
+    padding-block: var(--space-md);
+  }
+
+  .cl-brief__label {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin: 0;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--cl-heading);
+    white-space: nowrap;
+  }
+
+  .cl-brief__viewport {
+    min-width: 0;
+  }
+
+  .cl-brief__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .cl-brief__item {
+    font-size: 14px;
+    line-height: 1.4;
+    color: var(--cl-body);
+    --cl-link: var(--cl-text);
+    transition: opacity 300ms ease, transform 300ms ease;
+  }
+
+  .cl-brief__item[hidden] {
+    display: none;
+  }
+
+  /* Stati della transizione: entra dal basso, esce verso l'alto (6px) */
+  .cl-brief__item.is-enter {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  .cl-brief__item.is-leave {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+
+  .cl-brief__nav {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin: 0;
+  }
+
+  .cl-brief__count {
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.08em;
+    color: var(--cl-muted);
+  }
+
+  .cl-brief__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid var(--cl-rule);
+    border-radius: var(--r-md);
+    background: transparent;
+    color: var(--cl-body);
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+    transition: border-color 200ms ease, color 200ms ease;
+  }
+
+  .cl-brief__btn:hover {
+    border-color: var(--cl-rule-strong);
+    color: var(--cl-heading);
+  }
+
+  /* ---------- Hero ---------- */
+
+  .cl-hero {
+    padding-block: var(--cl-hero-top) var(--cl-section);
+  }
+
+  .cl-hero__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 372px;
+    gap: var(--cl-col-gap);
+    align-items: start;
+  }
+
+  .cl-lead__media {
+    display: block;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-radius: var(--cl-r-hero);
+    background: var(--cl-rule-soft);
+  }
+
+  .cl-lead__kicker {
+    margin: var(--space-xl) 0 var(--space-md);
+  }
+
+  /* Metadata dell'apertura: sotto l'abstract, separati da un filo,
+     ancorano la riga di CTA senza creare un box. */
+  .cl-lead__meta {
+    border-top: 1px solid var(--cl-rule);
+    padding-top: var(--space-lg);
+    margin: var(--space-xl) 0 0;
+  }
+
+  .cl-lead__title {
+    font-size: clamp(30px, 4.4vw, 56px);
+    line-height: 1.04;
+    letter-spacing: -0.022em;
+    max-width: 15.5em;
+  }
+
+  /* Standfirst: è la voce dell'articolo, primo registro dopo il titolo. */
+  .cl-lead__dek {
+    font-size: 18.5px;
+    line-height: 1.5;
+    letter-spacing: -0.005em;
+    color: var(--cl-text);
+    margin: var(--space-lg) 0 0;
+    max-width: 52ch;
+    text-wrap: pretty;
+  }
+
+  /* Abstract: secondo registro, di servizio. Corpo minore, interlinea più
+     ampia, colore attenuato e misura più lunga: si legge come nota, non
+     come continuazione del sommario. */
+  .cl-lead__abstract {
+    font-size: 14.5px;
+    line-height: 1.75;
+    color: var(--cl-muted);
+    margin: var(--space-lg) 0 0;
+    max-width: 68ch;
+    text-wrap: pretty;
+  }
+
+  .cl-lead__foot {
+    display: flex;
+    align-items: center;
+    gap: var(--space-lg);
+    flex-wrap: wrap;
+    margin: var(--space-lg) 0 0;
+  }
+
+  .cl-byline {
+    font-size: 13px;
+    color: var(--cl-muted);
+  }
+
+  .cl-rail {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2xl);
+    border-left: 1px solid var(--cl-rule);
+    padding-left: clamp(24px, 2.6vw, 32px);
+  }
+
+  .cl-rail__media {
+    display: block;
+    aspect-ratio: 3 / 2;
+    overflow: hidden;
+    border-radius: var(--cl-r-media);
+    background: var(--cl-rule-soft);
+    margin-bottom: var(--space-md);
+  }
+
+  .cl-rail__title {
+    font-size: 23px;
+    line-height: 1.17;
+    margin: var(--space-sm) 0 0;
+  }
+
+  .cl-rail__title + .cl-metaline {
+    margin-top: var(--space-md);
+  }
+
+  .cl-rail__dek {
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: var(--cl-body-soft);
+    margin: var(--space-md) 0 0;
+  }
+
+  .cl-rail__second {
+    border-top: 1px solid var(--cl-rule);
+    padding-top: var(--space-xl);
+  }
+
+  .cl-rail__second .cl-metaline {
+    margin-top: var(--space-md);
+  }
+
+  .cl-flash {
+    background: var(--cl-band-dark);
+    border-radius: var(--cl-r-module);
+    padding: var(--space-xl);
+    --cl-link: var(--cl-on-dark-text);
+    --cl-link-hover: var(--cl-lime);
+  }
+
+  .cl-flash__head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 var(--space-lg);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--cl-lime);
+  }
+
+  .cl-flash__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .cl-flash__item + .cl-flash__item {
+    border-top: 1px solid var(--cl-on-dark-line);
+  }
+
+  .cl-flash__item a {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: var(--space-md);
+    padding-block: var(--space-md);
+    font-size: 14px;
+    line-height: 1.35;
+  }
+
+  .cl-flash__item:first-child a {
+    padding-top: 0;
+  }
+
+  .cl-flash__item:last-child a {
+    padding-bottom: 0;
+  }
+
+  .cl-flash__date {
+    font-size: 11px;
+    color: var(--cl-on-dark-faint);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- In evidenza ---------- */
+
+  .cl-highlight {
+    background: var(--cl-paper);
+    border-block: 1px solid var(--cl-rule);
+    padding-block: var(--cl-section);
+  }
+
+  .cl-highlight__grid {
+    display: grid;
+    grid-template-columns: 1.55fr 1fr;
+    gap: var(--cl-col-gap);
+    align-items: start;
+  }
+
+  .cl-inchiesta__media {
+    display: block;
+    aspect-ratio: 21 / 9;
+    overflow: hidden;
+    border-radius: var(--cl-r-hero);
+    background: var(--cl-rule-soft);
+  }
+
+  .cl-inchiesta__body {
+    margin-top: var(--space-xl);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 260px;
+    gap: var(--space-2xl);
+    align-items: end;
+  }
+
+  .cl-inchiesta__title {
+    font-size: clamp(25px, 2.9vw, 37px);
+    line-height: 1.08;
+    letter-spacing: -0.015em;
+    margin-top: var(--space-sm);
+  }
+
+  .cl-inchiesta__dek {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--cl-body);
+    margin: 0;
+    border-left: 2px solid var(--cl-lime);
+    padding-left: var(--space-lg);
+  }
+
+  .cl-stack {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .cl-stack__item + .cl-stack__item {
+    border-top: 1px solid var(--cl-rule);
+  }
+
+  .cl-stack__link {
+    display: grid;
+    grid-template-columns: 104px minmax(0, 1fr);
+    gap: var(--space-lg);
+    align-items: start;
+    padding-block: var(--space-lg);
+  }
+
+  .cl-stack__item:first-child .cl-stack__link {
+    padding-top: 0;
+  }
+
+  .cl-stack__item:last-child .cl-stack__link {
+    padding-bottom: 0;
+  }
+
+  .cl-stack__thumb {
+    display: block;
+    aspect-ratio: 1;
+    overflow: hidden;
+    border-radius: var(--cl-r-thumb);
+    background: var(--cl-rule-soft);
+  }
+
+  .cl-stack__body {
+    display: block;
+  }
+
+  .cl-stack__title {
+    display: block;
+    font-family: var(--cl-serif);
+    font-size: 19px;
+    line-height: 1.2;
+    font-weight: 500;
+    color: var(--cl-heading);
+    margin: var(--space-sm) 0 var(--space-md);
+    text-wrap: pretty;
+  }
+
+  .cl-stack__link:hover .cl-stack__title {
+    color: var(--cl-kicker);
+  }
+
+  /* ---------- Ultime notizie ---------- */
+
+  .cl-latest {
+    padding-block: var(--cl-section);
+  }
+
+  .cl-grid4 {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--cl-card-gap);
+  }
+
+  .cl-card__media {
+    display: block;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    border-radius: var(--cl-r-media);
+    background: var(--cl-rule-soft);
+    margin-bottom: var(--space-lg);
+  }
+
+  .cl-card__title {
+    font-size: 21px;
+    line-height: 1.19;
+    margin: var(--space-sm) 0 var(--space-md);
+  }
+
+  /* ---------- Osservatorio normativa ---------- */
+
+  .cl-observatory {
+    background: var(--cl-band-dark);
+    color: var(--cl-on-dark-text);
+    padding-block: var(--cl-section);
+    --cl-link: var(--cl-on-dark-text);
+    --cl-link-hover: var(--cl-lime);
+  }
+
+  .cl-observatory__head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--space-2xl);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+    padding-bottom: var(--space-lg);
+    margin-bottom: var(--cl-head-gap);
+  }
+
+  .cl-observatory__title {
+    font-size: clamp(26px, 3.4vw, 34px);
+    color: var(--cl-on-dark-title);
+    margin-top: var(--space-sm);
+  }
+
+  .cl-observatory__intro {
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: var(--cl-on-dark-soft);
+    margin: 0;
+    max-width: 42ch;
+    text-align: right;
+  }
+
+  .cl-observatory__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 1px minmax(0, 1.1fr);
+    gap: var(--cl-col-gap);
+    align-items: start;
+  }
+
+  .cl-observatory__divider {
+    background: rgba(255, 255, 255, 0.14);
+    align-self: stretch;
+  }
+
+  .cl-observatory__lead {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+    padding-bottom: var(--space-xl);
+    margin-bottom: var(--space-xl);
+  }
+
+  .cl-observatory__leadTitle {
+    font-size: clamp(23px, 2.4vw, 29px);
+    line-height: 1.13;
+    color: var(--cl-on-dark-title);
+  }
+
+  .cl-observatory__dek {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--cl-on-dark-soft);
+    margin: 12px 0 0;
+  }
+
+  .cl-observatory__meta {
+    font-size: 11.5px;
+    color: var(--cl-on-dark-faint);
+    margin: 12px 0 0;
+  }
+
+  .cl-observatory__links {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+  }
+
+  .cl-observatory__links a {
+    display: flex;
+    gap: 12px;
+    font-size: 15px;
+    line-height: 1.35;
+  }
+
+  .cl-observatory__flag {
+    color: var(--cl-lime);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding-top: 3px;
+    flex: none;
+  }
+
+  .cl-observatory .cl-kicker--faint {
+    color: var(--cl-on-dark-faint);
+    margin-bottom: var(--space-lg);
+  }
+
+  .cl-timeline {
+    list-style: none;
+    margin: 0 0 var(--space-xl);
+    padding: 0;
+  }
+
+  .cl-timeline__item {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .cl-timeline__item:last-child {
+    border-bottom: 0;
+  }
+
+  .cl-timeline__item a {
+    display: grid;
+    grid-template-columns: 92px minmax(0, 1fr);
+    gap: var(--space-lg);
+    padding-block: var(--space-lg);
+  }
+
+  .cl-timeline__item:first-child a {
+    padding-top: 0;
+  }
+
+  .cl-timeline__item:last-child a {
+    padding-bottom: 0;
+  }
+
+  .cl-timeline__when {
+    font-size: 12px;
+    color: var(--cl-lime);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .cl-timeline__what {
+    font-size: 14.5px;
+    line-height: 1.4;
+  }
+
+  /* ---------- CBD ---------- */
+
+  .cl-cbd {
+    background: var(--cl-surface);
+    padding-block: var(--cl-section);
+  }
+
+  .cl-cbd__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: var(--cl-col-gap);
+    align-items: start;
+  }
+
+  .cl-grid3 {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--cl-card-gap);
+  }
+
+  .cl-tall__media {
+    display: block;
+    aspect-ratio: 3 / 4;
+    overflow: hidden;
+    border-radius: var(--cl-r-media);
+    background: var(--cl-rule-soft);
+  }
+
+  .cl-tall__title {
+    font-size: 20px;
+    line-height: 1.2;
+    margin: var(--space-lg) 0 var(--space-md);
+  }
+
+  .cl-note {
+    background: var(--cl-mint);
+    border-radius: var(--cl-r-module);
+    padding: var(--space-xl);
+  }
+
+  .cl-note .cl-kicker {
+    margin-bottom: var(--space-lg);
+  }
+
+  .cl-note__text {
+    font-family: var(--cl-serif);
+    font-size: 19px;
+    line-height: 1.45;
+    color: var(--cl-heading);
+    margin: 0;
+    text-wrap: pretty;
+  }
+
+  .cl-note__link {
+    display: inline-block;
+    margin-top: var(--space-lg);
+    font-size: 12.5px;
+    font-weight: 600;
+    --cl-link: var(--cl-kicker);
+  }
+
+  /* ---------- Canapa ---------- */
+
+  .cl-hemp {
+    background: var(--cl-mint);
+    border-top: 1px solid var(--cl-rule);
+    padding-block: var(--cl-section);
+  }
+
+  .cl-hemp__grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1.2fr 1fr;
+    gap: var(--cl-col-gap);
+    align-items: start;
+  }
+
+  .cl-portrait__media {
+    display: block;
+    aspect-ratio: 5 / 6;
+    overflow: hidden;
+    border-radius: var(--cl-r-media);
+    background: var(--cl-rule-soft);
+    margin-bottom: var(--space-lg);
+  }
+
+  .cl-portrait__title {
+    font-size: clamp(21px, 2.2vw, 27px);
+    line-height: 1.15;
+    margin-top: var(--space-sm);
+  }
+
+  .cl-hemp__side .cl-kicker--faint {
+    color: var(--cl-body-soft);
+    margin-bottom: var(--space-lg);
+  }
+
+  .cl-linklist {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    color: var(--cl-text);
+  }
+
+  .cl-linklist li + li {
+    border-top: 1px solid var(--cl-rule);
+  }
+
+  .cl-linklist a {
+    display: block;
+    padding-block: var(--space-lg);
+    font-size: 15.5px;
+    line-height: 1.38;
+  }
+
+  .cl-linklist li:first-child a {
+    padding-top: 0;
+  }
+
+  .cl-linklist li:last-child a {
+    padding-bottom: 0;
+  }
+
+  /* ---------- Approfondimenti e guide ---------- */
+
+  .cl-guides {
+    background: var(--cl-surface);
+    padding-block: var(--cl-section);
+  }
+
+  .cl-guides__grid {
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    gap: var(--cl-col-gap);
+    align-items: start;
+  }
+
+  .cl-guides__title {
+    font-size: clamp(24px, 3vw, 30px);
+    margin-bottom: var(--space-lg);
+  }
+
+  .cl-guides__text {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--cl-body-soft);
+    margin: 0 0 var(--space-lg);
+  }
+
+  .cl-guides__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--cl-col-gap);
+  }
+
+  .cl-guides__item {
+    border-bottom: 1px solid var(--cl-rule-soft);
+  }
+
+  .cl-guides__item a {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr);
+    gap: var(--space-lg);
+    align-items: start;
+    padding-block: var(--space-lg);
+  }
+
+  .cl-guides__item:nth-child(1) a,
+  .cl-guides__item:nth-child(2) a {
+    padding-top: 0;
+  }
+
+  .cl-guides__num {
+    font-family: var(--cl-serif);
+    font-size: 19px;
+    color: var(--cl-ocra);
+  }
+
+  .cl-guides__itemTitle {
+    display: block;
+    font-family: var(--cl-serif);
+    font-size: 21px;
+    line-height: 1.2;
+    font-weight: 500;
+    color: var(--cl-heading);
+    margin-bottom: var(--space-sm);
+    text-wrap: pretty;
+  }
+
+  .cl-guides__item a:hover .cl-guides__itemTitle {
+    color: var(--cl-kicker);
+  }
+
+  /* ---------- Newsletter ---------- */
+
+  .cl-news {
+    background: var(--cl-band-sage);
+    padding-block: var(--cl-section);
+    --cl-link: var(--cl-lime);
+    --cl-link-hover: #fdfcf8;
+  }
+
+  .cl-news__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 440px;
+    gap: var(--cl-col-gap);
+    align-items: center;
+  }
+
+  .cl-news__title {
+    font-size: clamp(26px, 3.6vw, 36px);
+    line-height: 1.13;
+    color: var(--cl-on-dark-title);
+    max-width: 22ch;
+    margin-top: var(--space-lg);
+  }
+
+  .cl-news__text {
+    font-size: 14.5px;
+    line-height: 1.6;
+    color: #dce6d5;
+    margin: var(--space-lg) 0 0;
+    max-width: 56ch;
+  }
+
+  .cl-news__form {
+    margin: 0;
+  }
+
+  .cl-news__hp {
+    position: absolute;
+    left: -9999px;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .cl-news__row {
+    display: flex;
+    gap: var(--space-md);
+  }
+
+  .cl-news__input {
+    flex: 1;
+    min-width: 0;
+    height: 50px;
+    padding: 0 20px;
+    background: #fdfcf8;
+    border: 0;
+    border-radius: var(--cl-r-field);
+    font-family: var(--font-ui);
+    font-size: 14px;
+    color: #23261f;
+  }
+
+  .cl-news__input::placeholder {
+    color: #9a9784;
+  }
+
+  .cl-news__submit {
+    height: 50px;
+    padding: 0 28px;
+    background: #14261a;
+    color: #f2efe4;
+    border: 0;
+    border-radius: var(--cl-r-field);
+    font-family: var(--font-ui);
+    font-size: 14px;
+    font-weight: var(--font-semibold);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 200ms ease, transform 150ms ease;
+  }
+
+  .cl-news__submit:hover {
+    background: #0e2015;
+    transform: translateY(-1px);
+  }
+
+  .cl-news__submit:disabled {
+    opacity: 0.6;
+    cursor: progress;
+  }
+
+  .cl-news__consent {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-sm);
+    margin-top: var(--space-md);
+    font-size: 11.5px;
+    line-height: 1.5;
+    color: #c3d3bb;
+  }
+
+  .cl-news__consent a {
+    text-decoration: underline;
+  }
+
+  .cl-news__consent input {
+    margin-top: 2px;
+    accent-color: #14261a;
+  }
+
+  .cl-news__feedback {
+    margin: var(--space-md) 0 0;
+    font-size: 12px;
+    min-height: 1em;
+    color: #dce6d5;
+  }
+
+  .cl-news__feedback[data-state="error"] {
+    color: #f6d9a8;
+  }
+
+  .cl-news__feedback[data-state="ok"] {
+    color: var(--cl-lime);
+  }
+
+  /* ---------- Strumenti e sostegno ---------- */
+
+  /* HomeActionCards è costruito per una superficie scura (titoli, badge e
+     bordi bianchi): la fascia gli restituisce il contrasto per cui è
+     disegnato, senza toccare il componente. */
+  .cl-actions {
+    background: var(--cl-band-dark);
+    padding-top: var(--cl-section);
+    /* Stesso colore che il componente dichiara per sé in tema chiaro */
+    --cl-link: #f0faf3;
+    --cl-link-hover: #ffffff;
+  }
+
+  /* ---------- Partnership ---------- */
+
+  .cl-partners {
+    background: var(--cl-surface);
+    border-top: 1px solid var(--cl-rule-soft);
+    padding-block: var(--space-2xl);
+  }
+
+  .cl-partners__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-xl);
+    flex-wrap: wrap;
+  }
+
+  .cl-partners__label {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .cl-partners__text {
+    font-size: 13px;
+    color: var(--cl-body-soft);
+    max-width: 62ch;
+  }
+
+  /* ---------- Responsive ---------- */
+
+  @media (max-width: 1120px) {
+    .cl-hero__grid,
+    .cl-cbd__grid,
+    .cl-news__grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .cl-rail {
+      border-left: 0;
+      border-top: 1px solid var(--cl-rule);
+      padding-left: 0;
+      padding-top: var(--space-2xl);
+    }
+
+    .cl-highlight__grid,
+    .cl-guides__grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .cl-observatory__grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-2xl);
+    }
+
+    .cl-observatory__divider {
+      display: none;
+    }
+
+    .cl-observatory__head {
+      flex-direction: column;
       align-items: flex-start;
-      text-decoration: none;
+      gap: var(--space-lg);
     }
 
-    .hm-side__thumb {
-      flex: 0 0 88px;
-      aspect-ratio: 4 / 3;
-      border-radius: 8px;
-      background: var(--hm-surface-2);
-      overflow: hidden;
+    .cl-observatory__intro {
+      text-align: left;
     }
 
-    .hm-side__body {
-      flex: 1 1 auto;
-      min-width: 0;
+    .cl-hemp__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .hm-side__title {
-      display: block;
-      margin-top: 5px;
-      font-size: 15.5px;
-      font-weight: 600;
-      line-height: 1.34;
-      letter-spacing: -0.006em;
-      color: var(--hm-text);
-      text-wrap: pretty;
+    .cl-hemp__side {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @media (max-width: 900px) {
+    .cl-grid4 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .hm-side__link:hover .hm-side__title {
-      color: var(--hm-link);
+    .cl-inchiesta__body {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-lg);
+    }
+  }
+
+  @media (max-width: 720px) {
+    /* Mobile: la utility bar resta solo come riga di posizionamento,
+       i link di servizio vivono già nel footer.
+       Il selettore ripete `.cl-strip` per battere `.cl-strip p`. */
+    .cl-strip .cl-strip__links {
+      display: none;
     }
 
-    .hm-side__date {
-      display: block;
-      margin-top: 6px;
-      font-size: 12.5px;
-      color: var(--hm-faint);
+    .cl-strip__inner {
+      min-height: 0;
+      padding-block: var(--space-md);
     }
 
-    /* ----- Ultimi articoli ----- */
-
-    .hm-latest {
-      padding-block: clamp(32px, 4vw, 56px) clamp(40px, 6vw, 76px);
+    .cl-strip__tag {
+      line-height: 1.45;
     }
 
-    .hm-latest__all {
+    /* In aggiornamento: etichetta e controlli sopra, titolo intero sotto.
+       Nessun troncamento, una sola notizia. */
+    .cl-brief__inner {
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 6px var(--space-sm);
+      min-height: 0;
+      padding-block: 10px;
+    }
+
+    .cl-brief__label {
+      font-size: 9.5px;
+      letter-spacing: 0.12em;
+    }
+
+    /* Etichetta e controlli sulla prima riga, titolo intero sulla seconda */
+    .cl-brief__label {
+      grid-row: 1;
+      grid-column: 1;
+    }
+
+    .cl-brief__nav {
+      grid-row: 1;
+      grid-column: 2;
+    }
+
+    .cl-brief__viewport {
+      grid-row: 2;
+      grid-column: 1 / -1;
+    }
+
+    .cl-brief__item {
       font-size: 14.5px;
-      font-weight: 600;
-      color: var(--hm-link);
-      text-decoration: none;
-      white-space: nowrap;
+      line-height: 1.3;
     }
 
-    .hm-latest__all:hover {
-      color: var(--hm-link-hover);
+    /* Contatore e frecce arretrano: servono, non devono pesare. */
+    .cl-brief__nav {
+      gap: 2px;
     }
 
-    .hm-latest__grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: clamp(18px, 2.2vw, 28px);
+    .cl-brief__count {
+      font-size: 10px;
+      margin-right: 2px;
     }
 
-    .hm-card {
-      display: flex;
-      flex-direction: column;
-      background: var(--hm-surface);
-      border: 1px solid var(--hm-border);
-      border-radius: 14px;
-      overflow: hidden;
-      box-shadow: var(--hm-shadow-sm);
-      transition: border-color 0.2s ease;
+    .cl-brief__btn {
+      width: 32px;
+      height: 32px;
+      border-color: transparent;
+      color: var(--cl-muted);
+      font-size: 12px;
     }
 
-    .hm-card:hover {
-      border-color: var(--hm-border-strong);
+    .cl-lead__title {
+      max-width: none;
     }
 
-    .hm-card__link {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      text-decoration: none;
-    }
-
-    .hm-card__media {
-      display: block;
-      aspect-ratio: 16 / 9;
-      background: var(--hm-surface-2);
-      overflow: hidden;
-    }
-
-    .hm-card__body {
-      display: flex;
-      flex-direction: column;
-      flex: 1 1 auto;
-      gap: 10px;
-      padding: clamp(18px, 1.8vw, 24px);
-    }
-
-    .hm-card__title {
-      display: block;
-      font-family: var(--font-editorial);
-      font-size: 20.5px;
-      font-weight: 600;
-      line-height: 1.26;
-      letter-spacing: -0.011em;
-      color: var(--hm-heading);
-      text-wrap: pretty;
-    }
-
-    .hm-card__link:hover .hm-card__title {
-      color: var(--hm-link);
-    }
-
-    .hm-card__excerpt {
+    /* L'abstract su mobile resta un assaggio: due o tre righe, poi si
+       continua nell'articolo. */
+    .cl-lead__abstract {
+      font-size: 14px;
+      line-height: 1.6;
+      margin-top: var(--space-md);
       display: -webkit-box;
       -webkit-line-clamp: 3;
       -webkit-box-orient: vertical;
       overflow: hidden;
-      font-size: 14.5px;
-      line-height: 1.6;
-      color: var(--hm-body);
-      text-wrap: pretty;
     }
 
-    .hm-card__more {
-      margin-top: auto;
-      padding-top: 12px;
-      font-size: 14px;
+    .cl-lead__dek {
+      font-size: 16.5px;
+      line-height: 1.45;
     }
 
-    /* ----- Breakpoint ----- */
-
-    @media (max-width: 1023px) {
-      .hm-hero__grid {
-        grid-template-columns: 1fr;
-      }
-
-      .hm-hero__title {
-        max-width: 24ch;
-      }
-
-      .hm-start__grid,
-      .hm-paths__grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      .hm-featured__grid {
-        grid-template-columns: 1fr;
-      }
-
-      .hm-latest__grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
+    .cl-lead__kicker {
+      margin: var(--space-lg) 0 var(--space-sm);
     }
 
-    @media (max-width: 599px) {
-      .hm-hero__title {
-        max-width: none;
-      }
-
-      .hm-hero__cta {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      .hm-start__grid,
-      .hm-paths__grid,
-      .hm-latest__grid {
-        grid-template-columns: 1fr;
-      }
-
-      .hm-paths__tile {
-        min-height: 0;
-      }
-
-      .hm-updates {
-        padding: 18px 18px 6px;
-      }
+    .cl-lead__meta {
+      padding-top: var(--space-md);
+      margin-top: var(--space-lg);
     }
 
-    @media (prefers-reduced-motion: reduce) {
-      .hm * {
-        transition: none !important;
-      }
+    .cl-grid3,
+    .cl-hemp__grid,
+    .cl-guides__list {
+      grid-template-columns: minmax(0, 1fr);
     }
-  </style>
-</Layout>
+
+    /* A colonna singola i formati verticali diventano sproporzionati */
+    .cl-tall__media,
+    .cl-portrait__media {
+      aspect-ratio: 4 / 3;
+    }
+
+    .cl-guides__item:nth-child(2) a {
+      padding-top: var(--space-lg);
+    }
+
+    .cl-stack__link {
+      grid-template-columns: 96px minmax(0, 1fr);
+      gap: var(--space-lg);
+    }
+
+    .cl-news__row {
+      flex-direction: column;
+    }
+
+    .cl-news__submit {
+      width: 100%;
+    }
+  }
+
+  /* Sotto i 600px la utility bar esce di scena: la riga di posizionamento
+     è già nel footer e qui ruberebbe soltanto altezza al contenuto. */
+  @media (max-width: 600px) {
+    .cl-strip {
+      display: none;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .cl-grid4 {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .cl-lead__foot {
+      gap: 12px;
+    }
+
+    .cl-btn--primary {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cl * {
+      transition: none !important;
+    }
+
+    /* La rotazione automatica viene disattivata anche via JS: qui togliamo
+       lo spostamento verticale, restano fade e controlli manuali. */
+    .cl-brief__item.is-enter,
+    .cl-brief__item.is-leave {
+      transform: none;
+    }
+  }
+</style>
