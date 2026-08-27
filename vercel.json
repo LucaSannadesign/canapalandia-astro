@@ -7,6 +7,16 @@
   ],
   "redirects": [
     {
+      "source": "/en/:slug",
+      "destination": "/blog/:slug/",
+      "permanent": true
+    },
+    {
+      "source": "/en/:slug/",
+      "destination": "/blog/:slug/",
+      "permanent": true
+    },
+    {
       "source": "/categoria/cbd-sport-recupero",
       "destination": "/categoria/salute-benessere/",
       "permanent": true
@@ -116,7 +126,6 @@
       "destination": "/frasi-ribaltate/",
       "permanent": true
     },
-  
     {
       "source": "/cannabis-light-corte-giustizia-ue",
       "destination": "/blog/cannabis-light-corte-giustizia-ue/",
