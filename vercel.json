@@ -7,6 +7,26 @@
   ],
   "redirects": [
     {
+      "source": "/en/cannabis-laws-italy-2025",
+      "destination": "/blog/cannabis-laws-italy/",
+      "permanent": true
+    },
+    {
+      "source": "/en/cannabis-laws-italy-2025/",
+      "destination": "/blog/cannabis-laws-italy/",
+      "permanent": true
+    },
+    {
+      "source": "/en/canapalandia-blog-benefits-of-light-cannabis-and-cbd",
+      "destination": "/blog/",
+      "permanent": true
+    },
+    {
+      "source": "/en/canapalandia-blog-benefits-of-light-cannabis-and-cbd/",
+      "destination": "/blog/",
+      "permanent": true
+    },
+    {
       "source": "/en/:slug",
       "destination": "/blog/:slug/",
       "permanent": true
