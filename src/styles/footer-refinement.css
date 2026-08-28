@@ -60,9 +60,26 @@ body {
     grid-row: 4;
   }
 
+  /* La colonna Esplora resta un landmark <nav> (niente display:contents):
+     con subgrid i suoi due blocchi cadono sulle stesse righe della griglia
+     del footer, così i due elenchi partono alla stessa quota di Supporto.
+     Senza subgrid il fallback impila comunque titolo ed elenco. */
   .footer-inner > .footer-menu[aria-label="Esplora"] {
     grid-column: 2;
     grid-row: 1 / span 4;
+    display: grid;
+    grid-template-rows: subgrid;
+  }
+
+  .footer-inner > .footer-menu[aria-label="Esplora"] > .footer-title {
+    grid-row: 1;
+    align-self: start;
+    margin-bottom: 2px;
+  }
+
+  .footer-inner > .footer-menu[aria-label="Esplora"] > .footer-links {
+    grid-row: 2 / span 3;
+    align-self: start;
   }
 
   .footer-inner > .footer-menu[aria-label="Supporto"] > .footer-title {
