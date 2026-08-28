@@ -8,9 +8,61 @@
       minmax(260px, 1.15fr)
       minmax(300px, 1.25fr)
       minmax(360px, 1.5fr);
-    gap: 32px;
+    grid-template-rows: auto auto auto auto auto;
+    column-gap: 32px;
+    row-gap: 10px;
     padding-top: 24px;
     padding-bottom: 18px;
+  }
+
+  /* Sul desktop scomponiamo solo i wrapper di brand e supporto nel grid
+     del footer: in questo modo i social possono stare realmente sotto
+     il logo senza duplicare markup o cambiare il layout mobile/tablet. */
+  .footer-brand,
+  .footer-inner > .footer-menu[aria-label="Supporto"] {
+    display: contents;
+  }
+
+  .footer-logo {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: start;
+  }
+
+  .footer-social {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: start;
+    margin-top: 2px;
+  }
+
+  .footer-tagline {
+    grid-column: 1;
+    grid-row: 3;
+    margin-top: 4px;
+  }
+
+  .footer-credits {
+    grid-column: 1;
+    grid-row: 4;
+  }
+
+  .footer-inner > .footer-menu[aria-label="Esplora"] {
+    grid-column: 2;
+    grid-row: 1 / span 4;
+  }
+
+  .footer-inner > .footer-menu[aria-label="Supporto"] > .footer-title {
+    grid-column: 3;
+    grid-row: 1;
+    align-self: start;
+    margin-bottom: 2px;
+  }
+
+  .footer-inner > .footer-menu[aria-label="Supporto"] > .footer-links {
+    grid-column: 3;
+    grid-row: 2 / span 3;
+    align-self: start;
   }
 
   .footer-menu .footer-links {
@@ -25,12 +77,10 @@
     margin-bottom: 12px;
   }
 
-  .footer-social {
-    margin-top: 14px;
-  }
-
   .footer-copy {
-    margin-top: 2px;
+    grid-column: 1 / -1;
+    grid-row: 5;
+    margin-top: 4px;
     padding-top: 14px;
   }
 }
