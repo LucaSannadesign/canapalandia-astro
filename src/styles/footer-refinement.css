@@ -1,4 +1,5 @@
 @import "./home-theme-refinement.css";
+@import "./category-refinement.css";
 
 /* Fix doppia scrollbar verticale
    app.css usa overflow-x:hidden su html e body: su Chromium/Opera questo
