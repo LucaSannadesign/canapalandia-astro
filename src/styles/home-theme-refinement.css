@@ -109,3 +109,124 @@ html[data-theme="light"] body:has(.cl) .cl-sechead {
 body:has(.cl) :where(.cl a, .cl button, .site-header a, .site-header button):focus-visible {
   outline-color: #c8a95a;
 }
+
+/* ============================================================
+   Strumenti e sostegno — da card SaaS a moduli editoriali
+   La fascia resta scura, ma i due blocchi devono sembrare rubriche del
+   magazine: meno ombre, meno sollevamento, immagini più compatte.
+   ============================================================ */
+body:has(.cl) .cl-actions .action-cards-section {
+  padding-bottom: var(--cl-section);
+}
+
+body:has(.cl) .cl-actions .action-cards-grid {
+  gap: clamp(20px, 3vw, 36px);
+}
+
+body:has(.cl) .cl-actions .action-card {
+  background: rgba(255, 255, 255, 0.025);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: none;
+  transition: border-color 180ms ease, background 180ms ease;
+}
+
+body:has(.cl) .cl-actions .action-card:hover {
+  transform: none;
+  background: rgba(255, 255, 255, 0.045);
+  border-color: rgba(198, 227, 106, 0.22);
+  box-shadow: none;
+}
+
+body:has(.cl) .cl-actions .action-card__body {
+  gap: 0;
+  padding: clamp(20px, 2.6vw, 30px);
+}
+
+body:has(.cl) .cl-actions .action-card__meta {
+  margin-bottom: 18px;
+}
+
+body:has(.cl) .cl-actions .action-card__meta-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(233, 237, 228, 0.58);
+}
+
+body:has(.cl) .cl-actions .action-card__badge {
+  padding: 4px 9px;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  border-color: rgba(198, 227, 106, 0.18);
+  background: rgba(198, 227, 106, 0.05);
+  color: #dce8b5;
+}
+
+body:has(.cl) .cl-actions .action-card__title {
+  margin: 0;
+  font-family: "Newsreader", var(--font-editorial);
+  font-size: clamp(28px, 3vw, 36px);
+  line-height: 1.05;
+  font-weight: 500;
+  letter-spacing: -0.018em;
+  color: #f7f4e9;
+}
+
+body:has(.cl) .cl-actions .action-card__description {
+  margin: 14px 0 0;
+  max-width: 58ch;
+  font-size: 14px;
+  line-height: 1.62;
+  color: rgba(233, 237, 228, 0.74);
+}
+
+body:has(.cl) .cl-actions .action-card__links {
+  margin-top: 20px;
+  gap: 8px;
+}
+
+body:has(.cl) .cl-actions .action-card__link {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: var(--r-md);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+body:has(.cl) .cl-actions .action-card__link--primary {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+body:has(.cl) .cl-actions .action-card__link--secondary {
+  border-color: transparent;
+  background: transparent;
+}
+
+body:has(.cl) .cl-actions .action-card__media {
+  height: auto;
+  aspect-ratio: 16 / 9;
+  margin-top: 24px;
+  border-color: rgba(255, 255, 255, 0.10);
+  background: rgba(0, 0, 0, 0.16);
+}
+
+body:has(.cl) .cl-actions .action-card:hover .action-card__media {
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.20);
+}
+
+body:has(.cl) .cl-actions .action-card:hover .action-card__media-img {
+  transform: scale(1.015);
+}
+
+@media (max-width: 767px) {
+  body:has(.cl) .cl-actions .action-card__title {
+    font-size: 28px;
+  }
+
+  body:has(.cl) .cl-actions .action-card__media {
+    margin-top: 20px;
+  }
+}
