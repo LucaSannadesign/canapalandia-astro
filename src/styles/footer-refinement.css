@@ -1,3 +1,13 @@
+/* Fix doppia scrollbar verticale
+   app.css usa overflow-x:hidden su html e body: su Chromium/Opera questo
+   puo' trasformare entrambi in scroll container verticali. `clip` evita
+   lo scroll orizzontale senza creare una seconda area di scorrimento. */
+html,
+body {
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
 /* Footer desktop refinement
    Obiettivo: usare meglio la larghezza disponibile e ridurre l'altezza
    percepita senza aggiungere contenuti di riempimento. */
