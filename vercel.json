@@ -1,11 +1,39 @@
 {
   "rewrites": [
     {
+      "source": "/wp-content/uploads/2024/09/donazioni-canapalandia-800x800.webp",
+      "destination": "/images/home/supporta-canapalandia-banner-640x360.webp"
+    },
+    {
+      "source": "/wp-content/uploads/2024/09/donazioni-canapalandia-768x768.webp",
+      "destination": "/images/home/supporta-canapalandia-banner-640x360.webp"
+    },
+    {
       "source": "/wp-content/uploads/:path*",
       "destination": "https://media.canapalandia.com/uploads/:path*"
     }
   ],
   "redirects": [
+    {
+      "source": "/en/cannabis-laws-italy-2025",
+      "destination": "/blog/cannabis-laws-italy/",
+      "permanent": true
+    },
+    {
+      "source": "/en/cannabis-laws-italy-2025/",
+      "destination": "/blog/cannabis-laws-italy/",
+      "permanent": true
+    },
+    {
+      "source": "/en/canapalandia-blog-benefits-of-light-cannabis-and-cbd",
+      "destination": "/blog/",
+      "permanent": true
+    },
+    {
+      "source": "/en/canapalandia-blog-benefits-of-light-cannabis-and-cbd/",
+      "destination": "/blog/",
+      "permanent": true
+    },
     {
       "source": "/en/:slug",
       "destination": "/blog/:slug/",

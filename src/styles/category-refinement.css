@@ -10,27 +10,31 @@ body:has(.category-hero) .category-hero {
   background: color-mix(in oklab, var(--panel) 94%, var(--bg));
 }
 
-/* Silhouette botanica astratta: il gradiente viene "ritagliato" dalla
-   foglia e crea la dissolvenza richiesta senza aggiungere immagini o JS. */
+/* Silhouette botanica: foglia palmata a sette lobi, tenuta a piena altezza
+   dentro la hero (prima veniva ritagliata e si leggeva solo come sfumatura).
+   Il gradiente è ritagliato dalla foglia: pieno sul lato destro, dissolto
+   verso sinistra. Nessuna immagine esterna, nessun JS. */
 body:has(.category-hero) .category-hero::after {
   content: "";
   position: absolute;
   z-index: 0;
   top: 50%;
-  right: -2%;
-  width: min(46%, 520px);
-  aspect-ratio: 1 / 1;
-  transform: translateY(-50%) rotate(-5deg);
+  right: 1%;
+  height: 98%;
+  aspect-ratio: 414 / 422;
+  width: auto;
+  transform: translateY(-50%) rotate(-4deg);
   pointer-events: none;
   background: linear-gradient(
-    90deg,
-    transparent 0%,
-    color-mix(in oklab, var(--brand) 4%, transparent) 22%,
-    color-mix(in oklab, var(--brand) 18%, transparent) 52%,
-    color-mix(in oklab, var(--brand) 48%, transparent) 100%
+    92deg,
+    transparent 2%,
+    color-mix(in oklab, var(--brand) 6%, transparent) 26%,
+    color-mix(in oklab, var(--brand) 20%, transparent) 52%,
+    color-mix(in oklab, var(--brand) 44%, transparent) 78%,
+    color-mix(in oklab, var(--brand) 60%, transparent) 100%
   );
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 420 420'%3E%3Cg fill='black'%3E%3Cpath d='M210 365C194 286 191 197 210 55c19 142 16 231 0 310Z'/%3E%3Cpath d='M205 303C164 246 129 184 104 99c66 61 100 127 118 199Z'/%3E%3Cpath d='M216 303c41-57 76-119 101-204-66 61-100 127-118 199Z'/%3E%3Cpath d='M195 289C139 256 91 214 49 147c78 31 126 77 164 137Z'/%3E%3Cpath d='M225 289c56-33 104-75 146-142-78 31-126 77-164 137Z'/%3E%3Cpath d='M190 270c-60-12-113-37-165-85 79 4 137 31 183 77Z'/%3E%3Cpath d='M230 270c60-12 113-37 165-85-79 4-137 31-183 77Z'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 420 420'%3E%3Cg fill='black'%3E%3Cpath d='M210 365C194 286 191 197 210 55c19 142 16 231 0 310Z'/%3E%3Cpath d='M205 303C164 246 129 184 104 99c66 61 100 127 118 199Z'/%3E%3Cpath d='M216 303c41-57 76-119 101-204-66 61-100 127-118 199Z'/%3E%3Cpath d='M195 289C139 256 91 214 49 147c78 31 126 77 164 137Z'/%3E%3Cpath d='M225 289c56-33 104-75 146-142-78 31-126 77-164 137Z'/%3E%3Cpath d='M190 270c-60-12-113-37-165-85 79 4 137 31 183 77Z'/%3E%3Cpath d='M230 270c60-12 113-37 165-85-79 4-137 31-183 77Z'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 413.9 422'%3E%3Cpath fill='black' d='M206.9 344 191 328.1 175.1 312 155.2 314.7 138.2 304.1 117.5 310.4 99.4 304.9 79.1 309.7 60.1 308.1 40.7 308.7 40.7 308.7 40.7 308.7 58.2 317.1 76.2 323.3 92.8 335.9 111.6 338.3 127.9 352.5 147.8 349.7 164.9 360.3 185.9 352.1 206.9 344ZM206.9 344 194.3 314.1 181.7 284.1 153.7 277 136.7 253.6 105.7 251 84.4 233.8 54.7 229.3 30.3 216.8 4 207.1 4 207.1 4 207.1 22.8 227.8 43.5 245.8 58.9 271.7 82.7 284.9 96.8 312.7 124.9 319.8 142 343 174.5 343.5 206.9 344ZM206.9 344 209.9 302.6 213 261.2 185.2 236.8 179.3 200.4 145.6 179.3 131.4 147.5 100.2 125 79.6 96.7 55.3 70.4 55.3 70.4 55.3 70.4 64.7 104.9 77.8 137.4 80.3 175.8 99.8 204.7 99.8 244.5 127.6 268.8 133.5 305.2 170.3 324.6 206.9 344ZM206.9 344 231.5 306.2 256.3 268.4 242.8 230.7 256.4 192.9 235.4 155.1 238.7 117.3 220.8 79.6 216.2 41.8 206.9 4 206.9 4 206.9 4 197.7 41.8 193.1 79.6 175.2 117.3 178.5 155.1 157.5 192.9 171.1 230.7 157.6 268.4 182.4 306.2 206.9 344ZM206.9 344 243.6 324.6 280.4 305.2 286.3 268.8 314.1 244.5 314.1 204.7 333.6 175.8 336.1 137.4 349.2 104.9 358.6 70.4 358.6 70.4 358.6 70.4 334.3 96.7 313.7 125 282.5 147.5 268.3 179.3 234.6 200.4 228.7 236.8 200.9 261.2 204 302.6 206.9 344ZM206.9 344 239.4 343.5 271.9 343 289 319.8 317.1 312.7 331.2 284.9 355 271.7 370.4 245.8 391.1 227.8 409.9 207.1 409.9 207.1 409.9 207.1 383.6 216.8 359.2 229.3 329.5 233.8 308.2 251 277.2 253.6 260.2 277 232.2 284.1 219.6 314.1 206.9 344ZM206.9 344 228 352.1 249 360.3 266.1 349.7 286 352.5 302.3 338.3 321.1 335.9 337.7 323.3 355.7 317.1 373.2 308.7 373.2 308.7 373.2 308.7 353.8 308.1 334.8 309.7 314.5 304.9 296.4 310.4 275.7 304.1 258.7 314.7 238.8 312 222.9 328.1 206.9 344ZM201.9 348 211.9 348 209.9 418 203.9 418Z'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 413.9 422'%3E%3Cpath fill='black' d='M206.9 344 191 328.1 175.1 312 155.2 314.7 138.2 304.1 117.5 310.4 99.4 304.9 79.1 309.7 60.1 308.1 40.7 308.7 40.7 308.7 40.7 308.7 58.2 317.1 76.2 323.3 92.8 335.9 111.6 338.3 127.9 352.5 147.8 349.7 164.9 360.3 185.9 352.1 206.9 344ZM206.9 344 194.3 314.1 181.7 284.1 153.7 277 136.7 253.6 105.7 251 84.4 233.8 54.7 229.3 30.3 216.8 4 207.1 4 207.1 4 207.1 22.8 227.8 43.5 245.8 58.9 271.7 82.7 284.9 96.8 312.7 124.9 319.8 142 343 174.5 343.5 206.9 344ZM206.9 344 209.9 302.6 213 261.2 185.2 236.8 179.3 200.4 145.6 179.3 131.4 147.5 100.2 125 79.6 96.7 55.3 70.4 55.3 70.4 55.3 70.4 64.7 104.9 77.8 137.4 80.3 175.8 99.8 204.7 99.8 244.5 127.6 268.8 133.5 305.2 170.3 324.6 206.9 344ZM206.9 344 231.5 306.2 256.3 268.4 242.8 230.7 256.4 192.9 235.4 155.1 238.7 117.3 220.8 79.6 216.2 41.8 206.9 4 206.9 4 206.9 4 197.7 41.8 193.1 79.6 175.2 117.3 178.5 155.1 157.5 192.9 171.1 230.7 157.6 268.4 182.4 306.2 206.9 344ZM206.9 344 243.6 324.6 280.4 305.2 286.3 268.8 314.1 244.5 314.1 204.7 333.6 175.8 336.1 137.4 349.2 104.9 358.6 70.4 358.6 70.4 358.6 70.4 334.3 96.7 313.7 125 282.5 147.5 268.3 179.3 234.6 200.4 228.7 236.8 200.9 261.2 204 302.6 206.9 344ZM206.9 344 239.4 343.5 271.9 343 289 319.8 317.1 312.7 331.2 284.9 355 271.7 370.4 245.8 391.1 227.8 409.9 207.1 409.9 207.1 409.9 207.1 383.6 216.8 359.2 229.3 329.5 233.8 308.2 251 277.2 253.6 260.2 277 232.2 284.1 219.6 314.1 206.9 344ZM206.9 344 228 352.1 249 360.3 266.1 349.7 286 352.5 302.3 338.3 321.1 335.9 337.7 323.3 355.7 317.1 373.2 308.7 373.2 308.7 373.2 308.7 353.8 308.1 334.8 309.7 314.5 304.9 296.4 310.4 275.7 304.1 258.7 314.7 238.8 312 222.9 328.1 206.9 344ZM201.9 348 211.9 348 209.9 418 203.9 418Z'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
   opacity: 0.72;
 }
 
@@ -50,11 +54,11 @@ html[data-theme="dark"] body:has(.category-hero) .category-hero {
 }
 
 html[data-theme="light"] body:has(.category-hero) .category-hero::after {
-  opacity: 0.56;
+  opacity: 0.62;
 }
 
 html[data-theme="dark"] body:has(.category-hero) .category-hero::after {
-  opacity: 0.72;
+  opacity: 0.78;
 }
 
 /* Il contatore deve restare un dato editoriale, non una card autonoma. */
@@ -93,18 +97,20 @@ html[data-theme="dark"] body:has(.category-hero) .nav a[aria-current="page"]:hov
 
 @media (max-width: 900px) {
   body:has(.category-hero) .category-hero::after {
-    right: -12%;
-    width: min(58%, 430px);
-    opacity: 0.42;
+    right: 1%;
+    height: 92%;
+    opacity: 0.45;
   }
 }
 
 @media (max-width: 700px) {
+  /* Su mobile la hero si impila: la foglia arretra in alto a destra e
+     resta un accenno, senza mai passare dietro al testo. */
   body:has(.category-hero) .category-hero::after {
-    width: 72%;
-    right: -24%;
-    top: 34%;
-    opacity: 0.30;
+    right: -20%;
+    top: 24%;
+    height: 54%;
+    opacity: 0.2;
   }
 }
 
