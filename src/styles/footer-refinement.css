@@ -1,0 +1,36 @@
+/* Footer desktop refinement
+   Obiettivo: usare meglio la larghezza disponibile e ridurre l'altezza
+   percepita senza aggiungere contenuti di riempimento. */
+
+@media (min-width: 1180px) {
+  .footer-inner {
+    grid-template-columns:
+      minmax(260px, 1.15fr)
+      minmax(300px, 1.25fr)
+      minmax(360px, 1.5fr);
+    gap: 32px;
+    padding-top: 24px;
+    padding-bottom: 18px;
+  }
+
+  .footer-menu .footer-links {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(5, auto);
+    grid-auto-flow: column;
+    column-gap: 20px;
+    row-gap: 8px;
+  }
+
+  .footer-title {
+    margin-bottom: 12px;
+  }
+
+  .footer-social {
+    margin-top: 14px;
+  }
+
+  .footer-copy {
+    margin-top: 2px;
+    padding-top: 14px;
+  }
+}
