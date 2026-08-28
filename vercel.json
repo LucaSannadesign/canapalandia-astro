@@ -5,6 +5,10 @@
       "destination": "/images/home/supporta-canapalandia-banner-640x360.webp"
     },
     {
+      "source": "/wp-content/uploads/2024/09/donazioni-canapalandia-768x768.webp",
+      "destination": "/images/home/supporta-canapalandia-banner-640x360.webp"
+    },
+    {
       "source": "/wp-content/uploads/:path*",
       "destination": "https://media.canapalandia.com/uploads/:path*"
     }
