@@ -1,0 +1,111 @@
+/* ============================================================
+   Canapalandia home — refinement luce / ombra
+   Obiettivo: rendere i due temi intenzionali, non semplicemente invertiti.
+   - luce: carta calda, verdi meno duri, header/footer integrati
+   - ombra: più livelli tonali, testo più leggibile, sezioni distinguibili
+   Tutto è limitato alla homepage tramite :has(.cl).
+   ============================================================ */
+
+html[data-theme="light"] body:has(.cl) {
+  --cl-surface: #fbfaf5;
+  --cl-paper: #f3efe4;
+  --cl-mint: #eaf0e6;
+  --cl-band-dark: #102319;
+  --cl-band-sage: #3d6949;
+
+  --cl-rule: #d7d1c0;
+  --cl-rule-soft: #e5e0d3;
+  --cl-rule-strong: #405247;
+
+  --cl-heading: #173020;
+  --cl-text: #293128;
+  --cl-body: #484b40;
+  --cl-body-soft: #5c6257;
+  --cl-muted: #6b7065;
+
+  --cl-kicker: #356b49;
+
+  --header-bg: rgba(251, 250, 245, 0.96);
+  --header-border: rgba(23, 48, 32, 0.12);
+  --header-shadow: 0 4px 18px rgba(23, 48, 32, 0.06);
+
+  background: #fbfaf5;
+}
+
+html[data-theme="dark"] body:has(.cl) {
+  --cl-surface: #12271c;
+  --cl-paper: #172e21;
+  --cl-mint: #1b3526;
+  --cl-band-dark: #0a1d13;
+  --cl-band-sage: #365f42;
+
+  --cl-rule: #34503c;
+  --cl-rule-soft: #2b4735;
+  --cl-rule-strong: #58715d;
+
+  --cl-heading: #f5f2e8;
+  --cl-text: #eeeadd;
+  --cl-body: #d1dbcf;
+  --cl-body-soft: #becbbb;
+  --cl-muted: #a7b9a2;
+
+  --cl-kicker: #a9c96d;
+
+  --header-bg: rgba(10, 29, 19, 0.95);
+  --header-border: rgba(198, 227, 106, 0.11);
+  --header-shadow: 0 5px 20px rgba(0, 0, 0, 0.22);
+
+  background: #12271c;
+}
+
+/* La fascia di chiusura prima del footer deve distinguersi dal contenuto
+   e accompagnare il passaggio al footer, non sembrare un'area vuota. */
+body:has(.cl) .cl-partners {
+  background: var(--cl-paper);
+}
+
+/* Il footer della home chiude la pagina senza il margine generico di 48px:
+   la sezione Partnership svolge già il ruolo di separatore. */
+body:has(.cl) .site-footer {
+  margin-top: 0;
+}
+
+html[data-theme="light"] body:has(.cl) .site-footer {
+  background: #f3efe4;
+  border-top-color: #d7d1c0;
+}
+
+html[data-theme="dark"] body:has(.cl) .site-footer {
+  background: #183223;
+  border-top-color: #34503c;
+}
+
+/* In dark mode i moduli scuri devono avere un bordo percepibile:
+   altrimenti si fondono con la superficie generale. */
+html[data-theme="dark"] body:has(.cl) .cl-flash {
+  border: 1px solid rgba(198, 227, 106, 0.11);
+}
+
+/* La nota redazionale deve rimanere una superficie editoriale secondaria,
+   non una macchia indistinta nel tema ombra. */
+html[data-theme="dark"] body:has(.cl) .cl-note {
+  border: 1px solid rgba(198, 227, 106, 0.08);
+}
+
+/* Migliore continuità fra carta della home e chrome globale in tema chiaro. */
+html[data-theme="light"] body:has(.cl) .search,
+html[data-theme="light"] body:has(.cl) .theme-toggle__btn,
+html[data-theme="light"] body:has(.cl) .menu-toggle {
+  background: rgba(23, 48, 32, 0.035);
+  border-color: rgba(23, 48, 32, 0.13);
+}
+
+/* Il bordo di sezione resta editoriale ma meno aggressivo in luce. */
+html[data-theme="light"] body:has(.cl) .cl-sechead {
+  border-bottom-color: var(--cl-rule-strong);
+}
+
+/* Focus visibile e coerente anche sui nuovi toni. */
+body:has(.cl) :where(.cl a, .cl button, .site-header a, .site-header button):focus-visible {
+  outline-color: #c8a95a;
+}
