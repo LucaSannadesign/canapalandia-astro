@@ -278,6 +278,30 @@ function take(n: number, ...sources: Post[][]): Post[] {
   return takeFrom(n, ...sources, recent, published);
 }
 
+/**
+ * Lettura senza consumo, per i moduli di servizio ("In aggiornamento" e
+ * "Ultima ora"): mostrano titoli, non schede, quindi non devono sottrarre
+ * un articolo alle sezioni visuali che vengono dopo. Saltano ciò che è già
+ * assegnato (`used`) e non si ripetono tra loro (`serviceShown`), ma non
+ * scrivono in `used`.
+ */
+const serviceShown = new Set<string>();
+
+function peek(n: number, ...sources: Post[][]): Post[] {
+  const out: Post[] = [];
+  for (const source of [...sources, recent, published]) {
+    for (const post of source) {
+      if (out.length >= n) return out;
+      const key = getKey(post);
+      if (!used.has(key) && !serviceShown.has(key)) {
+        serviceShown.add(key);
+        out.push(post);
+      }
+    }
+  }
+  return out;
+}
+
 // Pool "in evidenza": prima le scelte manuali, poi le notizie.
 const featuredManual = published
   .filter((p) => p.data.homeFeatured === true)
@@ -297,16 +321,22 @@ const news = byCategory("cannabis-news-it");
 const hero = take(1, featuredManual, news)[0] ?? null;
 const heroSide = take(2, featuredManual, news);
 
-// 2. "In aggiornamento" (rotazione) e "Ultima ora": cronologia pura
-const ticker = take(3);
-const ultimaOra = take(3);
+// 2. "In aggiornamento" (rotazione) e "Ultima ora": cronologia pura, in sola
+//    lettura — i titoli restano disponibili per le sezioni con immagine.
+const ticker = peek(3);
+const ultimaOra = peek(3);
 
 // 3. In evidenza
 const evidenzaLead = take(1, featuredManual, news)[0] ?? null;
 const evidenzaList = take(3);
 
-// 4. Ultime notizie
-const ultime = take(4);
+// 4. Ultime notizie: solo pool ripuliti da ciò che i moduli di servizio
+//    mostrano già nella stessa schermata. Niente `take()`: la sua coda su
+//    `recent`/`published` non filtrati potrebbe riproporre quei titoli.
+const withoutService = (pool: Post[]): Post[] =>
+  pool.filter((p) => !serviceShown.has(getKey(p)));
+
+const ultime = takeFrom(4, withoutService(recent), withoutService(published));
 
 // 5. Osservatorio normativa
 const normativa = byCategory("Normativa");
