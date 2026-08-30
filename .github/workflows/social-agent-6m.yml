@@ -1,0 +1,61 @@
+name: Canapalandia Social Agent 6M
+
+on:
+  schedule:
+    - cron: '30 8 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Test senza pubblicare"
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: canapalandia-social-agent-6m
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Restore social state
+        uses: actions/cache/restore@v4
+        with:
+          path: .cache/social-agent-6m.json
+          key: social-agent-6m-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            social-agent-6m-
+
+      - name: Run social agent
+        env:
+          RSS_URL: https://canapalandia.com/rss.xml
+          MAKE_WEBHOOK_URL: ${{ secrets.MAKE_WEBHOOK_URL }}
+          STATE_FILE: .cache/social-agent-6m.json
+          RECENT_POSTS_WINDOW_MONTHS: 6
+          MIN_HOURS_BETWEEN_POSTS: 47
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run || 'false' }}
+        run: node scripts/social-agent-6m.mjs
+
+      - name: Save social state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: .cache/social-agent-6m.json
+          key: social-agent-6m-${{ github.run_id }}-${{ github.run_attempt }}
