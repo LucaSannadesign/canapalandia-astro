@@ -45,9 +45,20 @@ jobs:
           restore-keys: |
             social-share-cache-
 
+      - name: Normalize Make webhook URL
+        env:
+          RAW_MAKE_WEBHOOK_URL: ${{ secrets.SOCIAL_MAKE_WEBHOOK_URL }}
+        run: |
+          WEBHOOK_URL="$(printf '%s' "$RAW_MAKE_WEBHOOK_URL" | grep -oE 'https://hook\.[[:alnum:].-]+\.make\.com/[[:alnum:]_-]+' | head -n 1)"
+          if [ -z "$WEBHOOK_URL" ]; then
+            echo "SOCIAL_MAKE_WEBHOOK_URL does not contain a valid Make webhook URL" >&2
+            exit 1
+          fi
+          echo "::add-mask::$WEBHOOK_URL"
+          echo "MAKE_WEBHOOK_URL=$WEBHOOK_URL" >> "$GITHUB_ENV"
+
       - name: Run social agent
         env:
-          MAKE_WEBHOOK_URL: ${{ secrets.SOCIAL_MAKE_WEBHOOK_URL }}
           RSS_URL: https://canapalandia.com/rss.xml
           STATE_FILE: .cache/social-share.json
           RECENT_POSTS_WINDOW_MONTHS: 6
