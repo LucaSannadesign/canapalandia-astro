@@ -1,0 +1,65 @@
+name: Canapalandia Social Agent 6M
+
+on:
+  schedule:
+    # Runs daily; the script enforces a 47h minimum between completed articles.
+    # Daily polling also lets a failed single-channel publish retry the next day.
+    - cron: '30 8 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Test selection and payload without publishing"
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: canapalandia-social-agent-6m
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Restore social state
+        uses: actions/cache/restore@v4
+        with:
+          path: .cache/social-share.json
+          key: social-share-cache-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            social-share-cache-
+
+      - name: Run social agent
+        env:
+          MAKE_WEBHOOK_URL: ${{ secrets.SOCIAL_MAKE_WEBHOOK_URL }}
+          RSS_URL: https://canapalandia.com/rss.xml
+          STATE_FILE: .cache/social-share.json
+          RECENT_POSTS_WINDOW_MONTHS: 6
+          MIN_HOURS_BETWEEN_ARTICLES: 47
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
+        run: |
+          mkdir -p .cache
+          node scripts/social-agent.mjs
+
+      - name: Save social state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: .cache/social-share.json
+          key: social-share-cache-${{ github.run_id }}-${{ github.run_attempt }}
