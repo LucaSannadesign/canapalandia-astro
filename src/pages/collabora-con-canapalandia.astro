@@ -1,322 +1,226 @@
 ---
 import Layout from "../layouts/MigratedLayout.astro";
 
-const title = "Collabora con Canapalandia";
-const description =
-  "Proponi una collaborazione editoriale, un guest post o un contenuto sponsorizzato su Canapalandia: spazio indipendente su canapa, CBD, cannabis light e normativa.";
-
 const canonical = "https://canapalandia.com/collabora-con-canapalandia/";
+const contactEmail = "info@canapalandia.com";
+const contactSubject = "Proposta collaborazione editoriale Canapalandia";
+const mailtoHref = `mailto:${contactEmail}?subject=${encodeURIComponent(contactSubject)}`;
 
 const metadata = {
-  title: "Collabora con Canapalandia | Guest Post e Collaborazioni Editoriali",
+  title: "Collabora con Canapalandia | Partnership editoriali",
   description:
-    "Proponi una collaborazione editoriale, un guest post o un contenuto sponsorizzato su Canapalandia, spazio indipendente dedicato a canapa, CBD, cannabis light e normativa.",
+    "Proponi una collaborazione editoriale a Canapalandia: guest post, contenuti sponsorizzati, interviste e approfondimenti selezionati su canapa, CBD, normativa e filiera.",
   canonical,
   robots: {
     index: true,
     follow: true,
   },
   openGraph: {
-    title: "Collabora con Canapalandia | Guest Post e Collaborazioni Editoriali",
+    title: "Collabora con Canapalandia | Partnership editoriali",
     description:
-      "Proponi una collaborazione editoriale su Canapalandia: guest post, contenuti sponsorizzati, interviste e approfondimenti selezionati sul mondo della canapa.",
+      "Valutiamo proposte editoriali selezionate con brand, professionisti, associazioni e realtà coerenti con il progetto Canapalandia.",
     type: "website",
     url: canonical,
     siteName: "Canapalandia",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Collabora con Canapalandia | Collaborazioni Editoriali",
+    title: "Collabora con Canapalandia | Partnership editoriali",
     description:
-      "Proponi guest post, contenuti sponsorizzati o collaborazioni editoriali su Canapalandia, spazio indipendente su canapa, CBD e normativa.",
+      "Guest post, contenuti sponsorizzati, interviste e approfondimenti selezionati su canapa, CBD, normativa e filiera.",
   },
 };
-
-const contactEmail = "info@canapalandia.com";
-const contactSubject = "Proposta collaborazione editoriale Canapalandia";
-const mailtoHref = `mailto:${contactEmail}?subject=${encodeURIComponent(contactSubject)}`;
 ---
 
 <Layout metadata={metadata}>
-  <main class="bg-[#f7f3e8] text-stone-900">
-    <!-- HERO -->
-    <section class="bg-[#173f2d] px-6 py-28 text-white md:py-36">
-      <div class="mx-auto max-w-3xl">
-        <p class="inline-flex rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-green-100 ring-1 ring-white/15">
-          Collaborazioni editoriali selezionate
-        </p>
-
-        <h1 class="mt-10 text-4xl font-black leading-[1.05] tracking-tight md:text-6xl">
-          Collabora con Canapalandia
-        </h1>
-
-        <p class="mt-10 text-xl leading-9 text-green-50 md:text-2xl md:leading-10">
-          Proponi un <strong>guest post</strong>, un contenuto sponsorizzato, un’intervista o un approfondimento editoriale su canapa, CBD, cannabis light, normativa e filiera.
-        </p>
-
-        <div class="mt-14 flex flex-col gap-4 sm:flex-row">
-          <a
-            href="#form-collaborazione"
-            class="inline-flex items-center justify-center rounded-full bg-amber-100 px-8 py-4 text-base font-bold text-[#173f2d] transition hover:bg-amber-200"
-          >
-            Contattaci per una collaborazione
-          </a>
-
-          <a
-            href="#come-funziona"
-            class="inline-flex items-center justify-center rounded-full border-2 border-white/30 px-8 py-4 text-base font-semibold text-white transition hover:bg-white/10"
-          >
-            Scopri come funziona
-          </a>
-        </div>
-      </div>
-    </section>
-
-    <!-- INTRO -->
-    <section class="px-6 py-28 md:py-36">
-      <div class="mx-auto max-w-3xl">
-        <h2 class="text-3xl font-black leading-tight text-[#173f2d] md:text-5xl">
-          Uno spazio editoriale indipendente sulla canapa
-        </h2>
-
-        <div class="mt-12 space-y-8 text-lg leading-9 text-stone-700 md:text-xl md:leading-10">
-          <p>
-            Canapalandia racconta <strong>canapa, CBD, cannabis light, normativa, sostenibilità e cultura antiproibizionista</strong> con un linguaggio chiaro, critico e accessibile.
+  <main class="collab-page">
+    <section class="collab-hero" aria-labelledby="collab-title">
+      <div class="collab-shell collab-hero__grid">
+        <div class="collab-hero__copy">
+          <p class="collab-eyebrow">Partnership editoriali</p>
+          <h1 id="collab-title">Collaborazioni che aggiungono valore, non solo visibilità.</h1>
+          <p class="collab-hero__lead">
+            Canapalandia valuta proposte selezionate con brand, professionisti, associazioni e progetti coerenti con la propria linea editoriale. Guest post, contenuti sponsorizzati, interviste e approfondimenti vengono considerati solo quando hanno qualcosa di utile da offrire ai lettori.
           </p>
 
-          <p>
-            Valutiamo collaborazioni con aziende, associazioni, professionisti, brand e realtà della filiera che abbiano qualcosa di utile da raccontare.
-          </p>
-
-          <p>
-            Ogni proposta viene letta e valutata prima della pubblicazione. Non pubblichiamo contenuti automaticamente e non accettiamo testi pensati solo per ottenere link.
-          </p>
-        </div>
-      </div>
-    </section>
-
-    <!-- IN SINTESI -->
-    <section class="border-t border-black/5 bg-white px-6 py-28 md:py-36">
-      <div class="mx-auto max-w-3xl">
-        <h2 class="text-3xl font-black leading-tight text-[#173f2d] md:text-5xl">
-          In sintesi
-        </h2>
-
-        <div class="mt-12 space-y-6">
-          <div class="rounded-3xl bg-[#f7f3e8] p-7 ring-1 ring-black/5 md:p-8">
-            <p class="text-lg leading-9 text-stone-700 md:text-xl md:leading-10">
-              <strong>Ogni proposta viene valutata</strong> prima della pubblicazione.
-            </p>
-          </div>
-
-          <div class="rounded-3xl bg-[#f7f3e8] p-7 ring-1 ring-black/5 md:p-8">
-            <p class="text-lg leading-9 text-stone-700 md:text-xl md:leading-10">
-              <strong>Nessun prezzo pubblico:</strong> le condizioni vengono inviate solo dopo una prima valutazione.
-            </p>
-          </div>
-
-          <div class="rounded-3xl bg-[#f7f3e8] p-7 ring-1 ring-black/5 md:p-8">
-            <p class="text-lg leading-9 text-stone-700 md:text-xl md:leading-10">
-              <strong>No link building pura:</strong> il contenuto deve essere utile per i lettori.
-            </p>
-          </div>
-
-          <div class="rounded-3xl bg-[#f7f3e8] p-7 ring-1 ring-black/5 md:p-8">
-            <p class="text-lg leading-9 text-stone-700 md:text-xl md:leading-10">
-              <strong>Linea prudente:</strong> niente claim medici non verificabili o inviti ad aggirare la legge.
-            </p>
+          <div class="collab-actions">
+            <a class="collab-button collab-button--primary" href="#form-collaborazione">
+              Invia una proposta
+            </a>
+            <a class="collab-button collab-button--ghost" href="#criteri-editoriali">
+              Leggi i criteri
+            </a>
           </div>
         </div>
-      </div>
-    </section>
 
-    <!-- COSA PUOI PROPORRE -->
-    <section class="border-t border-black/5 px-6 py-28 md:py-36">
-      <div class="mx-auto max-w-3xl">
-        <h2 class="text-3xl font-black leading-tight text-[#173f2d] md:text-5xl">
-          Cosa puoi proporre
-        </h2>
-
-        <p class="mt-12 text-lg leading-9 text-stone-700 md:text-xl md:leading-10">
-          Accettiamo contenuti coerenti con la linea editoriale di Canapalandia. La proposta deve essere chiara, originale e utile per chi legge.
-        </p>
-
-        <div class="mt-16 space-y-12">
-          <article>
-            <h3 class="text-2xl font-black leading-tight text-[#173f2d] md:text-3xl">
-              Guest post
-            </h3>
-
-            <p class="mt-6 text-lg leading-9 text-stone-700">
-              Articoli informativi già scritti, da valutare e revisionare prima della pubblicazione.
-            </p>
-          </article>
-
-          <article>
-            <h3 class="text-2xl font-black leading-tight text-[#173f2d] md:text-3xl">
-              Contenuti sponsorizzati
-            </h3>
-
-            <p class="mt-6 text-lg leading-9 text-stone-700">
-              Contenuti realizzati in collaborazione con aziende o progetti del settore, sempre dichiarati con trasparenza.
-            </p>
-          </article>
-
-          <article>
-            <h3 class="text-2xl font-black leading-tight text-[#173f2d] md:text-3xl">
-              Interviste
-            </h3>
-
-            <p class="mt-6 text-lg leading-9 text-stone-700">
-              Approfondimenti dedicati a realtà, professionisti, associazioni o progetti legati alla canapa.
-            </p>
-          </article>
-
-          <article>
-            <h3 class="text-2xl font-black leading-tight text-[#173f2d] md:text-3xl">
-              Approfondimenti tematici
-            </h3>
-
-            <p class="mt-6 text-lg leading-9 text-stone-700">
-              Contenuti su normativa, filiera, sostenibilità, ricerca, tracciabilità, certificazioni e cultura antiproibizionista.
-            </p>
-          </article>
-        </div>
-
-        <div class="mt-16">
-          <a
-            href="#form-collaborazione"
-            class="inline-flex items-center justify-center rounded-full bg-[#173f2d] px-8 py-4 text-base font-bold text-white transition hover:bg-[#20543d]"
-          >
-            Contattaci per proporre un contenuto
-          </a>
-        </div>
-      </div>
-    </section>
-
-    <!-- COSA NON ACCETTIAMO -->
-    <section class="border-t border-black/5 bg-white px-6 py-28 md:py-36">
-      <div class="mx-auto max-w-3xl">
-        <h2 class="text-3xl font-black leading-tight text-[#173f2d] md:text-5xl">
-          Cosa non accettiamo
-        </h2>
-
-        <p class="mt-12 text-lg leading-9 text-stone-700 md:text-xl md:leading-10">
-          Per proteggere i lettori e la credibilità del progetto, non pubblichiamo contenuti contrari alla nostra linea editoriale.
-        </p>
-
-        <ul class="mt-12 space-y-6 text-lg leading-9 text-stone-700">
-          <li class="rounded-2xl bg-[#f7f3e8] p-6 ring-1 ring-black/5">
-            Promesse terapeutiche non dimostrate o claim medici non verificabili.
-          </li>
-
-          <li class="rounded-2xl bg-[#f7f3e8] p-6 ring-1 ring-black/5">
-            Inviti a violare, aggirare o ignorare la normativa vigente.
-          </li>
-
-          <li class="rounded-2xl bg-[#f7f3e8] p-6 ring-1 ring-black/5">
-            Testi copiati, superficiali, fuorvianti o generati senza revisione.
-          </li>
-
-          <li class="rounded-2xl bg-[#f7f3e8] p-6 ring-1 ring-black/5">
-            Contenuti pensati esclusivamente per ottenere link.
-          </li>
-        </ul>
-      </div>
-    </section>
-
-    <!-- TRASPARENZA -->
-    <section class="border-t border-black/5 px-6 py-28 md:py-36">
-      <div class="mx-auto max-w-3xl">
-        <h2 class="text-3xl font-black leading-tight text-[#173f2d] md:text-5xl">
-          Trasparenza editoriale
-        </h2>
-
-        <div class="mt-12 space-y-8 text-lg leading-9 text-stone-700 md:text-xl md:leading-10">
-          <p>
-            Quando un contenuto nasce da una collaborazione commerciale, viene indicato in modo chiaro.
-          </p>
-
-          <p>
-            La collaborazione non implica automaticamente raccomandazione, certificazione o approvazione dei prodotti o servizi citati.
-          </p>
-
-          <p>
-            Canapalandia si riserva la possibilità di rifiutare proposte non coerenti, modificare anchor text troppo promozionali, limitare il numero di link o richiedere modifiche prima della pubblicazione.
-          </p>
-        </div>
-      </div>
-    </section>
-
-    <!-- COME FUNZIONA -->
-    <section id="come-funziona" class="scroll-mt-24 border-t border-black/5 bg-[#173f2d] px-6 py-28 text-white md:py-36">
-      <div class="mx-auto max-w-3xl">
-        <h2 class="text-3xl font-black leading-tight md:text-5xl">
-          Come proporre una collaborazione
-        </h2>
-
-        <p class="mt-12 text-lg leading-9 text-green-50 md:text-xl md:leading-10">
-          Scrivici raccontando chi sei, cosa vorresti pubblicare e perché pensi che il contenuto sia adatto a Canapalandia.
-        </p>
-
-        <div class="mt-12 rounded-3xl bg-white/10 p-8 ring-1 ring-white/15 md:p-10">
-          <h3 class="text-2xl font-black">
-            Nel messaggio indica:
-          </h3>
-
-          <ul class="mt-8 space-y-5 text-lg leading-8 text-green-50">
-            <li>Nome dell’azienda, brand o progetto.</li>
-            <li>Sito web ufficiale.</li>
-            <li>Tipo di contenuto proposto.</li>
-            <li>Argomento e obiettivo della pubblicazione.</li>
-            <li>Eventuale bozza già disponibile.</li>
-            <li>Link da sottoporre a valutazione.</li>
+        <aside class="collab-hero__panel" aria-label="Criteri essenziali">
+          <p class="collab-panel__label">Prima di scriverci</p>
+          <h2>Una proposta funziona se supera tre filtri.</h2>
+          <ul class="collab-checklist">
+            <li>
+              <strong>Coerenza</strong>
+              <span>Il tema deve essere pertinente a Canapalandia e al suo pubblico.</span>
+            </li>
+            <li>
+              <strong>Utilità</strong>
+              <span>Il contenuto deve informare, spiegare o offrire un punto di vista reale.</span>
+            </li>
+            <li>
+              <strong>Trasparenza</strong>
+              <span>Le collaborazioni commerciali vengono indicate in modo chiaro.</span>
+            </li>
           </ul>
-        </div>
+        </aside>
+      </div>
+    </section>
 
-        <div class="mt-16">
-          <a
-            href="#form-collaborazione"
-            class="inline-flex items-center justify-center gap-3 rounded-full bg-[#173f2d] px-8 py-4 text-base font-bold text-white shadow-lg transition hover:bg-[#20543d] focus:outline-none focus:ring-4 focus:ring-[#173f2d]/25"
-          >
-            Vai al modulo
-            <span aria-hidden="true" class="text-xl leading-none">↓</span>
-          </a>
+    <section class="collab-proof" aria-label="Principi della collaborazione">
+      <div class="collab-shell collab-proof__grid">
+        <div>
+          <strong>Selezione manuale</strong>
+          <span>Ogni proposta viene letta e valutata.</span>
+        </div>
+        <div>
+          <strong>Linea editoriale indipendente</strong>
+          <span>La collaborazione non garantisce la pubblicazione.</span>
+        </div>
+        <div>
+          <strong>Niente link building pura</strong>
+          <span>Il contenuto deve avere valore anche senza il link.</span>
         </div>
       </div>
     </section>
 
-    <!-- NOTA EDITORIALE -->
-    <section class="border-t border-black/5 bg-[#f7f3e8] px-6 py-14 md:py-16">
-      <div class="mx-auto max-w-3xl">
-        <div class="rounded-3xl bg-white p-6 ring-1 ring-black/5 md:p-8">
-          <h2 class="text-base font-extrabold text-stone-700 md:text-lg">
-            Nota editoriale
-          </h2>
-
-          <p class="mt-8 text-sm leading-7 text-stone-600 md:text-base md:leading-8">
-            Canapalandia è uno spazio informativo indipendente. I contenuti pubblicati non costituiscono consulenza legale, medica o commerciale. Ogni collaborazione viene valutata caso per caso e può essere rifiutata se non coerente con la linea editoriale del progetto.
+    <section class="collab-section" aria-labelledby="formati-title">
+      <div class="collab-shell">
+        <div class="collab-section__intro">
+          <p class="collab-kicker">Formati</p>
+          <h2 id="formati-title">Cosa possiamo valutare</h2>
+          <p>
+            Non esiste un formato obbligatorio. Conta soprattutto la qualità della proposta, la pertinenza del tema e la chiarezza dell’obiettivo.
           </p>
         </div>
+
+        <div class="collab-cards">
+          <article class="collab-card">
+            <span class="collab-card__index">01</span>
+            <h3>Guest post</h3>
+            <p>Articoli originali e informativi, già scritti o da sviluppare insieme, sottoposti a revisione editoriale prima della pubblicazione.</p>
+          </article>
+
+          <article class="collab-card">
+            <span class="collab-card__index">02</span>
+            <h3>Contenuti sponsorizzati</h3>
+            <p>Progetti commerciali coerenti con Canapalandia, pubblicati con una dichiarazione trasparente della collaborazione.</p>
+          </article>
+
+          <article class="collab-card">
+            <span class="collab-card__index">03</span>
+            <h3>Interviste</h3>
+            <p>Conversazioni con aziende, associazioni, professionisti e realtà che abbiano esperienza, dati o prospettive interessanti da condividere.</p>
+          </article>
+
+          <article class="collab-card">
+            <span class="collab-card__index">04</span>
+            <h3>Approfondimenti</h3>
+            <p>Contenuti su canapa, CBD, normativa, filiera, sostenibilità, innovazione, tracciabilità e cultura del settore.</p>
+          </article>
+        </div>
       </div>
     </section>
 
-    <!-- FORM COLLABORAZIONE -->
-    <section id="form-collaborazione" class="scroll-mt-24 border-t-2 border-black/10 bg-[#f7f3e8] px-6 pt-20 pb-28 md:pt-28 md:pb-36">
-      <div class="mx-auto max-w-3xl">
-        <h2 class="text-3xl font-black leading-tight text-[#173f2d] md:text-5xl">
-          Invia la tua proposta editoriale
-        </h2>
+    <section id="criteri-editoriali" class="collab-section collab-section--soft scroll-mt-24" aria-labelledby="criteri-title">
+      <div class="collab-shell collab-criteria">
+        <div class="collab-criteria__copy">
+          <p class="collab-kicker">Criteri editoriali</p>
+          <h2 id="criteri-title">Prima viene il contenuto. Poi la collaborazione.</h2>
+          <p>
+            Proteggere la credibilità del progetto significa dire alcuni no in modo chiaro. Valutiamo proposte che possano stare su Canapalandia anche dal punto di vista editoriale, non soltanto commerciale.
+          </p>
+        </div>
 
-        <p class="mt-10 text-lg leading-9 text-stone-700 md:mt-12 md:text-xl md:leading-10">
-          Compila il modulo con le informazioni principali sul tuo progetto. Valuteremo la proposta e ti risponderemo se sarà coerente con la linea editoriale di Canapalandia.
-        </p>
+        <div class="collab-criteria__columns">
+          <div class="collab-criteria__box collab-criteria__box--yes">
+            <p class="collab-criteria__label">Cerchiamo</p>
+            <ul>
+              <li>Argomenti pertinenti e ben delimitati.</li>
+              <li>Fonti, esperienza o competenze reali.</li>
+              <li>Testi originali e revisionabili.</li>
+              <li>Proposte chiare su obiettivo e pubblico.</li>
+              <li>Trasparenza su eventuali finalità commerciali.</li>
+            </ul>
+          </div>
 
-        <form
-          class="collaboration-form mt-14 md:mt-16"
-          method="POST"
-          action="/api/collaborazione"
-        >
+          <div class="collab-criteria__box collab-criteria__box--no">
+            <p class="collab-criteria__label">Non accettiamo</p>
+            <ul>
+              <li>Richieste pensate solo per ottenere backlink.</li>
+              <li>Claim medici o legali non verificabili.</li>
+              <li>Contenuti copiati, fuorvianti o superficiali.</li>
+              <li>Inviti ad aggirare o ignorare la normativa.</li>
+              <li>Testi generati automaticamente senza revisione reale.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="collab-section collab-section--dark" aria-labelledby="processo-title">
+      <div class="collab-shell">
+        <div class="collab-section__intro collab-section__intro--light">
+          <p class="collab-kicker">Processo</p>
+          <h2 id="processo-title">Come funziona</h2>
+          <p>
+            Il processo è semplice e volutamente selettivo. Non pubblichiamo automaticamente ciò che riceviamo.
+          </p>
+        </div>
+
+        <ol class="collab-process">
+          <li>
+            <span>1</span>
+            <div>
+              <h3>Invii la proposta</h3>
+              <p>Ci racconti chi sei, il tema, il formato e l’obiettivo della collaborazione.</p>
+            </div>
+          </li>
+          <li>
+            <span>2</span>
+            <div>
+              <h3>La valutiamo</h3>
+              <p>Controlliamo pertinenza, utilità, qualità e compatibilità con la linea editoriale.</p>
+            </div>
+          </li>
+          <li>
+            <span>3</span>
+            <div>
+              <h3>Definiamo i dettagli</h3>
+              <p>Se la proposta è adatta, concordiamo formato, revisione, trasparenza ed eventuali condizioni economiche.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section id="form-collaborazione" class="collab-section collab-form-section scroll-mt-24" aria-labelledby="form-title">
+      <div class="collab-shell collab-form-layout">
+        <div class="collab-form-intro">
+          <p class="collab-kicker">Proposta</p>
+          <h2 id="form-title">Raccontaci cosa vuoi costruire insieme.</h2>
+          <p>
+            Bastano informazioni precise. Non serve una presentazione perfetta: ci interessa capire chi sei, cosa proponi e perché potrebbe essere utile ai lettori di Canapalandia.
+          </p>
+
+          <div class="collab-form-note">
+            <strong>Nota</strong>
+            <p>Le richieste pertinenti vengono valutate manualmente. L’invio del modulo non implica accettazione o pubblicazione.</p>
+          </div>
+
+          <p class="collab-direct-contact">
+            Preferisci l’email? <a href={mailtoHref}>{contactEmail}</a>
+          </p>
+        </div>
+
+        <form class="collaboration-form" method="POST" action="/api/collaborazione">
           <input
             class="honeypot-field"
             type="text"
@@ -326,223 +230,625 @@ const mailtoHref = `mailto:${contactEmail}?subject=${encodeURIComponent(contactS
             aria-hidden="true"
           />
 
+          <fieldset>
+            <legend>Chi sei</legend>
+            <div class="form-grid">
+              <div class="field-group">
+                <label for="collab-nome">Nome e cognome <span aria-hidden="true">*</span></label>
+                <input id="collab-nome" name="nome_cognome" type="text" autocomplete="name" required />
+              </div>
 
-          <p class="form-note">
-            I campi contrassegnati con * sono obbligatori.
-          </p>
+              <div class="field-group">
+                <label for="collab-email">Email <span aria-hidden="true">*</span></label>
+                <input id="collab-email" name="email" type="email" autocomplete="email" required />
+              </div>
 
-          <div class="form-grid">
-            <div class="field-group">
-              <label for="collab-nome">
-                Nome e cognome <span class="text-red-700">*</span>
-              </label>
-              <input
-                id="collab-nome"
-                name="nome_cognome"
-                type="text"
-                autocomplete="name"
-                required
-              />
+              <div class="field-group">
+                <label for="collab-azienda">Azienda, brand o progetto <span aria-hidden="true">*</span></label>
+                <input id="collab-azienda" name="azienda" type="text" required />
+              </div>
+
+              <div class="field-group">
+                <label for="collab-sito">Sito web <span aria-hidden="true">*</span></label>
+                <input id="collab-sito" name="sito_web" type="url" inputmode="url" placeholder="https://esempio.com" required />
+              </div>
             </div>
+          </fieldset>
 
-            <div class="field-group">
-              <label for="collab-email">
-                Email <span class="text-red-700">*</span>
-              </label>
-              <input
-                id="collab-email"
-                name="email"
-                type="email"
-                autocomplete="email"
-                required
-              />
+          <fieldset>
+            <legend>La proposta</legend>
+            <div class="form-grid">
+              <div class="field-group">
+                <label for="collab-tipo">Tipo di collaborazione <span aria-hidden="true">*</span></label>
+                <select id="collab-tipo" name="tipo_contenuto" required>
+                  <option value="" disabled selected>Seleziona un’opzione</option>
+                  <option value="Guest post">Guest post</option>
+                  <option value="Contenuto sponsorizzato">Contenuto sponsorizzato</option>
+                  <option value="Intervista">Intervista</option>
+                  <option value="Approfondimento tematico">Approfondimento tematico</option>
+                  <option value="Altro">Altro</option>
+                </select>
+              </div>
+
+              <div class="field-group">
+                <label for="collab-argomento">Titolo o tema proposto <span aria-hidden="true">*</span></label>
+                <input id="collab-argomento" name="argomento" type="text" placeholder="Es. Tracciabilità nella filiera della canapa" required />
+              </div>
+
+              <div class="field-group field-full">
+                <label for="collab-link">Link o materiale da valutare <span aria-hidden="true">*</span></label>
+                <input id="collab-link" name="link" type="url" inputmode="url" placeholder="https://esempio.com/pagina" required />
+                <small>Può essere il sito, una bozza online, una pagina prodotto o un contenuto di riferimento.</small>
+              </div>
+
+              <div class="field-group field-full">
+                <label for="collab-messaggio">Descrivi proposta e obiettivo <span aria-hidden="true">*</span></label>
+                <textarea
+                  id="collab-messaggio"
+                  name="messaggio"
+                  rows="7"
+                  placeholder="Spiega in poche righe cosa vorresti proporre, perché è adatto a Canapalandia e quale valore può offrire ai lettori."
+                  required
+                ></textarea>
+              </div>
             </div>
-
-            <div class="field-group">
-              <label for="collab-azienda">
-                Azienda, brand o progetto <span class="text-red-700">*</span>
-              </label>
-              <input
-                id="collab-azienda"
-                name="azienda"
-                type="text"
-                required
-              />
-            </div>
-
-            <div class="field-group">
-              <label for="collab-sito">
-                Sito web <span class="text-red-700">*</span>
-              </label>
-              <input
-                id="collab-sito"
-                name="sito_web"
-                type="text"
-                inputmode="url"
-                placeholder="https://esempio.com"
-                required
-              />
-            </div>
-
-            <div class="field-group">
-              <label for="collab-tipo">
-                Tipo di contenuto <span class="text-red-700">*</span>
-              </label>
-              <select
-                id="collab-tipo"
-                name="tipo_contenuto"
-                required
-              >
-                <option value="" disabled selected>Seleziona un’opzione</option>
-                <option value="Guest post">Guest post</option>
-                <option value="Contenuto sponsorizzato">Contenuto sponsorizzato</option>
-                <option value="Intervista">Intervista</option>
-                <option value="Approfondimento tematico">Approfondimento tematico</option>
-                <option value="Altro">Altro</option>
-              </select>
-            </div>
-
-            <div class="field-group">
-              <label for="collab-argomento">
-                Argomento proposto <span class="text-red-700">*</span>
-              </label>
-              <input
-                id="collab-argomento"
-                name="argomento"
-                type="text"
-                required
-              />
-            </div>
-
-            <div class="field-group field-full">
-              <label for="collab-link">
-                Link da valutare <span class="text-red-700">*</span>
-              </label>
-              <input
-                id="collab-link"
-                name="link"
-                type="text"
-                inputmode="url"
-                placeholder="https://esempio.com/pagina"
-                required
-              />
-            </div>
-          </div>
-
-          <div class="field-group">
-            <label for="collab-messaggio">
-              Messaggio <span class="text-red-700">*</span>
-            </label>
-            <textarea
-              id="collab-messaggio"
-              name="messaggio"
-              rows="7"
-              required
-            ></textarea>
-          </div>
+          </fieldset>
 
           <div class="privacy-box">
             <label>
-              <input
-                type="checkbox"
-                name="privacy"
-                value="accettata"
-                required
-              />
+              <input type="checkbox" name="privacy" value="accettata" required />
               <span>
-                Dichiaro di aver letto e accettato <a
-                  href="/privacy-policy/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="font-extrabold text-[#86efac] underline decoration-[#86efac]/70 decoration-2 underline-offset-4 transition hover:text-[#bbf7d0] hover:decoration-[#bbf7d0]"
-                >l’informativa privacy</a> e acconsento al trattamento dei dati per la valutazione della proposta editoriale. <span class="text-red-700">*</span>
+                Ho letto e accetto <a href="/privacy-policy/" target="_blank" rel="noopener noreferrer">l’informativa privacy</a> e acconsento al trattamento dei dati per la valutazione della proposta editoriale. <span aria-hidden="true">*</span>
               </span>
             </label>
           </div>
 
           <div class="form-actions">
-            <button type="submit">
-              Invia la proposta
-            </button>
+            <button type="submit">Invia la proposta</button>
+            <p>I campi contrassegnati con * sono obbligatori.</p>
           </div>
         </form>
+      </div>
+    </section>
+
+    <section class="collab-section collab-faq" aria-labelledby="faq-title">
+      <div class="collab-shell collab-faq__layout">
+        <div>
+          <p class="collab-kicker">FAQ</p>
+          <h2 id="faq-title">Prima di inviare</h2>
+        </div>
+
+        <div class="collab-faq__list">
+          <details>
+            <summary>Pubblicate qualsiasi guest post?</summary>
+            <p>No. Ogni proposta viene valutata per pertinenza, qualità, originalità e utilità per chi legge.</p>
+          </details>
+
+          <details>
+            <summary>Accettate contenuti sponsorizzati?</summary>
+            <p>Sì, quando sono coerenti con la linea editoriale. La natura commerciale della collaborazione viene dichiarata con trasparenza.</p>
+          </details>
+
+          <details>
+            <summary>Posso chiedere solo l’inserimento di un link?</summary>
+            <p>In generale no. Le richieste esclusivamente orientate al link building non rientrano nel tipo di collaborazione che cerchiamo.</p>
+          </details>
+
+          <details>
+            <summary>La proposta garantisce la pubblicazione?</summary>
+            <p>No. Canapalandia mantiene piena autonomia editoriale e può chiedere modifiche, proporre un formato diverso o rifiutare una collaborazione.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="collab-editorial-note">
+      <div class="collab-shell">
+        <p>
+          <strong>Trasparenza editoriale.</strong> Una collaborazione commerciale non equivale a una raccomandazione, certificazione o approvazione dei prodotti o servizi citati. Canapalandia può modificare titoli, struttura, anchor text e numero di link quando necessario per mantenere qualità e coerenza editoriale.
+        </p>
       </div>
     </section>
   </main>
 </Layout>
 
 <style>
-  .collaboration-form {
-    margin-top: 3.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
-    border-radius: var(--r-lg);
-    background: #173f2d;
-    color: #f7f3e8;
-    padding: 2rem;
-    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.22);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+  .collab-page {
+    --collab-green: #173f2d;
+    --collab-green-2: #20543d;
+    --collab-ink: #1c211d;
+    --collab-muted: #626a64;
+    --collab-cream: #f7f3e8;
+    --collab-paper: #fffdf7;
+    --collab-line: rgba(23, 63, 45, 0.14);
+    --collab-accent: #e7c96d;
+    color: var(--collab-ink);
+    background: var(--collab-paper);
   }
 
-  @media (min-width: 768px) {
-    .collaboration-form {
-      padding: 3rem;
-    }
+  .collab-shell {
+    width: min(1120px, calc(100% - 2.5rem));
+    margin-inline: auto;
   }
 
-  .collaboration-form .form-note {
-    margin: 0;
-    font-size: 0.95rem;
-    line-height: 1.7;
-    color: rgba(247, 243, 232, 0.78);
+  .collab-hero {
+    position: relative;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 85% 15%, rgba(231, 201, 109, 0.14), transparent 32rem),
+      linear-gradient(135deg, #102d20 0%, var(--collab-green) 62%, #1b4834 100%);
+    color: #fff;
+    padding: clamp(4.5rem, 9vw, 7.5rem) 0;
   }
 
-  .collaboration-form .form-grid {
+  .collab-hero::after {
+    content: "";
+    position: absolute;
+    inset: auto -8rem -16rem auto;
+    width: 34rem;
+    height: 34rem;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 50%;
+    box-shadow: 0 0 0 5rem rgba(255, 255, 255, 0.018), 0 0 0 10rem rgba(255, 255, 255, 0.012);
+    pointer-events: none;
+  }
+
+  .collab-hero__grid {
+    position: relative;
+    z-index: 1;
     display: grid;
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
+    grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
+    gap: clamp(2.5rem, 6vw, 5.5rem);
+    align-items: center;
   }
 
-  @media (min-width: 768px) {
-    .collaboration-form .form-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 1.75rem;
-    }
-
-    .collaboration-form .field-full {
-      grid-column: 1 / -1;
-    }
-  }
-
-  .collaboration-form .field-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .collaboration-form label {
-    display: block;
+  .collab-eyebrow,
+  .collab-kicker {
     margin: 0;
+    font-size: 0.76rem;
+    line-height: 1.2;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .collab-eyebrow {
+    color: #f2dda0;
+  }
+
+  .collab-kicker {
+    color: var(--collab-green-2);
+  }
+
+  .collab-hero h1 {
+    max-width: 13ch;
+    margin: 1.2rem 0 0;
+    font-family: "Newsreader", Georgia, serif;
+    font-size: clamp(3.2rem, 7vw, 6.3rem);
+    line-height: 0.95;
+    letter-spacing: -0.045em;
+    font-weight: 600;
+    text-wrap: balance;
+  }
+
+  .collab-hero__lead {
+    max-width: 49rem;
+    margin: 2rem 0 0;
+    color: rgba(255, 255, 255, 0.82);
+    font-size: clamp(1.08rem, 2vw, 1.3rem);
+    line-height: 1.65;
+  }
+
+  .collab-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin-top: 2.25rem;
+  }
+
+  .collab-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 3.2rem;
+    padding: 0.8rem 1.35rem;
+    border-radius: 999px;
+    font-size: 0.95rem;
+    font-weight: 750;
+    text-decoration: none;
+    transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
+  }
+
+  .collab-button:hover {
+    transform: translateY(-1px);
+  }
+
+  .collab-button--primary {
+    background: #f4df9f;
+    color: var(--collab-green);
+  }
+
+  .collab-button--primary:hover {
+    background: #ffe9a9;
+  }
+
+  .collab-button--ghost {
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    color: #fff;
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .collab-button--ghost:hover {
+    background: rgba(255, 255, 255, 0.09);
+    border-color: rgba(255, 255, 255, 0.42);
+  }
+
+  .collab-hero__panel {
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 1.5rem;
+    padding: clamp(1.5rem, 4vw, 2.3rem);
+    background: rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 26px 70px rgba(0, 0, 0, 0.18);
+  }
+
+  .collab-panel__label {
+    margin: 0;
+    color: #f2dda0;
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .collab-hero__panel h2 {
+    margin: 0.8rem 0 0;
+    font-size: clamp(1.45rem, 3vw, 2rem);
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+  }
+
+  .collab-checklist {
+    list-style: none;
+    margin: 1.5rem 0 0;
+    padding: 0;
+  }
+
+  .collab-checklist li {
+    display: grid;
+    gap: 0.35rem;
+    padding: 1rem 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .collab-checklist strong {
+    color: #fff;
+    font-size: 0.95rem;
+  }
+
+  .collab-checklist span {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+    line-height: 1.55;
+  }
+
+  .collab-proof {
+    border-bottom: 1px solid var(--collab-line);
+    background: var(--collab-paper);
+  }
+
+  .collab-proof__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .collab-proof__grid > div {
+    padding: 1.55rem 1.4rem;
+    border-left: 1px solid var(--collab-line);
+  }
+
+  .collab-proof__grid > div:last-child {
+    border-right: 1px solid var(--collab-line);
+  }
+
+  .collab-proof strong,
+  .collab-proof span {
+    display: block;
+  }
+
+  .collab-proof strong {
+    color: var(--collab-green);
+    font-size: 0.93rem;
+  }
+
+  .collab-proof span {
+    margin-top: 0.32rem;
+    color: var(--collab-muted);
+    font-size: 0.84rem;
+    line-height: 1.5;
+  }
+
+  .collab-section {
+    padding: clamp(4.5rem, 8vw, 7.5rem) 0;
+  }
+
+  .collab-section--soft {
+    background: var(--collab-cream);
+  }
+
+  .collab-section--dark {
+    background: var(--collab-green);
+    color: #fff;
+  }
+
+  .collab-section__intro {
+    max-width: 48rem;
+  }
+
+  .collab-section__intro h2,
+  .collab-criteria__copy h2,
+  .collab-form-intro h2,
+  .collab-faq h2 {
+    margin: 0.85rem 0 0;
+    color: var(--collab-green);
+    font-family: "Newsreader", Georgia, serif;
+    font-size: clamp(2.45rem, 5vw, 4.5rem);
+    line-height: 0.98;
+    letter-spacing: -0.035em;
+    font-weight: 600;
+    text-wrap: balance;
+  }
+
+  .collab-section__intro > p:last-child,
+  .collab-criteria__copy > p:last-child,
+  .collab-form-intro > p,
+  .collab-faq__list p {
+    color: var(--collab-muted);
+    font-size: 1.04rem;
+    line-height: 1.7;
+  }
+
+  .collab-section__intro--light h2,
+  .collab-section__intro--light .collab-kicker {
+    color: #fff;
+  }
+
+  .collab-section__intro--light > p:last-child {
+    color: rgba(255, 255, 255, 0.72);
+  }
+
+  .collab-cards {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+    margin-top: 3rem;
+  }
+
+  .collab-card {
+    position: relative;
+    min-height: 15rem;
+    padding: 1.7rem;
+    border: 1px solid var(--collab-line);
+    border-radius: 1.25rem;
+    background: #fff;
+  }
+
+  .collab-card__index {
+    display: inline-flex;
+    color: #8c937f;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+  }
+
+  .collab-card h3 {
+    margin: 2.2rem 0 0;
+    color: var(--collab-green);
+    font-size: 1.35rem;
+    line-height: 1.2;
+  }
+
+  .collab-card p {
+    margin: 0.8rem 0 0;
+    color: var(--collab-muted);
+    font-size: 0.96rem;
+    line-height: 1.65;
+  }
+
+  .collab-criteria {
+    display: grid;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    gap: clamp(2.5rem, 6vw, 5rem);
+    align-items: start;
+  }
+
+  .collab-criteria__columns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .collab-criteria__box {
+    min-height: 100%;
+    padding: 1.6rem;
+    border-radius: 1.2rem;
+    background: #fff;
+    border: 1px solid var(--collab-line);
+  }
+
+  .collab-criteria__box--yes {
+    box-shadow: inset 0 3px 0 #6c8d65;
+  }
+
+  .collab-criteria__box--no {
+    box-shadow: inset 0 3px 0 #b88c70;
+  }
+
+  .collab-criteria__label {
+    margin: 0;
+    color: var(--collab-green);
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+  }
+
+  .collab-criteria__box ul {
+    margin: 1.25rem 0 0;
+    padding-left: 1.15rem;
+  }
+
+  .collab-criteria__box li {
+    margin-top: 0.7rem;
+    color: #505852;
+    line-height: 1.55;
+  }
+
+  .collab-process {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+    list-style: none;
+    margin: 3rem 0 0;
+    padding: 0;
+  }
+
+  .collab-process li {
+    padding: 1.6rem;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 1.15rem;
+    background: rgba(255, 255, 255, 0.055);
+  }
+
+  .collab-process li > span {
+    display: grid;
+    place-items: center;
+    width: 2.3rem;
+    height: 2.3rem;
+    border-radius: 999px;
+    background: #f2dda0;
+    color: var(--collab-green);
+    font-size: 0.85rem;
+    font-weight: 850;
+  }
+
+  .collab-process h3 {
+    margin: 1.4rem 0 0;
+    color: #fff;
+    font-size: 1.2rem;
+  }
+
+  .collab-process p {
+    margin: 0.65rem 0 0;
+    color: rgba(255, 255, 255, 0.68);
+    font-size: 0.93rem;
+    line-height: 1.6;
+  }
+
+  .collab-form-section {
+    background: #f2eee3;
+  }
+
+  .collab-form-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
+    gap: clamp(2.5rem, 6vw, 5rem);
+    align-items: start;
+  }
+
+  .collab-form-intro {
+    position: sticky;
+    top: 7rem;
+  }
+
+  .collab-form-note {
+    margin-top: 2rem;
+    padding: 1rem 1.1rem;
+    border-left: 3px solid var(--collab-accent);
+    background: rgba(255, 255, 255, 0.58);
+  }
+
+  .collab-form-note strong {
+    color: var(--collab-green);
+    font-size: 0.85rem;
+  }
+
+  .collab-form-note p {
+    margin: 0.4rem 0 0;
+    color: var(--collab-muted);
+    font-size: 0.9rem;
+    line-height: 1.55;
+  }
+
+  .collab-direct-contact {
+    margin-top: 1.5rem !important;
+    font-size: 0.9rem !important;
+  }
+
+  .collab-direct-contact a {
+    color: var(--collab-green);
+    font-weight: 750;
+  }
+
+  .collaboration-form {
+    display: grid;
+    gap: 1.8rem;
+    padding: clamp(1.35rem, 4vw, 2.4rem);
+    border: 1px solid rgba(23, 63, 45, 0.14);
+    border-radius: 1.4rem;
+    background: #fff;
+    box-shadow: 0 24px 60px rgba(30, 50, 38, 0.08);
+  }
+
+  .collaboration-form fieldset {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .collaboration-form legend {
+    width: 100%;
+    margin: 0 0 1.15rem;
+    padding: 0 0 0.8rem;
+    border-bottom: 1px solid var(--collab-line);
+    color: var(--collab-green);
     font-size: 0.78rem;
-    line-height: 1.4;
-    font-weight: 700;
+    font-weight: 850;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: #fef3c7;
   }
 
-  .collaboration-form .honeypot-field {
-    position: absolute !important;
-    left: -9999px !important;
-    width: 1px !important;
-    height: 1px !important;
-    overflow: hidden !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-    padding: 0 !important;
-    border: 0 !important;
-    margin: 0 !important;
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.15rem;
+  }
+
+  .field-full {
+    grid-column: 1 / -1;
+  }
+
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.48rem;
+  }
+
+  .field-group label {
+    color: #334039;
+    font-size: 0.82rem;
+    font-weight: 750;
+  }
+
+  .field-group label > span {
+    color: #8f5d49;
+  }
+
+  .field-group small {
+    color: #7b827d;
+    font-size: 0.76rem;
+    line-height: 1.45;
   }
 
   .collaboration-form input:not(.honeypot-field),
@@ -550,110 +856,246 @@ const mailtoHref = `mailto:${contactEmail}?subject=${encodeURIComponent(contactS
   .collaboration-form textarea {
     width: 100%;
     box-sizing: border-box;
-    border-radius: var(--r-md);
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    background: #f7f3e8 !important;
-    color: #1c1917 !important;
-    padding: 1rem 1.1rem;
-    font-size: 1rem;
-    line-height: 1.5;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    border: 1px solid #d7ddd8;
+    border-radius: 0.72rem;
+    background: #fffefb;
+    color: var(--collab-ink);
+    padding: 0.85rem 0.95rem;
+    font: inherit;
+    font-size: 0.94rem;
+    line-height: 1.45;
     outline: none;
-    transition:
-      border-color 160ms ease,
-      box-shadow 160ms ease,
-      background-color 160ms ease;
+    transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
   }
 
   .collaboration-form input:not(.honeypot-field)::placeholder,
   .collaboration-form textarea::placeholder {
-    color: #78716c;
+    color: #9a9f9b;
   }
 
   .collaboration-form input:not(.honeypot-field):focus,
   .collaboration-form select:focus,
   .collaboration-form textarea:focus {
-    border-color: #f5d98b;
-    background: #fffaf0 !important;
-    box-shadow: 0 0 0 4px rgba(245, 217, 139, 0.24);
+    border-color: #6f8f79;
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(72, 111, 85, 0.11);
   }
 
   .collaboration-form textarea {
-    min-height: 12rem;
+    min-height: 10.5rem;
     resize: vertical;
   }
 
-  .collaboration-form select {
-    appearance: auto;
+  .honeypot-field {
+    position: absolute !important;
+    left: -9999px !important;
+    width: 1px !important;
+    height: 1px !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
   }
 
-  .collaboration-form .privacy-box {
-    border-radius: var(--r-md);
-    background: rgba(255, 255, 255, 0.08);
-    padding: 1.25rem;
-    border: 1px solid rgba(255, 255, 255, 0.14);
+  .privacy-box {
+    padding: 1rem;
+    border-radius: 0.8rem;
+    background: #f6f7f4;
+    border: 1px solid #e0e4df;
   }
 
-  .collaboration-form .privacy-box label {
+  .privacy-box label {
     display: flex;
     align-items: flex-start;
-    gap: 1rem;
-    text-transform: none;
-    letter-spacing: 0;
-    font-size: 0.95rem;
-    line-height: 1.7;
-    font-weight: 500;
-    color: rgba(247, 243, 232, 0.9);
+    gap: 0.75rem;
+    color: #606762;
+    font-size: 0.82rem;
+    line-height: 1.55;
   }
 
-  .collaboration-form input[type="checkbox"] {
-    width: 1.15rem;
-    height: 1.15rem;
-    min-width: 1.15rem;
-    margin-top: 0.25rem;
-    accent-color: #f5d98b;
+  .privacy-box input[type="checkbox"] {
+    width: 1.05rem;
+    height: 1.05rem;
+    margin-top: 0.15rem;
+    flex: 0 0 auto;
+    accent-color: var(--collab-green);
   }
 
-  .collaboration-form .form-actions {
-    padding-top: 0.75rem;
+  .privacy-box a {
+    color: var(--collab-green);
+    font-weight: 750;
   }
 
-  .collaboration-form button {
-    display: inline-flex;
-    width: 100%;
+  .form-actions {
+    display: flex;
     align-items: center;
-    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .form-actions button {
     border: 0;
-    border-radius: var(--r-md);
-    background: #fef3c7;
-    color: #173f2d;
-    padding: 1rem 2rem;
-    font-size: 1rem;
-    font-weight: 700;
+    border-radius: 999px;
+    background: var(--collab-green);
+    color: #fff;
+    padding: 0.9rem 1.35rem;
+    font-size: 0.92rem;
+    font-weight: 800;
     cursor: pointer;
-    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.22);
-    transition:
-      transform 160ms ease,
-      background-color 160ms ease,
-      box-shadow 160ms ease;
+    box-shadow: 0 12px 28px rgba(23, 63, 45, 0.18);
+    transition: transform 150ms ease, background 150ms ease, box-shadow 150ms ease;
   }
 
-  .collaboration-form button:hover {
-    background: #f5d98b;
+  .form-actions button:hover {
     transform: translateY(-1px);
-    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+    background: var(--collab-green-2);
+    box-shadow: 0 16px 32px rgba(23, 63, 45, 0.22);
   }
 
-  .collaboration-form button:focus-visible {
-    outline: none;
-    box-shadow:
-      0 0 0 4px rgba(245, 217, 139, 0.28),
-      0 18px 40px rgba(0, 0, 0, 0.28);
+  .form-actions button:focus-visible {
+    outline: 3px solid rgba(23, 63, 45, 0.24);
+    outline-offset: 3px;
   }
 
-  @media (min-width: 640px) {
-    .collaboration-form button {
-      width: auto;
+  .form-actions p {
+    margin: 0;
+    color: #858b86;
+    font-size: 0.76rem;
+  }
+
+  .collab-faq {
+    background: var(--collab-paper);
+  }
+
+  .collab-faq__layout {
+    display: grid;
+    grid-template-columns: minmax(220px, 0.6fr) minmax(0, 1.4fr);
+    gap: clamp(2rem, 6vw, 5rem);
+  }
+
+  .collab-faq__list {
+    border-top: 1px solid var(--collab-line);
+  }
+
+  .collab-faq details {
+    border-bottom: 1px solid var(--collab-line);
+  }
+
+  .collab-faq summary {
+    position: relative;
+    padding: 1.35rem 2rem 1.35rem 0;
+    list-style: none;
+    cursor: pointer;
+    color: var(--collab-green);
+    font-weight: 760;
+  }
+
+  .collab-faq summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .collab-faq summary::after {
+    content: "+";
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #718074;
+    font-size: 1.3rem;
+    font-weight: 400;
+  }
+
+  .collab-faq details[open] summary::after {
+    content: "–";
+  }
+
+  .collab-faq__list p {
+    margin: -0.4rem 0 1.35rem;
+    max-width: 44rem;
+    font-size: 0.94rem;
+  }
+
+  .collab-editorial-note {
+    padding: 1.6rem 0;
+    border-top: 1px solid var(--collab-line);
+    background: #eef0ea;
+  }
+
+  .collab-editorial-note p {
+    margin: 0;
+    color: #666d68;
+    font-size: 0.8rem;
+    line-height: 1.65;
+  }
+
+  .collab-editorial-note strong {
+    color: var(--collab-green);
+  }
+
+  @media (max-width: 900px) {
+    .collab-hero__grid,
+    .collab-criteria,
+    .collab-form-layout,
+    .collab-faq__layout {
+      grid-template-columns: 1fr;
+    }
+
+    .collab-hero h1 {
+      max-width: 15ch;
+    }
+
+    .collab-form-intro {
+      position: static;
+    }
+
+    .collab-process {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 700px) {
+    .collab-shell {
+      width: min(100% - 1.5rem, 1120px);
+    }
+
+    .collab-proof__grid,
+    .collab-cards,
+    .collab-criteria__columns,
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .collab-proof__grid > div,
+    .collab-proof__grid > div:last-child {
+      border-left: 0;
+      border-right: 0;
+      border-top: 1px solid var(--collab-line);
+      padding-inline: 0;
+    }
+
+    .collab-proof__grid > div:first-child {
+      border-top: 0;
+    }
+
+    .field-full {
+      grid-column: auto;
+    }
+
+    .collab-actions,
+    .form-actions {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .collab-button,
+    .form-actions button {
+      width: 100%;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .collab-button,
+    .form-actions button {
+      transition: none;
     }
   }
 </style>
