@@ -34,6 +34,31 @@ const BLOG_TAG_ALLOWED = new Set<string>([
   ...BLOG_TAG_WHITELIST_LEGACY,
 ]);
 
+/**
+ * Quarantena editoriale centralizzata per contenuti YMYL/legali verificati il 31/08/2026.
+ * Manteniamo gli slug storici raggiungibili, ma il dato normalizzato viene trattato come
+ * `legacy-review`: noindex, corpo ritirato, esclusione da feed/sitemap/listing e CTA disattivate.
+ * Rimuovere uno slug da questo set solo dopo una revisione editoriale completa e verificata.
+ */
+const BLOG_FORCED_LEGACY_REVIEW_SLUGS = new Set<string>([
+  "cbd-vs-fentanyl-hypocrisy",
+  "history-therapeutic-cannabis-origins-challenges",
+  "black-spots-cannabis-brain",
+  "als-patients-buying-cannabis-from-dealers",
+  "california-nuns-medical-cannabis",
+  "uk-nhs-trials-vaporizers-for-cannabis",
+  "walter-de-benedetto-medical-cannabis-acquittal",
+  "argentina-legalizes-medical-cannabis",
+  "cbd-hormones-womens-health",
+  "cbd-female-hormonal-health-benefits",
+  "hemp-sports-performance-recovery-cbd",
+  "cbd-explained-benefits-uses-safety",
+  "how-choose-right-cbd-products-complete-guide",
+  "cannabis-laws-italy",
+  "cbd-vs-thc-differences",
+  "migliori-varieta-cbd-2025",
+]);
+
 const blog = defineCollection({
   // 2. Rimosso type: "content" e aggiunto il loader.
   // Se i tuoi file si trovano in una cartella diversa da "src/content/blog", aggiorna il percorso di 'base' qui sotto.
@@ -127,7 +152,14 @@ const blog = defineCollection({
           });
         }
       }
-    }),
+    })
+    .transform((data) => ({
+      ...data,
+      editorialStatus:
+        data.slug && BLOG_FORCED_LEGACY_REVIEW_SLUGS.has(data.slug)
+          ? ("legacy-review" as const)
+          : data.editorialStatus,
+    })),
 });
 
 export const collections = { blog };
