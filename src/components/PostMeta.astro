@@ -58,7 +58,7 @@ const formattedUpdatedDate = showUpdated ? formatDate(updatedDate) : "";
 const updatedDateTime = showUpdated ? getDateTime(updatedDate) : "";
 ---
 
-<div class="post-meta" itemscope itemtype="https://schema.org/Article">
+<div class="post-meta">
   <div class="post-meta__item">
     <svg
       class="post-meta__icon"
@@ -80,7 +80,6 @@ const updatedDateTime = showUpdated ? getDateTime(updatedDate) : "";
     <time
       class="post-meta__date"
       datetime={publishDateTime}
-      itemprop="datePublished"
     >
       {formattedPublishDate}
     </time>
@@ -106,7 +105,6 @@ const updatedDateTime = showUpdated ? getDateTime(updatedDate) : "";
       <time
         class="post-meta__date"
         datetime={updatedDateTime}
-        itemprop="dateModified"
       >
         {formattedUpdatedDate}
       </time>
