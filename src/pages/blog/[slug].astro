@@ -103,7 +103,7 @@ const postTitle = entry.data.title;
 const showShare = entry.data.showShare !== false; // default: true
 const showSupportCta = entry.data.showSupportCta !== false; // default: true
 
-// JSON-LD (Schema.org) - BlogPosting
+// JSON-LD (Schema.org) - BlogPosting solo per articoli editorialmente pubblici.
 const canonicalAbs = metadata.canonical; // già assoluto
 const imageAbs = postImage ? new URL(postImage, SITE_URL).toString() : undefined;
 
@@ -111,42 +111,46 @@ const publishedISO = toDate(entry.data.publishDate)?.toISOString();
 const modifiedISO =
   toDate(entry.data.updatedDate)?.toISOString() || publishedISO;
 
-const jsonLd = {
-  "@context": "https://schema.org",
-  "@type": "BlogPosting",
-  "@id": `${canonicalAbs}#article`,
-  mainEntityOfPage: { "@type": "WebPage", "@id": canonicalAbs },
+const jsonLd = !isLegacyReview
+  ? {
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      "@id": `${canonicalAbs}#article`,
+      mainEntityOfPage: { "@type": "WebPage", "@id": canonicalAbs },
 
-  headline: entry.data.title,
-  description: entry.data.description || "",
+      headline: entry.data.title,
+      description: entry.data.description || "",
 
-  ...(imageAbs ? { image: [imageAbs] } : {}),
+      ...(imageAbs ? { image: [imageAbs] } : {}),
 
-  datePublished: publishedISO,
-  dateModified: modifiedISO,
+      datePublished: publishedISO,
+      dateModified: modifiedISO,
 
-  author: {
-    "@type": "Organization",
-    name: entry.data.author || "Canapalandia",
-  },
-  publisher: {
-    "@type": "Organization",
-    name: "Canapalandia",
-    logo: {
-      "@type": "ImageObject",
-      url: new URL("/favicons/favicon-192.png", SITE_URL).toString(),
-    },
-  },
+      author: {
+        "@type": "Organization",
+        name: entry.data.author || "Canapalandia",
+      },
+      publisher: {
+        "@type": "Organization",
+        name: "Canapalandia",
+        logo: {
+          "@type": "ImageObject",
+          url: new URL("/favicons/favicon-192.png", SITE_URL).toString(),
+        },
+      },
 
-  inLanguage: "it-IT",
-  keywords: Array.isArray(entry.data.tags)
-    ? entry.data.tags.join(", ")
-    : undefined,
-};
+      inLanguage: "it-IT",
+      keywords: Array.isArray(entry.data.tags)
+        ? entry.data.tags.join(", ")
+        : undefined,
+    }
+  : null;
 ---
 
 <SiteLayout metadata={metadata}>
-  <script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLd).replace(/</g, "\\u003c")} />
+  {jsonLd ? (
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLd).replace(/</g, "\\u003c")} />
+  ) : null}
   <div class="container page-shell">
     <div class="post-layout">
       <article class="post-main">
