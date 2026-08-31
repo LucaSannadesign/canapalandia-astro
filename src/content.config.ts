@@ -57,7 +57,22 @@ const BLOG_FORCED_LEGACY_REVIEW_SLUGS = new Set<string>([
   "cannabis-laws-italy",
   "cbd-vs-thc-differences",
   "migliori-varieta-cbd-2025",
+  "cbd-legale-decreto-sicurezza",
+  "best-cbd-strains",
+  "best-vaporizers-herbs-aromatherapy",
+  "hemp-seed-oil-benefits-for-skin",
+  "hemp-cardiovascular-health",
+  "olio-cbg-come-e-quando-usarlo",
+  "claim-illegali-cbd-esempi-sanzioni",
+  "migliori-snack-canapa-vita-sana",
+  "proteine-canapa-sportivi-vegani",
+  "i-benefici-della-canapa-cosa-non-sai-superfood",
+  "come-integrare-i-semi-di-canapa-nella-tua-dieta",
 ]);
+
+const LEGACY_REVIEW_TITLE = "Articolo d’archivio in revisione editoriale";
+const LEGACY_REVIEW_DESCRIPTION =
+  "Contenuto storico temporaneamente ritirato dalla consultazione e dall’indicizzazione mentre la redazione verifica fonti, formulazioni e contesto.";
 
 const blog = defineCollection({
   // 2. Rimosso type: "content" e aggiunto il loader.
@@ -153,13 +168,23 @@ const blog = defineCollection({
         }
       }
     })
-    .transform((data) => ({
-      ...data,
-      editorialStatus:
-        data.slug && BLOG_FORCED_LEGACY_REVIEW_SLUGS.has(data.slug)
+    .transform((data) => {
+      const isForcedLegacyReview = Boolean(
+        data.slug && BLOG_FORCED_LEGACY_REVIEW_SLUGS.has(data.slug),
+      );
+
+      return {
+        ...data,
+        editorialStatus: isForcedLegacyReview
           ? ("legacy-review" as const)
           : data.editorialStatus,
-    })),
+        title: isForcedLegacyReview ? LEGACY_REVIEW_TITLE : data.title,
+        description: isForcedLegacyReview
+          ? LEGACY_REVIEW_DESCRIPTION
+          : data.description,
+        coverAlt: isForcedLegacyReview ? LEGACY_REVIEW_TITLE : data.coverAlt,
+      };
+    }),
 });
 
 export const collections = { blog };
