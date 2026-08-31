@@ -35,8 +35,6 @@ const metadata = {
 const contactEmail = "info@canapalandia.com";
 const contactSubject = "Proposta collaborazione editoriale Canapalandia";
 const mailtoHref = `mailto:${contactEmail}?subject=${encodeURIComponent(contactSubject)}`;
-const FORMSPREE_ACTION = "https://formspree.io/f/maqynojl";
-const collaborazioneRedirect = "https://canapalandia.com/grazie-collaborazione/";
 ---
 
 <Layout metadata={metadata}>
@@ -317,7 +315,7 @@ const collaborazioneRedirect = "https://canapalandia.com/grazie-collaborazione/"
         <form
           class="collaboration-form mt-14 md:mt-16"
           method="POST"
-          action={FORMSPREE_ACTION}
+          action="/api/collaborazione"
         >
           <input
             class="honeypot-field"
@@ -328,8 +326,6 @@ const collaborazioneRedirect = "https://canapalandia.com/grazie-collaborazione/"
             aria-hidden="true"
           />
 
-          <input type="hidden" name="_subject" value="Nuova proposta collaborazione editoriale Canapalandia" />
-          <input type="hidden" name="_redirect" value={collaborazioneRedirect} />
 
           <p class="form-note">
             I campi contrassegnati con * sono obbligatori.

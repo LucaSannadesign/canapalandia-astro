@@ -3,9 +3,6 @@ import Layout from "../layouts/MigratedLayout.astro";
 
 const title = "Contatti — Canapalandia";
 const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/contatti/`;
-const FORMSPREE_ACTION = "https://formspree.io/f/maqynojl";
-const siteOrigin = import.meta.env.SITE || Astro.url.origin;
-
 const sent = Astro.url.searchParams.get("sent") === "1";
 ---
 
@@ -30,13 +27,9 @@ const sent = Astro.url.searchParams.get("sent") === "1";
           <div class="contact-form-card card">
             <h2>Invia un messaggio</h2>
 
-            <form class="contact-form" method="POST" action={FORMSPREE_ACTION}>
+            <form class="contact-form" method="POST" action="/api/contatti">
             {/* Anti-spam honeypot (lasciare vuoto) */}
             <input class="hp" type="text" name="_gotcha" tabindex="-1" autocomplete="off" aria-hidden="true" />
-
-            {/* Formspree utilities */}
-            <input type="hidden" name="_subject" value="Canapalandia — Nuovo contatto" />
-            <input type="hidden" name="_redirect" value={`${siteOrigin}/contatti/?sent=1`} />
 
             <div class="field">
               <label for="name">Nome</label>
