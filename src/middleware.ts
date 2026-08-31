@@ -52,6 +52,15 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
   }
 
   /**
+   * Consolidamento SEO esplicito per la vecchia guida inglese che in produzione
+   * veniva ancora servita con HTTP 200 nonostante il redirect in vercel.json.
+   * Il middleware è la fonte effettiva per questa route legacy.
+   */
+  if (pathNoSlash.toLowerCase() === "en/cannabis-laws-italy-2025") {
+    return redirect301("/blog/cannabis-laws-italy/");
+  }
+
+  /**
    * EN legacy `/en/tag/...` → hub IT `/tag/[slug]/` (slug identico).
    * Prima della normalizzazione trailing-slash sotto: così anche richieste senza `/` finale
    * possono 301 direttamente a `/tag/.../` in un solo hop (Vercel aggiunge spesso uno 308
