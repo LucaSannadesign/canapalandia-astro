@@ -68,11 +68,20 @@ const BLOG_FORCED_LEGACY_REVIEW_SLUGS = new Set<string>([
   "proteine-canapa-sportivi-vegani",
   "i-benefici-della-canapa-cosa-non-sai-superfood",
   "come-integrare-i-semi-di-canapa-nella-tua-dieta",
+  "nuovo-partner-canapalandia-nordic-oil",
+  "cannabis-light-e-corte-di-cassazione-il-decreto-sicurezza-traballa",
+  "canapa-light-sentenza-ue-decreto-sicurezza-2025",
+  "benefici-olio-di-semi-di-canapa-salute-pelle",
+  "realizzare-cosmetici-canapa-casa",
+  "olio-di-canapa-proprieta-benefici-usi-in-cucina",
+  "canapa-salute-cardiovascolare-cosa-dice-scienza",
+  "come-scegliere-prodotti-cbd",
 ]);
 
 const LEGACY_REVIEW_TITLE = "Articolo d’archivio in revisione editoriale";
 const LEGACY_REVIEW_DESCRIPTION =
   "Contenuto storico temporaneamente ritirato dalla consultazione e dall’indicizzazione mentre la redazione verifica fonti, formulazioni e contesto.";
+const LEGACY_REVIEW_IMAGE = "/images/logo-canapalandia_1024.webp";
 
 const blog = defineCollection({
   // 2. Rimosso type: "content" e aggiunto il loader.
@@ -172,17 +181,29 @@ const blog = defineCollection({
       const isForcedLegacyReview = Boolean(
         data.slug && BLOG_FORCED_LEGACY_REVIEW_SLUGS.has(data.slug),
       );
+      const isLegacyReview =
+        isForcedLegacyReview || data.editorialStatus === "legacy-review";
 
       return {
         ...data,
-        editorialStatus: isForcedLegacyReview
+        editorialStatus: isLegacyReview
           ? ("legacy-review" as const)
           : data.editorialStatus,
-        title: isForcedLegacyReview ? LEGACY_REVIEW_TITLE : data.title,
-        description: isForcedLegacyReview
+        title: isLegacyReview ? LEGACY_REVIEW_TITLE : data.title,
+        description: isLegacyReview
           ? LEGACY_REVIEW_DESCRIPTION
           : data.description,
-        coverAlt: isForcedLegacyReview ? LEGACY_REVIEW_TITLE : data.coverAlt,
+        category: isLegacyReview ? undefined : data.category,
+        tags: isLegacyReview ? [] : data.tags,
+        image: isLegacyReview ? LEGACY_REVIEW_IMAGE : data.image,
+        coverImage: isLegacyReview ? LEGACY_REVIEW_IMAGE : data.coverImage,
+        coverAlt: isLegacyReview ? LEGACY_REVIEW_TITLE : data.coverAlt,
+        homeFeatured: isLegacyReview ? false : data.homeFeatured,
+        socialShare: isLegacyReview ? false : data.socialShare,
+        instagramShare: isLegacyReview ? false : data.instagramShare,
+        instagramImage: isLegacyReview ? undefined : data.instagramImage,
+        showShare: isLegacyReview ? false : data.showShare,
+        showSupportCta: isLegacyReview ? false : data.showSupportCta,
       };
     }),
 });
