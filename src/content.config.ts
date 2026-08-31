@@ -54,7 +54,6 @@ const BLOG_FORCED_LEGACY_REVIEW_SLUGS = new Set<string>([
   "hemp-sports-performance-recovery-cbd",
   "cbd-explained-benefits-uses-safety",
   "how-choose-right-cbd-products-complete-guide",
-  "cannabis-laws-italy",
   "cbd-vs-thc-differences",
   "migliori-varieta-cbd-2025",
   "cbd-legale-decreto-sicurezza",
