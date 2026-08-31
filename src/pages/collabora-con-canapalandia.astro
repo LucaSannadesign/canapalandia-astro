@@ -33,29 +33,29 @@ const metadata = {
 ---
 
 <Layout metadata={metadata}>
-  <main class="collab-page">
+  <div class="collab-page">
     <section class="collab-hero" aria-labelledby="collab-title">
       <div class="collab-shell collab-hero__grid">
         <div class="collab-hero__copy">
-          <p class="collab-eyebrow">Partnership editoriali</p>
+          <p class="collab-eyebrow">Partnership editoriali selezionate</p>
           <h1 id="collab-title">Collaborazioni che aggiungono valore, non solo visibilità.</h1>
           <p class="collab-hero__lead">
-            Canapalandia valuta proposte selezionate con brand, professionisti, associazioni e progetti coerenti con la propria linea editoriale. Guest post, contenuti sponsorizzati, interviste e approfondimenti vengono considerati solo quando hanno qualcosa di utile da offrire ai lettori.
+            Canapalandia valuta proposte con brand, professionisti, associazioni e progetti coerenti con la propria linea editoriale. Guest post, contenuti sponsorizzati, interviste e approfondimenti vengono considerati solo quando hanno qualcosa di utile da offrire ai lettori.
           </p>
 
-          <div class="collab-actions">
+          <div class="collab-actions" aria-label="Azioni principali">
             <a class="collab-button collab-button--primary" href="#form-collaborazione">
               Invia una proposta
             </a>
-            <a class="collab-button collab-button--ghost" href="#criteri-editoriali">
+            <a class="collab-button collab-button--secondary" href="#criteri-editoriali">
               Leggi i criteri
             </a>
           </div>
         </div>
 
-        <aside class="collab-hero__panel" aria-label="Criteri essenziali">
+        <aside class="collab-hero__panel" aria-labelledby="filtri-title">
           <p class="collab-panel__label">Prima di scriverci</p>
-          <h2>Una proposta funziona se supera tre filtri.</h2>
+          <h2 id="filtri-title">Una proposta funziona se supera tre filtri.</h2>
           <ul class="collab-checklist">
             <li>
               <strong>Coerenza</strong>
@@ -103,25 +103,22 @@ const metadata = {
 
         <div class="collab-cards">
           <article class="collab-card">
-            <span class="collab-card__index">01</span>
+            <span class="collab-card__index" aria-hidden="true">01</span>
             <h3>Guest post</h3>
             <p>Articoli originali e informativi, già scritti o da sviluppare insieme, sottoposti a revisione editoriale prima della pubblicazione.</p>
           </article>
-
           <article class="collab-card">
-            <span class="collab-card__index">02</span>
+            <span class="collab-card__index" aria-hidden="true">02</span>
             <h3>Contenuti sponsorizzati</h3>
             <p>Progetti commerciali coerenti con Canapalandia, pubblicati con una dichiarazione trasparente della collaborazione.</p>
           </article>
-
           <article class="collab-card">
-            <span class="collab-card__index">03</span>
+            <span class="collab-card__index" aria-hidden="true">03</span>
             <h3>Interviste</h3>
             <p>Conversazioni con aziende, associazioni, professionisti e realtà che abbiano esperienza, dati o prospettive interessanti da condividere.</p>
           </article>
-
           <article class="collab-card">
-            <span class="collab-card__index">04</span>
+            <span class="collab-card__index" aria-hidden="true">04</span>
             <h3>Approfondimenti</h3>
             <p>Contenuti su canapa, CBD, normativa, filiera, sostenibilità, innovazione, tracciabilità e cultura del settore.</p>
           </article>
@@ -140,8 +137,8 @@ const metadata = {
         </div>
 
         <div class="collab-criteria__columns">
-          <div class="collab-criteria__box collab-criteria__box--yes">
-            <p class="collab-criteria__label">Cerchiamo</p>
+          <section class="collab-criteria__box collab-criteria__box--yes" aria-labelledby="cerchiamo-title">
+            <h3 id="cerchiamo-title">Cerchiamo</h3>
             <ul>
               <li>Argomenti pertinenti e ben delimitati.</li>
               <li>Fonti, esperienza o competenze reali.</li>
@@ -149,10 +146,10 @@ const metadata = {
               <li>Proposte chiare su obiettivo e pubblico.</li>
               <li>Trasparenza su eventuali finalità commerciali.</li>
             </ul>
-          </div>
+          </section>
 
-          <div class="collab-criteria__box collab-criteria__box--no">
-            <p class="collab-criteria__label">Non accettiamo</p>
+          <section class="collab-criteria__box collab-criteria__box--no" aria-labelledby="non-accettiamo-title">
+            <h3 id="non-accettiamo-title">Non accettiamo</h3>
             <ul>
               <li>Richieste pensate solo per ottenere backlink.</li>
               <li>Claim medici o legali non verificabili.</li>
@@ -160,7 +157,7 @@ const metadata = {
               <li>Inviti ad aggirare o ignorare la normativa.</li>
               <li>Testi generati automaticamente senza revisione reale.</li>
             </ul>
-          </div>
+          </section>
         </div>
       </div>
     </section>
@@ -170,28 +167,26 @@ const metadata = {
         <div class="collab-section__intro collab-section__intro--light">
           <p class="collab-kicker">Processo</p>
           <h2 id="processo-title">Come funziona</h2>
-          <p>
-            Il processo è semplice e volutamente selettivo. Non pubblichiamo automaticamente ciò che riceviamo.
-          </p>
+          <p>Il processo è semplice e volutamente selettivo. Non pubblichiamo automaticamente ciò che riceviamo.</p>
         </div>
 
         <ol class="collab-process">
           <li>
-            <span>1</span>
+            <span aria-hidden="true">1</span>
             <div>
               <h3>Invii la proposta</h3>
               <p>Ci racconti chi sei, il tema, il formato e l’obiettivo della collaborazione.</p>
             </div>
           </li>
           <li>
-            <span>2</span>
+            <span aria-hidden="true">2</span>
             <div>
               <h3>La valutiamo</h3>
               <p>Controlliamo pertinenza, utilità, qualità e compatibilità con la linea editoriale.</p>
             </div>
           </li>
           <li>
-            <span>3</span>
+            <span aria-hidden="true">3</span>
             <div>
               <h3>Definiamo i dettagli</h3>
               <p>Se la proposta è adatta, concordiamo formato, revisione, trasparenza ed eventuali condizioni economiche.</p>
@@ -207,12 +202,12 @@ const metadata = {
           <p class="collab-kicker">Proposta</p>
           <h2 id="form-title">Raccontaci cosa vuoi costruire insieme.</h2>
           <p>
-            Bastano informazioni precise. Non serve una presentazione perfetta: ci interessa capire chi sei, cosa proponi e perché potrebbe essere utile ai lettori di Canapalandia.
+            Bastano informazioni precise. Ci interessa capire chi sei, cosa proponi e perché potrebbe essere utile ai lettori di Canapalandia.
           </p>
 
-          <div class="collab-form-note">
-            <strong>Nota</strong>
-            <p>Le richieste pertinenti vengono valutate manualmente. L’invio del modulo non implica accettazione o pubblicazione.</p>
+          <div class="collab-form-note" role="note">
+            <strong>Valutazione manuale</strong>
+            <p>L’invio del modulo non implica accettazione o pubblicazione.</p>
           </div>
 
           <p class="collab-direct-contact">
@@ -221,33 +216,25 @@ const metadata = {
         </div>
 
         <form class="collaboration-form" method="POST" action="/api/collaborazione">
-          <input
-            class="honeypot-field"
-            type="text"
-            name="_gotcha"
-            tabindex="-1"
-            autocomplete="off"
-            aria-hidden="true"
-          />
+          <p id="required-note" class="form-required-note">I campi con * sono obbligatori.</p>
 
-          <fieldset>
+          <input class="honeypot-field" type="text" name="_gotcha" tabindex="-1" autocomplete="off" aria-hidden="true" />
+
+          <fieldset aria-describedby="required-note">
             <legend>Chi sei</legend>
             <div class="form-grid">
               <div class="field-group">
                 <label for="collab-nome">Nome e cognome <span aria-hidden="true">*</span></label>
                 <input id="collab-nome" name="nome_cognome" type="text" autocomplete="name" required />
               </div>
-
               <div class="field-group">
                 <label for="collab-email">Email <span aria-hidden="true">*</span></label>
                 <input id="collab-email" name="email" type="email" autocomplete="email" required />
               </div>
-
               <div class="field-group">
                 <label for="collab-azienda">Azienda, brand o progetto <span aria-hidden="true">*</span></label>
-                <input id="collab-azienda" name="azienda" type="text" required />
+                <input id="collab-azienda" name="azienda" type="text" autocomplete="organization" required />
               </div>
-
               <div class="field-group">
                 <label for="collab-sito">Sito web <span aria-hidden="true">*</span></label>
                 <input id="collab-sito" name="sito_web" type="url" inputmode="url" placeholder="https://esempio.com" required />
@@ -255,7 +242,7 @@ const metadata = {
             </div>
           </fieldset>
 
-          <fieldset>
+          <fieldset aria-describedby="required-note">
             <legend>La proposta</legend>
             <div class="form-grid">
               <div class="field-group">
@@ -269,27 +256,18 @@ const metadata = {
                   <option value="Altro">Altro</option>
                 </select>
               </div>
-
               <div class="field-group">
                 <label for="collab-argomento">Titolo o tema proposto <span aria-hidden="true">*</span></label>
                 <input id="collab-argomento" name="argomento" type="text" placeholder="Es. Tracciabilità nella filiera della canapa" required />
               </div>
-
               <div class="field-group field-full">
                 <label for="collab-link">Link o materiale da valutare <span aria-hidden="true">*</span></label>
-                <input id="collab-link" name="link" type="url" inputmode="url" placeholder="https://esempio.com/pagina" required />
-                <small>Può essere il sito, una bozza online, una pagina prodotto o un contenuto di riferimento.</small>
+                <input id="collab-link" name="link" type="url" inputmode="url" aria-describedby="link-help" placeholder="https://esempio.com/pagina" required />
+                <small id="link-help">Può essere il sito, una bozza online, una pagina prodotto o un contenuto di riferimento.</small>
               </div>
-
               <div class="field-group field-full">
                 <label for="collab-messaggio">Descrivi proposta e obiettivo <span aria-hidden="true">*</span></label>
-                <textarea
-                  id="collab-messaggio"
-                  name="messaggio"
-                  rows="7"
-                  placeholder="Spiega in poche righe cosa vorresti proporre, perché è adatto a Canapalandia e quale valore può offrire ai lettori."
-                  required
-                ></textarea>
+                <textarea id="collab-messaggio" name="messaggio" rows="7" placeholder="Spiega cosa vorresti proporre, perché è adatto a Canapalandia e quale valore può offrire ai lettori." required></textarea>
               </div>
             </div>
           </fieldset>
@@ -305,7 +283,6 @@ const metadata = {
 
           <div class="form-actions">
             <button type="submit">Invia la proposta</button>
-            <p>I campi contrassegnati con * sono obbligatori.</p>
           </div>
         </form>
       </div>
@@ -317,23 +294,19 @@ const metadata = {
           <p class="collab-kicker">FAQ</p>
           <h2 id="faq-title">Prima di inviare</h2>
         </div>
-
         <div class="collab-faq__list">
           <details>
             <summary>Pubblicate qualsiasi guest post?</summary>
             <p>No. Ogni proposta viene valutata per pertinenza, qualità, originalità e utilità per chi legge.</p>
           </details>
-
           <details>
             <summary>Accettate contenuti sponsorizzati?</summary>
             <p>Sì, quando sono coerenti con la linea editoriale. La natura commerciale della collaborazione viene dichiarata con trasparenza.</p>
           </details>
-
           <details>
             <summary>Posso chiedere solo l’inserimento di un link?</summary>
             <p>In generale no. Le richieste esclusivamente orientate al link building non rientrano nel tipo di collaborazione che cerchiamo.</p>
           </details>
-
           <details>
             <summary>La proposta garantisce la pubblicazione?</summary>
             <p>No. Canapalandia mantiene piena autonomia editoriale e può chiedere modifiche, proporre un formato diverso o rifiutare una collaborazione.</p>
@@ -342,28 +315,32 @@ const metadata = {
       </div>
     </section>
 
-    <section class="collab-editorial-note">
+    <section class="collab-editorial-note" aria-label="Trasparenza editoriale">
       <div class="collab-shell">
         <p>
           <strong>Trasparenza editoriale.</strong> Una collaborazione commerciale non equivale a una raccomandazione, certificazione o approvazione dei prodotti o servizi citati. Canapalandia può modificare titoli, struttura, anchor text e numero di link quando necessario per mantenere qualità e coerenza editoriale.
         </p>
       </div>
     </section>
-  </main>
+  </div>
 </Layout>
 
 <style>
   .collab-page {
-    --collab-green: #173f2d;
-    --collab-green-2: #20543d;
-    --collab-ink: #1c211d;
-    --collab-muted: #626a64;
-    --collab-cream: #f7f3e8;
-    --collab-paper: #fffdf7;
-    --collab-line: rgba(23, 63, 45, 0.14);
-    --collab-accent: #e7c96d;
-    color: var(--collab-ink);
-    background: var(--collab-paper);
+    --green: #173f2d;
+    --green-dark: #0f2f21;
+    --green-hover: #20543d;
+    --ink: #18231d;
+    --muted: #4d5a52;
+    --cream: #f7f3e8;
+    --paper: #fffdf7;
+    --line: #cdd7d0;
+    --accent: #f6dfa0;
+    --accent-hover: #ffe9ad;
+    --focus-light: #fff7d6;
+    --focus-dark: #173f2d;
+    color: var(--ink);
+    background: var(--paper);
   }
 
   .collab-shell {
@@ -372,145 +349,133 @@ const metadata = {
   }
 
   .collab-hero {
-    position: relative;
-    overflow: hidden;
-    background:
-      radial-gradient(circle at 85% 15%, rgba(231, 201, 109, 0.14), transparent 32rem),
-      linear-gradient(135deg, #102d20 0%, var(--collab-green) 62%, #1b4834 100%);
+    background: linear-gradient(135deg, #0d2b1e 0%, #173f2d 66%, #20543d 100%);
     color: #fff;
-    padding: clamp(4.5rem, 9vw, 7.5rem) 0;
-  }
-
-  .collab-hero::after {
-    content: "";
-    position: absolute;
-    inset: auto -8rem -16rem auto;
-    width: 34rem;
-    height: 34rem;
-    border: 1px solid rgba(255, 255, 255, 0.09);
-    border-radius: 50%;
-    box-shadow: 0 0 0 5rem rgba(255, 255, 255, 0.018), 0 0 0 10rem rgba(255, 255, 255, 0.012);
-    pointer-events: none;
+    padding: clamp(4rem, 8vw, 7rem) 0;
   }
 
   .collab-hero__grid {
-    position: relative;
-    z-index: 1;
     display: grid;
-    grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
-    gap: clamp(2.5rem, 6vw, 5.5rem);
+    grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr);
+    gap: clamp(2.5rem, 6vw, 5rem);
     align-items: center;
   }
 
   .collab-eyebrow,
   .collab-kicker {
     margin: 0;
-    font-size: 0.76rem;
-    line-height: 1.2;
-    font-weight: 800;
-    letter-spacing: 0.16em;
+    font: 800 0.78rem/1.3 "Archivo", system-ui, sans-serif;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
   }
 
-  .collab-eyebrow {
-    color: #f2dda0;
-  }
+  .collab-eyebrow { color: #ffe8a7; }
+  .collab-kicker { color: var(--green-hover); }
 
-  .collab-kicker {
-    color: var(--collab-green-2);
-  }
-
-  .collab-hero h1 {
-    max-width: 13ch;
-    margin: 1.2rem 0 0;
+  .collab-hero h1,
+  .collab-section h2,
+  .collab-form-intro h2,
+  .collab-faq h2 {
     font-family: "Newsreader", Georgia, serif;
-    font-size: clamp(3.2rem, 7vw, 6.3rem);
-    line-height: 0.95;
-    letter-spacing: -0.045em;
     font-weight: 600;
     text-wrap: balance;
   }
 
+  .collab-hero h1 {
+    max-width: 15ch;
+    margin: 1rem 0 0;
+    font-size: clamp(3rem, 6.5vw, 6rem);
+    line-height: 0.98;
+    letter-spacing: -0.04em;
+    color: #fffdf7;
+  }
+
   .collab-hero__lead {
-    max-width: 49rem;
-    margin: 2rem 0 0;
-    color: rgba(255, 255, 255, 0.82);
-    font-size: clamp(1.08rem, 2vw, 1.3rem);
-    line-height: 1.65;
+    max-width: 52rem;
+    margin: 1.75rem 0 0;
+    color: #e7efe9;
+    font-size: clamp(1.08rem, 2vw, 1.28rem);
+    line-height: 1.68;
   }
 
   .collab-actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.85rem;
-    margin-top: 2.25rem;
+    gap: 0.9rem;
+    margin-top: 2.2rem;
   }
 
   .collab-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 3.2rem;
-    padding: 0.8rem 1.35rem;
-    border-radius: 999px;
-    font-size: 0.95rem;
-    font-weight: 750;
-    text-decoration: none;
-    transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
+    min-height: 3.25rem;
+    min-width: 11rem;
+    padding: 0.8rem 1.45rem;
+    border: 2px solid transparent;
+    border-radius: 0.8rem;
+    font-size: 1rem;
+    font-weight: 800;
+    line-height: 1.2;
+    text-align: center;
+    text-decoration: none !important;
+    cursor: pointer;
   }
 
-  .collab-button:hover {
-    transform: translateY(-1px);
+  .collab-page .collab-button--primary {
+    background: var(--accent) !important;
+    color: #102d20 !important;
+    border-color: var(--accent) !important;
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.2);
   }
 
-  .collab-button--primary {
-    background: #f4df9f;
-    color: var(--collab-green);
+  .collab-page .collab-button--primary:hover {
+    background: var(--accent-hover) !important;
+    border-color: var(--accent-hover) !important;
   }
 
-  .collab-button--primary:hover {
-    background: #ffe9a9;
+  .collab-page .collab-button--secondary {
+    background: transparent !important;
+    color: #fff !important;
+    border-color: rgba(255, 255, 255, 0.78) !important;
   }
 
-  .collab-button--ghost {
-    border: 1px solid rgba(255, 255, 255, 0.28);
-    color: #fff;
-    background: rgba(255, 255, 255, 0.04);
+  .collab-page .collab-button--secondary:hover {
+    background: rgba(255, 255, 255, 0.11) !important;
+    border-color: #fff !important;
   }
 
-  .collab-button--ghost:hover {
-    background: rgba(255, 255, 255, 0.09);
-    border-color: rgba(255, 255, 255, 0.42);
+  .collab-button:focus-visible {
+    outline: 3px solid var(--focus-light);
+    outline-offset: 4px;
   }
 
   .collab-hero__panel {
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 1.5rem;
-    padding: clamp(1.5rem, 4vw, 2.3rem);
-    background: rgba(255, 255, 255, 0.07);
-    backdrop-filter: blur(12px);
-    box-shadow: 0 26px 70px rgba(0, 0, 0, 0.18);
+    padding: clamp(1.5rem, 4vw, 2.25rem);
+    border: 1px solid rgba(255, 255, 255, 0.32);
+    border-radius: 1.25rem;
+    background: rgba(255, 255, 255, 0.08);
   }
 
   .collab-panel__label {
     margin: 0;
-    color: #f2dda0;
-    font-size: 0.74rem;
+    color: #ffe8a7;
+    font-size: 0.78rem;
     font-weight: 800;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
   }
 
   .collab-hero__panel h2 {
     margin: 0.8rem 0 0;
-    font-size: clamp(1.45rem, 3vw, 2rem);
-    line-height: 1.15;
-    letter-spacing: -0.02em;
+    color: #fff;
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    line-height: 1.2;
   }
 
   .collab-checklist {
     list-style: none;
-    margin: 1.5rem 0 0;
+    margin: 1.4rem 0 0;
     padding: 0;
   }
 
@@ -518,23 +483,15 @@ const metadata = {
     display: grid;
     gap: 0.35rem;
     padding: 1rem 0;
-    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    border-top: 1px solid rgba(255, 255, 255, 0.22);
   }
 
-  .collab-checklist strong {
-    color: #fff;
-    font-size: 0.95rem;
-  }
-
-  .collab-checklist span {
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 0.9rem;
-    line-height: 1.55;
-  }
+  .collab-checklist strong { color: #fff; font-size: 1rem; }
+  .collab-checklist span { color: #e4ece7; font-size: 0.95rem; line-height: 1.55; }
 
   .collab-proof {
-    border-bottom: 1px solid var(--collab-line);
-    background: var(--collab-paper);
+    border-bottom: 1px solid var(--line);
+    background: var(--paper);
   }
 
   .collab-proof__grid {
@@ -543,79 +500,43 @@ const metadata = {
   }
 
   .collab-proof__grid > div {
-    padding: 1.55rem 1.4rem;
-    border-left: 1px solid var(--collab-line);
+    padding: 1.6rem;
+    border-left: 1px solid var(--line);
   }
 
-  .collab-proof__grid > div:last-child {
-    border-right: 1px solid var(--collab-line);
-  }
+  .collab-proof__grid > div:last-child { border-right: 1px solid var(--line); }
+  .collab-proof strong, .collab-proof span { display: block; }
+  .collab-proof strong { color: var(--green-dark); font-size: 0.98rem; }
+  .collab-proof span { margin-top: 0.35rem; color: var(--muted); font-size: 0.9rem; line-height: 1.55; }
 
-  .collab-proof strong,
-  .collab-proof span {
-    display: block;
-  }
+  .collab-section { padding: clamp(4.5rem, 8vw, 7rem) 0; }
+  .collab-section--soft { background: var(--cream); }
+  .collab-section--dark { background: var(--green-dark); color: #fff; }
 
-  .collab-proof strong {
-    color: var(--collab-green);
-    font-size: 0.93rem;
-  }
-
-  .collab-proof span {
-    margin-top: 0.32rem;
-    color: var(--collab-muted);
-    font-size: 0.84rem;
-    line-height: 1.5;
-  }
-
-  .collab-section {
-    padding: clamp(4.5rem, 8vw, 7.5rem) 0;
-  }
-
-  .collab-section--soft {
-    background: var(--collab-cream);
-  }
-
-  .collab-section--dark {
-    background: var(--collab-green);
-    color: #fff;
-  }
-
-  .collab-section__intro {
-    max-width: 48rem;
-  }
-
+  .collab-section__intro { max-width: 50rem; }
   .collab-section__intro h2,
   .collab-criteria__copy h2,
   .collab-form-intro h2,
   .collab-faq h2 {
-    margin: 0.85rem 0 0;
-    color: var(--collab-green);
-    font-family: "Newsreader", Georgia, serif;
-    font-size: clamp(2.45rem, 5vw, 4.5rem);
-    line-height: 0.98;
+    margin: 0.8rem 0 0;
+    color: var(--green-dark);
+    font-size: clamp(2.5rem, 5vw, 4.4rem);
+    line-height: 1;
     letter-spacing: -0.035em;
-    font-weight: 600;
-    text-wrap: balance;
   }
 
   .collab-section__intro > p:last-child,
   .collab-criteria__copy > p:last-child,
   .collab-form-intro > p,
   .collab-faq__list p {
-    color: var(--collab-muted);
+    color: var(--muted);
     font-size: 1.04rem;
-    line-height: 1.7;
+    line-height: 1.72;
   }
 
   .collab-section__intro--light h2,
-  .collab-section__intro--light .collab-kicker {
-    color: #fff;
-  }
-
-  .collab-section__intro--light > p:last-child {
-    color: rgba(255, 255, 255, 0.72);
-  }
+  .collab-section__intro--light .collab-kicker { color: #fff; }
+  .collab-section__intro--light > p:last-child { color: #e4ece7; }
 
   .collab-cards {
     display: grid;
@@ -625,39 +546,20 @@ const metadata = {
   }
 
   .collab-card {
-    position: relative;
-    min-height: 15rem;
+    min-height: 14rem;
     padding: 1.7rem;
-    border: 1px solid var(--collab-line);
-    border-radius: 1.25rem;
+    border: 1px solid var(--line);
+    border-radius: 1rem;
     background: #fff;
   }
 
-  .collab-card__index {
-    display: inline-flex;
-    color: #8c937f;
-    font-size: 0.75rem;
-    font-weight: 800;
-    letter-spacing: 0.14em;
-  }
-
-  .collab-card h3 {
-    margin: 2.2rem 0 0;
-    color: var(--collab-green);
-    font-size: 1.35rem;
-    line-height: 1.2;
-  }
-
-  .collab-card p {
-    margin: 0.8rem 0 0;
-    color: var(--collab-muted);
-    font-size: 0.96rem;
-    line-height: 1.65;
-  }
+  .collab-card__index { color: #63746a; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.12em; }
+  .collab-card h3 { margin: 2rem 0 0; color: var(--green-dark); font-size: 1.4rem; line-height: 1.2; }
+  .collab-card p { margin: 0.8rem 0 0; color: var(--muted); font-size: 0.98rem; line-height: 1.67; }
 
   .collab-criteria {
     display: grid;
-    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
     gap: clamp(2.5rem, 6vw, 5rem);
     align-items: start;
   }
@@ -669,40 +571,17 @@ const metadata = {
   }
 
   .collab-criteria__box {
-    min-height: 100%;
     padding: 1.6rem;
-    border-radius: 1.2rem;
+    border: 1px solid var(--line);
+    border-radius: 1rem;
     background: #fff;
-    border: 1px solid var(--collab-line);
   }
 
-  .collab-criteria__box--yes {
-    box-shadow: inset 0 3px 0 #6c8d65;
-  }
-
-  .collab-criteria__box--no {
-    box-shadow: inset 0 3px 0 #b88c70;
-  }
-
-  .collab-criteria__label {
-    margin: 0;
-    color: var(--collab-green);
-    font-size: 0.76rem;
-    font-weight: 800;
-    letter-spacing: 0.13em;
-    text-transform: uppercase;
-  }
-
-  .collab-criteria__box ul {
-    margin: 1.25rem 0 0;
-    padding-left: 1.15rem;
-  }
-
-  .collab-criteria__box li {
-    margin-top: 0.7rem;
-    color: #505852;
-    line-height: 1.55;
-  }
+  .collab-criteria__box--yes { border-top: 4px solid #4f7b58; }
+  .collab-criteria__box--no { border-top: 4px solid #9a5d49; }
+  .collab-criteria__box h3 { margin: 0; color: var(--green-dark); font-size: 1rem; }
+  .collab-criteria__box ul { margin: 1.15rem 0 0; padding-left: 1.2rem; }
+  .collab-criteria__box li { margin-top: 0.7rem; color: #3f4c44; line-height: 1.58; }
 
   .collab-process {
     display: grid;
@@ -714,40 +593,27 @@ const metadata = {
   }
 
   .collab-process li {
-    padding: 1.6rem;
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 1.15rem;
-    background: rgba(255, 255, 255, 0.055);
+    padding: 1.7rem;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.06);
   }
 
   .collab-process li > span {
     display: grid;
     place-items: center;
-    width: 2.3rem;
-    height: 2.3rem;
+    width: 2.4rem;
+    height: 2.4rem;
     border-radius: 999px;
-    background: #f2dda0;
-    color: var(--collab-green);
-    font-size: 0.85rem;
+    background: var(--accent);
+    color: var(--green-dark);
     font-weight: 850;
   }
 
-  .collab-process h3 {
-    margin: 1.4rem 0 0;
-    color: #fff;
-    font-size: 1.2rem;
-  }
+  .collab-process h3 { margin: 1.25rem 0 0; color: #fff; font-size: 1.25rem; }
+  .collab-process p { margin: 0.65rem 0 0; color: #e4ece7; font-size: 0.96rem; line-height: 1.62; }
 
-  .collab-process p {
-    margin: 0.65rem 0 0;
-    color: rgba(255, 255, 255, 0.68);
-    font-size: 0.93rem;
-    line-height: 1.6;
-  }
-
-  .collab-form-section {
-    background: #f2eee3;
-  }
+  .collab-form-section { background: #f1eee5; }
 
   .collab-form-layout {
     display: grid;
@@ -756,135 +622,95 @@ const metadata = {
     align-items: start;
   }
 
-  .collab-form-intro {
-    position: sticky;
-    top: 7rem;
-  }
+  .collab-form-intro { position: sticky; top: 7rem; }
 
   .collab-form-note {
     margin-top: 2rem;
     padding: 1rem 1.1rem;
-    border-left: 3px solid var(--collab-accent);
-    background: rgba(255, 255, 255, 0.58);
+    border-left: 4px solid #b88e25;
+    background: #fff;
   }
 
-  .collab-form-note strong {
-    color: var(--collab-green);
-    font-size: 0.85rem;
+  .collab-form-note strong { color: var(--green-dark); }
+  .collab-form-note p { margin: 0.35rem 0 0; color: var(--muted); line-height: 1.55; }
+
+  .collab-direct-contact { margin-top: 1.4rem !important; }
+  .collab-direct-contact a,
+  .privacy-box a {
+    color: #0f5436 !important;
+    font-weight: 800;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.18em;
   }
 
-  .collab-form-note p {
-    margin: 0.4rem 0 0;
-    color: var(--collab-muted);
-    font-size: 0.9rem;
-    line-height: 1.55;
-  }
-
-  .collab-direct-contact {
-    margin-top: 1.5rem !important;
-    font-size: 0.9rem !important;
-  }
-
-  .collab-direct-contact a {
-    color: var(--collab-green);
-    font-weight: 750;
+  .collab-direct-contact a:focus-visible,
+  .privacy-box a:focus-visible,
+  .collab-faq summary:focus-visible {
+    outline: 3px solid var(--focus-dark);
+    outline-offset: 3px;
+    border-radius: 0.25rem;
   }
 
   .collaboration-form {
     display: grid;
     gap: 1.8rem;
-    padding: clamp(1.35rem, 4vw, 2.4rem);
-    border: 1px solid rgba(23, 63, 45, 0.14);
-    border-radius: 1.4rem;
+    padding: clamp(1.4rem, 4vw, 2.4rem);
+    border: 1px solid #c8d2cb;
+    border-radius: 1rem;
     background: #fff;
-    box-shadow: 0 24px 60px rgba(30, 50, 38, 0.08);
+    box-shadow: 0 18px 48px rgba(23, 63, 45, 0.09);
   }
 
-  .collaboration-form fieldset {
-    min-width: 0;
-    margin: 0;
-    padding: 0;
-    border: 0;
-  }
-
+  .form-required-note { margin: 0; color: #4d5a52; font-size: 0.9rem; }
+  .collaboration-form fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
   .collaboration-form legend {
     width: 100%;
     margin: 0 0 1.15rem;
     padding: 0 0 0.8rem;
-    border-bottom: 1px solid var(--collab-line);
-    color: var(--collab-green);
-    font-size: 0.78rem;
+    border-bottom: 1px solid var(--line);
+    color: var(--green-dark);
+    font-size: 0.9rem;
     font-weight: 850;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
   }
 
-  .form-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1.15rem;
-  }
-
-  .field-full {
-    grid-column: 1 / -1;
-  }
-
-  .field-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.48rem;
-  }
-
-  .field-group label {
-    color: #334039;
-    font-size: 0.82rem;
-    font-weight: 750;
-  }
-
-  .field-group label > span {
-    color: #8f5d49;
-  }
-
-  .field-group small {
-    color: #7b827d;
-    font-size: 0.76rem;
-    line-height: 1.45;
-  }
+  .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.2rem; }
+  .field-full { grid-column: 1 / -1; }
+  .field-group { display: flex; flex-direction: column; gap: 0.5rem; }
+  .field-group label { color: #26352c; font-size: 0.94rem; font-weight: 800; }
+  .field-group label > span { color: #8a3f2c; }
+  .field-group small { color: #56645c; font-size: 0.82rem; line-height: 1.48; }
 
   .collaboration-form input:not(.honeypot-field),
   .collaboration-form select,
   .collaboration-form textarea {
     width: 100%;
     box-sizing: border-box;
-    border: 1px solid #d7ddd8;
-    border-radius: 0.72rem;
-    background: #fffefb;
-    color: var(--collab-ink);
-    padding: 0.85rem 0.95rem;
+    min-height: 3.15rem;
+    border: 2px solid #b9c6bd;
+    border-radius: 0.6rem;
+    background: #fff;
+    color: #17231c;
+    padding: 0.82rem 0.95rem;
     font: inherit;
-    font-size: 0.94rem;
+    font-size: 1rem;
     line-height: 1.45;
-    outline: none;
-    transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
   }
 
   .collaboration-form input:not(.honeypot-field)::placeholder,
-  .collaboration-form textarea::placeholder {
-    color: #9a9f9b;
-  }
+  .collaboration-form textarea::placeholder { color: #69766e; opacity: 1; }
 
   .collaboration-form input:not(.honeypot-field):focus,
   .collaboration-form select:focus,
   .collaboration-form textarea:focus {
-    border-color: #6f8f79;
-    background: #fff;
-    box-shadow: 0 0 0 4px rgba(72, 111, 85, 0.11);
+    border-color: var(--green-dark);
+    outline: 3px solid rgba(23, 63, 45, 0.2);
+    outline-offset: 2px;
   }
 
-  .collaboration-form textarea {
-    min-height: 10.5rem;
-    resize: vertical;
-  }
+  .collaboration-form textarea { min-height: 11rem; resize: vertical; }
 
   .honeypot-field {
     position: absolute !important;
@@ -898,204 +724,103 @@ const metadata = {
 
   .privacy-box {
     padding: 1rem;
-    border-radius: 0.8rem;
-    background: #f6f7f4;
-    border: 1px solid #e0e4df;
+    border: 1px solid #cbd5ce;
+    border-radius: 0.7rem;
+    background: #f5f7f4;
   }
 
   .privacy-box label {
     display: flex;
     align-items: flex-start;
-    gap: 0.75rem;
-    color: #606762;
-    font-size: 0.82rem;
-    line-height: 1.55;
+    gap: 0.8rem;
+    color: #3f4c44;
+    font-size: 0.9rem;
+    line-height: 1.58;
   }
 
   .privacy-box input[type="checkbox"] {
-    width: 1.05rem;
-    height: 1.05rem;
-    margin-top: 0.15rem;
+    width: 1.35rem;
+    height: 1.35rem;
+    margin-top: 0.1rem;
     flex: 0 0 auto;
-    accent-color: var(--collab-green);
+    accent-color: var(--green-dark);
   }
 
-  .privacy-box a {
-    color: var(--collab-green);
-    font-weight: 750;
-  }
-
-  .form-actions {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    flex-wrap: wrap;
-  }
-
-  .form-actions button {
-    border: 0;
-    border-radius: 999px;
-    background: var(--collab-green);
-    color: #fff;
-    padding: 0.9rem 1.35rem;
-    font-size: 0.92rem;
-    font-weight: 800;
-    cursor: pointer;
-    box-shadow: 0 12px 28px rgba(23, 63, 45, 0.18);
-    transition: transform 150ms ease, background 150ms ease, box-shadow 150ms ease;
-  }
-
-  .form-actions button:hover {
-    transform: translateY(-1px);
-    background: var(--collab-green-2);
-    box-shadow: 0 16px 32px rgba(23, 63, 45, 0.22);
-  }
-
-  .form-actions button:focus-visible {
-    outline: 3px solid rgba(23, 63, 45, 0.24);
+  .privacy-box input[type="checkbox"]:focus-visible {
+    outline: 3px solid rgba(23, 63, 45, 0.28);
     outline-offset: 3px;
   }
 
-  .form-actions p {
-    margin: 0;
-    color: #858b86;
-    font-size: 0.76rem;
+  .form-actions button {
+    min-height: 3.25rem;
+    border: 2px solid var(--green-dark);
+    border-radius: 0.7rem;
+    background: var(--green-dark);
+    color: #fff;
+    padding: 0.8rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 850;
+    cursor: pointer;
   }
 
-  .collab-faq {
-    background: var(--collab-paper);
-  }
+  .form-actions button:hover { background: var(--green-hover); border-color: var(--green-hover); }
+  .form-actions button:focus-visible { outline: 3px solid var(--green-dark); outline-offset: 4px; }
 
-  .collab-faq__layout {
-    display: grid;
-    grid-template-columns: minmax(220px, 0.6fr) minmax(0, 1.4fr);
-    gap: clamp(2rem, 6vw, 5rem);
-  }
-
-  .collab-faq__list {
-    border-top: 1px solid var(--collab-line);
-  }
-
-  .collab-faq details {
-    border-bottom: 1px solid var(--collab-line);
-  }
-
+  .collab-faq { background: var(--paper); }
+  .collab-faq__layout { display: grid; grid-template-columns: minmax(220px, 0.6fr) minmax(0, 1.4fr); gap: clamp(2rem, 6vw, 5rem); }
+  .collab-faq__list { border-top: 1px solid var(--line); }
+  .collab-faq details { border-bottom: 1px solid var(--line); }
   .collab-faq summary {
     position: relative;
-    padding: 1.35rem 2rem 1.35rem 0;
+    min-height: 3.5rem;
+    display: flex;
+    align-items: center;
+    padding: 1rem 2.2rem 1rem 0;
     list-style: none;
     cursor: pointer;
-    color: var(--collab-green);
-    font-weight: 760;
+    color: var(--green-dark);
+    font-weight: 800;
   }
+  .collab-faq summary::-webkit-details-marker { display: none; }
+  .collab-faq summary::after { content: "+"; position: absolute; right: 0.25rem; font-size: 1.45rem; }
+  .collab-faq details[open] summary::after { content: "−"; }
+  .collab-faq__list p { margin: -0.2rem 0 1.35rem; max-width: 44rem; font-size: 0.98rem; }
 
-  .collab-faq summary::-webkit-details-marker {
-    display: none;
-  }
-
-  .collab-faq summary::after {
-    content: "+";
-    position: absolute;
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #718074;
-    font-size: 1.3rem;
-    font-weight: 400;
-  }
-
-  .collab-faq details[open] summary::after {
-    content: "–";
-  }
-
-  .collab-faq__list p {
-    margin: -0.4rem 0 1.35rem;
-    max-width: 44rem;
-    font-size: 0.94rem;
-  }
-
-  .collab-editorial-note {
-    padding: 1.6rem 0;
-    border-top: 1px solid var(--collab-line);
-    background: #eef0ea;
-  }
-
-  .collab-editorial-note p {
-    margin: 0;
-    color: #666d68;
-    font-size: 0.8rem;
-    line-height: 1.65;
-  }
-
-  .collab-editorial-note strong {
-    color: var(--collab-green);
-  }
+  .collab-editorial-note { padding: 1.7rem 0; border-top: 1px solid var(--line); background: #e9eee9; }
+  .collab-editorial-note p { margin: 0; color: #445149; font-size: 0.86rem; line-height: 1.65; }
+  .collab-editorial-note strong { color: var(--green-dark); }
 
   @media (max-width: 900px) {
     .collab-hero__grid,
     .collab-criteria,
     .collab-form-layout,
-    .collab-faq__layout {
-      grid-template-columns: 1fr;
-    }
-
-    .collab-hero h1 {
-      max-width: 15ch;
-    }
-
-    .collab-form-intro {
-      position: static;
-    }
-
-    .collab-process {
-      grid-template-columns: 1fr;
-    }
+    .collab-faq__layout { grid-template-columns: 1fr; }
+    .collab-form-intro { position: static; }
+    .collab-process { grid-template-columns: 1fr; }
   }
 
   @media (max-width: 700px) {
-    .collab-shell {
-      width: min(100% - 1.5rem, 1120px);
-    }
-
+    .collab-shell { width: min(100% - 1.5rem, 1120px); }
     .collab-proof__grid,
     .collab-cards,
     .collab-criteria__columns,
-    .form-grid {
-      grid-template-columns: 1fr;
-    }
+    .form-grid { grid-template-columns: 1fr; }
 
     .collab-proof__grid > div,
     .collab-proof__grid > div:last-child {
       border-left: 0;
       border-right: 0;
-      border-top: 1px solid var(--collab-line);
+      border-top: 1px solid var(--line);
       padding-inline: 0;
     }
-
-    .collab-proof__grid > div:first-child {
-      border-top: 0;
-    }
-
-    .field-full {
-      grid-column: auto;
-    }
-
-    .collab-actions,
-    .form-actions {
-      align-items: stretch;
-      flex-direction: column;
-    }
-
-    .collab-button,
-    .form-actions button {
-      width: 100%;
-    }
+    .collab-proof__grid > div:first-child { border-top: 0; }
+    .field-full { grid-column: auto; }
+    .collab-actions { flex-direction: column; align-items: stretch; }
+    .collab-button, .form-actions button { width: 100%; }
+    .collab-hero h1 { font-size: clamp(2.8rem, 14vw, 4.5rem); }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .collab-button,
-    .form-actions button {
-      transition: none;
-    }
+    *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
   }
 </style>
