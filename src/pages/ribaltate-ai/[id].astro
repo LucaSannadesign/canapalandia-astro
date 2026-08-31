@@ -13,7 +13,7 @@
 import SiteLayout from "@/layouts/SiteLayout.astro";
 import { getRibaltataById, getRelatedRibaltate } from "@/lib/repositories/ribaltatoreRepo";
 import { Fragment } from "astro/jsx-runtime";
-import { cleanPhrase, isIndexablePhrase } from "@/lib/utils";
+import { cleanPhrase } from "@/lib/utils";
 
 const { id } = Astro.params;
 const fraseId = id ? Number(id) : null;
@@ -40,9 +40,9 @@ if (!frase) {
 const fraseOriginale = cleanPhrase(frase.frase_originale);
 const fraseRibaltata = cleanPhrase(frase.frase_ribaltata, true); // Preserva newline per formattazione
 
-// Verifica se la frase è indexable (SEO gate)
-const isIndexable = isIndexablePhrase(fraseRibaltata);
-const robotsContent = isIndexable ? "index,follow" : "noindex,follow";
+// Le singole risposte AI restano accessibili e condivisibili, ma non sono
+// contenuti editoriali revisionati: non devono competere nell'indice organico.
+const robotsContent = "noindex,follow";
 
 // Meta SEO/OG
 const origin = Astro.url.origin;
