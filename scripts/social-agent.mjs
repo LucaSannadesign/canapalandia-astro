@@ -9,7 +9,16 @@ const STATE_FILE = process.env.STATE_FILE || ".cache/social-share.json";
 const RECENT_POSTS_WINDOW_MONTHS = Number(process.env.RECENT_POSTS_WINDOW_MONTHS || 6);
 const MIN_HOURS_BETWEEN_ARTICLES = Number(process.env.MIN_HOURS_BETWEEN_ARTICLES || 47);
 const DRY_RUN = process.env.DRY_RUN === "true" || process.argv.includes("--dry-run");
-const CHANNELS = ["facebook", "instagram"];
+const SUPPORTED_CHANNELS = new Set(["facebook", "instagram", "linkedin"]);
+const CHANNELS = String(process.env.SOCIAL_CHANNELS || "facebook,instagram")
+  .split(",")
+  .map((channel) => channel.trim().toLowerCase())
+  .filter(Boolean);
+
+if (!CHANNELS.length) throw new Error("SOCIAL_CHANNELS must contain at least one channel");
+for (const channel of CHANNELS) {
+  if (!SUPPORTED_CHANNELS.has(channel)) throw new Error(`Unsupported social channel: ${channel}`);
+}
 
 function cleanText(value, max = 240) {
   const text = String(value || "")
@@ -178,11 +187,20 @@ function buildPayload(post, image, channel) {
     "#Canapalandia #Canapa #Cannabis",
   ].filter(Boolean).join("\n\n");
 
-  // `content` is the canonical text field consumed by downstream Make modules.
-  // Keep the channel-specific fields for backward compatibility with the
-  // existing Facebook/Instagram routes.
-  const content = channel === "instagram" ? instagramCaption : facebookCopy;
-  if (!content.trim()) throw new Error(`Empty social content for ${channel}`);
+  const linkedinCopy = [
+    post.title,
+    description,
+    `Approfondisci su Canapalandia: ${withUtm(post.link, "linkedin")}`,
+    "#Canapalandia #Canapa #Cannabis",
+  ].filter(Boolean).join("\n\n");
+
+  const contentByChannel = {
+    facebook: facebookCopy,
+    instagram: instagramCaption,
+    linkedin: linkedinCopy,
+  };
+  const content = contentByChannel[channel];
+  if (!content?.trim()) throw new Error(`Empty social content for ${channel}`);
 
   return {
     eventId: eventId(post, channel),
@@ -197,6 +215,7 @@ function buildPayload(post, image, channel) {
     content,
     facebookCopy,
     instagramCaption,
+    linkedinCopy,
     source: "github-actions-social-agent",
     site: "canapalandia",
   };
@@ -251,6 +270,7 @@ function choosePost(posts, state, now) {
 
 async function main() {
   console.log(`[social-agent] Starting${DRY_RUN ? " (dry-run)" : ""}...`);
+  console.log(`[social-agent] Channels: ${CHANNELS.join(", ")}`);
   const xml = await fetchText(RSS_URL, "application/rss+xml,application/xml,text/xml");
   const posts = parseFeed(xml);
   console.log(`[social-agent] Feed posts loaded: ${posts.length}`);
@@ -298,7 +318,7 @@ async function main() {
       state.completedArticles.push({ slug: post.slug, link: post.link, completedAt });
     }
     saveState(state);
-    console.log(`[social-agent] Completed on Facebook + Instagram: ${post.slug}`);
+    console.log(`[social-agent] Completed on ${CHANNELS.join(" + ")}: ${post.slug}`);
   }
 }
 
