@@ -15,7 +15,7 @@ on:
       channels:
         description: "Comma-separated channels for this manual run"
         required: true
-        default: "facebook,instagram"
+        default: "facebook,instagram,linkedin"
         type: string
 
 permissions:
@@ -68,9 +68,7 @@ jobs:
           STATE_FILE: .cache/social-share.json
           RECENT_POSTS_WINDOW_MONTHS: 6
           MIN_HOURS_BETWEEN_ARTICLES: 47
-          # Scheduled runs stay on FB/IG until the Make LinkedIn route is connected.
-          # Manual dry-runs can already validate LinkedIn with channels=linkedin.
-          SOCIAL_CHANNELS: ${{ github.event_name == 'workflow_dispatch' && inputs.channels || 'facebook,instagram' }}
+          SOCIAL_CHANNELS: ${{ github.event_name == 'workflow_dispatch' && inputs.channels || 'facebook,instagram,linkedin' }}
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
         run: |
           mkdir -p .cache
