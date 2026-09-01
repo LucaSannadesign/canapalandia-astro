@@ -1,9 +1,6 @@
 name: Canapalandia Social Agent 6M
 
 on:
-  push:
-    paths:
-      - '.github/workflows/social-agent.yml'
   schedule:
     # Runs daily; the script enforces a 47h minimum between completed articles.
     # Daily polling also lets a failed single-channel publish retry the next day.
@@ -70,11 +67,11 @@ jobs:
           RSS_URL: https://canapalandia.com/rss.xml
           STATE_FILE: .cache/social-share.json
           RECENT_POSTS_WINDOW_MONTHS: 6
-          MIN_HOURS_BETWEEN_ARTICLES: ${{ github.event_name == 'push' && '0' || '47' }}
-          # A push event is used only for the one-off isolated LinkedIn test.
-          # Scheduled runs remain on FB/IG until LinkedIn is validated.
-          SOCIAL_CHANNELS: ${{ github.event_name == 'push' && 'linkedin' || (github.event_name == 'workflow_dispatch' && inputs.channels || 'facebook,instagram') }}
-          DRY_RUN: ${{ github.event_name == 'push' && 'false' || (github.event_name == 'workflow_dispatch' && inputs.dry_run || false) }}
+          MIN_HOURS_BETWEEN_ARTICLES: 47
+          # Scheduled runs stay on FB/IG until the Make LinkedIn route is connected.
+          # Manual dry-runs can already validate LinkedIn with channels=linkedin.
+          SOCIAL_CHANNELS: ${{ github.event_name == 'workflow_dispatch' && inputs.channels || 'facebook,instagram' }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
         run: |
           mkdir -p .cache
           node scripts/social-agent.mjs
