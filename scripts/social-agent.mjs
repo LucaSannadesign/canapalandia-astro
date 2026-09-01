@@ -178,6 +178,12 @@ function buildPayload(post, image, channel) {
     "#Canapalandia #Canapa #Cannabis",
   ].filter(Boolean).join("\n\n");
 
+  // `content` is the canonical text field consumed by downstream Make modules.
+  // Keep the channel-specific fields for backward compatibility with the
+  // existing Facebook/Instagram routes.
+  const content = channel === "instagram" ? instagramCaption : facebookCopy;
+  if (!content.trim()) throw new Error(`Empty social content for ${channel}`);
+
   return {
     eventId: eventId(post, channel),
     channel,
@@ -188,6 +194,7 @@ function buildPayload(post, image, channel) {
     dateISO: post.dateISO,
     pubDate: post.pubDate,
     image,
+    content,
     facebookCopy,
     instagramCaption,
     source: "github-actions-social-agent",
