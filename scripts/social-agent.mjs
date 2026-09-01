@@ -171,8 +171,56 @@ function withUtm(link, channel) {
   return url.toString();
 }
 
+function normalizeTopicText(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const HASHTAG_RULES = [
+  { re: /bioplastic|biocomposit/, tags: ["#Bioplastiche", "#Biocompositi"] },
+  { re: /sostenibil|ecolog|economia circolare|ambiente/, tags: ["#Sostenibilita"] },
+  { re: /cbd|cannabidiolo/, tags: ["#CBD", "#Cannabidiolo"] },
+  { re: /olio di semi|semi di canapa|aliment|nutriz|proteine|omega/, tags: ["#SemiDiCanapa", "#CanapaAlimentare"] },
+  { re: /cannabis medica|cannabis terapeut|farmac|medic/, tags: ["#CannabisMedica"] },
+  { re: /germania|tedesc/, tags: ["#Germania"] },
+  { re: /italia|italian/, tags: ["#Italia"] },
+  { re: /unione europea|cgue|corte ue|europa/, tags: ["#UnioneEuropea"] },
+  { re: /legge|normativ|decreto|sentenza|tribunal|consiglio di stato|legal/, tags: ["#NormativaCannabis"] },
+  { re: /coltiv|agricolt|canapa industriale/, tags: ["#CanapaIndustriale", "#AgricolturaSostenibile"] },
+  { re: /tessil|fibra|moda/, tags: ["#TessileSostenibile"] },
+  { re: /cosmetic|pelle|crema/, tags: ["#CosmesiNaturale"] },
+  { re: /mercat|import|export|tonnellate|vendite/, tags: ["#MercatoCannabis"] },
+  { re: /controll|etichett|claim|responsabilita consumatore/, tags: ["#ConsumatoriConsapevoli"] },
+];
+
+function dynamicHashtags(post) {
+  const text = normalizeTopicText(`${post.title} ${post.description} ${post.slug}`);
+  const topics = [];
+
+  for (const rule of HASHTAG_RULES) {
+    if (!rule.re.test(text)) continue;
+    for (const tag of rule.tags) {
+      if (!topics.includes(tag)) topics.push(tag);
+      if (topics.length >= 4) break;
+    }
+    if (topics.length >= 4) break;
+  }
+
+  if (topics.length < 2 && /canapa|hemp/.test(text) && !topics.includes("#Canapa")) topics.push("#Canapa");
+  if (topics.length < 2 && /cannabis/.test(text) && !topics.includes("#Cannabis")) topics.push("#Cannabis");
+  if (topics.length < 2 && !topics.includes("#Canapa")) topics.push("#Canapa");
+
+  return ["#Canapalandia", ...topics.slice(0, 4)].join(" ");
+}
+
 function buildPayload(post, image, channel) {
   const description = cleanText(post.description);
+  const hashtags = dynamicHashtags(post);
   const facebookCopy = [
     post.title,
     description,
@@ -184,14 +232,14 @@ function buildPayload(post, image, channel) {
     description,
     "Articolo completo su Canapalandia:",
     withUtm(post.link, "instagram"),
-    "#Canapalandia #Canapa #Cannabis",
+    hashtags,
   ].filter(Boolean).join("\n\n");
 
   const linkedinCopy = [
     post.title,
     description,
     `Approfondisci su Canapalandia: ${withUtm(post.link, "linkedin")}`,
-    "#Canapalandia #Canapa #Cannabis",
+    hashtags,
   ].filter(Boolean).join("\n\n");
 
   const contentByChannel = {
@@ -212,6 +260,7 @@ function buildPayload(post, image, channel) {
     dateISO: post.dateISO,
     pubDate: post.pubDate,
     image,
+    hashtags,
     content,
     facebookCopy,
     instagramCaption,
