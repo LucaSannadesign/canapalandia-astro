@@ -10,7 +10,7 @@ const RECENT_POSTS_WINDOW_MONTHS = Number(process.env.RECENT_POSTS_WINDOW_MONTHS
 const MIN_HOURS_BETWEEN_ARTICLES = Number(process.env.MIN_HOURS_BETWEEN_ARTICLES || 47);
 const DRY_RUN = process.env.DRY_RUN === "true" || process.argv.includes("--dry-run");
 const SUPPORTED_CHANNELS = new Set(["facebook", "instagram", "linkedin"]);
-const CHANNELS = String(process.env.SOCIAL_CHANNELS || "facebook,instagram")
+const CHANNELS = String(process.env.SOCIAL_CHANNELS || "facebook,instagram,linkedin")
   .split(",")
   .map((channel) => channel.trim().toLowerCase())
   .filter(Boolean);
@@ -163,6 +163,10 @@ function trackedArticle(state, post) {
   return CHANNELS.some((channel) => hasEvent(state, post, channel));
 }
 
+function wasCompletedArticle(state, post) {
+  return state.completedArticles.some((item) => item.slug === post.slug);
+}
+
 function withUtm(link, channel) {
   const url = new URL(link);
   url.searchParams.set("utm_source", channel);
@@ -296,7 +300,9 @@ function choosePost(posts, state, now) {
 
   console.log(`[social-agent] Recent posts in ${RECENT_POSTS_WINDOW_MONTHS} months: ${recent.length}`);
 
-  const incomplete = recent.find((post) => trackedArticle(state, post) && !articleComplete(state, post));
+  const incomplete = recent.find(
+    (post) => trackedArticle(state, post) && !articleComplete(state, post) && !wasCompletedArticle(state, post),
+  );
   if (incomplete) {
     console.log(`[social-agent] Resuming partially published article: ${incomplete.slug}`);
     return { post: incomplete, retry: true };
