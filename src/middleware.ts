@@ -5,6 +5,7 @@ import type { MiddlewareHandler } from "astro";
  * - handles legacy e-commerce URLs with semantic 301 where possible
  * - serves 410 for obsolete/junk/bot-like endpoints without replacements
  * - keeps noindex on preview/localhost environments
+ * - keeps the Drop 001 demand test private unless explicitly enabled
  */
 export const onRequest: MiddlewareHandler = async (context, next) => {
   const { url } = context;
@@ -37,6 +38,25 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
         "Cache-Control": "public, max-age=86400",
       },
     });
+
+  /**
+   * Drop 001 is a private demand-test prototype.
+   * It must never become reachable just because the branch is previewed/deployed.
+   * Explicit opt-in only: DROP_001_TEST_ENABLED=true.
+   */
+  if (
+    pathNoSlash.toLowerCase() === "drop-001" &&
+    import.meta.env.DROP_001_TEST_ENABLED !== "true"
+  ) {
+    return new Response("Not Found", {
+      status: 404,
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Robots-Tag": "noindex, nofollow, noarchive",
+      },
+    });
+  }
 
   const exactGonePaths = new Set([
     "wp-login.php",
