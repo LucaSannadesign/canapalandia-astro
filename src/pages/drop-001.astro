@@ -1,36 +1,38 @@
 ---
 import Layout from "../layouts/MigratedLayout.astro";
 
+const creativeVersion = "claims-v2";
+
 const products = [
   {
     id: "tshirt",
     eyebrow: "01 · Wear",
     name: "T-shirt Bella+Canvas 3001",
+    claim: "VERIFY BEFORE VERDICT",
     price: "€29,90",
     launchPrice: "€26,90",
     saving: "Risparmi €3,00",
     note: "Stampa frontale. Il master finale sarà ottimizzato per restare leggibile anche sulle taglie più piccole.",
-    artwork: "EDITORIAL / 001",
   },
   {
     id: "poster",
     eyebrow: "02 · Print",
     name: "Poster 21 × 30 cm",
+    claim: "READ THE RECORD / CHANGE THE RULES",
     price: "€19,90",
     launchPrice: "€17,90",
     saving: "Risparmi €2,00",
-    note: "Formato editoriale compatto, pensato come manifesto della serie e non come semplice merchandising.",
-    artwork: "CULTURE / POLICY",
+    note: "Manifesto editoriale compatto, pensato per dati, note e gerarchie tipografiche.",
   },
   {
     id: "tote",
     eyebrow: "03 · Carry",
     name: "Tote BagBase W101",
+    claim: "QUESTION / VERIFY / REFORM",
     price: "€24,90",
     launchPrice: "€21,90",
     saving: "Risparmi €3,00",
-    note: "Shopper 38 × 42 cm. Area di stampa finale da verificare nel Product Designer Fourthwall.",
-    artwork: "INFORMATION / FREEDOM",
+    note: "Shopper 38 × 42 cm. L'area DTF definitiva sarà validata nel Product Designer Fourthwall.",
   },
 ];
 ---
@@ -39,30 +41,31 @@ const products = [
   title="Drop 001 — Test di interesse | Canapalandia"
   description="Anteprima sperimentale della Canapalandia Editorial Series. Nessun checkout: scegli il formato che ti interessa e iscriviti alla waitlist."
   canonical="/drop-001/"
-  robots="noindex,nofollow"
+  robots="noindex,nofollow,noarchive"
   newsletter={false}
 >
   <main class="drop-page">
     <section class="drop-hero" aria-labelledby="drop-title">
-      <div class="drop-kicker">CANAPALANDIA · EDITORIAL SERIES</div>
+      <p class="kicker">CANAPALANDIA · EDITORIAL SERIES · CLAIMS V2</p>
       <h1 id="drop-title">Drop 001</h1>
-      <p class="drop-lead">
-        Non è ancora uno shop. Stiamo testando quali oggetti meritano davvero di essere prodotti prima di aprire qualsiasi vendita.
+      <p class="lead">
+        Tre oggetti editoriali, nessun checkout. Misuriamo il formato e il prezzo prima di trasformare il concept in un prodotto reale.
       </p>
-      <div class="drop-status" role="note">
-        <strong>Test senza checkout.</strong> Nessun pagamento, nessun ordine e nessun impegno di acquisto.
+      <div class="status-note" role="note">
+        <strong>Prototype / not cleared for sale.</strong>
+        I claim e i visual possono cambiare dopo il clearance IP. Nessun pagamento, ordine o impegno di acquisto.
       </div>
     </section>
 
-    <section class="drop-intro" aria-labelledby="drop-intro-title">
-      <p class="drop-index">001 / INTEREST TEST</p>
+    <section class="intro" aria-labelledby="intro-title">
+      <p class="index">001 / INTEREST TEST</p>
       <div>
-        <h2 id="drop-intro-title">Tre formati. Una sola domanda: quale vorresti vedere realizzato?</h2>
+        <h2 id="intro-title">Quale formato compreresti più facilmente?</h2>
         <p>
-          Mostriamo sia il prezzo previsto sia il vantaggio riservato alla waitlist. Seleziona il prodotto che compreresti più facilmente al prezzo lancio indicato: ci serve per misurare intenzione reale, non semplice curiosità.
+          Il test confronta intenzione di acquisto, fascia prezzo e formato. I tre claim sono candidati V2 e non vengono presentati come marchi disponibili finché WIPO, EUIPO/TMview, USPTO e UKIPO non saranno verificati.
         </p>
-        <div class="launch-rule" role="note">
-          <strong>Vantaggio waitlist:</strong> prezzo lancio dedicato con €2–€3 di risparmio sul prezzo previsto, se e quando il Drop 001 verrà effettivamente pubblicato.
+        <div class="launch-rule">
+          <strong>Vantaggio waitlist:</strong> se il Drop passerà i gate e verrà pubblicato, la lista avrà accesso prioritario ai prezzi lancio indicati.
         </div>
       </div>
     </section>
@@ -70,29 +73,36 @@ const products = [
     <section class="product-grid" aria-label="Prodotti candidati Drop 001">
       {products.map((product) => (
         <article class="product-card" data-product-card={product.id}>
-          <div class="artwork" aria-hidden="true">
-            <span class="artwork-series">CANAPALANDIA</span>
-            <strong>{product.artwork}</strong>
-            <span class="artwork-foot">DROP 001 · PROTOTYPE</span>
+          <div class="artwork" aria-label={`Concept grafico: ${product.claim}`}>
+            <span class="artwork-series">CANAPALANDIA / DROP 001</span>
+            <strong>{product.claim}</strong>
+            <span class="artwork-foot">CLAIMS V2 · IP CLEARANCE PENDING</span>
           </div>
+
           <div class="product-body">
             <p class="product-eyebrow">{product.eyebrow}</p>
             <h3>{product.name}</h3>
 
-            <div class="product-pricing" aria-label={`Prezzi ${product.name}`}>
-              <p class="product-reference">
+            <div class="pricing">
+              <p class="reference-price">
                 <span>Prezzo previsto</span>
                 <strong>{product.price}</strong>
               </p>
-              <p class="product-price">
+              <p class="launch-price">
                 {product.launchPrice}
                 <span>prezzo lancio waitlist</span>
               </p>
-              <p class="product-saving">{product.saving}</p>
+              <p class="saving">{product.saving}</p>
             </div>
 
             <p class="product-note">{product.note}</p>
-            <button class="interest-button" type="button" data-product={product.id} data-product-name={product.name}>
+            <button
+              class="interest-button"
+              type="button"
+              data-product={product.id}
+              data-product-name={product.name}
+              data-claim={product.claim}
+            >
               Voglio il prezzo lancio
             </button>
           </div>
@@ -102,16 +112,17 @@ const products = [
 
     <section class="waitlist" id="waitlist" aria-labelledby="waitlist-title">
       <div class="waitlist-copy">
-        <p class="drop-index">002 / WAITLIST</p>
+        <p class="index">002 / WAITLIST</p>
         <h2 id="waitlist-title">Segnala il tuo interesse</h2>
         <p>
-          Entrando nella waitlist registri il prodotto che preferisci e, se il Drop 001 passerà i nostri test e verrà pubblicato, avrai accesso prioritario al prezzo lancio indicato. Oggi non effettui alcun ordine e non viene richiesto alcun pagamento.
+          L'email serve a misurare una preferenza reale e, se il progetto passerà i gate, ad avvisarti dell'eventuale lancio. Non viene effettuato alcun ordine.
         </p>
         <p class="selected-copy" id="selectedCopy">Seleziona prima uno dei tre prodotti.</p>
       </div>
 
       <form class="waitlist-form" id="dropWaitlistForm" method="post" action="/api/newsletter">
         <input type="hidden" name="campaign" value="drop-001" />
+        <input type="hidden" name="creativeVersion" value={creativeVersion} />
         <input type="hidden" name="preference" id="preference" value="" />
 
         <div class="hp-field" aria-hidden="true">
@@ -135,31 +146,42 @@ const products = [
     </section>
 
     <section class="method" aria-labelledby="method-title">
-      <p class="drop-index">003 / CRITERIO</p>
+      <p class="index">003 / GATE</p>
       <div>
-        <h2 id="method-title">Cosa misuriamo</h2>
+        <h2 id="method-title">Cosa succede dopo il test</h2>
         <p>
-          Visualizzazioni della pagina, scelta del prodotto e iscrizioni alla waitlist. La vendita resta bloccata finché i gate fiscali, previdenziali e di compliance non saranno chiusi.
+          Il risultato della waitlist non apre automaticamente la vendita. Un eventuale GO porta prima a clearance IP definitivo, chiusura dei gate fiscali/previdenziali, master di stampa, preflight Fourthwall e controllo finale.
         </p>
       </div>
     </section>
   </main>
 </Layout>
 
-<script>
-  const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>(".interest-button"));
-  const cards = Array.from(document.querySelectorAll<HTMLElement>("[data-product-card]"));
-  const preference = document.querySelector<HTMLInputElement>("#preference");
-  const selectedCopy = document.querySelector<HTMLElement>("#selectedCopy");
-  const submitButton = document.querySelector<HTMLButtonElement>(".submit-button");
-  const form = document.querySelector<HTMLFormElement>("#dropWaitlistForm");
-  const status = document.querySelector<HTMLElement>("#formStatus");
+<script define:vars={{ creativeVersion }}>
+  const buttons = Array.from(document.querySelectorAll(".interest-button"));
+  const cards = Array.from(document.querySelectorAll("[data-product-card]"));
+  const preference = document.querySelector("#preference");
+  const selectedCopy = document.querySelector("#selectedCopy");
+  const submitButton = document.querySelector(".submit-button");
+  const form = document.querySelector("#dropWaitlistForm");
+  const status = document.querySelector("#formStatus");
 
-  function selectProduct(product: string, productName: string) {
+  function pushAnalytics(event, product, claim) {
+    if (Array.isArray(window.dataLayer)) {
+      window.dataLayer.push({
+        event,
+        product,
+        claim,
+        creative_version: creativeVersion,
+      });
+    }
+  }
+
+  function selectProduct(product, productName, claim) {
     if (!preference || !selectedCopy || !submitButton) return;
 
     preference.value = product;
-    selectedCopy.textContent = `Hai scelto: ${productName}. La waitlist ti riserva l'accesso prioritario al prezzo lancio se il Drop va live.`;
+    selectedCopy.textContent = `Hai scelto: ${productName}. Il claim candidato è “${claim}”.`;
     submitButton.disabled = false;
 
     cards.forEach((card) => {
@@ -172,14 +194,7 @@ const products = [
       button.textContent = selected ? "Prezzo lancio selezionato" : "Voglio il prezzo lancio";
     });
 
-    const win = window as typeof window & { dataLayer?: unknown[] };
-    if (Array.isArray(win.dataLayer)) {
-      win.dataLayer.push({
-        event: "drop_001_product_interest",
-        product,
-      });
-    }
-
+    pushAnalytics("drop_001_product_interest", product, claim);
     document.querySelector("#waitlist")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
@@ -188,17 +203,18 @@ const products = [
     button.addEventListener("click", () => {
       const product = button.dataset.product;
       const productName = button.dataset.productName;
-      if (product && productName) selectProduct(product, productName);
+      const claim = button.dataset.claim;
+      if (product && productName && claim) selectProduct(product, productName, claim);
     });
   });
 
   form?.addEventListener("submit", async (event) => {
     event.preventDefault();
-    if (!status || !preference || !preference.value) return;
+    if (!status || !preference || !preference.value || !submitButton) return;
 
     const data = new FormData(form);
     status.textContent = "Invio in corso…";
-    submitButton?.setAttribute("disabled", "true");
+    submitButton.disabled = true;
 
     try {
       const response = await fetch("/api/newsletter", {
@@ -210,6 +226,7 @@ const products = [
           hp: data.get("hp"),
           campaign: "drop-001",
           preference: preference.value,
+          creativeVersion,
         }),
       });
 
@@ -219,19 +236,18 @@ const products = [
       }
 
       status.textContent = response.status === 409
-        ? "Sei già nella lista. Abbiamo registrato la preferenza aggiornata."
+        ? "Sei già nella lista. La preferenza è stata aggiornata."
         : "Grazie. Interesse registrato: nessun ordine è stato effettuato.";
 
-      const win = window as typeof window & { dataLayer?: unknown[] };
-      if (Array.isArray(win.dataLayer)) {
-        win.dataLayer.push({
-          event: "drop_001_waitlist_signup",
-          product: preference.value,
-        });
-      }
+      const selectedButton = buttons.find((button) => button.dataset.product === preference.value);
+      pushAnalytics(
+        "drop_001_waitlist_signup",
+        preference.value,
+        selectedButton?.dataset.claim || "",
+      );
     } catch (error) {
       status.textContent = error instanceof Error ? error.message : "Errore durante l'iscrizione. Riprova.";
-      submitButton?.removeAttribute("disabled");
+      submitButton.disabled = false;
     }
   });
 </script>
@@ -248,14 +264,8 @@ const products = [
     padding: clamp(32px, 7vw, 88px) 22px 96px;
   }
 
-  .drop-hero {
-    border-top: 1px solid var(--line);
-    border-bottom: 1px solid var(--line);
-    padding: clamp(42px, 8vw, 92px) 0 clamp(36px, 6vw, 68px);
-  }
-
-  .drop-kicker,
-  .drop-index,
+  .kicker,
+  .index,
   .product-eyebrow,
   .artwork-series,
   .artwork-foot {
@@ -263,6 +273,12 @@ const products = [
     letter-spacing: 0.13em;
     text-transform: uppercase;
     font-size: 0.72rem;
+  }
+
+  .drop-hero {
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    padding: clamp(42px, 8vw, 92px) 0 clamp(36px, 6vw, 68px);
   }
 
   .drop-hero h1 {
@@ -273,22 +289,23 @@ const products = [
     font-weight: 600;
   }
 
-  .drop-lead {
-    max-width: 780px;
+  .lead {
+    max-width: 820px;
     margin: 0;
     font-size: clamp(1.25rem, 2.7vw, 2rem);
     line-height: 1.28;
   }
 
-  .drop-status {
+  .status-note {
+    max-width: 780px;
     margin-top: 30px;
-    display: inline-block;
-    border: 1px solid var(--line);
-    padding: 11px 14px;
-    font-size: 0.92rem;
+    border-left: 3px solid var(--accent);
+    padding: 12px 16px;
+    color: var(--muted);
+    line-height: 1.5;
   }
 
-  .drop-intro,
+  .intro,
   .method {
     display: grid;
     grid-template-columns: minmax(140px, 0.7fr) minmax(0, 2fr);
@@ -297,7 +314,7 @@ const products = [
     border-bottom: 1px solid var(--line);
   }
 
-  .drop-intro h2,
+  .intro h2,
   .waitlist h2,
   .method h2 {
     margin: 0 0 14px;
@@ -306,9 +323,9 @@ const products = [
     letter-spacing: -0.035em;
   }
 
-  .drop-intro > div > p,
+  .intro > div > p,
   .method p:last-child,
-  .waitlist-copy > p:not(.drop-index):not(.selected-copy) {
+  .waitlist-copy > p:not(.index):not(.selected-copy) {
     max-width: 720px;
     color: var(--muted);
     font-size: 1.06rem;
@@ -318,9 +335,8 @@ const products = [
   .launch-rule {
     max-width: 720px;
     margin-top: 22px;
-    border-left: 3px solid var(--accent);
-    padding: 12px 16px;
-    color: var(--muted);
+    border: 1px solid var(--line);
+    padding: 14px 16px;
     line-height: 1.5;
   }
 
@@ -335,7 +351,6 @@ const products = [
   .product-card {
     background: var(--paper);
     padding: 18px;
-    transition: background 150ms ease, outline-color 150ms ease;
   }
 
   .product-card.is-selected {
@@ -354,11 +369,11 @@ const products = [
   }
 
   .artwork strong {
-    max-width: 9ch;
-    font-size: clamp(2rem, 4.4vw, 4.5rem);
-    line-height: 0.91;
-    letter-spacing: -0.055em;
-    font-weight: 600;
+    max-width: 10ch;
+    font-size: clamp(1.8rem, 3.6vw, 3.8rem);
+    line-height: 0.94;
+    letter-spacing: -0.05em;
+    font-weight: 650;
   }
 
   .artwork-foot {
@@ -375,16 +390,15 @@ const products = [
     line-height: 1.15;
   }
 
-  .product-pricing {
+  .pricing {
     margin: 15px 0 18px;
     padding: 14px 0;
     border-top: 1px solid var(--line);
     border-bottom: 1px solid var(--line);
   }
 
-  .product-reference {
+  .reference-price {
     display: flex;
-    align-items: baseline;
     justify-content: space-between;
     gap: 10px;
     margin: 0 0 5px;
@@ -392,12 +406,12 @@ const products = [
     font-size: 0.8rem;
   }
 
-  .product-reference strong {
+  .reference-price strong {
     font-size: 0.95rem;
     font-weight: 500;
   }
 
-  .product-price {
+  .launch-price {
     display: flex;
     align-items: baseline;
     gap: 9px;
@@ -407,23 +421,21 @@ const products = [
     font-weight: 700;
   }
 
-  .product-price span {
+  .launch-price span {
     font-size: 0.72rem;
     letter-spacing: 0;
     color: var(--muted);
     font-weight: 500;
   }
 
-  .product-saving {
+  .saving {
     display: inline-block;
     margin: 7px 0 0;
     padding: 4px 7px;
     background: var(--accent);
     color: var(--paper);
-    font-family: Arial, Helvetica, sans-serif;
     font-size: 0.7rem;
     font-weight: 700;
-    letter-spacing: 0.04em;
     text-transform: uppercase;
   }
 
@@ -522,18 +534,15 @@ const products = [
   }
 
   @media (max-width: 820px) {
-    .product-grid {
+    .product-grid,
+    .intro,
+    .method,
+    .waitlist {
       grid-template-columns: 1fr;
     }
 
     .product-note {
       min-height: 0;
-    }
-
-    .drop-intro,
-    .method,
-    .waitlist {
-      grid-template-columns: 1fr;
     }
   }
 </style>
