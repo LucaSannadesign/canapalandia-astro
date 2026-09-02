@@ -3,6 +3,17 @@ export const prerender = false; // API route must be server-side
 import type { APIRoute } from 'astro';
 
 const BUTTONDOWN_API_URL = "https://api.buttondown.com/v1/subscribers";
+const DROP_001_PREFERENCES = new Set(["tshirt", "poster", "tote"]);
+
+function normalizedCampaign(value: unknown): string | null {
+    return value === "drop-001" ? "drop-001" : null;
+}
+
+function normalizedPreference(value: unknown): string | null {
+    return typeof value === "string" && DROP_001_PREFERENCES.has(value)
+        ? value
+        : null;
+}
 
 export const POST: APIRoute = async ({ request }) => {
     try {
@@ -11,17 +22,23 @@ export const POST: APIRoute = async ({ request }) => {
         let email: string | null = null;
         let consent: string | boolean | null = null;
         let hp: string | null = null;
+        let campaign: string | null = null;
+        let preference: string | null = null;
 
         if (contentType.includes("application/json")) {
             const data = await request.json();
             email = data.email || null;
             consent = data.consent || null;
             hp = data.hp || null;
+            campaign = normalizedCampaign(data.campaign);
+            preference = normalizedPreference(data.preference);
         } else {
             const form = await request.formData();
             email = (form.get("email") as string) || null;
             consent = (form.get("consent") as string) || null;
             hp = (form.get("hp") as string) || null;
+            campaign = normalizedCampaign(form.get("campaign"));
+            preference = normalizedPreference(form.get("preference"));
         }
 
         // Honeypot: se hp è valorizzato, ritorna OK senza iscrivere (antibot)
@@ -35,6 +52,14 @@ export const POST: APIRoute = async ({ request }) => {
         // Validazione email
         if (!email || !/\S+@\S+\.\S+/.test(email)) {
             return new Response(JSON.stringify({ message: "Email non valida" }), {
+                status: 400,
+                headers: { "Content-Type": "application/json" }
+            });
+        }
+
+        // Il test Drop 001 richiede una preferenza prodotto valida.
+        if (campaign === "drop-001" && !preference) {
+            return new Response(JSON.stringify({ message: "Seleziona il prodotto che ti interessa" }), {
                 status: 400,
                 headers: { "Content-Type": "application/json" }
             });
@@ -68,6 +93,19 @@ export const POST: APIRoute = async ({ request }) => {
         const xff = request.headers.get("x-forwarded-for") || "";
         const ip_address = xff.split(",")[0]?.trim() || undefined;
 
+        const tags = ["canapalandia-site"];
+        const metadata: Record<string, string> = { source: "canapalandia-astro" };
+
+        if (campaign === "drop-001") {
+            tags.push("drop-001-waitlist");
+            metadata.campaign = campaign;
+
+            if (preference) {
+                tags.push(`drop-001-${preference}`);
+                metadata.preference = preference;
+            }
+        }
+
         // POST diretto a Buttondown (API ufficiale)
         const response = await fetch(BUTTONDOWN_API_URL, {
             method: "POST",
@@ -79,8 +117,8 @@ export const POST: APIRoute = async ({ request }) => {
             body: JSON.stringify({
                 email_address: email,
                 ip_address,
-                tags: ["canapalandia-site"],
-                metadata: { source: "canapalandia-astro" },
+                tags,
+                metadata,
             }),
         });
 
