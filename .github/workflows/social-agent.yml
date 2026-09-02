@@ -2,7 +2,7 @@ name: Canapalandia Social Agent 6M
 
 on:
   schedule:
-    # Runs daily; the script enforces a 47h minimum between completed articles.
+    # Runs daily; the script enforces a 36h minimum between completed articles.
     # Daily polling also lets a failed single-channel publish retry the next day.
     - cron: '30 8 * * *'
   workflow_dispatch:
@@ -70,7 +70,7 @@ jobs:
           RSS_URL: https://canapalandia.com/rss.xml
           STATE_FILE: .cache/social-share.json
           RECENT_POSTS_WINDOW_MONTHS: 6
-          MIN_HOURS_BETWEEN_ARTICLES: 47
+          MIN_HOURS_BETWEEN_ARTICLES: 36
           SOCIAL_CHANNELS: facebook,instagram,linkedin
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
         run: |
