@@ -59,6 +59,20 @@ export const POST: APIRoute = async ({ request }) => {
             });
         }
 
+        // La normale newsletter resta disponibile. Solo la campagna Drop 001 è feature-gated.
+        if (
+            campaign === "drop-001" &&
+            import.meta.env.DROP_001_TEST_ENABLED !== "true"
+        ) {
+            return new Response(JSON.stringify({ message: "Campagna non disponibile" }), {
+                status: 404,
+                headers: {
+                    "Content-Type": "application/json",
+                    "Cache-Control": "no-store",
+                }
+            });
+        }
+
         if (!email || !/\S+@\S+\.\S+/.test(email)) {
             return new Response(JSON.stringify({ message: "Email non valida" }), {
                 status: 400,
@@ -68,6 +82,13 @@ export const POST: APIRoute = async ({ request }) => {
 
         if (campaign === "drop-001" && !preference) {
             return new Response(JSON.stringify({ message: "Seleziona il prodotto che ti interessa" }), {
+                status: 400,
+                headers: { "Content-Type": "application/json" }
+            });
+        }
+
+        if (campaign === "drop-001" && !creativeVersion) {
+            return new Response(JSON.stringify({ message: "Versione creativa non valida" }), {
                 status: 400,
                 headers: { "Content-Type": "application/json" }
             });
