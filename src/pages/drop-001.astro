@@ -6,7 +6,9 @@ const products = [
     id: "tshirt",
     eyebrow: "01 · Wear",
     name: "T-shirt Bella+Canvas 3001",
-    price: "circa €30",
+    price: "€29,90",
+    launchPrice: "€26,90",
+    saving: "Risparmi €3,00",
     note: "Stampa frontale. Il master finale sarà ottimizzato per restare leggibile anche sulle taglie più piccole.",
     artwork: "EDITORIAL / 001",
   },
@@ -14,7 +16,9 @@ const products = [
     id: "poster",
     eyebrow: "02 · Print",
     name: "Poster 21 × 30 cm",
-    price: "circa €20",
+    price: "€19,90",
+    launchPrice: "€17,90",
+    saving: "Risparmi €2,00",
     note: "Formato editoriale compatto, pensato come manifesto della serie e non come semplice merchandising.",
     artwork: "CULTURE / POLICY",
   },
@@ -22,7 +26,9 @@ const products = [
     id: "tote",
     eyebrow: "03 · Carry",
     name: "Tote BagBase W101",
-    price: "circa €25",
+    price: "€24,90",
+    launchPrice: "€21,90",
+    saving: "Risparmi €3,00",
     note: "Shopper 38 × 42 cm. Area di stampa finale da verificare nel Product Designer Fourthwall.",
     artwork: "INFORMATION / FREEDOM",
   },
@@ -53,8 +59,11 @@ const products = [
       <div>
         <h2 id="drop-intro-title">Tre formati. Una sola domanda: quale vorresti vedere realizzato?</h2>
         <p>
-          I prezzi sono indicativi e servono a misurare interesse reale, non curiosità astratta. Seleziona il prodotto che compreresti più facilmente a quella fascia di prezzo.
+          Mostriamo sia il prezzo previsto sia il vantaggio riservato alla waitlist. Seleziona il prodotto che compreresti più facilmente al prezzo lancio indicato: ci serve per misurare intenzione reale, non semplice curiosità.
         </p>
+        <div class="launch-rule" role="note">
+          <strong>Vantaggio waitlist:</strong> prezzo lancio dedicato con €2–€3 di risparmio sul prezzo previsto, se e quando il Drop 001 verrà effettivamente pubblicato.
+        </div>
       </div>
     </section>
 
@@ -69,10 +78,22 @@ const products = [
           <div class="product-body">
             <p class="product-eyebrow">{product.eyebrow}</p>
             <h3>{product.name}</h3>
-            <p class="product-price">{product.price} <span>indicativi</span></p>
+
+            <div class="product-pricing" aria-label={`Prezzi ${product.name}`}>
+              <p class="product-reference">
+                <span>Prezzo previsto</span>
+                <strong>{product.price}</strong>
+              </p>
+              <p class="product-price">
+                {product.launchPrice}
+                <span>prezzo lancio waitlist</span>
+              </p>
+              <p class="product-saving">{product.saving}</p>
+            </div>
+
             <p class="product-note">{product.note}</p>
             <button class="interest-button" type="button" data-product={product.id} data-product-name={product.name}>
-              Mi interessa questo
+              Voglio il prezzo lancio
             </button>
           </div>
         </article>
@@ -84,7 +105,7 @@ const products = [
         <p class="drop-index">002 / WAITLIST</p>
         <h2 id="waitlist-title">Segnala il tuo interesse</h2>
         <p>
-          Useremo questa lista soltanto per capire se il Drop 001 ha abbastanza domanda per passare alla fase successiva e, se lo desideri, per avvisarti quando ci saranno novità.
+          Entrando nella waitlist registri il prodotto che preferisci e, se il Drop 001 passerà i nostri test e verrà pubblicato, avrai accesso prioritario al prezzo lancio indicato. Oggi non effettui alcun ordine e non viene richiesto alcun pagamento.
         </p>
         <p class="selected-copy" id="selectedCopy">Seleziona prima uno dei tre prodotti.</p>
       </div>
@@ -138,7 +159,7 @@ const products = [
     if (!preference || !selectedCopy || !submitButton) return;
 
     preference.value = product;
-    selectedCopy.textContent = `Hai scelto: ${productName}.`;
+    selectedCopy.textContent = `Hai scelto: ${productName}. La waitlist ti riserva l'accesso prioritario al prezzo lancio se il Drop va live.`;
     submitButton.disabled = false;
 
     cards.forEach((card) => {
@@ -148,7 +169,7 @@ const products = [
     buttons.forEach((button) => {
       const selected = button.dataset.product === product;
       button.setAttribute("aria-pressed", selected ? "true" : "false");
-      button.textContent = selected ? "Selezionato" : "Mi interessa questo";
+      button.textContent = selected ? "Prezzo lancio selezionato" : "Voglio il prezzo lancio";
     });
 
     const win = window as typeof window & { dataLayer?: unknown[] };
@@ -294,6 +315,15 @@ const products = [
     line-height: 1.65;
   }
 
+  .launch-rule {
+    max-width: 720px;
+    margin-top: 22px;
+    border-left: 3px solid var(--accent);
+    padding: 12px 16px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
   .product-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -345,16 +375,56 @@ const products = [
     line-height: 1.15;
   }
 
+  .product-pricing {
+    margin: 15px 0 18px;
+    padding: 14px 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .product-reference {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 0 0 5px;
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+
+  .product-reference strong {
+    font-size: 0.95rem;
+    font-weight: 500;
+  }
+
   .product-price {
-    margin: 0 0 18px;
-    font-size: 1.8rem;
-    letter-spacing: -0.035em;
+    display: flex;
+    align-items: baseline;
+    gap: 9px;
+    margin: 0;
+    font-size: 2rem;
+    letter-spacing: -0.04em;
+    font-weight: 700;
   }
 
   .product-price span {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     letter-spacing: 0;
     color: var(--muted);
+    font-weight: 500;
+  }
+
+  .product-saving {
+    display: inline-block;
+    margin: 7px 0 0;
+    padding: 4px 7px;
+    background: var(--accent);
+    color: var(--paper);
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
   }
 
   .product-note {
