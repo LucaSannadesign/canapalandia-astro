@@ -12,11 +12,6 @@ on:
         required: true
         default: true
         type: boolean
-      channels:
-        description: "Comma-separated channels for this manual run"
-        required: true
-        default: "facebook,instagram,linkedin"
-        type: string
 
 permissions:
   contents: read
@@ -50,6 +45,14 @@ jobs:
           restore-keys: |
             social-share-cache-
 
+      - name: Repair social completion state
+        env:
+          STATE_FILE: .cache/social-share.json
+          SOCIAL_MULTICHANNEL_CUTOVER_AT: '2026-09-01T20:00:00.000Z'
+        run: |
+          mkdir -p .cache
+          node scripts/repair-social-state.mjs
+
       - name: Normalize Make webhook URL
         env:
           RAW_MAKE_WEBHOOK_URL: ${{ secrets.SOCIAL_MAKE_WEBHOOK_URL }}
@@ -68,7 +71,7 @@ jobs:
           STATE_FILE: .cache/social-share.json
           RECENT_POSTS_WINDOW_MONTHS: 6
           MIN_HOURS_BETWEEN_ARTICLES: 47
-          SOCIAL_CHANNELS: ${{ github.event_name == 'workflow_dispatch' && inputs.channels || 'facebook,instagram,linkedin' }}
+          SOCIAL_CHANNELS: facebook,instagram,linkedin
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
         run: |
           mkdir -p .cache
