@@ -120,23 +120,34 @@ export const POST: APIRoute = async ({ request }) => {
 
         const xff = request.headers.get("x-forwarded-for") || "";
         const ip_address = xff.split(",")[0]?.trim() || undefined;
+        const isDrop001 = campaign === "drop-001";
 
-        const tags = ["canapalandia-site"];
+        // Metadata = fonte di verità del demand test.
+        // I tag non sono necessari per Drop 001: sui piani Buttondown senza tagging,
+        // la creazione di un tag nuovo può restituire 403 feature_disabled.
         const metadata: Record<string, string> = { source: "canapalandia-astro" };
+        if (isDrop001) {
+            metadata.campaign = "drop-001";
+            metadata.preference = preference!;
+            metadata.creative_version = creativeVersion!;
+            metadata.consent_context = "drop-001-waitlist";
+        }
 
-        if (campaign === "drop-001") {
-            tags.push("drop-001-waitlist");
-            metadata.campaign = campaign;
+        const subscriberPayload: {
+            email_address: string;
+            ip_address?: string;
+            metadata: Record<string, string>;
+            tags?: string[];
+        } = {
+            email_address: email,
+            ip_address,
+            metadata,
+        };
 
-            if (preference) {
-                tags.push(`drop-001-${preference}`);
-                metadata.preference = preference;
-            }
-
-            if (creativeVersion) {
-                tags.push(`drop-001-${creativeVersion}`);
-                metadata.creative_version = creativeVersion;
-            }
+        // Manteniamo il tag storico per la newsletter ordinaria.
+        // Drop 001 resta invece metadata-first e indipendente dalla feature Tags.
+        if (!isDrop001) {
+            subscriberPayload.tags = ["canapalandia-site"];
         }
 
         const response = await fetch(BUTTONDOWN_API_URL, {
@@ -146,12 +157,7 @@ export const POST: APIRoute = async ({ request }) => {
                 "Content-Type": "application/json",
                 "X-Buttondown-Collision-Behavior": "overwrite",
             },
-            body: JSON.stringify({
-                email_address: email,
-                ip_address,
-                tags,
-                metadata,
-            }),
+            body: JSON.stringify(subscriberPayload),
         });
 
         if (response.ok || response.status === 201) {
