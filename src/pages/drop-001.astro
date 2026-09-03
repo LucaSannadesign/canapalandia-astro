@@ -1,59 +1,59 @@
 ---
 import Layout from "../layouts/MigratedLayout.astro";
 
-const creativeVersion = "claims-v2";
+const creativeVersion = "neutral-format-v1";
 
 const products = [
   {
     id: "tshirt",
     eyebrow: "01 · Wear",
     name: "T-shirt Bella+Canvas 3001",
-    claim: "VERIFY BEFORE VERDICT",
+    concept: "CONCEPT 01",
     price: "€29,90",
     launchPrice: "€26,90",
     saving: "Risparmi €3,00",
-    note: "Stampa frontale. Il master finale sarà ottimizzato per restare leggibile anche sulle taglie più piccole.",
+    note: "Stampa frontale. Nel demand test il visual è un placeholder neutro: misuriamo soprattutto formato e fascia prezzo.",
   },
   {
     id: "poster",
     eyebrow: "02 · Print",
     name: "Poster 21 × 30 cm",
-    claim: "READ THE RECORD / CHANGE THE RULES",
+    concept: "CONCEPT 02",
     price: "€19,90",
     launchPrice: "€17,90",
     saving: "Risparmi €2,00",
-    note: "Manifesto editoriale compatto, pensato per dati, note e gerarchie tipografiche.",
+    note: "Manifesto editoriale compatto. Il visual definitivo verrà progettato solo dopo i controlli IP e compliance.",
   },
   {
     id: "tote",
     eyebrow: "03 · Carry",
     name: "Tote BagBase W101",
-    claim: "QUESTION / VERIFY / REFORM",
+    concept: "CONCEPT 03",
     price: "€24,90",
     launchPrice: "€21,90",
     saving: "Risparmi €3,00",
-    note: "Shopper 38 × 42 cm. L'area DTF definitiva sarà validata nel Product Designer Fourthwall.",
+    note: "Shopper 38 × 42 cm. L'area DTF definitiva sarà validata nel Product Designer prima di qualunque produzione.",
   },
 ];
 ---
 
 <Layout
   title="Drop 001 — Test di interesse | Canapalandia"
-  description="Anteprima sperimentale della Canapalandia Editorial Series. Nessun checkout: scegli il formato che ti interessa e iscriviti alla waitlist."
+  description="Test sperimentale di formato e prezzo per tre prodotti editoriali. Nessun checkout, ordine o pagamento."
   canonical="/drop-001/"
   robots="noindex,nofollow,noarchive"
   newsletter={false}
 >
   <main class="drop-page">
     <section class="drop-hero" aria-labelledby="drop-title">
-      <p class="kicker">CANAPALANDIA · EDITORIAL SERIES · CLAIMS V2</p>
+      <p class="kicker">DROP 001 · FORMAT / PRICE TEST</p>
       <h1 id="drop-title">Drop 001</h1>
       <p class="lead">
-        Tre oggetti editoriali, nessun checkout. Misuriamo il formato e il prezzo prima di trasformare il concept in un prodotto reale.
+        Tre formati, tre fasce prezzo, nessun checkout. Questo test misura solo l'interesse prima di progettare un prodotto reale.
       </p>
       <div class="status-note" role="note">
-        <strong>Prototype / not cleared for sale.</strong>
-        I claim e i visual possono cambiare dopo il clearance IP. Nessun pagamento, ordine o impegno di acquisto.
+        <strong>Prototype / not for sale.</strong>
+        I visual sono placeholder neutri: non rappresentano marchi o slogan destinati alla vendita. Nessun pagamento, ordine o impegno di acquisto.
       </div>
     </section>
 
@@ -62,10 +62,10 @@ const products = [
       <div>
         <h2 id="intro-title">Quale formato compreresti più facilmente?</h2>
         <p>
-          Il test confronta intenzione di acquisto, fascia prezzo e formato. I tre claim sono candidati V2 e non vengono presentati come marchi disponibili finché WIPO, EUIPO/TMview, USPTO e UKIPO non saranno verificati.
+          Confrontiamo intenzione di acquisto, fascia prezzo e formato. Per non anticipare la clearance IP, i tre visual mostrano soltanto identificatori neutri e non testano slogan, marchi o riferimenti a cannabis, marijuana o 420.
         </p>
         <div class="launch-rule">
-          <strong>Vantaggio waitlist:</strong> se il Drop passerà i gate e verrà pubblicato, la lista avrà accesso prioritario ai prezzi lancio indicati.
+          <strong>Vantaggio waitlist:</strong> se in futuro un prodotto reale supererà tutti i gate, la lista riceverà l'eventuale comunicazione di lancio e il prezzo dedicato.
         </div>
       </div>
     </section>
@@ -73,10 +73,10 @@ const products = [
     <section class="product-grid" aria-label="Prodotti candidati Drop 001">
       {products.map((product) => (
         <article class="product-card" data-product-card={product.id}>
-          <div class="artwork" aria-label={`Concept grafico: ${product.claim}`}>
-            <span class="artwork-series">CANAPALANDIA / DROP 001</span>
-            <strong>{product.claim}</strong>
-            <span class="artwork-foot">CLAIMS V2 · IP CLEARANCE PENDING</span>
+          <div class="artwork" aria-label={`Placeholder grafico ${product.concept}`}>
+            <span class="artwork-series">DROP 001 / FORMAT TEST</span>
+            <strong>{product.concept}</strong>
+            <span class="artwork-foot">NEUTRAL PLACEHOLDER · NOT FOR SALE</span>
           </div>
 
           <div class="product-body">
@@ -90,7 +90,7 @@ const products = [
               </p>
               <p class="launch-price">
                 {product.launchPrice}
-                <span>prezzo lancio waitlist</span>
+                <span>prezzo indicativo waitlist</span>
               </p>
               <p class="saving">{product.saving}</p>
             </div>
@@ -101,9 +101,9 @@ const products = [
               type="button"
               data-product={product.id}
               data-product-name={product.name}
-              data-claim={product.claim}
+              data-concept={product.concept}
             >
-              Voglio il prezzo lancio
+              Mi interessa questo formato
             </button>
           </div>
         </article>
@@ -115,7 +115,7 @@ const products = [
         <p class="index">002 / WAITLIST</p>
         <h2 id="waitlist-title">Segnala il tuo interesse</h2>
         <p>
-          L'email serve a misurare una preferenza reale e, se il progetto passerà i gate, ad avvisarti dell'eventuale lancio. Non viene effettuato alcun ordine.
+          L'email serve a misurare una preferenza reale e, se il progetto passerà tutti i gate, ad avvisarti dell'eventuale evoluzione del test. Non viene effettuato alcun ordine.
         </p>
         <p class="selected-copy" id="selectedCopy">Seleziona prima uno dei tre prodotti.</p>
       </div>
@@ -150,7 +150,7 @@ const products = [
       <div>
         <h2 id="method-title">Cosa succede dopo il test</h2>
         <p>
-          Il risultato della waitlist non apre automaticamente la vendita. Un eventuale GO porta prima a clearance IP definitivo, chiusura dei gate fiscali/previdenziali, master di stampa, preflight Fourthwall e controllo finale.
+          La waitlist non apre automaticamente la vendita. Un eventuale GO richiede ancora clearance IP del brand e del visual definitivo, chiusura dei gate fiscali/previdenziali, preflight Fourthwall e controllo compliance finale.
         </p>
       </div>
     </section>
@@ -166,22 +166,22 @@ const products = [
   const form = document.querySelector("#dropWaitlistForm");
   const status = document.querySelector("#formStatus");
 
-  function pushAnalytics(event, product, claim) {
+  function pushAnalytics(event, product, concept) {
     if (Array.isArray(window.dataLayer)) {
       window.dataLayer.push({
         event,
         product,
-        claim,
+        concept,
         creative_version: creativeVersion,
       });
     }
   }
 
-  function selectProduct(product, productName, claim) {
+  function selectProduct(product, productName, concept) {
     if (!preference || !selectedCopy || !submitButton) return;
 
     preference.value = product;
-    selectedCopy.textContent = `Hai scelto: ${productName}. Il claim candidato è “${claim}”.`;
+    selectedCopy.textContent = `Hai scelto: ${productName}. Il visual mostrato è il placeholder neutro ${concept}.`;
     submitButton.disabled = false;
 
     cards.forEach((card) => {
@@ -191,10 +191,10 @@ const products = [
     buttons.forEach((button) => {
       const selected = button.dataset.product === product;
       button.setAttribute("aria-pressed", selected ? "true" : "false");
-      button.textContent = selected ? "Prezzo lancio selezionato" : "Voglio il prezzo lancio";
+      button.textContent = selected ? "Formato selezionato" : "Mi interessa questo formato";
     });
 
-    pushAnalytics("drop_001_product_interest", product, claim);
+    pushAnalytics("drop_001_product_interest", product, concept);
     document.querySelector("#waitlist")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
@@ -203,8 +203,8 @@ const products = [
     button.addEventListener("click", () => {
       const product = button.dataset.product;
       const productName = button.dataset.productName;
-      const claim = button.dataset.claim;
-      if (product && productName && claim) selectProduct(product, productName, claim);
+      const concept = button.dataset.concept;
+      if (product && productName && concept) selectProduct(product, productName, concept);
     });
   });
 
@@ -243,7 +243,7 @@ const products = [
       pushAnalytics(
         "drop_001_waitlist_signup",
         preference.value,
-        selectedButton?.dataset.claim || "",
+        selectedButton?.dataset.concept || "",
       );
     } catch (error) {
       status.textContent = error instanceof Error ? error.message : "Errore durante l'iscrizione. Riprova.";
@@ -297,7 +297,7 @@ const products = [
   }
 
   .status-note {
-    max-width: 780px;
+    max-width: 800px;
     margin-top: 30px;
     border-left: 3px solid var(--accent);
     padding: 12px 16px;
@@ -370,7 +370,7 @@ const products = [
 
   .artwork strong {
     max-width: 10ch;
-    font-size: clamp(1.8rem, 3.6vw, 3.8rem);
+    font-size: clamp(2rem, 4vw, 4rem);
     line-height: 0.94;
     letter-spacing: -0.05em;
     font-weight: 650;
@@ -440,7 +440,7 @@ const products = [
   }
 
   .product-note {
-    min-height: 6.5em;
+    min-height: 7em;
     color: var(--muted);
     line-height: 1.55;
   }
