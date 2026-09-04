@@ -7,6 +7,7 @@ const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const BLOG_DIR = join(ROOT, "src", "content", "blog");
 const PAGES_DIR = join(ROOT, "src", "pages");
 const OUT_PATH = join(ROOT, "src", "data", "sitemap-pages.json");
+const COMMERCE_INDEXABLE = process.env.PUBLIC_COMMERCE_INDEXABLE === "true";
 
 const now = new Date();
 
@@ -110,6 +111,7 @@ const main = async () => {
     "/privacy-policy/",
     "/cookie/",
     "/cookie-policy/",
+    ...(COMMERCE_INDEXABLE ? ["/shop/"] : []),
   ];
 
   for (const r of fixedRoutes) {
