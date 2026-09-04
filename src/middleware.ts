@@ -157,8 +157,8 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
   /**
    * `/shop/` is historically a legacy WooCommerce path. Preserve the old redirect/410
    * behavior unless a real hosted Spreadshop storefront is explicitly enabled.
-   * Reachability and indexability remain separate gates: staging may expose /shop/
-   * for QA while PUBLIC_COMMERCE_INDEXABLE stays false.
+   * On the dedicated Vercel staging project we also allow the route for visual QA even
+   * before provider onboarding; it remains noindex and cannot expose draft products as live.
    */
   const storefrontUrl = import.meta.env.PUBLIC_SPREADSHOP_STOREFRONT_URL?.trim() || "";
   let hasValidHttpsStorefront = false;
@@ -170,10 +170,15 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     }
   }
 
+  const isDedicatedStagingHost =
+    url.hostname.startsWith("canapalandia-staging") &&
+    url.hostname.endsWith(".vercel.app");
+
   const isCommerceShopRouteEnabled =
-    import.meta.env.PUBLIC_COMMERCE_PROVIDER === "spreadshop" &&
-    import.meta.env.PUBLIC_SPREADSHOP_ENABLED === "true" &&
-    hasValidHttpsStorefront;
+    isDedicatedStagingHost ||
+    (import.meta.env.PUBLIC_COMMERCE_PROVIDER === "spreadshop" &&
+      import.meta.env.PUBLIC_SPREADSHOP_ENABLED === "true" &&
+      hasValidHttpsStorefront);
 
   // Legacy archive-like sections with a clear informational equivalent.
   const archiveLikeSections = new Set([
