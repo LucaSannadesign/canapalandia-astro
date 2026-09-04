@@ -1,5 +1,5 @@
 ---
-import { commerceConfig, isSpreadshopReady } from "../../config/commerce";
+import { commerceConfig, isSpreadshopEmbedReady } from "../../config/commerce";
 
 type Props = {
   startToken?: string;
@@ -22,8 +22,8 @@ const spreadshopConfig = {
 };
 ---
 
-{isSpreadshopReady && clientScriptUrl ? (
-  <div class="commerce-embed" data-commerce-provider="spreadshop">
+{isSpreadshopEmbedReady && clientScriptUrl ? (
+  <div class="commerce-embed" data-commerce-provider="spreadshop" data-commerce-mode="embed">
     <div id={baseId} aria-live="polite">Caricamento shop…</div>
     <script is:inline define:vars={{ spreadshopConfig, clientScriptUrl }}>
       window.spread_shop_config = spreadshopConfig;
