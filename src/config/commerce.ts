@@ -21,6 +21,7 @@ function normalizeHttpsUrl(value: string | undefined): string {
 }
 
 const provider = normalizeProvider(import.meta.env.PUBLIC_COMMERCE_PROVIDER);
+const commerceIndexable = import.meta.env.PUBLIC_COMMERCE_INDEXABLE === "true";
 const storefrontUrl = normalizeHttpsUrl(import.meta.env.PUBLIC_SPREADSHOP_STOREFRONT_URL);
 const shopName = import.meta.env.PUBLIC_SPREADSHOP_SHOP_NAME?.trim() || "";
 const prefix = import.meta.env.PUBLIC_SPREADSHOP_PREFIX?.trim() || "";
@@ -31,6 +32,7 @@ const spreadshopEmbedEnabled =
 
 export const commerceConfig = Object.freeze({
   provider,
+  indexable: commerceIndexable,
   spreadshop: Object.freeze({
     enabled: spreadshopEnabled,
     storefrontUrl,
@@ -43,6 +45,13 @@ export const commerceConfig = Object.freeze({
 });
 
 export const isCommerceEnabled = commerceConfig.provider !== "disabled";
+
+/**
+ * Indexing is a separate release gate from reachability.
+ * Staging may be reachable for QA while remaining noindex and excluded from sitemaps.
+ */
+export const isCommerceIndexable =
+  isCommerceEnabled && commerceConfig.indexable;
 
 /**
  * Launch path for the 2026 new Spreadshop storefront.
