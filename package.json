@@ -17,6 +17,8 @@
     "commerce:preflight": "node scripts/commerce-preflight.mjs",
     "commerce:staging-audit": "node scripts/commerce-staging-audit.mjs",
     "commerce:qa": "npm run commerce:preflight && npm run commerce:staging-audit",
+    "commerce:freeze-check": "node scripts/commerce-freeze-validate.mjs",
+    "commerce:release-qa": "npm run commerce:qa && npm run commerce:freeze-check",
     "smoke": "node scripts/smoke.mjs"
   },
   "dependencies": {
