@@ -5,9 +5,10 @@ const files = {
   middleware: "src/middleware.ts",
   navigation: "src/config/navigation.ts",
   products: "src/data/commerce-products.ts",
+  faq: "src/pages/faq-domande-frequenti.astro",
 };
 
-const [shop, middleware, navigation, products] = await Promise.all(
+const [shop, middleware, navigation, products, faq] = await Promise.all(
   Object.values(files).map((path) => readFile(path, "utf8")),
 );
 
@@ -52,10 +53,19 @@ requireCheck(
   !products.includes('status: "frozen"'),
   "No commerce product may be marked frozen before the Partner Area freeze gate is completed.",
 );
+requireCheck(
+  !faq.includes("Non vendiamo nulla"),
+  "The staged FAQ must not repeat the obsolete 'Non vendiamo nulla' statement.",
+);
+requireCheck(
+  faq.includes("sprd.net AG") && faq.includes("merchandise"),
+  "The staged FAQ must keep the merchandise/provider distinction and identify sprd.net AG for Spreadshop orders.",
+);
 
 notes.push("Shop page source keeps explicit noindex policy.");
 notes.push("Commerce products remain draft-only.");
 notes.push("Shop is reachable in staging navigation for QA.");
+notes.push("Legacy FAQ contradiction is overridden by a commerce-aware static FAQ.");
 notes.push("Production publication/indexing is not performed by this audit.");
 
 for (const note of notes) console.log(`[commerce-staging-audit] ${note}`);
