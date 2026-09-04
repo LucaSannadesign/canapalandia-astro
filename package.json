@@ -14,6 +14,7 @@
     "export:content": "node scripts/export-db-to-content.mjs",
     "cover": "node scripts/generate-cover.mjs",
     "auto-post:dry": "node scripts/auto-post.mjs --dry-run",
+    "report:drop-001": "node scripts/drop-001-report.mjs",
     "smoke": "node scripts/smoke.mjs"
   },
   "dependencies": {
