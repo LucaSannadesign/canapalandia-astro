@@ -22,6 +22,10 @@ export const PRIMARY_EDITORIAL_CATEGORY_SLUGS = [
  * una categoria può esistere per classificare i contenuti senza meritare una
  * voce nell'header. Qui esponiamo solo i percorsi editoriali con sufficiente
  * consistenza e utilità per il lettore.
+ *
+ * Nota staging commerce: la voce Shop vive su questo branch di staging per
+ * testare l'esperienza completa. Non è presente su main/produzione finché il
+ * release gate commerce non viene approvato.
  */
 export const PRIMARY_NAVIGATION: readonly NavigationItem[] = [
   { label: "Notizie", href: "/categoria/cannabis-news-it/" },
@@ -29,6 +33,7 @@ export const PRIMARY_NAVIGATION: readonly NavigationItem[] = [
   { label: "CBD", href: "/categoria/cbd-alimentazione/" },
   { label: "Canapa", href: "/categoria/canapa-e-ambiente/" },
   { label: "Blog", href: "/blog/" },
+  { label: "Shop", href: "/shop/" },
 ] as const;
 
 /** Link di utilità mostrati fuori dalla gerarchia editoriale principale. */
