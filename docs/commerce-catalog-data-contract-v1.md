@@ -1,10 +1,10 @@
 # Commerce Catalog Data Contract V1
 
-Status: internal documentation only. No public route, checkout, provider upload, or deployment is enabled by this document.
+Status: internal, non-public documentation. No shop route, checkout, provider upload, or deployment is enabled by this contract.
 
 ## Purpose
 
-Define the provider-neutral catalog shape for Canapalandia Commerce so that provisional SKU, pricing, fulfillment, and compliance data are never hardcoded as if they were final.
+Keep Canapalandia Commerce provider-neutral and prevent provisional product research from being represented as frozen provider data.
 
 Current logical Drop 001 core:
 
@@ -12,172 +12,138 @@ Current logical Drop 001 core:
 - `tote`
 - `beanie`
 
-The legacy `poster` entry remains historical demand-test data and must not be silently reused as a live catalog product.
+The legacy `poster` remains historical demand-test data only and is intentionally absent from the release catalog data layer.
 
-## Design rules
+## Implemented draft shape
 
-1. Logical product identity is independent from provider SKU.
-2. Unknown provider facts stay `null` / `TBD`, never guessed.
-3. Publicability is explicit and defaults to `false`.
-4. Pricing snapshots are not treated as guaranteed provider prices.
-5. Compliance and brand gates are first-class data.
-6. A provider switch must not require rewriting customer-facing naming or analytics keys.
-
-## Proposed TypeScript shape
+`src/data/commerce-products.ts` currently implements the smallest safe shape needed before provider freeze:
 
 ```ts
-export type CommerceLogicalProductId = "tshirt" | "tote" | "beanie";
-export type CommerceProductStatus = "draft" | "provisional" | "ready" | "archived";
-export type CommerceGateStatus = "open" | "provisional-resolved" | "resolved";
-
-export type ProviderCatalogRef = {
-  providerSku: string | number | null;
-  productName: string | null;
-  productUrl: string | null;
-  basePriceEur: number | null;
-  currency: "EUR" | "USD" | null;
-  startToken?: string | null;
-  lastVerifiedAt: string | null;
-};
+export type CommerceProductId = "tshirt" | "tote" | "beanie";
+export type CommerceProductStatus = "draft" | "frozen";
 
 export type CommerceProduct = {
-  id: CommerceLogicalProductId;
-  logicalSku: string;
-  slug: string;
+  id: CommerceProductId;
   name: string;
-  shortName: string;
-  collection: "Drop 001";
-  series: "Editorial Series";
-  productType: "t-shirt" | "tote-bag" | "beanie";
   status: CommerceProductStatus;
-  public: false;
-
-  referencePriceEur: number | null;
-  candidateRetailPriceEur: number | null;
-
-  brandAsset: "/images/logo-canapalandia.svg";
-  brandGateStatus: CommerceGateStatus;
-  complianceStatus: CommerceGateStatus;
-
-  variants: readonly string[];
-  materials: readonly string[];
-  printMethod: string | null;
-  analyticsKey: string;
-
-  spreadshop: ProviderCatalogRef;
-  fourthwall: ProviderCatalogRef;
+  targetPriceEur?: number;
+  spreadshop: {
+    productTypeId?: number;
+    candidateProductTypeIds?: readonly number[];
+    startToken?: string;
+  };
+  fourthwall: {
+    slug?: string;
+    candidateLabel?: string;
+  };
 };
 ```
 
-## Current logical records
+### Semantics
+
+- `status: "draft"` means the physical provider SKU is not frozen and the record is not sale-ready.
+- `status: "frozen"` may be set only after Partner Area/provider verification.
+- `targetPriceEur` is a planning target, never a provider-confirmed retail/base price.
+- `candidateProductTypeIds` are research candidates, not usable provider IDs.
+- `productTypeId` must remain unset until the real provider freeze.
+- `fourthwall.slug` must remain unset until provider onboarding/freeze.
+
+## Current draft records
 
 ### T-shirt
 
-- `id`: `tshirt`
-- `logicalSku`: `CAN-D001-TEE-01`
-- `slug`: `canapalandia-editorial-tee-drop-001`
-- working name: `Canapalandia — Editorial Tee / Drop 001`
-- preferred provisional product direction: Unisex Premium Oversized Organic T-Shirt
-- public Spreadshop base-price snapshot observed 2026-09-04: `22.49 EUR`
-- candidate retail price: `34.90 EUR`
-- fallback benchmark: Men's T-Shirt, public base-price snapshot `17.49 EUR`
-- provider SKU: `null` until Partner Area freeze
-- public: `false`
+- logical id: `tshirt`
+- working name: `Canapalandia Oversized Organic T-shirt`
+- target retail: `34.90 EUR` — planning only
+- Spreadshop candidates: `[2940]`
+- Fourthwall candidate: `Stanley/Stella SATU020 Unisex Organic Oversized T-Shirt`
+- status: `draft`
 
 ### Tote
 
-- `id`: `tote`
-- `logicalSku`: `CAN-D001-TOTE-01`
-- `slug`: `canapalandia-editorial-tote-drop-001`
-- working name: `Canapalandia — Editorial Tote / Drop 001`
-- historical Spreadshop candidate: Tote Bag ID 56
-- historical base-price snapshot: `11.49 EUR` — must be reverified
-- candidate retail price: `24.90 EUR` — provisional
-- premium alternative: not frozen; Stanley/Stella Shopping Bag 2.0 is not usable until actually available and priced
-- public: `false`
+- logical id: `tote`
+- working name: `Canapalandia Recycled Tote`
+- target retail: `26.90 EUR` — planning only
+- Spreadshop candidates: `[4133, 56]`, with PT4133 currently preferred and PT56 fallback
+- Fourthwall candidate: `BagBase W101 Tote`
+- status: `draft`
 
 ### Beanie
 
-- `id`: `beanie`
-- `logicalSku`: `CAN-D001-BEANIE-01`
-- `slug`: `canapalandia-fisherman-beanie-drop-001`
-- working name: `Canapalandia — Fisherman Beanie / Drop 001`
-- current operational candidate: Fisherman Beanie 2450
-- upgrade candidate: Fisherman Beanie 2.0 AW26 if it appears in Spreadshop Partner Area
-- base price: `null`
-- candidate retail price: `null`
-- public: `false`
+- logical id: `beanie`
+- working name: `Canapalandia Beanie`
+- no target retail price until the provider economics are verified
+- Spreadshop candidates, in current review order: `[2450, 3339, 1089]`
+- Fisherman 2.0 / STAU296 remains a lifecycle candidate to check in Partner Area and is not represented as an available Spreadshop SKU yet
+- Fourthwall candidate: `Atlantis B50 Organic Ribbed Beanie`
+- status: `draft`
 
-## Null / TBD rules
+## Freeze rules
 
-Use `null` when any of these are not verified in the provider environment:
+A record can move from `draft` to `frozen` only when all materially relevant provider facts are captured:
 
-- provider SKU
-- base price
-- retail price when it depends on unknown base price
-- product URL
-- fulfillment geography
-- available colors
-- exact print / embroidery area
-- material composition if candidate model is not frozen
-- shipping eligibility / country restrictions
+1. actual provider/product ID;
+2. current base price and currency;
+3. available colors/sizes;
+4. print, patch, or embroidery technique;
+5. usable decoration area and file constraints;
+6. any mandatory setup/digitization cost;
+7. lifecycle/availability confidence;
+8. brand/compliance gate compatible with the intended artwork.
 
-Do not carry forward stale values from the demand-test landing as if they were current catalog facts.
+At freeze time:
 
-## Brand gate
+- set `spreadshop.productTypeId` or `fourthwall.slug` only to the verified value;
+- keep research alternatives in documentation, not as active IDs;
+- recheck target retail price and margin from the current provider economics;
+- do not infer public availability from `frozen`: publication remains a separate approval gate.
 
-Every product must reference the real asset:
+## Future enrichment after freeze
 
-`/images/logo-canapalandia.svg`
+The following richer fields may be added only when backed by real provider data and when they are needed by the shop UI:
 
-A product cannot become `ready` unless:
+- logical SKU / slug;
+- provider base price and verification timestamp;
+- variants/materials;
+- print method and decoration area;
+- analytics key;
+- explicit brand/compliance gate state;
+- publicability flag.
 
-- Canapalandia is recognizable without relying on the main claim;
-- logo/wordmark is a real brand asset;
-- the design is technically legible for the actual print/embroidery method;
-- product facts and variants are verified;
-- compliance review is closed;
-- final pricing is verified.
+Do not add fields merely to make the schema look complete before there is real data to populate them.
+
+## Brand and compliance rule
+
+The catalog must not imply that the full `C + leaf` logo is cleared for merchandise. Current prudent production path is the official `CANAPALANDIA` wordmark-only application; use of the full symbol remains a separate compliance gate.
+
+No product becomes a release candidate until:
+
+- Canapalandia is recognizable without relying only on a slogan;
+- the real brand asset/wordmark is used;
+- the design is legible for the real decoration method;
+- product facts and price are verified;
+- compliance review is closed for the chosen application.
 
 ## Adapter behavior
 
-The existing commerce adapter must remain safe by default:
+The commerce adapter remains fail-closed:
 
-- `PUBLIC_COMMERCE_PROVIDER=disabled` -> render nothing commerce-specific;
-- Spreadshop requires provider + enabled flag + shop name + prefix;
-- no provider script loads when commerce is disabled;
-- no catalog record may imply purchasability while `public=false`;
-- no `/shop/` route should be created until onboarding and approval gates are complete.
+- `PUBLIC_COMMERCE_PROVIDER=disabled` renders nothing commerce-specific;
+- Spreadshop requires provider + explicit enabled flag + shop name + prefix;
+- no provider script loads with the default configuration;
+- no `/shop/` route exists;
+- draft catalog data must never be presented as purchasable inventory.
 
-## Migration from current scaffold
+## Deployment rule
 
-The current `src/data/commerce-products.ts` still contains:
+This contract and the current branch do **not** authorize:
 
-- `tshirt`
-- `poster`
-- `tote`
-
-and hardcoded waitlist/reference prices from the old demand test.
-
-Do **not** patch this file yet. Apply the migration only in one consolidated future batch after:
-
-1. provider is confirmed;
-2. t-shirt physical SKU is frozen;
-3. tote physical SKU is frozen;
-4. beanie 2450 vs 2.0 is resolved;
-5. current base prices and variants are verified;
-6. demand-test / live-copy transition is intentionally planned.
-
-## Approval / deployment rule
-
-This document does not authorize:
-
-- opening a provider account;
+- opening or configuring a provider account;
 - accepting provider terms;
-- uploading products;
-- creating checkout;
+- creating/uploading products;
+- enabling checkout;
 - merging to `main`;
 - deploying to Vercel;
 - publishing a shop route.
 
-Any future implementation should be batched and reviewed before a single deploy.
+Any eventual public implementation must be reviewed and released in one consolidated deploy after provider, fiscal, compliance, production, and approval gates are closed.
