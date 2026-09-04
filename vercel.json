@@ -1,4 +1,9 @@
 {
+  "git": {
+    "deploymentEnabled": {
+      "internal-*": false
+    }
+  },
   "rewrites": [
     {
       "source": "/wp-content/uploads/2024/09/donazioni-canapalandia-800x800.webp",
