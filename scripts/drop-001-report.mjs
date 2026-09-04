@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import "dotenv/config";
+
 /**
  * Drop 001 — aggregate Buttondown report.
  *
