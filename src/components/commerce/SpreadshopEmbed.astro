@@ -1,0 +1,37 @@
+---
+import { commerceConfig, isSpreadshopReady } from "../../config/commerce";
+
+type Props = {
+  startToken?: string;
+};
+
+const { startToken } = Astro.props;
+const { shopName, prefix, locale, baseId } = commerceConfig.spreadshop;
+const clientScriptUrl = shopName
+  ? `https://${shopName}.myspreadshop.net/js/shopclient.nocache.js`
+  : "";
+
+const spreadshopConfig = {
+  shopName,
+  prefix,
+  baseId,
+  locale,
+  ...(startToken ? { startToken } : {}),
+  updateMetadata: false,
+  usePushState: false,
+};
+---
+
+{isSpreadshopReady && clientScriptUrl ? (
+  <div class="commerce-embed" data-commerce-provider="spreadshop">
+    <div id={baseId} aria-live="polite">Caricamento shop…</div>
+    <script is:inline define:vars={{ spreadshopConfig, clientScriptUrl }}>
+      window.spread_shop_config = spreadshopConfig;
+      const spreadshopScript = document.createElement("script");
+      spreadshopScript.src = clientScriptUrl;
+      spreadshopScript.async = true;
+      spreadshopScript.dataset.canapalandiaCommerce = "spreadshop";
+      document.currentScript?.after(spreadshopScript);
+    </script>
+  </div>
+) : null}

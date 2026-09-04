@@ -1,0 +1,14 @@
+---
+import { commerceConfig, isSpreadshopReady } from "../../config/commerce";
+import SpreadshopEmbed from "./SpreadshopEmbed.astro";
+
+type Props = {
+  startToken?: string;
+};
+
+const { startToken } = Astro.props;
+---
+
+{commerceConfig.provider === "spreadshop" && isSpreadshopReady ? (
+  <SpreadshopEmbed startToken={startToken} />
+) : null}
