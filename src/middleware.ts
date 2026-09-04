@@ -156,15 +156,24 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
 
   /**
    * `/shop/` is historically a legacy WooCommerce path. Preserve the old redirect/410
-   * behavior unless the Spreadshop integration is explicitly and completely enabled.
-   * This keeps production fail-closed while allowing a future staging/release route to
-   * reuse `/shop/` without removing the legacy SEO cleanup globally.
+   * behavior unless a real hosted Spreadshop storefront is explicitly enabled.
+   * Reachability and indexability remain separate gates: staging may expose /shop/
+   * for QA while PUBLIC_COMMERCE_INDEXABLE stays false.
    */
+  const storefrontUrl = import.meta.env.PUBLIC_SPREADSHOP_STOREFRONT_URL?.trim() || "";
+  let hasValidHttpsStorefront = false;
+  if (storefrontUrl) {
+    try {
+      hasValidHttpsStorefront = new URL(storefrontUrl).protocol === "https:";
+    } catch {
+      hasValidHttpsStorefront = false;
+    }
+  }
+
   const isCommerceShopRouteEnabled =
     import.meta.env.PUBLIC_COMMERCE_PROVIDER === "spreadshop" &&
     import.meta.env.PUBLIC_SPREADSHOP_ENABLED === "true" &&
-    Boolean(import.meta.env.PUBLIC_SPREADSHOP_SHOP_NAME?.trim()) &&
-    Boolean(import.meta.env.PUBLIC_SPREADSHOP_PREFIX?.trim());
+    hasValidHttpsStorefront;
 
   // Legacy archive-like sections with a clear informational equivalent.
   const archiveLikeSections = new Set([
@@ -299,15 +308,22 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     hostname.startsWith("127.0.0.1") ||
     hostname.endsWith(".vercel.app") ||
     hostname.includes("vercel.app");
+  const commerceIndexable = import.meta.env.PUBLIC_COMMERCE_INDEXABLE === "true";
+  const isCommercePath = first === "shop";
 
-  if (isPreviewOrLocalhost) {
+  if ((isCommercePath && !commerceIndexable) || isPreviewOrLocalhost) {
     const newResponse = new Response(response.body, {
       status: response.status,
       statusText: response.statusText,
       headers: response.headers,
     });
 
-    newResponse.headers.set("X-Robots-Tag", "noindex, nofollow");
+    newResponse.headers.set(
+      "X-Robots-Tag",
+      isCommercePath && !commerceIndexable
+        ? "noindex, nofollow, noarchive"
+        : "noindex, nofollow",
+    );
 
     return newResponse;
   }
