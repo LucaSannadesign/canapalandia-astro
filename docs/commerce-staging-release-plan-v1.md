@@ -1,4 +1,4 @@
-# Canapalandia Commerce — Staging Release Plan V1
+# Canapalandia Commerce — Staging Release Plan V2
 
 Status: internal only / no deploy / no live shop.
 
@@ -11,6 +11,25 @@ Status: internal only / no deploy / no live shop.
 - The `internal-*` prefix is intentional: current `vercel.json` disables automatic Git deployments for internal branches.
 - Normal Git branches currently generate preview deployments on both the production Vercel project and `canapalandia-staging`, so a normal `release/*` branch would create duplicate previews.
 
+## 2026 storefront constraint
+
+Spreadshop's July 2026 migration FAQ states that Embedded Shops are **not currently available in the new Shop frontend**. New shops created in 2026 receive the new storefront automatically.
+
+Therefore the V1 launch architecture is:
+
+**Canapalandia `/shop/` branded gateway → hosted Spreadshop storefront**
+
+The existing JavaScript embed adapter is retained only as a future/legacy capability and must not be the default launch path until Spreadshop explicitly restores embedded-Shop support and we re-QA it.
+
+Safe configuration:
+
+- `PUBLIC_COMMERCE_PROVIDER=spreadshop`
+- `PUBLIC_SPREADSHOP_ENABLED=true`
+- `PUBLIC_SPREADSHOP_STOREFRONT_URL=<approved hosted storefront URL>`
+- `PUBLIC_SPREADSHOP_EMBED_ENABLED=false`
+
+Legacy/future embed additionally requires explicit `PUBLIC_SPREADSHOP_EMBED_ENABLED=true`, a valid `PUBLIC_SPREADSHOP_SHOP_NAME`, and `PUBLIC_SPREADSHOP_PREFIX`.
+
 ## `/shop/` routing gate
 
 Production currently treats `/shop/` as a legacy WooCommerce URL:
@@ -18,28 +37,33 @@ Production currently treats `/shop/` as a legacy WooCommerce URL:
 - `/shop/` -> 301 `/blog/`
 - `/shop/...` -> 410 Gone
 
-The internal middleware now preserves that behavior unless Spreadshop is fully configured.
+The commerce release must preserve that behavior while commerce is disabled/incomplete. The new `/shop/` page is enabled only after the provider and hosted storefront URL are approved.
 
-`/shop/` is reserved for commerce only when all are true:
-
-- `PUBLIC_COMMERCE_PROVIDER=spreadshop`
-- `PUBLIC_SPREADSHOP_ENABLED=true`
-- `PUBLIC_SPREADSHOP_SHOP_NAME` is non-empty
-- `PUBLIC_SPREADSHOP_PREFIX` is non-empty
-
-If any value is missing, legacy behavior stays active.
+The internal middleware already contains a fail-closed reservation for the future shop route. At release assembly, align its readiness condition with the hosted storefront URL rather than relying on the legacy embed identifiers.
 
 ## Single staging batch
 
 The future staging release must contain one coherent batch:
 
-1. commerce adapter;
-2. real `/shop/` route;
-3. frozen T-shirt + Tote + Beanie catalog data;
-4. approved wordmark/artwork release candidates;
-5. coordinated updates to About / Mission / Terms and any FAQ text that still says Canapalandia has no shop;
-6. shop metadata and sitemap updates;
-7. no unnecessary changes to the historical `/drop-001/` demand-test route.
+1. commerce config with hosted-storefront readiness;
+2. real `/shop/` Canapalandia gateway route;
+3. outbound transition to the approved hosted Spreadshop storefront;
+4. frozen T-shirt + Tote + Beanie catalog data;
+5. approved wordmark/artwork release candidates;
+6. coordinated updates to About / Mission / Terms and any FAQ text that still says Canapalandia has no shop;
+7. shop metadata and sitemap updates;
+8. no unnecessary changes to the historical `/drop-001/` demand-test route.
+
+## `/shop/` UX rule
+
+The Canapalandia gateway should preserve brand continuity without pretending checkout happens on Canapalandia:
+
+- explain that merchandise belongs to Canapalandia Editorial Series;
+- show only the frozen core catalog and verified prices/status;
+- clearly indicate that selecting/buying opens the external Spreadshop storefront;
+- do not recreate cart, checkout, account or order-management UI locally;
+- do not duplicate product claims or legal terms that belong to the provider checkout;
+- keep the transition concise and visually coherent with canapalandia.com.
 
 ## Sitemap requirements
 
@@ -56,9 +80,9 @@ Both implementations already verify route existence, so the route should only ap
 
 ## Adapter fail-closed checks
 
-The current adapter loads the remote Spreadshop client only when `isSpreadshopReady` is true.
+The hosted storefront is the default 2026 path.
 
-Keep these settings unless a later provider requirement proves otherwise:
+The legacy JavaScript embed may load only when the separate embed flag is explicitly enabled. Keep these embed settings unless a future provider requirement proves otherwise:
 
 - `updateMetadata: false`
 - `usePushState: false`
@@ -71,13 +95,15 @@ Before production promotion:
 
 - full Astro build passes;
 - staging responses carry `X-Robots-Tag: noindex, nofollow`;
-- `/shop/` is reachable only with complete commerce configuration;
+- `/shop/` is reachable only with complete approved commerce configuration;
 - disabled/incomplete commerce preserves legacy `/shop/` redirect behavior;
-- legacy `/cart`, `/checkout`, `/my-account` remain 410 unless a reviewed architecture explicitly changes them;
+- `/shop/` does not load `shopclient.nocache.js` while `PUBLIC_SPREADSHOP_EMBED_ENABLED=false`;
+- outbound storefront URL is HTTPS and matches the actual approved Spreadshop shop;
+- legacy `/cart`, `/checkout`, `/my-account` remain 410; checkout remains provider-hosted;
 - no poster remains in the core catalog;
 - only frozen SKU/provider IDs and verified prices are displayed;
 - brand recognition/compliance gates pass;
-- legal/editorial pages correctly distinguish Canapalandia editorial activity from merchandise and the provider's contractual role;
+- legal/editorial pages correctly distinguish Canapalandia editorial activity from merchandise and sprd.net AG's contractual role;
 - no real purchase or paid sample/digitization is performed without Luca's explicit approval.
 
 ## Deployment discipline
