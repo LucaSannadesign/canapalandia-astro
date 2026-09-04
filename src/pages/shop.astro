@@ -11,10 +11,13 @@ const robots = isCommerceIndexable
   ? "index,follow"
   : "noindex,nofollow,noarchive";
 
-// Defense in depth: middleware preserves the legacy /shop/ redirect while commerce
-// is disabled. This route independently refuses to expose a commerce gateway until
-// a real hosted Spreadshop storefront is configured.
-if (!isSpreadshopHostedReady) {
+const isDedicatedStagingHost =
+  Astro.url.hostname.startsWith("canapalandia-staging") &&
+  Astro.url.hostname.endsWith(".vercel.app");
+
+// Production remains fail-closed until a real hosted Spreadshop storefront exists.
+// Dedicated staging may render the non-transactional preview before provider onboarding.
+if (!isSpreadshopHostedReady && !isDedicatedStagingHost) {
   return Astro.redirect("/blog/", 301);
 }
 ---
