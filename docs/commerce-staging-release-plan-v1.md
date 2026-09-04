@@ -1,4 +1,4 @@
-# Canapalandia Commerce — Staging Release Plan V2
+# Canapalandia Commerce — Staging Release Plan V3
 
 Status: internal only / no deploy / no live shop.
 
@@ -27,6 +27,7 @@ Safe configuration:
 - `PUBLIC_SPREADSHOP_ENABLED=true`
 - `PUBLIC_SPREADSHOP_STOREFRONT_URL=<approved hosted storefront URL>`
 - `PUBLIC_SPREADSHOP_EMBED_ENABLED=false`
+- `PUBLIC_COMMERCE_INDEXABLE=false` during all staging/QA work
 
 Legacy/future embed additionally requires explicit `PUBLIC_SPREADSHOP_EMBED_ENABLED=true`, a valid `PUBLIC_SPREADSHOP_SHOP_NAME`, and `PUBLIC_SPREADSHOP_PREFIX`.
 
@@ -51,7 +52,7 @@ The future staging release must contain one coherent batch:
 4. frozen T-shirt + Tote + Beanie catalog data;
 5. approved wordmark/artwork release candidates;
 6. coordinated updates to About / Mission / Terms and any FAQ text that still says Canapalandia has no shop;
-7. shop metadata and sitemap updates;
+7. shop metadata and sitemap logic gated by the publication flag;
 8. no unnecessary changes to the historical `/drop-001/` demand-test route.
 
 ## `/shop/` UX rule
@@ -65,16 +66,29 @@ The Canapalandia gateway should preserve brand continuity without pretending che
 - do not duplicate product claims or legal terms that belong to the provider checkout;
 - keep the transition concise and visually coherent with canapalandia.com.
 
+## Indexing gate — mandatory
+
+Reachability for QA and search-engine indexability are two separate states.
+
+**Before Luca explicitly approves publication:**
+
+- `PUBLIC_COMMERCE_INDEXABLE=false`;
+- `/shop/` must render `noindex,nofollow` on staging;
+- staging responses retain `X-Robots-Tag: noindex, nofollow`;
+- `/shop/` must be absent from both sitemap implementations;
+- do not connect `shop.canapalandia.com` to the public storefront yet;
+- do not add public navigation/CTA from production to the shop.
+
+Only in the final publication batch may `PUBLIC_COMMERCE_INDEXABLE=true` be enabled. At that same point, and not before, the release may expose `/shop/` in production navigation, include it in sitemaps and connect the approved branded storefront domain.
+
 ## Sitemap requirements
 
-Creating `src/pages/shop.astro` is not enough.
+Both sitemap implementations are now protected by `PUBLIC_COMMERCE_INDEXABLE`:
 
-At release time also add `/shop/` to:
+- `src/pages/sitemap.xml.ts` only includes `/shop/` when the flag is `true`;
+- `scripts/generate-sitemap-pages.mjs` only includes `/shop/` when the flag is `true`.
 
-- `src/pages/sitemap.xml.ts` -> `STRUCTURAL_ROUTES`;
-- `scripts/generate-sitemap-pages.mjs` -> `fixedRoutes`.
-
-Both implementations already verify route existence, so the route should only appear when the page exists.
+Both implementations also verify that the route actually exists. Therefore a staging shop can be reachable for QA while remaining absent from search-engine discovery surfaces.
 
 `public/robots.txt` currently has no shop-specific block and needs no change for this reason.
 
@@ -94,7 +108,10 @@ No secret may be placed in browser-exposed commerce configuration.
 Before production promotion:
 
 - full Astro build passes;
+- `PUBLIC_COMMERCE_INDEXABLE=false`;
 - staging responses carry `X-Robots-Tag: noindex, nofollow`;
+- shop page meta robots is `noindex,nofollow`;
+- `/shop/` is absent from runtime and generated sitemaps;
 - `/shop/` is reachable only with complete approved commerce configuration;
 - disabled/incomplete commerce preserves legacy `/shop/` redirect behavior;
 - `/shop/` does not load `shopclient.nocache.js` while `PUBLIC_SPREADSHOP_EMBED_ENABLED=false`;
@@ -112,6 +129,7 @@ Before production promotion:
 - First complete candidate: 1 controlled deployment to `canapalandia-staging`.
 - Batch QA fixes before another deployment; do not deploy per micro-fix.
 - Production: one merge/deploy only after staging QA, gate closure and Luca approval.
+- Publication/indexing flag changes only in the final production batch.
 
 ## Known repository QA note
 
