@@ -1,0 +1,101 @@
+---
+import InstitutionalPage from "../components/InstitutionalPage.astro";
+
+const SITE = import.meta.env.SITE || "https://canapalandia.com";
+const canonical = `${SITE}/faq-domande-frequenti/`;
+---
+
+<InstitutionalPage
+  title="FAQ | Canapalandia"
+  description="Domande frequenti su Canapalandia: progetto editoriale, merchandise ufficiale, shop, collaborazioni, contenuti e responsabilità."
+  canonical={canonical}
+  eyebrow="Domande frequenti"
+  heading="Canapalandia, in breve"
+  lead="Le risposte essenziali su come funziona il progetto editoriale, cosa comprende la linea merchandise e quale ruolo hanno i provider esterni."
+  currentLabel="FAQ"
+>
+  <section>
+    <h2>Che cos'è Canapalandia?</h2>
+    <p>
+      Canapalandia è un progetto editoriale indipendente nato nel 2016 e dedicato a
+      canapa, CBD, cannabis light, normativa, ricerca, sostenibilità e cultura. Il
+      cuore del progetto resta l'informazione: articoli, approfondimenti e strumenti
+      costruiti a partire da fonti verificabili.
+    </p>
+  </section>
+
+  <section>
+    <h2>Canapalandia vende prodotti a base di cannabis o CBD?</h2>
+    <p>
+      No. La linea commerce in preparazione riguarda esclusivamente merchandise
+      ufficiale del brand, come capi e accessori. Non comprende cannabis, CBD o altri
+      prodotti destinati al consumo.
+    </p>
+  </section>
+
+  <section>
+    <h2>Come funziona lo shop?</h2>
+    <p>
+      Canapalandia cura selezione dei prodotti, identità visiva, contenuti e
+      comunicazione della collezione. Nel modello print-on-demand l'ordine viene poi
+      completato sullo storefront del provider, che gestisce pagamento, produzione e
+      spedizione secondo le proprie condizioni.
+    </p>
+    <p>
+      Quando il merchandise viene offerto tramite Spreadshop, la controparte
+      contrattuale del cliente per l'ordine è <strong>sprd.net AG</strong>. Prima di
+      acquistare è sempre necessario verificare prezzo, disponibilità, tempi e
+      condizioni mostrate nello storefront.
+    </p>
+  </section>
+
+  <section>
+    <h2>Quali prodotti fanno parte del primo drop?</h2>
+    <p>
+      Il nucleo di lavoro è composto da T-shirt, Tote e Beanie. Modelli, colori,
+      tecniche di decorazione e prezzi vengono definiti solo dopo la verifica finale
+      nel catalogo del provider; una bozza o un prototipo non equivale a un prodotto
+      già disponibile alla vendita.
+    </p>
+  </section>
+
+  <section>
+    <h2>Il merchandise influenza gli articoli?</h2>
+    <p>
+      No. La linea merchandise è distinta dal lavoro editoriale. Fonti, correzioni,
+      analisi e conclusioni degli articoli non dovrebbero dipendere dalla vendita di
+      un prodotto, da un'affiliazione o da una collaborazione commerciale.
+    </p>
+  </section>
+
+  <section>
+    <h2>Dove trovo informazioni su ordini, spedizioni o resi?</h2>
+    <p>
+      Le condizioni operative dell'ordine vengono mostrate nello storefront del
+      provider utilizzato per l'acquisto. Per un ordine già effettuato fanno fede le
+      informazioni e i canali di assistenza indicati dal provider e nella conferma
+      ricevuta dal cliente.
+    </p>
+  </section>
+
+  <section>
+    <h2>Posso collaborare con Canapalandia?</h2>
+    <p>
+      Sì. Valutiamo proposte editoriali, pubblicità e collaborazioni coerenti con il
+      progetto. Per i dettagli consulta la pagina
+      <a href="/pubblicita/">Pubblicità e collaborazioni</a> oppure scrivi dalla
+      pagina <a href="/contatti/">Contatti</a>.
+    </p>
+  </section>
+
+  <section>
+    <h2>I contenuti sono consulenza medica o legale?</h2>
+    <p>
+      No. I contenuti hanno finalità informative e culturali e non sostituiscono un
+      professionista qualificato. Per limiti, responsabilità e uso delle informazioni
+      consulta anche il
+      <a href="/disclaimer-legale-canapalandia/">Disclaimer legale</a> e i
+      <a href="/termini-e-condizioni/">Termini di utilizzo</a>.
+    </p>
+  </section>
+</InstitutionalPage>
