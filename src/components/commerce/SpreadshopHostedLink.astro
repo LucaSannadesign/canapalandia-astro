@@ -1,0 +1,29 @@
+---
+import { commerceConfig, isSpreadshopHostedReady } from "../../config/commerce";
+
+type Props = {
+  label?: string;
+  class?: string;
+  product?: string;
+};
+
+const {
+  label = "Vai allo shop",
+  class: className,
+  product,
+} = Astro.props;
+
+const storefrontUrl = commerceConfig.spreadshop.storefrontUrl;
+---
+
+{isSpreadshopHostedReady ? (
+  <a
+    href={storefrontUrl}
+    class={className}
+    data-commerce-provider="spreadshop"
+    data-commerce-mode="hosted"
+    data-commerce-product={product}
+  >
+    {label}
+  </a>
+) : null}
