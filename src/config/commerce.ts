@@ -8,8 +8,20 @@ function normalizeProvider(value: string | undefined): CommerceProvider {
     : "disabled";
 }
 
+function normalizeHttpsUrl(value: string | undefined): string {
+  const candidate = value?.trim() || "";
+  if (!candidate) return "";
+
+  try {
+    const parsed = new URL(candidate);
+    return parsed.protocol === "https:" ? parsed.toString() : "";
+  } catch {
+    return "";
+  }
+}
+
 const provider = normalizeProvider(import.meta.env.PUBLIC_COMMERCE_PROVIDER);
-const storefrontUrl = import.meta.env.PUBLIC_SPREADSHOP_STOREFRONT_URL?.trim() || "";
+const storefrontUrl = normalizeHttpsUrl(import.meta.env.PUBLIC_SPREADSHOP_STOREFRONT_URL);
 const shopName = import.meta.env.PUBLIC_SPREADSHOP_SHOP_NAME?.trim() || "";
 const prefix = import.meta.env.PUBLIC_SPREADSHOP_PREFIX?.trim() || "";
 const locale = import.meta.env.PUBLIC_SPREADSHOP_LOCALE?.trim() || "it_IT";
@@ -35,7 +47,7 @@ export const isCommerceEnabled = commerceConfig.provider !== "disabled";
 /**
  * Launch path for the 2026 new Spreadshop storefront.
  * New storefronts currently do not support embedded shops, so a real hosted
- * storefront URL is the minimum readiness signal for the branded `/shop/` gateway.
+ * HTTPS storefront URL is the minimum readiness signal for the branded `/shop/` gateway.
  */
 export const isSpreadshopHostedReady =
   commerceConfig.provider === "spreadshop" &&
