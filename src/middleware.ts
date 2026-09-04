@@ -154,6 +154,18 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     return gone410();
   }
 
+  /**
+   * `/shop/` is historically a legacy WooCommerce path. Preserve the old redirect/410
+   * behavior unless the Spreadshop integration is explicitly and completely enabled.
+   * This keeps production fail-closed while allowing a future staging/release route to
+   * reuse `/shop/` without removing the legacy SEO cleanup globally.
+   */
+  const isCommerceShopRouteEnabled =
+    import.meta.env.PUBLIC_COMMERCE_PROVIDER === "spreadshop" &&
+    import.meta.env.PUBLIC_SPREADSHOP_ENABLED === "true" &&
+    Boolean(import.meta.env.PUBLIC_SPREADSHOP_SHOP_NAME?.trim()) &&
+    Boolean(import.meta.env.PUBLIC_SPREADSHOP_PREFIX?.trim());
+
   // Legacy archive-like sections with a clear informational equivalent.
   const archiveLikeSections = new Set([
     "shop",
@@ -163,7 +175,11 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     "store",
   ]);
 
-  if (archiveLikeSections.has(first) && segments.length <= 1) {
+  if (
+    archiveLikeSections.has(first) &&
+    segments.length <= 1 &&
+    !(first === "shop" && isCommerceShopRouteEnabled)
+  ) {
     return redirect301("/blog/");
   }
 
@@ -178,7 +194,11 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     "store",
   ]);
 
-  if (productLikeSections.has(first) && segments.length > 1) {
+  if (
+    productLikeSections.has(first) &&
+    segments.length > 1 &&
+    !(first === "shop" && isCommerceShopRouteEnabled)
+  ) {
     return gone410();
   }
 
