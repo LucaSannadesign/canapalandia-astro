@@ -1,6 +1,6 @@
 # Canapalandia Commerce — Content Cutover V1
 
-Stato: pre-launch / staging only.
+Stato: pre-launch / internal branch only.
 
 Questa checklist impedisce che lo shop venga pubblicato mentre il sito continua a dichiarare che Canapalandia non vende alcun prodotto.
 
@@ -10,7 +10,7 @@ Prima del GO production, tutti i punti sotto devono risultare verificati nello s
 
 ### 1. Home — `src/pages/index.astro`
 
-Testo legacy individuato nella nota redazionale:
+Testo legacy ancora presente nel branch commerce:
 
 > Canapalandia è un progetto informativo: non vendiamo prodotti e non forniamo indicazioni mediche.
 
@@ -19,59 +19,76 @@ Sostituzione prevista al cutover:
 > Canapalandia è un progetto editoriale indipendente. Non vendiamo cannabis, CBD o altri prodotti destinati al consumo e non forniamo indicazioni mediche. L'eventuale merchandise ufficiale è una linea separata dai contenuti editoriali e viene gestita tramite il provider indicato nello shop.
 
 Gate:
-- [ ] patch applicata nello staging;
+- [ ] patch Home applicata solo nel batch finale;
 - [ ] copy QA;
 - [ ] nessun claim medico/commerciale ambiguo;
 - [ ] produzione aggiornata solo insieme al GO shop.
 
 ### 2. FAQ — `/faq-domande-frequenti/`
 
-Il contenuto legacy dinamico contiene `Non vendiamo nulla`.
-
-Soluzione preparata: route statica `src/pages/faq-domande-frequenti.astro`, che deve avere priorità sul catch-all legacy e distinguere:
+Route statica commerce già preparata in `src/pages/faq-domande-frequenti.astro` e separa:
 - progetto editoriale;
 - merchandise ordinario, non cannabis/CBD da consumo;
 - storefront provider;
 - `sprd.net AG` come controparte dell'ordine quando si usa Spreadshop.
 
 Gate:
-- [ ] route statica compilata nello staging;
-- [ ] vecchia frase assente;
-- [ ] noindex staging confermato.
+- [x] route statica preparata nel branch commerce;
+- [x] vecchia frase `Non vendiamo nulla` rimossa dalla nuova route;
+- [ ] QA finale nel batch di release;
+- [ ] noindex staging confermato al momento del test finale.
 
-### 3. Chi siamo
+### 3. Chi siamo — `src/pages/chi-siamo/index.astro`
 
-File: `src/pages/chi-siamo/index.astro`.
-
-Staging draft già preparato: rimuove `senza venderti un prodotto` e distingue magazine e merchandise.
-
-- [x] draft staging preparato;
-- [x] build Astro passata nel batch staging 799fe9f;
-- [ ] legal/editorial review finale;
+- [x] `senza venderti un prodotto` rimosso nel branch commerce;
+- [x] distinzione magazine / merchandise introdotta;
+- [x] revisione editoriale preliminare passata;
 - [ ] production cutover insieme allo shop.
 
-### 4. Missione
+### 4. Missione — `src/pages/chi-siamo/missione.astro`
 
-File: `src/pages/chi-siamo/missione.astro`.
-
-Staging draft già preparato: sostituisce `Non siamo un negozio` con la separazione fra informazione e merchandise.
-
-- [x] draft staging preparato;
-- [x] build Astro passata nel batch staging 799fe9f;
-- [ ] legal/editorial review finale;
+- [x] `Non siamo un negozio` rimosso nel branch commerce;
+- [x] separazione informazione / merchandise introdotta;
+- [x] revisione editoriale preliminare passata;
 - [ ] production cutover insieme allo shop.
 
-### 5. Termini
+### 5. Termini — `src/pages/termini-e-condizioni.astro`
 
-File: `src/pages/termini-e-condizioni.astro`.
+- [x] sezione `Merchandise e storefront del provider` preparata;
+- [x] ruolo di `sprd.net AG` esplicitato quando Spreadshop è il provider effettivo;
+- [ ] confermare provider e ragione sociale al GO;
+- [ ] rimuovere `Bozza staging commerce` nel batch finale;
+- [ ] legal review finale.
 
-Staging draft già preparato con sezione `Merchandise e storefront del provider`.
+## Scan legacy
 
-- [x] draft staging preparato;
-- [x] build Astro passata nel batch staging 799fe9f;
-- [ ] legal review finale;
-- [ ] verificare provider effettivamente scelto e ragione sociale prima del GO;
-- [ ] rimuovere la dicitura `Bozza staging commerce` al cutover production.
+Scan repository eseguita: i conflitti reali individuati sul `main` sono limitati a:
+- Home: `non vendiamo prodotti`;
+- Chi siamo: `senza venderti un prodotto`;
+- Missione: `Non siamo un negozio` / `Non vendiamo direttamente prodotti`.
+
+Nel branch commerce gli ultimi due sono già risolti. La Home resta intenzionalmente bloccata fino al cutover coordinato.
+
+## Gate automatico
+
+Comando:
+
+```bash
+npm run commerce:content-gate
+```
+
+Il controllo blocca la release se trova ancora:
+- la frase legacy della Home;
+- `senza venderti un prodotto`;
+- `Non siamo un negozio`;
+- `Non vendiamo direttamente prodotti`;
+- `Bozza staging commerce`.
+
+Il comando è incluso in:
+
+```bash
+npm run commerce:release-qa
+```
 
 ## Indicizzazione
 
