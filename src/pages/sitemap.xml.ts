@@ -9,6 +9,7 @@ import { isPublishedBlogEntry } from "../lib/blogVisibility";
 import { loadWp } from "../lib/wp";
 
 const PAGES_DIR = fileURLToPath(new URL("../pages", import.meta.url));
+const COMMERCE_INDEXABLE = import.meta.env.PUBLIC_COMMERCE_INDEXABLE === "true";
 
 /** Hub statici indicizzabili: incluse in sitemap solo se la route esiste (Astro o pagina WP). */
 const STRUCTURAL_ROUTES = [
@@ -23,6 +24,7 @@ const STRUCTURAL_ROUTES = [
   "/sostieni-la-causa/",
   "/disclaimer/",
   "/contatti/",
+  ...(COMMERCE_INDEXABLE ? ["/shop/"] : []),
 ] as const;
 
 /** Route Astro fondamentali: esistono per contratto applicativo e non dipendono dal filesystem runtime. */
