@@ -509,25 +509,25 @@ const jsonLd = !isLegacyReview
     font-weight: var(--font-medium);
   }
 
-  /* CTA partnership: contrasto speculare tra light e dark mode. */
+  /* CTA partnership: contrasto richiesto tra light e dark mode. */
   :global(html[data-theme="light"]) .post-sidebar :global(.promo-card__cta) {
     background: #0f6f3b;
-    color: #ffffff;
+    color: #ffffff !important;
   }
 
   :global(html[data-theme="light"]) .post-sidebar :global(.promo-card__cta:hover) {
     background: #0d5f34;
-    color: #ffffff;
+    color: #ffffff !important;
   }
 
   :global(html[data-theme="dark"]) .post-sidebar :global(.promo-card__cta) {
     background: #f6e7a1;
-    color: #12351f;
+    color: #12351f !important;
   }
 
   :global(html[data-theme="dark"]) .post-sidebar :global(.promo-card__cta:hover) {
     background: #fff2b8;
-    color: #0d2a18;
+    color: #0d2a18 !important;
     box-shadow: 0 8px 20px rgba(246, 231, 161, 0.2);
   }
 
