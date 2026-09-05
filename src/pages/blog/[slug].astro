@@ -508,4 +508,56 @@ const jsonLd = !isLegacyReview
     color: var(--brand);
     font-weight: var(--font-medium);
   }
+
+  /* CTA partnership: contrasto speculare tra light e dark mode. */
+  :global(html[data-theme="light"]) .post-sidebar :global(.promo-card__cta) {
+    background: #0f6f3b;
+    color: #ffffff;
+  }
+
+  :global(html[data-theme="light"]) .post-sidebar :global(.promo-card__cta:hover) {
+    background: #0d5f34;
+    color: #ffffff;
+  }
+
+  :global(html[data-theme="dark"]) .post-sidebar :global(.promo-card__cta) {
+    background: #f6e7a1;
+    color: #12351f;
+  }
+
+  :global(html[data-theme="dark"]) .post-sidebar :global(.promo-card__cta:hover) {
+    background: #fff2b8;
+    color: #0d2a18;
+    box-shadow: 0 8px 20px rgba(246, 231, 161, 0.2);
+  }
+
+  /* Desktop: solo lo slot Partnership resta sticky mentre l'articolo scorre. */
+  @media (min-width: 1024px) {
+    .post-sidebar {
+      align-self: stretch;
+      overflow: visible;
+    }
+
+    .post-sidebar :global(.editorial-sidebar) {
+      min-height: 100%;
+      align-content: start;
+      overflow: visible;
+    }
+
+    .post-sidebar :global(.promo-card) {
+      position: sticky;
+      top: var(--post-sticky-top, calc(var(--nav-h, 76px) + 16px));
+      z-index: 2;
+      align-self: start;
+    }
+  }
+
+  /* Tablet/mobile: la promo torna una normale card nel flusso. */
+  @media (max-width: 1023px) {
+    .post-sidebar :global(.promo-card) {
+      position: relative;
+      top: auto;
+      z-index: auto;
+    }
+  }
 </style>
