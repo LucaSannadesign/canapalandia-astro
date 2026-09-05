@@ -14,7 +14,7 @@ const {
   currentSlug,
   category = null,
   tags = [],
-  title = "Articoli correlati",
+  title = "Continua a leggere",
 } = Astro.props as Props;
 
 function normalizeText(value: unknown): string {
@@ -115,6 +115,7 @@ try {
 {relatedPosts.length > 0 ? (
   <section class="related-posts" aria-label={title}>
     <div class="section-head">
+      <p class="section-kicker">Scelti per te</p>
       <h2>{title}</h2>
     </div>
 
@@ -141,16 +142,28 @@ try {
 <style>
   .related-posts {
     margin: 3rem 0 0;
-    padding-top: 2.5rem;
-    border-top: 1px solid var(--border);
+    padding: 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    background: var(--panel);
   }
 
   .section-head {
-    margin-bottom: 2rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .section-kicker {
+    margin: 0 0 0.35rem;
+    color: var(--brand);
+    font-family: var(--font-ui);
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
   }
 
   .section-head h2 {
-    font-size: 1.75rem;
+    font-size: 1.65rem;
     font-weight: 700;
     margin: 0;
     color: var(--text);
@@ -159,18 +172,19 @@ try {
   .related-posts__grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 1.5rem;
+    gap: 1rem;
   }
 
   @media (min-width: 640px) {
     .related-posts__grid {
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
 
-  @media (min-width: 1024px) {
-    .related-posts__grid {
-      grid-template-columns: repeat(3, 1fr);
+  /* Su desktop i correlati sono già nella sidebar: evitiamo il doppione. */
+  @media (min-width: 921px) {
+    .related-posts {
+      display: none;
     }
   }
 </style>
