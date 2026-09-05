@@ -330,6 +330,13 @@ async function main() {
       }
     }
 
+    // Mappa inversa: attachment ID -> post ID.
+    // WordPress salva _thumbnail_id sul post, mentre _wp_attached_file appartiene
+    // all'attachment: usare thumbByPost.get(attachmentId) non può funzionare.
+    const postByThumbnail = new Map(
+      [...thumbByPost.entries()].map(([postId, attachmentId]) => [attachmentId, postId])
+    );
+
     // Estrai URL featured images
     const featuredImageMap = new Map();
     if (attachmentIds.length) {
@@ -342,20 +349,16 @@ async function main() {
 
       const wpSiteUrl = env("WP_SITE_URL", "");
       for (const file of attachedFiles || []) {
-        const postId = thumbByPost.get(file.post_id);
-        if (postId && file.file) {
-          const imageUrl = wpSiteUrl
-            ? `${wpSiteUrl.replace(/\/$/, "")}/wp-content/uploads/${String(file.file).replace(/^\/+/, "")}`
-            : null;
-          if (imageUrl) {
-            // Trova il post che ha questo thumbnail
-            for (const [pid, thumbId] of thumbByPost.entries()) {
-              if (thumbId === file.post_id) {
-                featuredImageMap.set(pid, imageUrl);
-                break;
-              }
-            }
-          }
+        const attachmentId = Number(file.post_id);
+        const postId = postByThumbnail.get(attachmentId);
+        if (!postId || !file.file) continue;
+
+        const imageUrl = wpSiteUrl
+          ? `${wpSiteUrl.replace(/\/$/, "")}/wp-content/uploads/${String(file.file).replace(/^\/+/, "")}`
+          : null;
+
+        if (imageUrl) {
+          featuredImageMap.set(postId, imageUrl);
         }
       }
     }
@@ -422,6 +425,7 @@ async function main() {
           `tags: [${tags.slice(0, 3).map((t) => `"${yamlEscape(t.slug)}"`).join(", ")}]`,
           `draft: false`,
           `canonical: "/${yamlEscape(slug)}/"`,
+          coverImage ? `image: "${yamlEscape(coverImage)}"` : `image: ""`,
           coverImage ? `coverImage: "${yamlEscape(coverImage)}"` : `coverImage: ""`,
           coverImage ? `coverAlt: "${yamlEscape(title)}"` : `coverAlt: ""`,
           `---`,
