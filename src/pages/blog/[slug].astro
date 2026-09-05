@@ -508,4 +508,34 @@ const jsonLd = !isLegacyReview
     color: var(--brand);
     font-weight: var(--font-medium);
   }
+
+  /* Desktop: solo lo slot Partnership resta sticky mentre l'articolo scorre. */
+  @media (min-width: 1024px) {
+    .post-sidebar {
+      align-self: stretch;
+      overflow: visible;
+    }
+
+    .post-sidebar :global(.editorial-sidebar) {
+      min-height: 100%;
+      align-content: start;
+      overflow: visible;
+    }
+
+    .post-sidebar :global(.promo-card) {
+      position: sticky;
+      top: var(--post-sticky-top, calc(var(--nav-h, 76px) + 16px));
+      z-index: 2;
+      align-self: start;
+    }
+  }
+
+  /* Tablet/mobile: la promo torna una normale card nel flusso. */
+  @media (max-width: 1023px) {
+    .post-sidebar :global(.promo-card) {
+      position: relative;
+      top: auto;
+      z-index: auto;
+    }
+  }
 </style>
