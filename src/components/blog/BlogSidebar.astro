@@ -11,21 +11,102 @@ function isItalianPost(entry: CollectionEntry<"blog">): boolean {
   return !(entry.id || "").startsWith("en/");
 }
 
+function normalizeText(value: unknown): string {
+  return String(value || "").trim().toLowerCase();
+}
+
+function publicSlug(entry: CollectionEntry<"blog">): string {
+  return String(entry.data?.slug || entry.id || "")
+    .replace(/\.mdx?$/, "")
+    .trim();
+}
+
+function postHref(entry: CollectionEntry<"blog">): string {
+  const slug = publicSlug(entry);
+  return slug ? `/blog/${slug}/` : "/blog/";
+}
+
+function normalizeImgSrc(src: unknown): string {
+  if (typeof src === "string") {
+    const value = src.trim();
+    if (!value) return "";
+    if (value.startsWith("http://") || value.startsWith("https://") || value.startsWith("/")) return value;
+    return `/${value}`;
+  }
+
+  if (src && typeof src === "object" && "src" in src) {
+    return normalizeImgSrc((src as { src?: unknown }).src);
+  }
+
+  return "";
+}
+
+function postImage(entry: CollectionEntry<"blog">): string {
+  return normalizeImgSrc(entry.data.image || entry.data.coverImage || "") || "/images/logo-canapalandia_1024.webp";
+}
+
+function normalizeTags(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.map((tag) => normalizeText(tag)).filter(Boolean)
+    : [];
+}
+
+function categoryLabel(value: unknown): string {
+  const category = String(value || "").trim();
+  const labels: Record<string, string> = {
+    "cannabis-news-it": "Notizie",
+    Normativa: "Normativa",
+    "cbd-alimentazione": "CBD",
+    "canapa-e-ambiente": "Canapa",
+    "salute-benessere": "Salute e ricerca",
+    Ricerca: "Ricerca",
+    "guide-tutorial": "Guide",
+    "cannabis-e-innovazione": "Innovazione",
+    "medical-cannabis": "Cannabis terapeutica",
+  };
+  return labels[category] || category || "Approfondimenti";
+}
+
 // Solo contenuti italiani realmente pubblici, ordinati dal più recente.
 const now = new Date();
 const sortedPosts = posts
   .filter((post) => isItalianPost(post) && isPublishedBlogEntry(post, now))
   .sort((a, b) => {
-    const dateA = new Date(a.data.publishDate || a.data.date || a.data.pubDate || "1970-01-01");
-    const dateB = new Date(b.data.publishDate || b.data.date || b.data.pubDate || "1970-01-01");
+    const dateA = new Date(a.data.publishDate || a.data.updatedDate || "1970-01-01");
+    const dateB = new Date(b.data.publishDate || b.data.updatedDate || "1970-01-01");
     return dateB.getTime() - dateA.getTime();
   });
 
-// Recenti: ultimi 5
-const recentPosts = sortedPosts.slice(0, 5);
+// Ricava il post corrente direttamente dall'URL della pagina articolo.
+const pathnameParts = Astro.url.pathname.split("/").filter(Boolean);
+const currentSlug = normalizeText(pathnameParts.at(-1));
+const currentPost = sortedPosts.find((post) => normalizeText(publicSlug(post)) === currentSlug);
+const currentCategory = normalizeText(currentPost?.data.category);
+const currentTags = normalizeTags(currentPost?.data.tags);
+
+// Correlati compatti: stessa categoria pesa di più, poi tag condivisi, poi recenza.
+const relatedPosts = sortedPosts
+  .filter((post) => normalizeText(publicSlug(post)) !== currentSlug)
+  .map((post) => {
+    const postCategory = normalizeText(post.data.category);
+    const postTags = normalizeTags(post.data.tags);
+    const sharedTags = currentTags.filter((tag) => postTags.includes(tag)).length;
+    const score = (currentCategory && postCategory === currentCategory ? 10 : 0) + sharedTags * 3;
+    const date = new Date(post.data.publishDate || post.data.updatedDate || "1970-01-01").getTime();
+    return { post, score, date };
+  })
+  .filter(({ score }) => score > 0)
+  .sort((a, b) => b.score - a.score || b.date - a.date)
+  .slice(0, 3)
+  .map(({ post }) => post);
+
+// Recenti: ultimi 5, escluso l'articolo corrente.
+const recentPosts = sortedPosts
+  .filter((post) => normalizeText(publicSlug(post)) !== currentSlug)
+  .slice(0, 5);
 
 // Featured: max 5
-const featuredPosts = sortedPosts.filter((post) => post.data.featured).slice(0, 5);
+const featuredPosts = sortedPosts.filter((post) => (post.data as any).featured).slice(0, 5);
 
 // La sidebar segue la stessa IA dei quattro hub editoriali principali.
 const EDITORIAL_CATEGORIES = [
@@ -68,16 +149,95 @@ const tagCount = sortedPosts.reduce((acc, post) => {
 const sortedTags = Object.entries(tagCount)
   .sort(([, a], [, b]) => b - a)
   .slice(0, 10);
+
+const socialLinks = [
+  {
+    label: "Facebook",
+    href: "https://www.facebook.com/canapalandia.official",
+    icon: "https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/facebook.svg",
+  },
+  {
+    label: "Instagram",
+    href: "https://www.instagram.com/canapalandia.official/",
+    icon: "https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/instagram.svg",
+  },
+  {
+    label: "YouTube",
+    href: "https://www.youtube.com/@canapalandia",
+    icon: "https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/youtube.svg",
+  },
+  {
+    label: "LinkedIn",
+    href: "https://www.linkedin.com/company/canapalandia/",
+    icon: "https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/linkedin.svg",
+  },
+] as const;
 ---
 
-<aside aria-label="Sidebar del blog" class="sidebar-sticky">
-  <!-- Recenti -->
-  <div class="sidebar-section">
+<aside aria-label="Sidebar del blog" class="sidebar-sticky editorial-sidebar">
+  {relatedPosts.length > 0 ? (
+    <section class="editorial-card related-card" aria-labelledby="sidebar-related-title">
+      <h2 id="sidebar-related-title" class="editorial-card__title">Articoli correlati</h2>
+      <div class="compact-related-list">
+        {relatedPosts.map((post) => (
+          <a href={postHref(post)} class="compact-related-item">
+            <img
+              src={postImage(post)}
+              alt=""
+              class="compact-related-item__image"
+              loading="lazy"
+              decoding="async"
+              onerror="this.onerror=null;this.src='/images/logo-canapalandia_1024.webp';"
+            />
+            <span class="compact-related-item__body">
+              <strong>{post.data.title}</strong>
+              <small>{categoryLabel(post.data.category)}</small>
+            </span>
+          </a>
+        ))}
+      </div>
+    </section>
+  ) : null}
+
+  <section class="editorial-card newsletter-card" aria-labelledby="sidebar-newsletter-title">
+    <div class="newsletter-card__heading">
+      <span class="newsletter-card__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" role="img">
+          <path d="M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm0 2.2V18h18V7.2l-8.4 6.1a1 1 0 0 1-1.2 0L3 7.2Zm1.8-.2L12 12.2 19.2 7H4.8Z" />
+        </svg>
+      </span>
+      <h2 id="sidebar-newsletter-title" class="editorial-card__title">Rimani aggiornato</h2>
+    </div>
+    <p>Ricevi le ultime notizie su canapa, normativa e ricerca scientifica.</p>
+    <a href="#newsletterForm" class="newsletter-card__button">Iscriviti alla newsletter</a>
+  </section>
+
+  <section class="follow-card" aria-labelledby="sidebar-follow-title">
+    <h2 id="sidebar-follow-title" class="editorial-card__title">Seguici</h2>
+    <nav class="follow-links" aria-label="Canali social Canapalandia">
+      {socialLinks.map((social) => (
+        <a
+          href={social.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`${social.label} Canapalandia`}
+          title={social.label}
+        >
+          <img src={social.icon} alt="" aria-hidden="true" loading="lazy" />
+        </a>
+      ))}
+      <a href="/rss.xml" aria-label="Feed RSS Canapalandia" title="RSS">
+        <span class="rss-mark" aria-hidden="true">RSS</span>
+      </a>
+    </nav>
+  </section>
+
+  <div class="sidebar-section navigation-section">
     <h3 class="sidebar-title">Articoli recenti</h3>
     <ul class="sidebar-list recent-posts">
       {recentPosts.map((post) => (
         <li class="py-[10px]">
-          <a href={`/blog/${(post.data?.slug || post.id?.replace(/\.mdx?$/, "")).trim()}/`} class="sidebar-link block leading-snug">
+          <a href={postHref(post)} class="sidebar-link block leading-snug">
             {post.data.title}
           </a>
         </li>
@@ -85,14 +245,13 @@ const sortedTags = Object.entries(tagCount)
     </ul>
   </div>
 
-  <!-- In evidenza -->
   {featuredPosts.length > 0 && (
-    <div class="sidebar-section">
+    <div class="sidebar-section navigation-section">
       <h3 class="sidebar-title">In evidenza</h3>
       <ul class="sidebar-list">
         {featuredPosts.map((post) => (
           <li>
-            <a href={`/blog/${(post.data?.slug || post.id?.replace(/\.mdx?$/, "")).trim()}/`} class="sidebar-link">
+            <a href={postHref(post)} class="sidebar-link">
               {post.data.title}
             </a>
           </li>
@@ -101,8 +260,7 @@ const sortedTags = Object.entries(tagCount)
     </div>
   )}
 
-  <!-- Categorie -->
-  <div class="sidebar-section">
+  <div class="sidebar-section navigation-section">
     <h3 class="sidebar-title">Percorsi principali</h3>
     <ul class="sidebar-list sidebar-categories">
       {editorialCategories.map((category) => (
@@ -115,8 +273,7 @@ const sortedTags = Object.entries(tagCount)
     </ul>
   </div>
 
-  <!-- Tag -->
-  <div class="sidebar-section">
+  <div class="sidebar-section navigation-section">
     <h3 class="sidebar-title">Tag popolari</h3>
     <ul class="sidebar-list">
       {sortedTags.map(([tag, count]) => {
@@ -140,8 +297,7 @@ const sortedTags = Object.entries(tagCount)
     </ul>
   </div>
 
-  <!-- Link utili -->
-  <div class="sidebar-section">
+  <div class="sidebar-section navigation-section">
     <h3 class="sidebar-title">Link utili</h3>
     <ul class="sidebar-list">
       <li><a href="/rss.xml" class="sidebar-link">RSS</a></li>
@@ -150,3 +306,217 @@ const sortedTags = Object.entries(tagCount)
     </ul>
   </div>
 </aside>
+
+<style>
+  .editorial-sidebar {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .editorial-card {
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    background: var(--panel);
+    padding: 1.15rem;
+    box-shadow: 0 8px 26px rgba(7, 24, 14, 0.06);
+  }
+
+  .editorial-card__title {
+    margin: 0;
+    color: var(--text);
+    font-family: var(--font-ui);
+    font-size: 1.18rem;
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+  }
+
+  .compact-related-list {
+    display: grid;
+    margin-top: 0.8rem;
+  }
+
+  .compact-related-item {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.78rem 0;
+    color: var(--text);
+    text-decoration: none;
+    border-top: 1px solid color-mix(in oklab, var(--border) 74%, transparent);
+  }
+
+  .compact-related-item:first-child {
+    border-top: 0;
+    padding-top: 0.15rem;
+  }
+
+  .compact-related-item:last-child {
+    padding-bottom: 0.1rem;
+  }
+
+  .compact-related-item:hover strong {
+    color: var(--brand);
+  }
+
+  .compact-related-item__image {
+    width: 72px;
+    height: 64px;
+    object-fit: cover;
+    border-radius: var(--r-xs);
+    background: var(--panel-2);
+  }
+
+  .compact-related-item__body {
+    min-width: 0;
+    display: grid;
+    gap: 0.3rem;
+  }
+
+  .compact-related-item strong {
+    font-family: var(--font-ui);
+    font-size: 0.92rem;
+    line-height: 1.27;
+    transition: color 150ms ease;
+  }
+
+  .compact-related-item small {
+    color: var(--muted);
+    font-size: 0.72rem;
+    line-height: 1.2;
+  }
+
+  .newsletter-card {
+    background: color-mix(in oklab, var(--brand-subtle) 60%, var(--panel));
+  }
+
+  .newsletter-card__heading {
+    display: flex;
+    gap: 0.7rem;
+    align-items: center;
+  }
+
+  .newsletter-card__icon {
+    display: grid;
+    place-items: center;
+    width: 2.15rem;
+    height: 2.15rem;
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: var(--brand);
+    color: #fff;
+  }
+
+  .newsletter-card__icon svg {
+    width: 1.15rem;
+    height: 1.15rem;
+    fill: currentColor;
+  }
+
+  .newsletter-card p {
+    margin: 0.75rem 0 1rem;
+    color: var(--muted);
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .newsletter-card__button {
+    display: block;
+    width: 100%;
+    padding: 0.78rem 0.9rem;
+    border-radius: var(--r-sm);
+    background: var(--brand);
+    color: #fff;
+    font-family: var(--font-ui);
+    font-size: 0.9rem;
+    font-weight: 700;
+    line-height: 1.2;
+    text-align: center;
+    text-decoration: none;
+    transition: transform 150ms ease, background 150ms ease, box-shadow 150ms ease;
+  }
+
+  .newsletter-card__button:hover {
+    background: var(--brand-2);
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px color-mix(in oklab, var(--brand) 22%, transparent);
+  }
+
+  .newsletter-card__button:focus-visible,
+  .follow-links a:focus-visible,
+  .compact-related-item:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 3px;
+  }
+
+  .follow-card {
+    padding: 0.15rem 0.25rem 0.35rem;
+  }
+
+  .follow-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    margin-top: 0.75rem;
+  }
+
+  .follow-links a {
+    display: grid;
+    place-items: center;
+    width: 2.15rem;
+    height: 2.15rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--panel);
+    transition: transform 150ms ease, border-color 150ms ease, background 150ms ease;
+  }
+
+  .follow-links a:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in oklab, var(--brand) 55%, var(--border));
+    background: var(--brand-subtle);
+  }
+
+  .follow-links img {
+    width: 1rem;
+    height: 1rem;
+    opacity: 0.72;
+  }
+
+  .rss-mark {
+    color: var(--text);
+    font-family: var(--font-ui);
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+  }
+
+  .navigation-section {
+    margin-top: 0;
+  }
+
+  :global(html[data-theme="dark"]) .follow-links img {
+    filter: invert(1);
+    opacity: 0.8;
+  }
+
+  :global(html[data-theme="dark"]) .newsletter-card {
+    background: color-mix(in oklab, var(--brand) 14%, var(--panel));
+  }
+
+  @media (max-width: 920px) {
+    .editorial-sidebar {
+      gap: 1rem;
+    }
+
+    .compact-related-item {
+      grid-template-columns: 82px minmax(0, 1fr);
+    }
+
+    .compact-related-item__image {
+      width: 82px;
+      height: 68px;
+    }
+  }
+</style>
