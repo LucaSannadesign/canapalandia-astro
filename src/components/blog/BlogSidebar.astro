@@ -3,6 +3,7 @@ import { getCollection, type CollectionEntry } from "astro:content";
 import { isPublishedBlogEntry } from "../../lib/blogVisibility";
 
 const posts = await getCollection("blog");
+const now = new Date();
 
 function isItalianPost(entry: CollectionEntry<"blog">): boolean {
   const data = entry.data as any;
@@ -30,7 +31,13 @@ function normalizeImgSrc(src: unknown): string {
   if (typeof src === "string") {
     const value = src.trim();
     if (!value) return "";
-    if (value.startsWith("http://") || value.startsWith("https://") || value.startsWith("/")) return value;
+    if (
+      value.startsWith("http://") ||
+      value.startsWith("https://") ||
+      value.startsWith("/")
+    ) {
+      return value;
+    }
     return `/${value}`;
   }
 
@@ -42,7 +49,10 @@ function normalizeImgSrc(src: unknown): string {
 }
 
 function postImage(entry: CollectionEntry<"blog">): string {
-  return normalizeImgSrc(entry.data.image || entry.data.coverImage || "") || "/images/logo-canapalandia_1024.webp";
+  return (
+    normalizeImgSrc(entry.data.image || entry.data.coverImage || "") ||
+    "/images/logo-canapalandia_1024.webp"
+  );
 }
 
 function normalizeTags(value: unknown): string[] {
@@ -53,7 +63,6 @@ function normalizeTags(value: unknown): string[] {
 
 function categoryLabel(value: unknown): string {
   const raw = String(value || "").trim();
-  const key = raw.toLowerCase();
   const labels: Record<string, string> = {
     "cannabis-news-it": "Notizie",
     normativa: "Normativa",
@@ -65,7 +74,7 @@ function categoryLabel(value: unknown): string {
     "cannabis-e-innovazione": "Innovazione",
     "medical-cannabis": "Cannabis terapeutica",
   };
-  return labels[key] || raw || "Approfondimenti";
+  return labels[raw.toLowerCase()] || raw || "Approfondimenti";
 }
 
 function formatShortDate(value: Date | string | number | null | undefined): string {
@@ -87,7 +96,6 @@ function tagSlug(tag: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-const now = new Date();
 const sortedPosts = posts
   .filter((post) => isItalianPost(post) && isPublishedBlogEntry(post, now))
   .sort((a, b) => {
@@ -98,18 +106,25 @@ const sortedPosts = posts
 
 const pathnameParts = Astro.url.pathname.split("/").filter(Boolean);
 const currentSlug = normalizeText(pathnameParts.at(-1));
-const currentPost = sortedPosts.find((post) => normalizeText(publicSlug(post)) === currentSlug);
+const currentPost = sortedPosts.find(
+  (post) => normalizeText(publicSlug(post)) === currentSlug,
+);
 const currentCategory = normalizeText(currentPost?.data.category);
 const currentTags = normalizeTags(currentPost?.data.tags);
 
 const relatedPosts = sortedPosts
   .filter((post) => normalizeText(publicSlug(post)) !== currentSlug)
   .map((post) => {
-    const postCategory = normalizeText(post.data.category);
-    const postTags = normalizeTags(post.data.tags);
-    const sharedTags = currentTags.filter((tag) => postTags.includes(tag)).length;
-    const score = (currentCategory && postCategory === currentCategory ? 10 : 0) + sharedTags * 3;
-    const date = new Date(post.data.publishDate || post.data.updatedDate || "1970-01-01").getTime();
+    const sameCategory =
+      currentCategory &&
+      normalizeText(post.data.category) === currentCategory;
+    const sharedTags = currentTags.filter((tag) =>
+      normalizeTags(post.data.tags).includes(tag),
+    ).length;
+    const score = (sameCategory ? 10 : 0) + sharedTags * 3;
+    const date = new Date(
+      post.data.publishDate || post.data.updatedDate || "1970-01-01",
+    ).getTime();
     return { post, score, date };
   })
   .filter(({ score }) => score > 0)
@@ -134,10 +149,9 @@ const editorialCategories = EDITORIAL_CATEGORIES.map((category) => ({
 })).filter((category) => category.count > 0);
 
 const tagCount = sortedPosts.reduce((acc, post) => {
-  const tags = post.data.tags || [];
-  tags.forEach((tag) => {
+  for (const tag of post.data.tags || []) {
     acc[tag] = (acc[tag] || 0) + 1;
-  });
+  }
   return acc;
 }, {} as Record<string, number>);
 
@@ -176,21 +190,21 @@ const socialLinks = [
         <h2 id="sidebar-related-title" class="editorial-card__title">Articoli correlati</h2>
         <span class="heading-kicker">Per te</span>
       </div>
-      <div class="compact-related-list">
+
+      <div class="compact-list">
         {relatedPosts.map((post) => (
-          <a href={postHref(post)} class="compact-related-item">
+          <a href={postHref(post)} class="story-row story-row--related">
             <img
               src={postImage(post)}
               alt=""
-              class="compact-related-item__image"
               loading="lazy"
               decoding="async"
               onerror="this.onerror=null;this.src='/images/logo-canapalandia_1024.webp';"
             />
-            <span class="compact-related-item__body">
+            <span class="story-row__body">
               <small>{categoryLabel(post.data.category)}</small>
               <strong>{post.data.title}</strong>
-              <span class="mini-cta">Leggi <span aria-hidden="true">→</span></span>
+              <span class="story-row__cta">Leggi →</span>
             </span>
           </a>
         ))}
@@ -236,22 +250,24 @@ const socialLinks = [
       <h2 id="sidebar-recent-title" class="editorial-card__title">Ultime dal magazine</h2>
       <a href="/blog/" class="heading-link">Tutte</a>
     </div>
-    <div class="recent-card-list">
+
+    <div class="compact-list">
       {recentPosts.map((post) => (
-        <a href={postHref(post)} class="recent-card-item">
+        <a href={postHref(post)} class="story-row">
           <img
             src={postImage(post)}
             alt=""
-            class="recent-card-item__image"
             loading="lazy"
             decoding="async"
             onerror="this.onerror=null;this.src='/images/logo-canapalandia_1024.webp';"
           />
-          <span class="recent-card-item__body">
-            <span class="recent-card-item__meta">
+          <span class="story-row__body">
+            <small>
               {categoryLabel(post.data.category)}
-              {formatShortDate(post.data.publishDate) ? ` · ${formatShortDate(post.data.publishDate)}` : ""}
-            </span>
+              {formatShortDate(post.data.publishDate)
+                ? ` · ${formatShortDate(post.data.publishDate)}`
+                : ""}
+            </small>
             <strong>{post.data.title}</strong>
           </span>
         </a>
@@ -288,6 +304,26 @@ const socialLinks = [
       </div>
     </div>
   </section>
+
+  <section class="promo-card" aria-labelledby="sidebar-promo-title">
+    <p class="promo-card__eyebrow">
+      <span class="promo-card__dot" aria-hidden="true"></span>
+      Partnership selezionate
+    </p>
+    <h2 id="sidebar-promo-title" class="promo-card__title">Hai un progetto da far conoscere?</h2>
+    <p class="promo-card__text">
+      Articoli sponsorizzati, banner e collaborazioni editoriali per aziende,
+      professionisti ed eventi in linea con Canapalandia.
+    </p>
+    <div class="promo-card__formats" aria-label="Formati disponibili">
+      <span>Articoli</span>
+      <span>Banner</span>
+      <span>Partnership</span>
+    </div>
+    <a href="/pubblicita/" class="promo-card__cta">
+      Scopri le opportunità <span aria-hidden="true">→</span>
+    </a>
+  </section>
 </aside>
 
 <style>
@@ -296,11 +332,15 @@ const socialLinks = [
     gap: 1.25rem;
   }
 
-  .editorial-card {
-    border: 1px solid var(--border);
+  .editorial-card,
+  .promo-card {
     border-radius: var(--r-md);
-    background: var(--panel);
+  }
+
+  .editorial-card {
     padding: 1.15rem;
+    border: 1px solid var(--border);
+    background: var(--panel);
     box-shadow: 0 8px 26px rgba(7, 24, 14, 0.06);
   }
 
@@ -313,11 +353,15 @@ const socialLinks = [
     letter-spacing: -0.015em;
   }
 
-  .card-heading-row {
+  .card-heading-row,
+  .newsletter-card__heading {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 0.75rem;
+  }
+
+  .card-heading-row {
+    justify-content: space-between;
   }
 
   .heading-kicker,
@@ -344,71 +388,91 @@ const socialLinks = [
     text-underline-offset: 0.18em;
   }
 
-  .compact-related-list {
+  .compact-list {
     display: grid;
-    margin-top: 0.8rem;
+    margin-top: 0.85rem;
   }
 
-  .compact-related-item {
+  .story-row {
     display: grid;
-    grid-template-columns: 78px minmax(0, 1fr);
-    gap: 0.8rem;
-    align-items: stretch;
-    padding: 0.82rem 0;
+    grid-template-columns: 74px minmax(0, 1fr);
+    gap: 0.78rem;
+    align-items: center;
+    padding: 0.78rem 0;
+    border-top: 1px solid color-mix(in oklab, var(--border) 72%, transparent);
     color: var(--text);
     text-decoration: none;
-    border-top: 1px solid color-mix(in oklab, var(--border) 74%, transparent);
   }
 
-  .compact-related-item:first-child {
+  .story-row:first-child {
+    padding-top: 0.2rem;
     border-top: 0;
-    padding-top: 0.25rem;
   }
 
-  .compact-related-item:last-child {
+  .story-row:last-child {
     padding-bottom: 0.1rem;
   }
 
-  .compact-related-item__image {
-    width: 78px;
-    height: 72px;
+  .story-row--related {
+    grid-template-columns: 78px minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .story-row img {
+    width: 74px;
+    height: 58px;
     object-fit: cover;
     border-radius: var(--r-xs);
     background: var(--panel-2);
   }
 
-  .compact-related-item__body {
+  .story-row--related img {
+    width: 78px;
+    height: 72px;
+  }
+
+  .story-row__body {
     min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
+    gap: 0.28rem;
   }
 
-  .compact-related-item small {
-    color: var(--brand);
+  .story-row small {
+    color: var(--muted);
+    font-family: var(--font-ui);
     font-size: 0.68rem;
-    font-weight: 700;
+    font-weight: 600;
     line-height: 1.2;
+  }
+
+  .story-row--related small {
+    color: var(--brand);
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
   }
 
-  .compact-related-item strong {
-    margin-top: 0.28rem;
+  .story-row strong {
     font-family: var(--font-ui);
-    font-size: 0.92rem;
-    line-height: 1.27;
+    font-size: 0.88rem;
+    line-height: 1.3;
     transition: color 150ms ease;
   }
 
-  .compact-related-item:hover strong,
-  .recent-card-item:hover strong {
+  .story-row--related strong {
+    font-size: 0.92rem;
+    line-height: 1.27;
+  }
+
+  .story-row:hover strong {
     color: var(--brand);
   }
 
-  .mini-cta {
+  .story-row__cta {
     margin-top: auto;
-    padding-top: 0.35rem;
+    padding-top: 0.2rem;
     color: var(--muted);
     font-family: var(--font-ui);
     font-size: 0.7rem;
@@ -417,12 +481,6 @@ const socialLinks = [
 
   .newsletter-card {
     background: color-mix(in oklab, var(--brand-subtle) 60%, var(--panel));
-  }
-
-  .newsletter-card__heading {
-    display: flex;
-    gap: 0.7rem;
-    align-items: center;
   }
 
   .newsletter-card__icon {
@@ -449,27 +507,35 @@ const socialLinks = [
     line-height: 1.5;
   }
 
-  .newsletter-card__button {
-    display: block;
+  .newsletter-card__button,
+  .promo-card__cta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.7rem;
     width: 100%;
-    padding: 0.78rem 0.9rem;
     border-radius: var(--r-sm);
     background: var(--brand);
     color: #fff;
     font-family: var(--font-ui);
-    font-size: 0.9rem;
-    font-weight: 700;
+    font-weight: 800;
     line-height: 1.2;
-    text-align: center;
     text-decoration: none;
     transition: transform 150ms ease, background 150ms ease, box-shadow 150ms ease;
   }
 
-  .newsletter-card__button:hover {
+  .newsletter-card__button {
+    padding: 0.78rem 0.9rem;
+    font-size: 0.9rem;
+    text-align: center;
+  }
+
+  .newsletter-card__button:hover,
+  .promo-card__cta:hover {
     background: var(--brand-2);
     color: #fff;
     transform: translateY(-1px);
-    box-shadow: 0 8px 20px color-mix(in oklab, var(--brand) 22%, transparent);
+    box-shadow: 0 8px 20px color-mix(in oklab, var(--brand) 24%, transparent);
   }
 
   .follow-card {
@@ -512,60 +578,6 @@ const socialLinks = [
     font-size: 0.58rem;
     font-weight: 800;
     letter-spacing: 0.02em;
-  }
-
-  .recent-card-list {
-    display: grid;
-    margin-top: 0.85rem;
-  }
-
-  .recent-card-item {
-    display: grid;
-    grid-template-columns: 74px minmax(0, 1fr);
-    gap: 0.78rem;
-    align-items: center;
-    padding: 0.78rem 0;
-    color: var(--text);
-    text-decoration: none;
-    border-top: 1px solid color-mix(in oklab, var(--border) 72%, transparent);
-  }
-
-  .recent-card-item:first-child {
-    border-top: 0;
-    padding-top: 0.2rem;
-  }
-
-  .recent-card-item:last-child {
-    padding-bottom: 0.1rem;
-  }
-
-  .recent-card-item__image {
-    width: 74px;
-    height: 58px;
-    object-fit: cover;
-    border-radius: var(--r-xs);
-    background: var(--panel-2);
-  }
-
-  .recent-card-item__body {
-    min-width: 0;
-    display: grid;
-    gap: 0.28rem;
-  }
-
-  .recent-card-item__meta {
-    color: var(--muted);
-    font-family: var(--font-ui);
-    font-size: 0.68rem;
-    font-weight: 600;
-    line-height: 1.2;
-  }
-
-  .recent-card-item strong {
-    font-family: var(--font-ui);
-    font-size: 0.88rem;
-    line-height: 1.3;
-    transition: color 150ms ease;
   }
 
   .explore-card {
@@ -655,10 +667,110 @@ const socialLinks = [
     opacity: 0.7;
   }
 
+  .promo-card {
+    position: relative;
+    overflow: hidden;
+    padding: 1.2rem;
+    border: 1px solid color-mix(in oklab, var(--brand) 38%, var(--border));
+    background: linear-gradient(
+      145deg,
+      color-mix(in oklab, var(--brand-subtle) 76%, var(--panel)),
+      var(--panel) 72%
+    );
+    box-shadow: 0 12px 30px rgba(7, 24, 14, 0.08);
+  }
+
+  .promo-card::after {
+    content: "";
+    position: absolute;
+    width: 8rem;
+    height: 8rem;
+    right: -3.4rem;
+    top: -3.6rem;
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--brand) 10%, transparent);
+    pointer-events: none;
+  }
+
+  .promo-card__eyebrow,
+  .promo-card__title,
+  .promo-card__text,
+  .promo-card__formats,
+  .promo-card__cta {
+    position: relative;
+    z-index: 1;
+  }
+
+  .promo-card__eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0 0 0.72rem;
+    color: var(--brand);
+    font-family: var(--font-ui);
+    font-size: 0.68rem;
+    font-weight: 800;
+    line-height: 1.2;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+  }
+
+  .promo-card__dot {
+    width: 0.48rem;
+    height: 0.48rem;
+    border-radius: 999px;
+    background: currentColor;
+    box-shadow: 0 0 0 4px color-mix(in oklab, var(--brand) 12%, transparent);
+  }
+
+  .promo-card__title {
+    margin: 0;
+    max-width: 14ch;
+    color: var(--text);
+    font-family: var(--font-editorial);
+    font-size: 1.38rem;
+    line-height: 1.08;
+    letter-spacing: -0.025em;
+  }
+
+  .promo-card__text {
+    margin: 0.78rem 0 0;
+    color: var(--muted);
+    font-family: var(--font-ui);
+    font-size: 0.86rem;
+    line-height: 1.48;
+  }
+
+  .promo-card__formats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.38rem;
+    margin-top: 0.9rem;
+  }
+
+  .promo-card__formats span {
+    padding: 0.34rem 0.52rem;
+    border: 1px solid color-mix(in oklab, var(--brand) 24%, var(--border));
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--panel) 84%, transparent);
+    color: var(--text);
+    font-family: var(--font-ui);
+    font-size: 0.66rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .promo-card__cta {
+    justify-content: space-between;
+    margin-top: 1rem;
+    padding: 0.8rem 0.88rem;
+    font-size: 0.85rem;
+  }
+
   .newsletter-card__button:focus-visible,
+  .promo-card__cta:focus-visible,
   .follow-links a:focus-visible,
-  .compact-related-item:focus-visible,
-  .recent-card-item:focus-visible,
+  .story-row:focus-visible,
   .category-chip:focus-visible,
   .tag-chip:focus-visible,
   .heading-link:focus-visible {
@@ -675,23 +787,22 @@ const socialLinks = [
     background: color-mix(in oklab, var(--brand) 14%, var(--panel));
   }
 
+  :global(html[data-theme="dark"]) .promo-card {
+    background: linear-gradient(
+      145deg,
+      color-mix(in oklab, var(--brand) 18%, var(--panel)),
+      var(--panel) 74%
+    );
+  }
+
   @media (max-width: 920px) {
     .editorial-sidebar {
       gap: 1rem;
     }
 
-    /* Su mobile i correlati grandi restano sotto l'articolo: niente doppione in sidebar. */
+    /* Su mobile i correlati grandi restano sotto l'articolo: niente doppione. */
     .related-card {
       display: none;
-    }
-
-    .compact-related-item {
-      grid-template-columns: 82px minmax(0, 1fr);
-    }
-
-    .compact-related-item__image {
-      width: 82px;
-      height: 68px;
     }
   }
 </style>
