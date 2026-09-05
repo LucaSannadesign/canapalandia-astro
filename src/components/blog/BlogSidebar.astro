@@ -52,22 +52,41 @@ function normalizeTags(value: unknown): string[] {
 }
 
 function categoryLabel(value: unknown): string {
-  const category = String(value || "").trim();
+  const raw = String(value || "").trim();
+  const key = raw.toLowerCase();
   const labels: Record<string, string> = {
     "cannabis-news-it": "Notizie",
-    Normativa: "Normativa",
+    normativa: "Normativa",
     "cbd-alimentazione": "CBD",
     "canapa-e-ambiente": "Canapa",
     "salute-benessere": "Salute e ricerca",
-    Ricerca: "Ricerca",
+    ricerca: "Ricerca",
     "guide-tutorial": "Guide",
     "cannabis-e-innovazione": "Innovazione",
     "medical-cannabis": "Cannabis terapeutica",
   };
-  return labels[category] || category || "Approfondimenti";
+  return labels[key] || raw || "Approfondimenti";
 }
 
-// Solo contenuti italiani realmente pubblici, ordinati dal più recente.
+function formatShortDate(value: Date | string | number | null | undefined): string {
+  if (!value) return "";
+  const date = value instanceof Date ? value : new Date(String(value));
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("it-IT", { day: "numeric", month: "short" });
+}
+
+function tagSlug(tag: string): string {
+  return tag
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "")
+    .replace(/--+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 const now = new Date();
 const sortedPosts = posts
   .filter((post) => isItalianPost(post) && isPublishedBlogEntry(post, now))
@@ -77,14 +96,12 @@ const sortedPosts = posts
     return dateB.getTime() - dateA.getTime();
   });
 
-// Ricava il post corrente direttamente dall'URL della pagina articolo.
 const pathnameParts = Astro.url.pathname.split("/").filter(Boolean);
 const currentSlug = normalizeText(pathnameParts.at(-1));
 const currentPost = sortedPosts.find((post) => normalizeText(publicSlug(post)) === currentSlug);
 const currentCategory = normalizeText(currentPost?.data.category);
 const currentTags = normalizeTags(currentPost?.data.tags);
 
-// Correlati compatti: stessa categoria pesa di più, poi tag condivisi, poi recenza.
 const relatedPosts = sortedPosts
   .filter((post) => normalizeText(publicSlug(post)) !== currentSlug)
   .map((post) => {
@@ -100,36 +117,15 @@ const relatedPosts = sortedPosts
   .slice(0, 3)
   .map(({ post }) => post);
 
-// Recenti: ultimi 5, escluso l'articolo corrente.
 const recentPosts = sortedPosts
   .filter((post) => normalizeText(publicSlug(post)) !== currentSlug)
-  .slice(0, 5);
+  .slice(0, 4);
 
-// Featured: max 5
-const featuredPosts = sortedPosts.filter((post) => (post.data as any).featured).slice(0, 5);
-
-// La sidebar segue la stessa IA dei quattro hub editoriali principali.
 const EDITORIAL_CATEGORIES = [
-  {
-    source: "cannabis-news-it",
-    label: "Notizie",
-    href: "/categoria/cannabis-news-it/",
-  },
-  {
-    source: "Normativa",
-    label: "Normativa",
-    href: "/categoria/normativa/",
-  },
-  {
-    source: "cbd-alimentazione",
-    label: "CBD",
-    href: "/categoria/cbd-alimentazione/",
-  },
-  {
-    source: "canapa-e-ambiente",
-    label: "Canapa",
-    href: "/categoria/canapa-e-ambiente/",
-  },
+  { source: "cannabis-news-it", label: "Notizie", href: "/categoria/cannabis-news-it/" },
+  { source: "Normativa", label: "Normativa", href: "/categoria/normativa/" },
+  { source: "cbd-alimentazione", label: "CBD", href: "/categoria/cbd-alimentazione/" },
+  { source: "canapa-e-ambiente", label: "Canapa", href: "/categoria/canapa-e-ambiente/" },
 ] as const;
 
 const editorialCategories = EDITORIAL_CATEGORIES.map((category) => ({
@@ -137,7 +133,6 @@ const editorialCategories = EDITORIAL_CATEGORIES.map((category) => ({
   count: sortedPosts.filter((post) => post.data.category === category.source).length,
 })).filter((category) => category.count > 0);
 
-// Tag: conta occorrenze solo nei contenuti italiani pubblicati.
 const tagCount = sortedPosts.reduce((acc, post) => {
   const tags = post.data.tags || [];
   tags.forEach((tag) => {
@@ -148,7 +143,7 @@ const tagCount = sortedPosts.reduce((acc, post) => {
 
 const sortedTags = Object.entries(tagCount)
   .sort(([, a], [, b]) => b - a)
-  .slice(0, 10);
+  .slice(0, 8);
 
 const socialLinks = [
   {
@@ -177,7 +172,10 @@ const socialLinks = [
 <aside aria-label="Sidebar del blog" class="sidebar-sticky editorial-sidebar">
   {relatedPosts.length > 0 ? (
     <section class="editorial-card related-card" aria-labelledby="sidebar-related-title">
-      <h2 id="sidebar-related-title" class="editorial-card__title">Articoli correlati</h2>
+      <div class="card-heading-row">
+        <h2 id="sidebar-related-title" class="editorial-card__title">Articoli correlati</h2>
+        <span class="heading-kicker">Per te</span>
+      </div>
       <div class="compact-related-list">
         {relatedPosts.map((post) => (
           <a href={postHref(post)} class="compact-related-item">
@@ -190,8 +188,9 @@ const socialLinks = [
               onerror="this.onerror=null;this.src='/images/logo-canapalandia_1024.webp';"
             />
             <span class="compact-related-item__body">
-              <strong>{post.data.title}</strong>
               <small>{categoryLabel(post.data.category)}</small>
+              <strong>{post.data.title}</strong>
+              <span class="mini-cta">Leggi <span aria-hidden="true">→</span></span>
             </span>
           </a>
         ))}
@@ -232,79 +231,63 @@ const socialLinks = [
     </nav>
   </section>
 
-  <div class="sidebar-section navigation-section">
-    <h3 class="sidebar-title">Articoli recenti</h3>
-    <ul class="sidebar-list recent-posts">
-      {recentPosts.map((post) => (
-        <li class="py-[10px]">
-          <a href={postHref(post)} class="sidebar-link block leading-snug">
-            {post.data.title}
-          </a>
-        </li>
-      ))}
-    </ul>
-  </div>
-
-  {featuredPosts.length > 0 && (
-    <div class="sidebar-section navigation-section">
-      <h3 class="sidebar-title">In evidenza</h3>
-      <ul class="sidebar-list">
-        {featuredPosts.map((post) => (
-          <li>
-            <a href={postHref(post)} class="sidebar-link">
-              {post.data.title}
-            </a>
-          </li>
-        ))}
-      </ul>
+  <section class="editorial-card recent-card" aria-labelledby="sidebar-recent-title">
+    <div class="card-heading-row">
+      <h2 id="sidebar-recent-title" class="editorial-card__title">Ultime dal magazine</h2>
+      <a href="/blog/" class="heading-link">Tutte</a>
     </div>
-  )}
-
-  <div class="sidebar-section navigation-section">
-    <h3 class="sidebar-title">Percorsi principali</h3>
-    <ul class="sidebar-list sidebar-categories">
-      {editorialCategories.map((category) => (
-        <li class="py-[12px]">
-          <a href={category.href} class="sidebar-link block leading-snug">
-            {category.label} ({category.count})
-          </a>
-        </li>
+    <div class="recent-card-list">
+      {recentPosts.map((post) => (
+        <a href={postHref(post)} class="recent-card-item">
+          <img
+            src={postImage(post)}
+            alt=""
+            class="recent-card-item__image"
+            loading="lazy"
+            decoding="async"
+            onerror="this.onerror=null;this.src='/images/logo-canapalandia_1024.webp';"
+          />
+          <span class="recent-card-item__body">
+            <span class="recent-card-item__meta">
+              {categoryLabel(post.data.category)}
+              {formatShortDate(post.data.publishDate) ? ` · ${formatShortDate(post.data.publishDate)}` : ""}
+            </span>
+            <strong>{post.data.title}</strong>
+          </span>
+        </a>
       ))}
-    </ul>
-  </div>
+    </div>
+  </section>
 
-  <div class="sidebar-section navigation-section">
-    <h3 class="sidebar-title">Tag popolari</h3>
-    <ul class="sidebar-list">
-      {sortedTags.map(([tag, count]) => {
-        const tagSlug = tag
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .toLowerCase()
-          .trim()
-          .replace(/\s+/g, "-")
-          .replace(/[^a-z0-9-]/g, "")
-          .replace(/--+/g, "-")
-          .replace(/^-+|-+$/g, "");
-        return tagSlug ? (
-          <li>
-            <a href={`/tag/${tagSlug}/`} class="sidebar-link">
-              {tag} ({count})
+  <section class="editorial-card explore-card" aria-labelledby="sidebar-explore-title">
+    <h2 id="sidebar-explore-title" class="editorial-card__title">Esplora Canapalandia</h2>
+
+    <div class="explore-block">
+      <p class="explore-label">Percorsi</p>
+      <div class="category-chips">
+        {editorialCategories.map((category) => (
+          <a href={category.href} class="category-chip">
+            <span>{category.label}</span>
+            <small>{category.count}</small>
+          </a>
+        ))}
+      </div>
+    </div>
+
+    <div class="explore-block">
+      <p class="explore-label">Temi popolari</p>
+      <div class="tag-chips">
+        {sortedTags.map(([tag, count]) => {
+          const slug = tagSlug(tag);
+          return slug ? (
+            <a href={`/tag/${slug}/`} class="tag-chip">
+              #{tag} <small>{count}</small>
             </a>
-          </li>
-        ) : null;
-      })}
-    </ul>
-  </div>
-
-  <div class="sidebar-section navigation-section">
-    <h3 class="sidebar-title">Link utili</h3>
-    <ul class="sidebar-list">
-      <li><a href="/rss.xml" class="sidebar-link">RSS</a></li>
-      <li><a href="/mappa-del-sito/" class="sidebar-link">Mappa del sito</a></li>
-      <li><a href="/sostieni-la-nostra-causa/" class="sidebar-link">Sostieni Canapalandia</a></li>
-    </ul>
-  </div>
+          ) : null;
+        })}
+      </div>
+    </div>
+  </section>
 </aside>
 
 <style>
@@ -330,6 +313,37 @@ const socialLinks = [
     letter-spacing: -0.015em;
   }
 
+  .card-heading-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .heading-kicker,
+  .heading-link {
+    flex: 0 0 auto;
+    font-family: var(--font-ui);
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+
+  .heading-kicker {
+    color: var(--brand);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .heading-link {
+    color: var(--brand);
+    text-decoration: none;
+  }
+
+  .heading-link:hover {
+    text-decoration: underline;
+    text-underline-offset: 0.18em;
+  }
+
   .compact-related-list {
     display: grid;
     margin-top: 0.8rem;
@@ -337,10 +351,10 @@ const socialLinks = [
 
   .compact-related-item {
     display: grid;
-    grid-template-columns: 72px minmax(0, 1fr);
-    gap: 0.75rem;
-    align-items: center;
-    padding: 0.78rem 0;
+    grid-template-columns: 78px minmax(0, 1fr);
+    gap: 0.8rem;
+    align-items: stretch;
+    padding: 0.82rem 0;
     color: var(--text);
     text-decoration: none;
     border-top: 1px solid color-mix(in oklab, var(--border) 74%, transparent);
@@ -348,20 +362,16 @@ const socialLinks = [
 
   .compact-related-item:first-child {
     border-top: 0;
-    padding-top: 0.15rem;
+    padding-top: 0.25rem;
   }
 
   .compact-related-item:last-child {
     padding-bottom: 0.1rem;
   }
 
-  .compact-related-item:hover strong {
-    color: var(--brand);
-  }
-
   .compact-related-item__image {
-    width: 72px;
-    height: 64px;
+    width: 78px;
+    height: 72px;
     object-fit: cover;
     border-radius: var(--r-xs);
     background: var(--panel-2);
@@ -369,21 +379,40 @@ const socialLinks = [
 
   .compact-related-item__body {
     min-width: 0;
-    display: grid;
-    gap: 0.3rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .compact-related-item small {
+    color: var(--brand);
+    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 1.2;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
   }
 
   .compact-related-item strong {
+    margin-top: 0.28rem;
     font-family: var(--font-ui);
     font-size: 0.92rem;
     line-height: 1.27;
     transition: color 150ms ease;
   }
 
-  .compact-related-item small {
+  .compact-related-item:hover strong,
+  .recent-card-item:hover strong {
+    color: var(--brand);
+  }
+
+  .mini-cta {
+    margin-top: auto;
+    padding-top: 0.35rem;
     color: var(--muted);
-    font-size: 0.72rem;
-    line-height: 1.2;
+    font-family: var(--font-ui);
+    font-size: 0.7rem;
+    font-weight: 600;
   }
 
   .newsletter-card {
@@ -443,13 +472,6 @@ const socialLinks = [
     box-shadow: 0 8px 20px color-mix(in oklab, var(--brand) 22%, transparent);
   }
 
-  .newsletter-card__button:focus-visible,
-  .follow-links a:focus-visible,
-  .compact-related-item:focus-visible {
-    outline: 2px solid var(--brand);
-    outline-offset: 3px;
-  }
-
   .follow-card {
     padding: 0.15rem 0.25rem 0.35rem;
   }
@@ -492,8 +514,156 @@ const socialLinks = [
     letter-spacing: 0.02em;
   }
 
-  .navigation-section {
-    margin-top: 0;
+  .recent-card-list {
+    display: grid;
+    margin-top: 0.85rem;
+  }
+
+  .recent-card-item {
+    display: grid;
+    grid-template-columns: 74px minmax(0, 1fr);
+    gap: 0.78rem;
+    align-items: center;
+    padding: 0.78rem 0;
+    color: var(--text);
+    text-decoration: none;
+    border-top: 1px solid color-mix(in oklab, var(--border) 72%, transparent);
+  }
+
+  .recent-card-item:first-child {
+    border-top: 0;
+    padding-top: 0.2rem;
+  }
+
+  .recent-card-item:last-child {
+    padding-bottom: 0.1rem;
+  }
+
+  .recent-card-item__image {
+    width: 74px;
+    height: 58px;
+    object-fit: cover;
+    border-radius: var(--r-xs);
+    background: var(--panel-2);
+  }
+
+  .recent-card-item__body {
+    min-width: 0;
+    display: grid;
+    gap: 0.28rem;
+  }
+
+  .recent-card-item__meta {
+    color: var(--muted);
+    font-family: var(--font-ui);
+    font-size: 0.68rem;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  .recent-card-item strong {
+    font-family: var(--font-ui);
+    font-size: 0.88rem;
+    line-height: 1.3;
+    transition: color 150ms ease;
+  }
+
+  .explore-card {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .explore-block {
+    display: grid;
+    gap: 0.6rem;
+  }
+
+  .explore-block + .explore-block {
+    padding-top: 0.9rem;
+    border-top: 1px solid color-mix(in oklab, var(--border) 72%, transparent);
+  }
+
+  .explore-label {
+    margin: 0;
+    color: var(--muted);
+    font-family: var(--font-ui);
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .category-chips {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .category-chip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.45rem;
+    min-width: 0;
+    padding: 0.62rem 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    background: var(--panel-2);
+    color: var(--text);
+    font-family: var(--font-ui);
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: border-color 150ms ease, background 150ms ease, transform 150ms ease;
+  }
+
+  .category-chip:hover {
+    transform: translateY(-1px);
+    border-color: color-mix(in oklab, var(--brand) 48%, var(--border));
+    background: var(--brand-subtle);
+  }
+
+  .category-chip small {
+    color: var(--muted);
+    font-size: 0.68rem;
+  }
+
+  .tag-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.42rem;
+  }
+
+  .tag-chip {
+    padding: 0.42rem 0.58rem;
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--brand-subtle) 62%, var(--panel-2));
+    color: var(--text);
+    font-family: var(--font-ui);
+    font-size: 0.7rem;
+    line-height: 1.2;
+    text-decoration: none;
+    transition: background 150ms ease, color 150ms ease;
+  }
+
+  .tag-chip:hover {
+    background: var(--brand);
+    color: #fff;
+  }
+
+  .tag-chip small {
+    opacity: 0.7;
+  }
+
+  .newsletter-card__button:focus-visible,
+  .follow-links a:focus-visible,
+  .compact-related-item:focus-visible,
+  .recent-card-item:focus-visible,
+  .category-chip:focus-visible,
+  .tag-chip:focus-visible,
+  .heading-link:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 3px;
   }
 
   :global(html[data-theme="dark"]) .follow-links img {
@@ -508,6 +678,11 @@ const socialLinks = [
   @media (max-width: 920px) {
     .editorial-sidebar {
       gap: 1rem;
+    }
+
+    /* Su mobile i correlati grandi restano sotto l'articolo: niente doppione in sidebar. */
+    .related-card {
+      display: none;
     }
 
     .compact-related-item {
