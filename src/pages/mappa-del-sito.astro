@@ -4,6 +4,27 @@ import { getCollection } from 'astro:content';
 
 const posts = await getCollection('blog');
 
+const categoryLabels: Record<string, string> = {
+  'cannabis-news-it': 'Notizie sulla cannabis',
+  'normativa': 'Normativa',
+  'cbd-alimentazione': 'CBD e alimentazione',
+  'canapa-e-ambiente': 'Canapa e ambiente',
+  'salute-benessere': 'Salute e benessere',
+  'cbd-bellezza-cura-pelle': 'CBD, bellezza e cura della pelle',
+  'cannabis-legalization': 'Legalizzazione cannabis',
+};
+
+function formatCategoryLabel(value: string): string {
+  const normalized = String(value || 'Articoli').trim();
+  const key = normalized.toLowerCase();
+  if (categoryLabels[key]) return categoryLabels[key];
+
+  return normalized
+    .replace(/[-_]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/^./, (letter) => letter.toUpperCase());
+}
+
 const sortedPosts = posts
   .filter(post => !post.data.draft && post.data.editorialStatus !== 'legacy-review')
   .sort((a, b) => {
@@ -13,7 +34,7 @@ const sortedPosts = posts
   });
 
 const groupedPosts = sortedPosts.reduce((acc, post) => {
-  const category = post.data.category || 'Articoli';
+  const category = formatCategoryLabel(post.data.category || 'Articoli');
   if (!acc[category]) acc[category] = [];
   acc[category].push(post);
   return acc;
@@ -53,10 +74,13 @@ const groupedPosts = sortedPosts.reduce((acc, post) => {
     }
     .accordion-summary {
       cursor: pointer; list-style: none; display: flex; justify-content: space-between;
-      align-items: center; border: none; width: 100%; text-align: left;
+      align-items: center; gap: 1rem; border: none; width: 100%; text-align: left;
+      font-size: 1.15rem; line-height: 1.35;
     }
+    .accordion-summary > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+    .accordion-summary > span:nth-child(2) { white-space: nowrap; font-size: 0.95rem; }
     .accordion-summary::-webkit-details-marker { display: none; }
-    .accordion-summary::after { content: '▼'; font-size: 1.2rem; transition: transform 0.2s ease; }
+    .accordion-summary::after { content: '▼'; font-size: 1rem; transition: transform 0.2s ease; flex: 0 0 auto; }
     .accordion[open] .accordion-summary::after { transform: rotate(180deg); }
     .sitemap-list { list-style: none; padding: 0; margin: 0; }
     .sitemap-item { border-bottom: 1px solid var(--border); transition: background-color 0.2s ease; }
