@@ -20,8 +20,8 @@ const STRUCTURAL_ROUTES = [
   "/la-nostra-storia/",
   "/pubblicita/",
   "/i-nostri-partner/",
-  "/sostieni-la-causa/",
-  "/disclaimer/",
+  "/sostieni-la-nostra-causa/",
+  "/disclaimer-legale-canapalandia/",
   "/contatti/",
 ] as const;
 
