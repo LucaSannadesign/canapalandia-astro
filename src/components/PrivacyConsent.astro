@@ -169,7 +169,15 @@ const AHREFS_KEY = "GQJf5NXsoIXET0VGyxgtkw";
   const SIX_MONTHS_MS = 1000 * 60 * 60 * 24 * 183;
 
   type ConsentChoice = { version: number; analytics: boolean; timestamp: number };
+  type AnalyticsWindow = typeof window & {
+    dataLayer?: unknown[];
+    gtag?: (...args: unknown[]) => void;
+    canapalandiaTrack?: (eventName: string, params?: Record<string, string | number | boolean>) => void;
+    __canapalandiaAnalyticsEventsReady?: boolean;
+  };
+
   const root = document.getElementById("privacy-consent");
+  const analyticsWindow = window as AnalyticsWindow;
 
   const readChoice = (): ConsentChoice | null => {
     try {
@@ -197,18 +205,13 @@ const AHREFS_KEY = "GQJf5NXsoIXET0VGyxgtkw";
   const loadGoogleAnalytics = (gaId: string) => {
     if (!gaId) return;
 
-    const win = window as typeof window & {
-      dataLayer?: unknown[];
-      gtag?: (...args: unknown[]) => void;
-    };
-
-    win.dataLayer = win.dataLayer || [];
+    analyticsWindow.dataLayer = analyticsWindow.dataLayer || [];
 
     // Implementazione equivalente allo snippet ufficiale Google:
     // gtag() deve accodare l'oggetto `arguments` nel dataLayer.
-    if (!win.gtag) {
-      win.gtag = function (..._args: unknown[]) {
-        win.dataLayer?.push(arguments);
+    if (!analyticsWindow.gtag) {
+      analyticsWindow.gtag = function (..._args: unknown[]) {
+        analyticsWindow.dataLayer?.push(arguments);
       };
     }
 
@@ -221,15 +224,28 @@ const AHREFS_KEY = "GQJf5NXsoIXET0VGyxgtkw";
       document.head.appendChild(script);
     }
 
-    win.gtag("js", new Date());
-    win.gtag("consent", "update", {
+    analyticsWindow.gtag("js", new Date());
+    analyticsWindow.gtag("consent", "update", {
       analytics_storage: "granted",
       ad_storage: "denied",
       ad_user_data: "denied",
       ad_personalization: "denied",
     });
-    win.gtag("config", gaId);
+    analyticsWindow.gtag("config", gaId);
   };
+
+  const trackEvent = (
+    eventName: string,
+    params: Record<string, string | number | boolean> = {},
+  ) => {
+    if (!readChoice()?.analytics || !analyticsWindow.gtag) return;
+    analyticsWindow.gtag("event", eventName, {
+      page_path: window.location.pathname,
+      ...params,
+    });
+  };
+
+  analyticsWindow.canapalandiaTrack = trackEvent;
 
   const loadAhrefsAnalytics = (key: string) => {
     if (!key || document.querySelector("script[data-consent-ahrefs-analytics]")) return;
@@ -306,4 +322,100 @@ const AHREFS_KEY = "GQJf5NXsoIXET0VGyxgtkw";
       showPanel();
     });
   });
+
+  const setupCoreAnalyticsEvents = () => {
+    if (analyticsWindow.__canapalandiaAnalyticsEventsReady) return;
+    analyticsWindow.__canapalandiaAnalyticsEventsReady = true;
+
+    // 1) CTA partnership/pubblicità: misura l'interesse commerciale, non un lead completato.
+    document.addEventListener("click", (event) => {
+      if (!(event.target instanceof Element)) return;
+      const link = event.target.closest<HTMLAnchorElement>('a[href="/pubblicita/"], a[href^="/pubblicita/?"], a[href="https://canapalandia.com/pubblicita/"], a[href="https://www.canapalandia.com/pubblicita/"]');
+      if (link) {
+        trackEvent("partner_cta_click", {
+          link_text: (link.textContent || "").trim().slice(0, 100),
+        });
+      }
+
+      // 2) Demand test: click esplicito di interesse su Bottega o Drop 001.
+      const hempInterest = event.target.closest<HTMLElement>("[data-interest-cta]");
+      if (hempInterest) {
+        trackEvent("demand_test_interest", {
+          campaign: "hemp-food-001",
+          preference: "semi-decorticati-500g",
+        });
+        return;
+      }
+
+      const dropInterest = event.target.closest<HTMLElement>(".interest-button[data-product]");
+      if (dropInterest && window.location.pathname.startsWith("/drop-001")) {
+        trackEvent("demand_test_interest", {
+          campaign: "drop-001",
+          preference: dropInterest.dataset.product || "unknown",
+          concept: dropInterest.dataset.concept || "unknown",
+        });
+      }
+    }, { passive: true });
+
+    // 3) Newsletter: registra solo una risposta di iscrizione riuscita.
+    const newsletterFeedback = document.getElementById("homeNewsletterFeedback");
+    if (newsletterFeedback instanceof HTMLElement) {
+      const readNewsletterSuccess = () => {
+        if (newsletterFeedback.dataset.gaTracked === "1") return;
+        if (newsletterFeedback.dataset.state !== "ok") return;
+        newsletterFeedback.dataset.gaTracked = "1";
+        trackEvent("newsletter_signup", { location: "home" });
+      };
+      new MutationObserver(readNewsletterSuccess).observe(newsletterFeedback, {
+        attributes: true,
+        attributeFilter: ["data-state"],
+        childList: true,
+        characterData: true,
+        subtree: true,
+      });
+      readNewsletterSuccess();
+    }
+
+    // 4) Waitlist Bottega/Drop: misura solo il successo della registrazione.
+    const demandStatus = document.getElementById("formStatus");
+    if (demandStatus instanceof HTMLElement) {
+      const readDemandSuccess = () => {
+        if (demandStatus.dataset.gaTracked === "1") return;
+        const message = (demandStatus.textContent || "").trim();
+        if (!/^(Grazie\.|Sei già)/i.test(message)) return;
+
+        const isDrop = window.location.pathname.startsWith("/drop-001");
+        const preferenceInput = document.querySelector<HTMLInputElement>('input[name="preference"]');
+        demandStatus.dataset.gaTracked = "1";
+        trackEvent("demand_test_signup", {
+          campaign: isDrop ? "drop-001" : "hemp-food-001",
+          preference: preferenceInput?.value || (isDrop ? "unknown" : "semi-decorticati-500g"),
+        });
+      };
+      new MutationObserver(readDemandSuccess).observe(demandStatus, {
+        childList: true,
+        characterData: true,
+        subtree: true,
+      });
+      readDemandSuccess();
+    }
+
+    // 5) Ribaltatore AI: evento solo quando compare un risultato realmente generato.
+    const ribaltatoreResult = document.getElementById("risultato-ribaltato");
+    if (ribaltatoreResult instanceof HTMLElement) {
+      const readRibaltatoreSuccess = () => {
+        const quote = ribaltatoreResult.querySelector<HTMLElement>(".risultato-card__quote-content");
+        if (!quote || quote.dataset.gaTracked === "1") return;
+        quote.dataset.gaTracked = "1";
+        trackEvent("ribaltatore_generate");
+      };
+      new MutationObserver(readRibaltatoreSuccess).observe(ribaltatoreResult, {
+        childList: true,
+        subtree: true,
+      });
+      readRibaltatoreSuccess();
+    }
+  };
+
+  setupCoreAnalyticsEvents();
 </script>
