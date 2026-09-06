@@ -1,0 +1,431 @@
+---
+import Layout from "../layouts/MigratedLayout.astro";
+
+const campaign = "hemp-food-001";
+const preference = "semi-decorticati-500g";
+const creativeVersion = "seed-pilot-v1";
+---
+
+<Layout
+  title="Bottega Canapalandia — Test semi di canapa BIO | Canapalandia"
+  description="Test di interesse per un possibile prodotto alimentare Canapalandia a base di semi di canapa decorticati BIO. Nessun checkout, ordine o pagamento."
+  canonical="/bottega/"
+  robots="noindex,nofollow,noarchive"
+  newsletter={false}
+>
+  <main class="shop-test">
+    <section class="shop-hero" aria-labelledby="shop-title">
+      <div class="shop-hero__copy">
+        <p class="kicker">BOTTEGA CANAPALANDIA · TEST 001</p>
+        <h1 id="shop-title">Semi di canapa.<br />Prima testiamo l'interesse.</h1>
+        <p class="lead">
+          Stiamo valutando un primo prodotto alimentare semplice e coerente con Canapalandia:
+          <strong>semi di canapa decorticati BIO da 500 g</strong>.
+        </p>
+        <div class="status-note" role="note">
+          <strong>Concept / non in vendita.</strong>
+          Non c'è checkout, non raccogliamo ordini e non viene richiesto alcun pagamento.
+          Il test serve solo a capire se vale la pena proseguire con fornitore, etichetta e compliance.
+        </div>
+      </div>
+
+      <figure class="shop-hero__media">
+        <img
+          src="/images/canapa-alimentare-semi-farina-olio-proteine.webp"
+          alt="Canapa alimentare: semi, farina, olio e proteine"
+          width="900"
+          height="900"
+          loading="eager"
+          decoding="async"
+        />
+        <figcaption>Immagine editoriale di riferimento. Il packaging definitivo non è ancora progettato.</figcaption>
+      </figure>
+    </section>
+
+    <section class="product" aria-labelledby="product-title">
+      <div class="section-index">001 / PRODOTTO PILOTA</div>
+      <div class="product__body">
+        <p class="product__eyebrow">Ipotesi di lancio</p>
+        <h2 id="product-title">Semi decorticati BIO · 500 g</h2>
+        <p class="product__description">
+          Un prodotto alimentare da seme di canapa, senza CBD aggiunto e senza promesse salutistiche.
+          La selezione finale dipenderà da certificazioni, COA/THC, origine, confezionamento e verifica normativa.
+        </p>
+
+        <div class="price-test" aria-label="Prezzo ipotizzato">
+          <span>Prezzo test</span>
+          <strong>€14,90</strong>
+          <small>Indicativo. Non è un'offerta di vendita.</small>
+        </div>
+
+        <ul class="product__checks">
+          <li>Target: prodotto BIO con documentazione di filiera</li>
+          <li>COA e conformità THC richiesti al fornitore</li>
+          <li>Nessun claim medico o terapeutico</li>
+          <li>Micro-lotto solo se il test mostra domanda reale</li>
+        </ul>
+
+        <button class="interest-button" type="button" data-interest-cta>
+          Mi interessa a questo prezzo
+        </button>
+      </div>
+    </section>
+
+    <section class="method" aria-labelledby="method-title">
+      <div class="section-index">002 / METODO</div>
+      <div>
+        <h2 id="method-title">Cosa stiamo misurando</h2>
+        <p>
+          Non vogliamo comprare stock prima di sapere se il prodotto interessa davvero. Misuriamo quindi
+          visite, click sulla CTA e iscrizioni alla lista di interesse. Solo dopo confronteremo questi dati
+          con i preventivi dei fornitori e con i costi reali di conformità e logistica.
+        </p>
+        <p>
+          Puoi approfondire le differenze tra semi, farina, olio e proteine nella nostra
+          <a href="/blog/canapa-alimentare-semi-farina-olio-proteine/">guida alla canapa alimentare</a>.
+        </p>
+      </div>
+    </section>
+
+    <section class="waitlist" id="waitlist" aria-labelledby="waitlist-title">
+      <div class="waitlist__copy">
+        <div class="section-index">003 / LISTA DI INTERESSE</div>
+        <h2 id="waitlist-title">Vuoi sapere se il test diventa un prodotto reale?</h2>
+        <p>
+          Lascia l'email solo se questo formato e questa fascia prezzo ti interessano davvero.
+          L'iscrizione non costituisce un ordine e non crea alcun obbligo di acquisto.
+        </p>
+      </div>
+
+      <form class="waitlist-form" id="hempFoodWaitlistForm" method="post" action="/api/newsletter">
+        <input type="hidden" name="campaign" value={campaign} />
+        <input type="hidden" name="preference" value={preference} />
+        <input type="hidden" name="creativeVersion" value={creativeVersion} />
+
+        <div class="hp-field" aria-hidden="true">
+          <label for="hp">Non compilare questo campo</label>
+          <input id="hp" name="hp" type="text" tabindex="-1" autocomplete="off" />
+        </div>
+
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" autocomplete="email" required placeholder="nome@email.it" />
+
+        <label class="consent-row">
+          <input type="checkbox" name="consent" required />
+          <span>
+            Accetto il trattamento dei dati secondo la <a href="/privacy-policy/">Privacy Policy</a>
+            e l'iscrizione alla lista di aggiornamento del test.
+          </span>
+        </label>
+
+        <button class="submit-button" type="submit">Segnala il mio interesse</button>
+        <p class="form-status" id="formStatus" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section class="gate" aria-labelledby="gate-title">
+      <div class="section-index">004 / GATE</div>
+      <div>
+        <h2 id="gate-title">La waitlist non apre automaticamente la vendita</h2>
+        <p>
+          Prima di un eventuale GO servono ancora fornitore selezionato, documentazione prodotto,
+          etichettatura, configurazione fiscale e alimentare, logistica, pagamento e controllo compliance finale.
+        </p>
+      </div>
+    </section>
+  </main>
+</Layout>
+
+<script define:vars={{ campaign, preference, creativeVersion }}>
+  const cta = document.querySelector("[data-interest-cta]");
+  const form = document.querySelector("#hempFoodWaitlistForm");
+  const status = document.querySelector("#formStatus");
+  const submitButton = form?.querySelector(".submit-button");
+
+  function pushAnalytics(event) {
+    if (Array.isArray(window.dataLayer)) {
+      window.dataLayer.push({
+        event,
+        campaign,
+        preference,
+        creative_version: creativeVersion,
+      });
+    }
+  }
+
+  cta?.addEventListener("click", () => {
+    pushAnalytics("hemp_food_001_interest_click");
+    document.querySelector("#waitlist")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
+  form?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!status || !submitButton) return;
+
+    const data = new FormData(form);
+    status.textContent = "Invio in corso…";
+    submitButton.disabled = true;
+
+    try {
+      const response = await fetch("/api/newsletter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: data.get("email"),
+          consent: data.get("consent"),
+          hp: data.get("hp"),
+          campaign,
+          preference,
+          creativeVersion,
+        }),
+      });
+
+      const payload = await response.json().catch(() => ({ message: "Risposta non valida" }));
+      if (!response.ok && response.status !== 409) {
+        throw new Error(payload.message || "Errore durante l'iscrizione");
+      }
+
+      status.textContent = response.status === 409
+        ? "Sei già nella lista. L'interesse è stato registrato."
+        : "Grazie. Interesse registrato: nessun ordine è stato effettuato.";
+      pushAnalytics("hemp_food_001_waitlist_signup");
+    } catch (error) {
+      status.textContent = error instanceof Error ? error.message : "Errore durante l'iscrizione. Riprova.";
+      submitButton.disabled = false;
+    }
+  });
+</script>
+
+<style>
+  .shop-test {
+    --paper: #f3efe3;
+    --ink: #171914;
+    --muted: #666a60;
+    --line: rgba(23, 25, 20, 0.2);
+    --green: #3f5d38;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: clamp(32px, 7vw, 84px) 22px 96px;
+  }
+
+  .kicker,
+  .section-index,
+  .product__eyebrow {
+    font-family: Arial, Helvetica, sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.13em;
+    font-size: 0.72rem;
+  }
+
+  .shop-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
+    gap: clamp(28px, 6vw, 72px);
+    align-items: center;
+    padding: clamp(34px, 7vw, 78px) 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .shop-hero h1 {
+    margin: 14px 0 22px;
+    max-width: 12ch;
+    font-size: clamp(3rem, 7vw, 6.6rem);
+    line-height: 0.92;
+    letter-spacing: -0.055em;
+  }
+
+  .lead {
+    max-width: 720px;
+    font-size: clamp(1.18rem, 2.4vw, 1.7rem);
+    line-height: 1.4;
+  }
+
+  .status-note {
+    margin-top: 28px;
+    max-width: 720px;
+    padding: 13px 16px;
+    border-left: 3px solid var(--green);
+    color: var(--muted);
+    line-height: 1.55;
+  }
+
+  .shop-hero__media {
+    margin: 0;
+  }
+
+  .shop-hero__media img {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    display: block;
+  }
+
+  .shop-hero__media figcaption {
+    margin-top: 9px;
+    color: var(--muted);
+    font-size: 0.78rem;
+    line-height: 1.45;
+  }
+
+  .product,
+  .method,
+  .gate {
+    display: grid;
+    grid-template-columns: minmax(140px, 0.65fr) minmax(0, 2fr);
+    gap: 34px;
+    padding: 56px 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .product h2,
+  .method h2,
+  .waitlist h2,
+  .gate h2 {
+    margin: 5px 0 16px;
+    font-size: clamp(1.9rem, 4vw, 3.5rem);
+    line-height: 1.02;
+    letter-spacing: -0.04em;
+  }
+
+  .product__description,
+  .method p,
+  .gate p,
+  .waitlist__copy > p {
+    max-width: 760px;
+    color: var(--muted);
+    font-size: 1.04rem;
+    line-height: 1.65;
+  }
+
+  .price-test {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 4px 24px;
+    max-width: 520px;
+    margin: 28px 0;
+    padding: 18px 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .price-test strong {
+    grid-row: span 2;
+    font-size: 2.1rem;
+    line-height: 1;
+  }
+
+  .price-test small {
+    color: var(--muted);
+  }
+
+  .product__checks {
+    margin: 0 0 28px;
+    padding-left: 1.1rem;
+    color: var(--muted);
+    line-height: 1.65;
+  }
+
+  .interest-button,
+  .submit-button {
+    appearance: none;
+    border: 1px solid var(--green);
+    background: var(--green);
+    color: #fff;
+    padding: 13px 18px;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .interest-button:hover,
+  .submit-button:hover {
+    filter: brightness(0.94);
+  }
+
+  .interest-button:focus-visible,
+  .submit-button:focus-visible,
+  .waitlist-form input:focus-visible {
+    outline: 3px solid rgba(63, 93, 56, 0.28);
+    outline-offset: 2px;
+  }
+
+  .waitlist {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 0.85fr);
+    gap: clamp(32px, 7vw, 82px);
+    padding: 64px 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .waitlist-form {
+    display: grid;
+    align-content: start;
+    gap: 10px;
+    padding: 24px;
+    border: 1px solid var(--line);
+  }
+
+  .waitlist-form > label:not(.consent-row) {
+    font-weight: 700;
+  }
+
+  .waitlist-form input[type="email"] {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: inherit;
+    padding: 12px 13px;
+    font: inherit;
+  }
+
+  .consent-row {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 10px;
+    align-items: start;
+    margin: 8px 0 4px;
+    color: var(--muted);
+    font-size: 0.88rem;
+    line-height: 1.5;
+  }
+
+  .consent-row input {
+    margin-top: 3px;
+  }
+
+  .form-status {
+    min-height: 1.5em;
+    margin: 2px 0 0;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+
+  .hp-field {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  @media (max-width: 760px) {
+    .shop-hero,
+    .product,
+    .method,
+    .waitlist,
+    .gate {
+      grid-template-columns: 1fr;
+    }
+
+    .shop-hero__media {
+      max-width: 520px;
+    }
+
+    .section-index {
+      margin-bottom: -12px;
+    }
+  }
+</style>

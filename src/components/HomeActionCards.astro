@@ -24,13 +24,27 @@ const cards: ActionCard[] = [
     title: "Ribaltatore AI",
     description: "Scrivi una frase proibizionista e ottieni una risposta ironica e antiproibizionista, pronta da copiare e condividere.",
     links: [
-    { href: "/ribaltatore/", label: "Provalo ora", isPrimary: true },
+      { href: "/ribaltatore/", label: "Provalo ora", isPrimary: true },
       { href: "/frasi-ribaltate", label: "Archivio frasi" }
     ],
-  mediaHref: "/ribaltatore/",
+    mediaHref: "/ribaltatore/",
     mediaImage: "/images/home/ribaltatore-ai-banner-640x360.webp",
     mediaAlt: "Ribaltatore AI",
     mediaAriaLabel: "Vai al Ribaltatore"
+  },
+  {
+    meta: "Bottega",
+    badge: "In test",
+    title: "Bottega Canapalandia",
+    description: "Stiamo testando l'interesse per un possibile primo prodotto alimentare a base di semi di canapa. Nessun ordine o pagamento.",
+    links: [
+      { href: "/bottega/", label: "Vedi il test", isPrimary: true },
+      { href: "/blog/canapa-alimentare-semi-farina-olio-proteine/", label: "Guida alla canapa alimentare" }
+    ],
+    mediaHref: "/bottega/",
+    mediaImage: "/images/canapa-alimentare-semi-farina-olio-proteine.webp",
+    mediaAlt: "Canapa alimentare: semi, farina, olio e proteine",
+    mediaAriaLabel: "Vai al test Bottega Canapalandia"
   },
   {
     meta: "Community",
@@ -54,19 +68,15 @@ const cards: ActionCard[] = [
       {cards.map((card) => (
         <article class="action-card">
           <div class="action-card__body">
-            <!-- Meta -->
             <div class="action-card__meta">
               <p class="action-card__meta-label">{card.meta}</p>
               <span class="action-card__badge">{card.badge}</span>
             </div>
 
-            <!-- Title -->
             <h2 class="action-card__title">{card.title}</h2>
 
-            <!-- Description -->
             <p class="action-card__description">{card.description}</p>
 
-            <!-- Links -->
             <div class="action-card__links">
               {card.links.map((link) => (
                 <a
@@ -79,7 +89,6 @@ const cards: ActionCard[] = [
               ))}
             </div>
 
-            <!-- Media -->
             <a
               href={card.mediaHref}
               class="action-card__media"
@@ -131,11 +140,11 @@ const cards: ActionCard[] = [
 
   @media (min-width: 1280px) {
     .action-cards-grid {
-      gap: 4rem;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
     }
   }
 
-  /* Card container */
   .action-card {
     border-radius: var(--r-md);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -151,12 +160,13 @@ const cards: ActionCard[] = [
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
   }
 
-  /* Card body */
   .action-card__body {
     padding: 1.5rem;
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
+    height: 100%;
+    box-sizing: border-box;
   }
 
   @media (min-width: 768px) {
@@ -165,7 +175,6 @@ const cards: ActionCard[] = [
     }
   }
 
-  /* Meta section */
   .action-card__meta {
     display: flex;
     align-items: center;
@@ -189,7 +198,6 @@ const cards: ActionCard[] = [
     color: rgba(255, 255, 255, 0.8);
   }
 
-  /* Title */
   .action-card__title {
     margin: 1rem 0 0;
     font-size: 1.875rem;
@@ -204,14 +212,12 @@ const cards: ActionCard[] = [
     }
   }
 
-  /* Description */
   .action-card__description {
     margin: 1rem 0 0;
     line-height: 1.6;
     color: rgba(255, 255, 255, 0.75);
   }
 
-  /* Links container */
   .action-card__links {
     margin-top: 1.5rem;
     display: flex;
@@ -219,7 +225,6 @@ const cards: ActionCard[] = [
     gap: 0.5rem;
   }
 
-  /* Link base styles */
   .action-card__link {
     display: inline-flex;
     align-items: center;
@@ -244,7 +249,6 @@ const cards: ActionCard[] = [
     text-decoration: none;
   }
 
-  /* Primary link */
   .action-card__link--primary {
     border: 1px solid rgba(255, 255, 255, 0.2);
     background: rgba(255, 255, 255, 0.08);
@@ -272,7 +276,6 @@ const cards: ActionCard[] = [
     color: inherit;
   }
 
-  /* Secondary link */
   .action-card__link--secondary {
     border: 1px solid rgba(255, 255, 255, 0.15);
     background: transparent;
@@ -289,11 +292,10 @@ const cards: ActionCard[] = [
     color: rgba(255, 255, 255, 0.6);
   }
 
-  /* Media box */
   .action-card__media {
     display: block;
     width: 100%;
-    margin-top: 1.5rem;
+    margin-top: auto;
     overflow: hidden;
     border-radius: var(--r-sm);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -320,6 +322,12 @@ const cards: ActionCard[] = [
     }
   }
 
+  @media (min-width: 1280px) {
+    .action-card__media {
+      height: 270px;
+    }
+  }
+
   .action-card:hover .action-card__media {
     border-color: rgba(255, 255, 255, 0.2);
     background: rgba(0, 0, 0, 0.3);
@@ -333,7 +341,6 @@ const cards: ActionCard[] = [
     box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
   }
 
-  /* Media image */
   .action-card__media-img {
     display: block;
     width: 100%;
