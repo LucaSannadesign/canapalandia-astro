@@ -195,19 +195,40 @@ const AHREFS_KEY = "GQJf5NXsoIXET0VGyxgtkw";
   };
 
   const loadGoogleAnalytics = (gaId: string) => {
-    if (!gaId || document.querySelector("script[data-consent-google-analytics]")) return;
-    const win = window as typeof window & { dataLayer?: unknown[]; gtag?: (...args: unknown[]) => void };
-    win.dataLayer = win.dataLayer || [];
-    win.gtag = (...args: unknown[]) => { win.dataLayer?.push(args); };
-    win.gtag("js", new Date());
-    win.gtag("consent", "update", { analytics_storage: "granted" });
-    win.gtag("config", gaId);
+    if (!gaId) return;
 
-    const script = document.createElement("script");
-    script.async = true;
-    script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(gaId)}`;
-    script.dataset.consentGoogleAnalytics = "1";
-    document.head.appendChild(script);
+    const win = window as typeof window & {
+      dataLayer?: unknown[];
+      gtag?: (...args: unknown[]) => void;
+    };
+
+    win.dataLayer = win.dataLayer || [];
+
+    // Implementazione equivalente allo snippet ufficiale Google:
+    // gtag() deve accodare l'oggetto `arguments` nel dataLayer.
+    if (!win.gtag) {
+      win.gtag = function (..._args: unknown[]) {
+        win.dataLayer?.push(arguments);
+      };
+    }
+
+    // Evita di aggiungere due volte gtag.js nella stessa pagina.
+    if (!document.querySelector("script[data-consent-google-analytics]")) {
+      const script = document.createElement("script");
+      script.async = true;
+      script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(gaId)}`;
+      script.dataset.consentGoogleAnalytics = "1";
+      document.head.appendChild(script);
+    }
+
+    win.gtag("js", new Date());
+    win.gtag("consent", "update", {
+      analytics_storage: "granted",
+      ad_storage: "denied",
+      ad_user_data: "denied",
+      ad_personalization: "denied",
+    });
+    win.gtag("config", gaId);
   };
 
   const loadAhrefsAnalytics = (key: string) => {
