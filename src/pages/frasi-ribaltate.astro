@@ -47,121 +47,121 @@ try {
 }
 
 const title = "🧠 Frasi Ribaltate | Canapalandia";
+const description =
+  "Scopri l'archivio delle frasi generate dal Ribaltatore AI di Canapalandia e condividi le risposte satiriche create dalla community.";
 const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/frasi-ribaltate/`;
 const SITE = Astro.site?.origin ?? "https://canapalandia.com";
 ---
 
-<SiteLayout title={title} canonical={canonical}>
-  <main id="contenuto">
-    <div class="container">
-      <div class="frasi-page">
-        <h1 class="frasi-title">🧠 Frasi Ribaltate</h1>
-        <p class="frasi-subtitle">
-          Qui trovi una raccolta delle frasi ribaltate generate dall'intelligenza satirica del nostro Ribaltatore AI.<br />
-          Copiale, condividile, e aiutaci a diffondere la verità con ironia!
-        </p>
+<SiteLayout title={title} description={description} canonical={canonical}>
+  <div class="container">
+    <div class="frasi-page">
+      <h1 class="frasi-title">🧠 Frasi Ribaltate</h1>
+      <p class="frasi-subtitle">
+        Qui trovi una raccolta delle frasi ribaltate generate dall'intelligenza satirica del nostro Ribaltatore AI.<br />
+        Copiale, condividile, e aiutaci a diffondere la verità con ironia!
+      </p>
 
-        {errorMessage ? (
-          <div class="frasi-error">
-            <p>⚠️ Errore nel caricamento: {errorMessage}</p>
-            {isDev && (
-              <p style="font-size: 0.85rem; color: var(--muted); margin-top: 8px;">
-                Verifica che SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY siano configurate in .env
-              </p>
-            )}
-          </div>
-        ) : items.length > 0 ? (
-          <>
-            {items.map((frase, index) => {
-              const url = `/ribaltate-ai/${frase.id}/`;
-              
-              // Pulisci frasi da caratteri escapati
-              const fraseOriginale = cleanPhrase(frase.frase_originale);
-              const fraseRibaltata = cleanPhrase(frase.frase_ribaltata, true); // Preserva newline per formattazione
-              
-              // Anteprima ribaltata (max 3 righe)
-              const righe = fraseRibaltata.split(/\n/).filter((r: string) => r.trim() !== "");
-              const anteprima = righe.slice(0, 3).join(" ").slice(0, 200);
-              const mostraAnteprima = fraseRibaltata.length > 200 || righe.length > 3;
-              
-              // Anchor ID: usa frase.id se disponibile, altrimenti index
-              const anchorId = frase.id ? `r-${frase.id}` : `r-${index + 1}`;
-              
-              // URL assoluto con anchor per condivisione
-              const shareUrl = `${SITE}/frasi-ribaltate/#${anchorId}`;
-              
-              return (
-                <article id={anchorId} class="frasi-card">
-                  <div class="frasi-card__header">
-                    <p class="frasi-card__meta">
-                      {new Date(frase.created_at).toLocaleDateString("it-IT", {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </p>
-                  </div>
-
-                  <p class="frasi-card__originale">
-                    <strong>Proibizionista:</strong> <em>{fraseOriginale}</em>
-                  </p>
-
-                  <div class="frasi-card__ribaltata-preview">
-                    <p class="frasi-card__ribaltata-text">
-                      {mostraAnteprima ? anteprima + "…" : fraseRibaltata}
-                    </p>
-                  </div>
-
-                  {/* Pulsanti di condivisione */}
-                  <ShareButtons url={shareUrl} text={fraseRibaltata} />
-
-                  <div class="frasi-card__actions">
-                    <a href={url} class="frasi-card__link-btn">
-                      Apri →
-                    </a>
-                  </div>
-                </article>
-              );
-            })}
-
-            {totalPages > 1 && (
-              <div class="frasi-pagination">
-                {currentPage > 1 && (
-                  <a
-                    href={`/frasi-ribaltate/?page=${currentPage - 1}`}
-                    class="frasi-pagination__link"
-                    aria-label="Pagina precedente"
-                  >
-                    « Indietro
-                  </a>
-                )}
-                <span class="frasi-pagination__info">
-                  Pagina {currentPage} di {totalPages} ({total} frasi)
-                </span>
-                {currentPage < totalPages && (
-                  <a
-                    href={`/frasi-ribaltate/?page=${currentPage + 1}`}
-                    class="frasi-pagination__link"
-                    aria-label="Pagina successiva"
-                  >
-                    Avanti »
-                  </a>
-                )}
-              </div>
-            )}
-          </>
-        ) : (
-          <p class="frasi-empty">Ancora nessuna frase ribaltata trovata.</p>
-        )}
-
-        <div class="frasi-cta">
-          <a href="/ribaltatore/" class="frasi-button">
-            🔥 Prova anche tu il Ribaltatore
-          </a>
+      {errorMessage ? (
+        <div class="frasi-error">
+          <p>⚠️ Errore nel caricamento: {errorMessage}</p>
+          {isDev && (
+            <p style="font-size: 0.85rem; color: var(--muted); margin-top: 8px;">
+              Verifica che SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY siano configurate in .env
+            </p>
+          )}
         </div>
+      ) : items.length > 0 ? (
+        <>
+          {items.map((frase, index) => {
+            const url = `/ribaltate-ai/${frase.id}/`;
+            
+            // Pulisci frasi da caratteri escapati
+            const fraseOriginale = cleanPhrase(frase.frase_originale);
+            const fraseRibaltata = cleanPhrase(frase.frase_ribaltata, true); // Preserva newline per formattazione
+            
+            // Anteprima ribaltata (max 3 righe)
+            const righe = fraseRibaltata.split(/\n/).filter((r: string) => r.trim() !== "");
+            const anteprima = righe.slice(0, 3).join(" ").slice(0, 200);
+            const mostraAnteprima = fraseRibaltata.length > 200 || righe.length > 3;
+            
+            // Anchor ID: usa frase.id se disponibile, altrimenti index
+            const anchorId = frase.id ? `r-${frase.id}` : `r-${index + 1}`;
+            
+            // URL assoluto con anchor per condivisione
+            const shareUrl = `${SITE}/frasi-ribaltate/#${anchorId}`;
+            
+            return (
+              <article id={anchorId} class="frasi-card">
+                <div class="frasi-card__header">
+                  <p class="frasi-card__meta">
+                    {new Date(frase.created_at).toLocaleDateString("it-IT", {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </p>
+                </div>
+
+                <p class="frasi-card__originale">
+                  <strong>Proibizionista:</strong> <em>{fraseOriginale}</em>
+                </p>
+
+                <div class="frasi-card__ribaltata-preview">
+                  <p class="frasi-card__ribaltata-text">
+                    {mostraAnteprima ? anteprima + "…" : fraseRibaltata}
+                  </p>
+                </div>
+
+                {/* Pulsanti di condivisione */}
+                <ShareButtons url={shareUrl} text={fraseRibaltata} />
+
+                <div class="frasi-card__actions">
+                  <a href={url} class="frasi-card__link-btn">
+                    Apri →
+                  </a>
+                </div>
+              </article>
+            );
+          })}
+
+          {totalPages > 1 && (
+            <div class="frasi-pagination">
+              {currentPage > 1 && (
+                <a
+                  href={`/frasi-ribaltate/?page=${currentPage - 1}`}
+                  class="frasi-pagination__link"
+                  aria-label="Pagina precedente"
+                >
+                  « Indietro
+                </a>
+              )}
+              <span class="frasi-pagination__info">
+                Pagina {currentPage} di {totalPages} ({total} frasi)
+              </span>
+              {currentPage < totalPages && (
+                <a
+                  href={`/frasi-ribaltate/?page=${currentPage + 1}`}
+                  class="frasi-pagination__link"
+                  aria-label="Pagina successiva"
+                >
+                  Avanti »
+                </a>
+              )}
+            </div>
+          )}
+        </>
+      ) : (
+        <p class="frasi-empty">Ancora nessuna frase ribaltata trovata.</p>
+      )}
+
+      <div class="frasi-cta">
+        <a href="/ribaltatore/" class="frasi-button">
+          🔥 Prova anche tu il Ribaltatore
+        </a>
       </div>
     </div>
-  </main>
+  </div>
 </SiteLayout>
 
 <style>
