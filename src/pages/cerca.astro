@@ -45,11 +45,14 @@ function normalizePath(value: unknown): string {
 }
 
 const q = (Astro.url.searchParams.get("q") ?? Astro.url.searchParams.get("s") ?? "").trim();
-const hasQuery = Astro.url.searchParams.has("q") || Astro.url.searchParams.has("s");
 
-// SEO: /cerca/ senza query → index,follow, /cerca/?q=... → noindex,follow + canonical /cerca/
-const robots = hasQuery ? "noindex,follow" : "index,follow";
+// SEO: la ricerca interna è una pagina di servizio. Non deve competere nelle SERP;
+// i link ai risultati restano seguibili e il canonical resta stabile su /cerca/.
+const robots = "noindex,follow";
 const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/cerca/`;
+const title = "Cerca nel magazine | Canapalandia";
+const description =
+  "Cerca articoli, guide e approfondimenti pubblicati su Canapalandia per tema, parola chiave o argomento.";
 
 // Gli articoli in legacy-review non devono ricomparire dalla vecchia ricerca WP.
 const legacyReviewEntries = await getCollection(
@@ -91,7 +94,7 @@ const results = tokens.length
   : [];
 ---
 
-<MigratedLayout title="Cerca" description="Cerca tra i contenuti di Canapalandia." robots={robots} canonical={canonical}>
+<MigratedLayout title={title} description={description} robots={robots} canonical={canonical}>
   <section class="container">
     <header class="search-head">
       <h1>Cerca</h1>

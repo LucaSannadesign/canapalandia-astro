@@ -1,4 +1,38 @@
 import type { MiddlewareHandler } from "astro";
+import { getCollection } from "astro:content";
+
+const EN_BLOG_CATEGORIES = new Set<string>([
+  "cannabis-news",
+  "cannabis-legalization",
+  "cbd-and-nutrition",
+  "cannabis-and-innovation",
+  "medical-cannabis",
+  "hemp-sustainability",
+  "health-wellness",
+]);
+
+let englishBlogSlugsPromise: Promise<Set<string>> | null = null;
+
+async function getEnglishBlogSlugs(): Promise<Set<string>> {
+  if (!englishBlogSlugsPromise) {
+    englishBlogSlugsPromise = getCollection("blog")
+      .then(
+        (entries) =>
+          new Set<string>(
+            entries
+              .filter((entry) => {
+                const category = entry.data.category;
+                return typeof category === "string" && EN_BLOG_CATEGORIES.has(category);
+              })
+              .map((entry) => String(entry.data.slug || entry.id || "").trim())
+              .filter(Boolean),
+          ),
+      )
+      .catch(() => new Set<string>());
+  }
+
+  return englishBlogSlugsPromise;
+}
 
 /**
  * Redirect/cleanup middleware:
@@ -14,6 +48,7 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
   const segments = pathNoSlash ? pathNoSlash.split("/") : [];
   const first = (segments[0] || "").toLowerCase();
   const second = (segments[1] || "").toLowerCase();
+  let isEnglishBlogPage = false;
 
   const withTrailingSlash = (path: string): string => {
     if (path === "/") return "/";
@@ -46,9 +81,18 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
    * Regole:
    * - byline visibile: sempre "Canapalandia";
    * - BlogPosting JSON-LD: author sempre Organization/Canapalandia;
+   * - schema Organization di Canapalandia sempre completo di URL e logo;
+   * - lingua HTML/BlogPosting coerente per gli articoli EN;
    * - dateModified non può precedere datePublished.
    */
   const normalizeEditorialHtml = (html: string): string => {
+    const structuredLanguage = isEnglishBlogPage ? "en" : "it-IT";
+    const organizationUrl = "https://canapalandia.com/";
+    const organizationLogo = {
+      "@type": "ImageObject",
+      url: "https://canapalandia.com/favicons/favicon-192.png",
+    };
+
     let normalized = html
       .replace(
         /(<p[^>]*class=["'][^"']*\bpost-author\b[^"']*["'][^>]*>\s*Di\s*<strong[^>]*>)[\s\S]*?(<\/strong>\s*<\/p>)/gi,
@@ -59,6 +103,15 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
         "$1Canapalandia$2",
       );
 
+    if (isEnglishBlogPage) {
+      normalized = normalized
+        .replace(
+          /(<p[^>]*class=["'][^"']*\bpost-author\b[^"']*["'][^>]*>\s*)Di(\s*<strong[^>]*>Canapalandia<\/strong>\s*<\/p>)/gi,
+          "$1By$2",
+        )
+        .replace(/aria-label=["']Autore articolo["']/gi, 'aria-label="Article author"');
+    }
+
     const normalizeJsonLdNode = (node: unknown): unknown => {
       if (Array.isArray(node)) return node.map(normalizeJsonLdNode);
       if (!node || typeof node !== "object") return node;
@@ -68,11 +121,22 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
       const isBlogPosting = Array.isArray(rawType)
         ? rawType.includes("BlogPosting")
         : rawType === "BlogPosting";
+      const isOrganization = Array.isArray(rawType)
+        ? rawType.includes("Organization")
+        : rawType === "Organization";
+
+      if (isOrganization && data.name === "Canapalandia") {
+        if (!data.url) data.url = organizationUrl;
+        if (!data.logo) data.logo = { ...organizationLogo };
+      }
 
       if (isBlogPosting) {
+        data.inLanguage = structuredLanguage;
         data.author = {
           "@type": "Organization",
           name: "Canapalandia",
+          url: organizationUrl,
+          logo: { ...organizationLogo },
         };
 
         const publishedRaw = data.datePublished;
@@ -110,12 +174,20 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
       },
     );
 
+    if (isEnglishBlogPage) {
+      normalized = normalized.replace(
+        /(<html\b[^>]*\blang=["'])[^"']*(["'][^>]*>)/i,
+        "$1en$2",
+      );
+    }
+
     return normalized;
   };
 
   const rebuildHtmlResponse = (source: Response, html: string): Response => {
     const headers = new Headers(source.headers);
     headers.delete("content-length");
+    headers.set("Content-Language", isEnglishBlogPage ? "en" : "it");
     return new Response(html, {
       status: source.status,
       statusText: source.statusText,
@@ -332,9 +404,14 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     return gone410();
   }
 
+  if (first === "blog" && segments.length === 2) {
+    const slug = segments[1] || "";
+    isEnglishBlogPage = (await getEnglishBlogSlugs()).has(slug);
+  }
+
   let response = await next();
 
-  // Identità editoriale: byline e BlogPosting coerenti su homepage e blog.
+  // Identità editoriale: byline, schema e lingua coerenti su homepage e blog.
   const contentType = response.headers.get("content-type") || "";
   const shouldNormalizeEditorialHtml =
     response.status === 200 &&
