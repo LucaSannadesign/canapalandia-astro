@@ -2,11 +2,13 @@
 import Layout from "../layouts/MigratedLayout.astro";
 
 const title = "Contatti — Canapalandia";
+const description =
+  "Contatta Canapalandia per segnalazioni, correzioni, richieste editoriali, partnership e collaborazioni.";
 const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/contatti/`;
 const sent = Astro.url.searchParams.get("sent") === "1";
 ---
 
-<Layout title={title} canonical={canonical}>
+<Layout title={title} description={description} canonical={canonical}>
   <section class="section">
     <div class="container">
       <div class="section-head">
