@@ -51,7 +51,7 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
   const normalizeEditorialHtml = (html: string): string => {
     let normalized = html
       .replace(
-        /(<p[^>]*class=["'][^"']*\bpost-author\b[^"']*["'][^>]*>\s*Di\s*<strong>)[\s\S]*?(<\/strong>\s*<\/p>)/gi,
+        /(<p[^>]*class=["'][^"']*\bpost-author\b[^"']*["'][^>]*>\s*Di\s*<strong[^>]*>)[\s\S]*?(<\/strong>\s*<\/p>)/gi,
         "$1Canapalandia$2",
       )
       .replace(
