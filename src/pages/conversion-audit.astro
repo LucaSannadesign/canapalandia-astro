@@ -1,25 +1,10 @@
 ---
-import SiteLayout from "../layouts/SiteLayout.astro";
-
-const metadata = {
-  title: "Conversion Audit | Canapalandia",
-  description: "Audit rapido delle conversioni e dei punti di ottimizzazione del sito.",
-  canonical: "/conversion-audit/",
-  robots: { index: false, follow: true },
-};
+return new Response("Not Found", {
+  status: 404,
+  headers: {
+    "Content-Type": "text/plain; charset=utf-8",
+    "Cache-Control": "no-store",
+    "X-Robots-Tag": "noindex, nofollow, noarchive",
+  },
+});
 ---
-
-<SiteLayout metadata={metadata}>
-  <section class="container page-shell conversion-audit-page">
-    <h1>Conversion Audit</h1>
-    <p>
-      Pagina audit attiva. Il contenuto principale viene renderizzato correttamente nel layout globale.
-    </p>
-
-    <ul>
-      <li>Funnel: da verificare</li>
-      <li>CTA principali: da verificare</li>
-      <li>Tracciamenti: da verificare</li>
-    </ul>
-  </section>
-</SiteLayout>
