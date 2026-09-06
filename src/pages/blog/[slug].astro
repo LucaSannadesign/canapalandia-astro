@@ -184,7 +184,7 @@ const jsonLd = !isLegacyReview
             <img
               class="post-hero__img"
               src={coverSrc}
-              alt={entry.data.title || ""}
+              alt={entry.data.coverAlt || entry.data.title || ""}
               loading="eager"
               decoding="async"
               referrerpolicy="no-referrer"
