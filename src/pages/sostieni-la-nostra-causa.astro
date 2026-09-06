@@ -1,0 +1,723 @@
+---
+import SiteLayout from "../layouts/SiteLayout.astro";
+
+const SITE = import.meta.env.SITE || "https://canapalandia.com";
+const title = "Sostieni Canapalandia | Informazione indipendente";
+const description =
+  "Sostieni Canapalandia e contribuisci a mantenere indipendente un progetto editoriale dedicato a canapa, CBD, normativa, ricerca e cultura.";
+const canonical = `${SITE}/sostieni-la-nostra-causa/`;
+
+const IBAN = "IT25O0200809500000421598046";
+const BIC = "UNCRITMMXXX";
+const BANK = "UniCredit – Buddy Bank";
+const CAUSALE = "Sostegno Canapalandia";
+
+const supportPoints = [
+  {
+    num: "01",
+    title: "Fonti e verifiche",
+    text: "Più tempo per controllare norme, documenti, studi e fonti prima della pubblicazione.",
+  },
+  {
+    num: "02",
+    title: "Aggiornamenti continui",
+    text: "Le pagine più importanti possono essere riviste quando cambiano norme, evidenze o contesto.",
+  },
+  {
+    num: "03",
+    title: "Indipendenza editoriale",
+    text: "Il progetto può crescere senza trasformare ogni contenuto in uno spazio promozionale.",
+  },
+] as const;
+
+const breadcrumbJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    {
+      "@type": "ListItem",
+      position: 1,
+      name: "Home",
+      item: `${SITE}/`,
+    },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: "Sostieni Canapalandia",
+      item: canonical,
+    },
+  ],
+};
+---
+
+<SiteLayout
+  title={title}
+  description={description}
+  canonical={canonical}
+  shell={false}
+>
+  <script type="application/ld+json" set:html={JSON.stringify(breadcrumbJsonLd)} />
+
+  <main class="support-page">
+    <nav class="support-crumbs" aria-label="Percorso di navigazione">
+      <div class="support-wrap">
+        <ol class="support-crumbs__list">
+          <li><a href="/">Home</a></li>
+          <li aria-hidden="true">→</li>
+          <li aria-current="page">Sostieni Canapalandia</li>
+        </ol>
+      </div>
+    </nav>
+
+    <section class="support-hero" aria-labelledby="support-title">
+      <div class="support-wrap support-hero__grid">
+        <div class="support-hero__copy">
+          <p class="support-kicker">
+            <span aria-hidden="true"></span>
+            Sostieni Canapalandia
+          </p>
+
+          <h1 id="support-title">L’informazione indipendente cresce con chi la legge.</h1>
+
+          <p class="support-hero__lead">
+            Canapalandia è un progetto editoriale indipendente. Il tuo sostegno ci aiuta
+            a dedicare più tempo alla verifica delle fonti, agli aggiornamenti e alla
+            qualità dei contenuti.
+          </p>
+
+          <div class="support-hero__actions">
+            <a class="support-btn support-btn--primary" href="#bonifico">
+              Sostieni il progetto <span aria-hidden="true">↓</span>
+            </a>
+            <a class="support-btn support-btn--ghost" href="/blog/">
+              Esplora il magazine
+            </a>
+          </div>
+        </div>
+
+        <aside class="support-manifesto" aria-label="Principio editoriale">
+          <p class="support-manifesto__eyebrow">Perché conta</p>
+          <blockquote>
+            “Non è solo una questione di canapa. È una questione di libertà,
+            giustizia e verità.”
+          </blockquote>
+          <p class="support-manifesto__closing">Ogni gesto è un seme. Piantalo con noi.</p>
+        </aside>
+      </div>
+    </section>
+
+    <section class="support-impact" aria-labelledby="impact-title">
+      <div class="support-wrap">
+        <div class="support-section-head">
+          <p class="support-overline">Cosa rendi possibile</p>
+          <h2 id="impact-title">Un progetto più solido, utile e verificabile</h2>
+        </div>
+
+        <div class="support-impact__grid">
+          {supportPoints.map((item) => (
+            <article class="support-impact__card">
+              <span class="support-impact__num" aria-hidden="true">{item.num}</span>
+              <h3>{item.title}</h3>
+              <p>{item.text}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section id="bonifico" class="support-payment" aria-labelledby="payment-title">
+      <div class="support-wrap support-payment__grid">
+        <div class="support-payment__intro">
+          <p class="support-overline">Sostegno diretto</p>
+          <h2 id="payment-title">Bonifico bancario</h2>
+          <p>
+            Puoi sostenere Canapalandia con un bonifico. Non imponiamo importi minimi:
+            scegli liberamente il contributo che ritieni adatto.
+          </p>
+
+          <div class="support-note">
+            <strong>Trasparenza.</strong>
+            Il sostegno è volontario e non dà diritto a contenuti promozionali,
+            pubblicità o trattamenti editoriali preferenziali.
+          </div>
+        </div>
+
+        <div class="support-bank-card" aria-label="Coordinate bancarie">
+          <div class="support-bank-card__top">
+            <div>
+              <p class="support-bank-card__eyebrow">Coordinate bancarie</p>
+              <h3>Canapalandia</h3>
+            </div>
+            <span class="support-bank-card__badge">Bonifico</span>
+          </div>
+
+          <dl class="support-bank-card__details">
+            <div class="support-bank-card__row support-bank-card__row--iban">
+              <dt>IBAN</dt>
+              <dd>
+                <code>{IBAN}</code>
+                <button class="copy-btn" type="button" data-copy={IBAN} data-label="IBAN">
+                  Copia
+                </button>
+              </dd>
+            </div>
+
+            <div class="support-bank-card__row">
+              <dt>Banca</dt>
+              <dd>{BANK}</dd>
+            </div>
+
+            <div class="support-bank-card__row">
+              <dt>SWIFT / BIC</dt>
+              <dd>
+                <code>{BIC}</code>
+                <button class="copy-btn" type="button" data-copy={BIC} data-label="BIC">
+                  Copia
+                </button>
+              </dd>
+            </div>
+
+            <div class="support-bank-card__row">
+              <dt>Causale consigliata</dt>
+              <dd>
+                <span>{CAUSALE}</span>
+                <button class="copy-btn" type="button" data-copy={CAUSALE} data-label="Causale">
+                  Copia
+                </button>
+              </dd>
+            </div>
+          </dl>
+
+          <p class="copy-status" aria-live="polite"></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="support-trust" aria-labelledby="trust-title">
+      <div class="support-wrap support-trust__grid">
+        <div>
+          <p class="support-overline">Indipendenza prima di tutto</p>
+          <h2 id="trust-title">Sostegno e pubblicità restano due cose diverse</h2>
+        </div>
+        <div class="support-trust__copy">
+          <p>
+            Il sostegno alla testata non compra visibilità editoriale. Le collaborazioni
+            commerciali seguono un percorso separato e vengono dichiarate con trasparenza.
+          </p>
+          <a href="/pubblicita/">Scopri come gestiamo pubblicità e partnership →</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="support-final" aria-labelledby="final-title">
+      <div class="support-wrap">
+        <div class="support-final__panel">
+          <p class="support-overline support-overline--light">Canapalandia</p>
+          <h2 id="final-title">Grazie per contribuire a far crescere un’informazione più libera.</h2>
+          <a class="support-btn support-btn--light" href="#bonifico">Vai alle coordinate bancarie</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const status = document.querySelector('.copy-status');
+
+    document.querySelectorAll('[data-copy]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const value = button.getAttribute('data-copy') || '';
+        const label = button.getAttribute('data-label') || 'Dato';
+
+        try {
+          await navigator.clipboard.writeText(value);
+          if (status) status.textContent = `${label} copiato negli appunti.`;
+          button.textContent = 'Copiato';
+          window.setTimeout(() => {
+            button.textContent = 'Copia';
+            if (status) status.textContent = '';
+          }, 1800);
+        } catch {
+          if (status) status.textContent = `Copia manualmente: ${value}`;
+        }
+      });
+    });
+  </script>
+</SiteLayout>
+
+<style>
+  .support-page {
+    --support-ink: #143d2a;
+    --support-ink-soft: #315b48;
+    --support-paper: #f5f1e8;
+    --support-paper-2: #ece6d9;
+    --support-accent: #d9b56d;
+    --support-line: rgba(20, 61, 42, 0.16);
+    --support-white: #fffdf7;
+    color: var(--text);
+    overflow: clip;
+  }
+
+  .support-wrap {
+    width: min(1180px, calc(100% - 2rem));
+    margin-inline: auto;
+  }
+
+  .support-crumbs {
+    padding: 1.1rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .support-crumbs__list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  .support-crumbs a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .support-crumbs a:hover {
+    color: var(--brand);
+  }
+
+  .support-hero {
+    padding: clamp(4.5rem, 8vw, 8rem) 0 clamp(4rem, 7vw, 7rem);
+  }
+
+  .support-hero__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.75fr);
+    gap: clamp(2rem, 6vw, 6rem);
+    align-items: end;
+  }
+
+  .support-kicker,
+  .support-overline {
+    margin: 0 0 1.15rem;
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--brand);
+  }
+
+  .support-kicker {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+  }
+
+  .support-kicker span {
+    width: 2.25rem;
+    height: 1px;
+    background: currentColor;
+  }
+
+  .support-hero h1 {
+    max-width: 12ch;
+    margin: 0;
+    font-size: clamp(3.3rem, 7.6vw, 7.7rem);
+    line-height: 0.92;
+    letter-spacing: -0.045em;
+    text-wrap: balance;
+  }
+
+  .support-hero__lead {
+    max-width: 65ch;
+    margin: 2rem 0 0;
+    font-size: clamp(1.15rem, 1.7vw, 1.45rem);
+    line-height: 1.6;
+    color: var(--muted);
+  }
+
+  .support-hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    margin-top: 2rem;
+  }
+
+  .support-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 48px;
+    padding: 0.75rem 1.1rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: transform 160ms ease, background-color 160ms ease, border-color 160ms ease;
+  }
+
+  .support-btn:hover {
+    transform: translateY(-1px);
+  }
+
+  .support-btn--primary {
+    background: var(--brand);
+    color: #fff;
+  }
+
+  .support-btn--ghost {
+    border-color: var(--border);
+    color: var(--text);
+    background: transparent;
+  }
+
+  .support-manifesto {
+    padding: 2rem 0 0 2rem;
+    border-left: 1px solid var(--border);
+  }
+
+  .support-manifesto__eyebrow,
+  .support-bank-card__eyebrow {
+    margin: 0 0 1rem;
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    opacity: 0.7;
+  }
+
+  .support-manifesto blockquote {
+    margin: 0;
+    font-size: clamp(1.65rem, 2.9vw, 2.6rem);
+    line-height: 1.15;
+    font-weight: 600;
+  }
+
+  .support-manifesto__closing {
+    margin: 2rem 0 0;
+    font-style: italic;
+    color: var(--muted);
+  }
+
+  .support-impact {
+    padding: clamp(4rem, 7vw, 7rem) 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .support-section-head {
+    display: grid;
+    grid-template-columns: 0.8fr 1.7fr;
+    gap: 2rem;
+    align-items: start;
+    margin-bottom: 3rem;
+  }
+
+  .support-section-head h2,
+  .support-payment h2,
+  .support-trust h2,
+  .support-final h2 {
+    margin: 0;
+    font-size: clamp(2.2rem, 5vw, 4.9rem);
+    line-height: 0.98;
+    letter-spacing: -0.035em;
+    text-wrap: balance;
+  }
+
+  .support-impact__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-top: 1px solid var(--border);
+  }
+
+  .support-impact__card {
+    min-height: 250px;
+    padding: 2rem;
+    border-right: 1px solid var(--border);
+  }
+
+  .support-impact__card:first-child {
+    border-left: 1px solid var(--border);
+  }
+
+  .support-impact__num {
+    display: block;
+    margin-bottom: 3.5rem;
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+
+  .support-impact__card h3 {
+    margin: 0 0 0.8rem;
+    font-size: 1.45rem;
+  }
+
+  .support-impact__card p {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  .support-payment {
+    padding: clamp(4rem, 8vw, 8rem) 0;
+    background: var(--support-paper);
+    color: var(--support-ink);
+  }
+
+  .support-payment__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(420px, 1.1fr);
+    gap: clamp(2rem, 7vw, 7rem);
+    align-items: start;
+  }
+
+  .support-payment .support-overline {
+    color: var(--support-ink-soft);
+  }
+
+  .support-payment__intro > p:not(.support-overline) {
+    max-width: 52ch;
+    margin: 1.7rem 0 0;
+    color: var(--support-ink-soft);
+    font-size: 1.1rem;
+    line-height: 1.65;
+  }
+
+  .support-note {
+    margin-top: 2rem;
+    padding: 1.1rem 1.2rem;
+    border-left: 3px solid var(--support-accent);
+    background: rgba(255,255,255,0.42);
+    line-height: 1.55;
+  }
+
+  .support-bank-card {
+    padding: clamp(1.4rem, 3vw, 2.2rem);
+    border: 1px solid rgba(20, 61, 42, 0.18);
+    border-radius: 24px;
+    background: var(--support-white);
+    box-shadow: 0 22px 60px rgba(20, 61, 42, 0.1);
+  }
+
+  .support-bank-card__top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-bottom: 1.6rem;
+    border-bottom: 1px solid var(--support-line);
+  }
+
+  .support-bank-card__top h3 {
+    margin: 0;
+    font-size: 1.7rem;
+  }
+
+  .support-bank-card__badge {
+    padding: 0.42rem 0.7rem;
+    border-radius: 999px;
+    background: var(--support-paper-2);
+    font-family: var(--font-sans);
+    font-size: 0.74rem;
+    font-weight: 700;
+  }
+
+  .support-bank-card__details {
+    margin: 0;
+  }
+
+  .support-bank-card__row {
+    display: grid;
+    grid-template-columns: 150px minmax(0, 1fr);
+    gap: 1rem;
+    padding: 1.25rem 0;
+    border-bottom: 1px solid var(--support-line);
+  }
+
+  .support-bank-card__row dt {
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--support-ink-soft);
+  }
+
+  .support-bank-card__row dd {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.9rem;
+    margin: 0;
+    min-width: 0;
+  }
+
+  .support-bank-card code {
+    overflow-wrap: anywhere;
+    font-size: 0.95rem;
+    color: var(--support-ink);
+    background: transparent;
+  }
+
+  .copy-btn {
+    flex: 0 0 auto;
+    min-height: 38px;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid rgba(20, 61, 42, 0.22);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--support-ink);
+    font-family: var(--font-sans);
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .copy-btn:hover {
+    background: var(--support-paper-2);
+  }
+
+  .copy-status {
+    min-height: 1.3em;
+    margin: 1rem 0 0;
+    color: var(--support-ink-soft);
+    font-size: 0.85rem;
+  }
+
+  .support-trust {
+    padding: clamp(4rem, 8vw, 8rem) 0;
+  }
+
+  .support-trust__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    gap: clamp(2rem, 6vw, 6rem);
+    align-items: end;
+  }
+
+  .support-trust__copy p {
+    margin: 0 0 1.2rem;
+    color: var(--muted);
+    font-size: 1.1rem;
+    line-height: 1.65;
+  }
+
+  .support-trust__copy a {
+    color: var(--brand);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .support-final {
+    padding: 0 0 clamp(3rem, 6vw, 6rem);
+  }
+
+  .support-final__panel {
+    padding: clamp(2.2rem, 6vw, 5rem);
+    border-radius: 28px;
+    background: var(--support-ink);
+    color: #f6f1e5;
+  }
+
+  .support-final h2 {
+    max-width: 15ch;
+  }
+
+  .support-overline--light {
+    color: #d9e8df;
+  }
+
+  .support-btn--light {
+    margin-top: 2rem;
+    background: #f6f1e5;
+    color: var(--support-ink);
+  }
+
+  @media (max-width: 900px) {
+    .support-hero__grid,
+    .support-payment__grid,
+    .support-trust__grid,
+    .support-section-head {
+      grid-template-columns: 1fr;
+    }
+
+    .support-manifesto {
+      padding: 2rem 0 0;
+      border-left: 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .support-impact__grid {
+      grid-template-columns: 1fr;
+      border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+    }
+
+    .support-impact__card,
+    .support-impact__card:first-child {
+      min-height: 0;
+      border-left: 0;
+      border-right: 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .support-impact__num {
+      margin-bottom: 1.5rem;
+    }
+  }
+
+  @media (max-width: 620px) {
+    .support-wrap {
+      width: min(100% - 1.25rem, 1180px);
+    }
+
+    .support-hero {
+      padding-top: 3.5rem;
+    }
+
+    .support-hero h1 {
+      font-size: clamp(3rem, 16vw, 4.7rem);
+    }
+
+    .support-bank-card {
+      border-radius: 18px;
+    }
+
+    .support-bank-card__row {
+      grid-template-columns: 1fr;
+      gap: 0.45rem;
+    }
+
+    .support-bank-card__row dd {
+      align-items: flex-start;
+    }
+
+    .support-bank-card__row--iban dd {
+      flex-direction: column;
+    }
+
+    .support-hero__actions,
+    .support-btn {
+      width: 100%;
+    }
+  }
+
+  :global(html[data-theme="dark"]) .support-payment {
+    background: #183b2a;
+    color: #f5f1e8;
+  }
+
+  :global(html[data-theme="dark"]) .support-payment .support-overline,
+  :global(html[data-theme="dark"]) .support-payment__intro > p:not(.support-overline) {
+    color: #c9dbd0;
+  }
+
+  :global(html[data-theme="dark"]) .support-note {
+    background: rgba(255,255,255,0.06);
+  }
+</style>
