@@ -38,7 +38,12 @@ function isSameDate(date1: Date | null, date2: Date | null): boolean {
 
 const pubDate = toDate(publishDate);
 const updDate = toDate(updatedDate);
-const showUpdated = updDate && pubDate && !isSameDate(pubDate, updDate);
+const showUpdated = Boolean(
+  updDate &&
+  pubDate &&
+  !isSameDate(pubDate, updDate) &&
+  updDate.getTime() > pubDate.getTime()
+);
 const updatedLabel = showUpdated ? `Aggiornato il ${formatDate(updatedDate)}` : "";
 
 // Sanitizza excerpt: converte qualsiasi tipo in stringa pulita
