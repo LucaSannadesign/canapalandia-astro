@@ -49,11 +49,13 @@ const products = [
       <p class="kicker">DROP 001 · FORMAT / PRICE TEST</p>
       <h1 id="drop-title">Drop 001</h1>
       <p class="lead">
-        Tre formati, tre fasce prezzo, nessun checkout. Questo test misura solo l'interesse prima di progettare un prodotto reale.
+        Tre formati, tre fasce prezzo, nessun checkout. Questo test misura solo
+        l'interesse prima di progettare un prodotto reale.
       </p>
       <div class="status-note" role="note">
         <strong>Prototype / not for sale.</strong>
-        I visual sono placeholder neutri: non rappresentano marchi o slogan destinati alla vendita. Nessun pagamento, ordine o impegno di acquisto.
+        I visual sono placeholder neutri: non rappresentano marchi o slogan destinati
+        alla vendita. Nessun pagamento, ordine o impegno di acquisto.
       </div>
     </section>
 
@@ -62,10 +64,14 @@ const products = [
       <div>
         <h2 id="intro-title">Quale formato compreresti più facilmente?</h2>
         <p>
-          Confrontiamo intenzione di acquisto, fascia prezzo e formato. Per non anticipare la clearance IP, i tre visual mostrano soltanto identificatori neutri e non testano slogan, marchi o riferimenti a cannabis, marijuana o 420.
+          Confrontiamo intenzione di acquisto, fascia prezzo e formato. Per non anticipare
+          la clearance IP, i tre visual mostrano soltanto identificatori neutri e non
+          testano slogan, marchi o riferimenti a cannabis, marijuana o 420.
         </p>
         <div class="launch-rule">
-          <strong>Vantaggio waitlist:</strong> se in futuro un prodotto reale supererà tutti i gate, la lista riceverà l'eventuale comunicazione di lancio e il prezzo dedicato.
+          <strong>Vantaggio waitlist:</strong> se in futuro un prodotto reale supererà
+          tutti i gate, la lista riceverà l'eventuale comunicazione di lancio e il prezzo
+          dedicato.
         </div>
       </div>
     </section>
@@ -115,7 +121,9 @@ const products = [
         <p class="index">002 / WAITLIST</p>
         <h2 id="waitlist-title">Segnala il tuo interesse</h2>
         <p>
-          L'email serve a misurare una preferenza reale e, se il progetto passerà tutti i gate, ad avvisarti dell'eventuale evoluzione del test. Non viene effettuato alcun ordine.
+          L'email serve a misurare una preferenza reale e, se il progetto passerà tutti
+          i gate, ad avvisarti dell'eventuale evoluzione del test. Non viene effettuato
+          alcun ordine.
         </p>
         <p class="selected-copy" id="selectedCopy">Seleziona prima uno dei tre prodotti.</p>
       </div>
@@ -136,7 +144,8 @@ const products = [
         <label class="consent-row">
           <input type="checkbox" name="consent" required />
           <span>
-            Accetto il trattamento dei dati secondo la <a href="/privacy-policy/">Privacy Policy</a> e l'iscrizione alla lista di aggiornamento Canapalandia.
+            Accetto il trattamento dei dati secondo la <a href="/privacy-policy/">Privacy Policy</a>
+            e l'iscrizione alla lista di aggiornamento Canapalandia.
           </span>
         </label>
 
@@ -150,7 +159,9 @@ const products = [
       <div>
         <h2 id="method-title">Cosa succede dopo il test</h2>
         <p>
-          La waitlist non apre automaticamente la vendita. Un eventuale GO richiede ancora clearance IP del brand e del visual definitivo, chiusura dei gate fiscali/previdenziali, preflight Fourthwall e controllo compliance finale.
+          La waitlist non apre automaticamente la vendita. Un eventuale GO richiede
+          ancora clearance IP del brand e del visual definitivo, chiusura dei gate
+          fiscali/previdenziali, preflight Fourthwall e controllo compliance finale.
         </p>
       </div>
     </section>
@@ -168,12 +179,7 @@ const products = [
 
   function pushAnalytics(event, product, concept) {
     if (Array.isArray(window.dataLayer)) {
-      window.dataLayer.push({
-        event,
-        product,
-        concept,
-        creative_version: creativeVersion,
-      });
+      window.dataLayer.push({ event, product, concept, creative_version: creativeVersion });
     }
   }
 
@@ -253,15 +259,45 @@ const products = [
 </script>
 
 <style>
+  :global(#contenuto) {
+    background: #f3efe3;
+  }
+
+  :global(#contenuto > .container.page-shell) {
+    width: 100%;
+    max-width: none;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
   .drop-page {
     --paper: #f3efe3;
-    --ink: #171914;
-    --muted: #686b62;
-    --line: rgba(23, 25, 20, 0.22);
-    --accent: #49613d;
-    max-width: 1180px;
+    --surface: #fffdf7;
+    --surface-soft: #e8ecdf;
+    --ink: #172019;
+    --muted: #4e584f;
+    --line: rgba(23, 32, 25, 0.22);
+    --line-strong: rgba(23, 32, 25, 0.42);
+    --accent: #315c3c;
+    width: min(1180px, calc(100% - 40px));
     margin: 0 auto;
-    padding: clamp(32px, 7vw, 88px) 22px 96px;
+    padding: clamp(42px, 7vw, 90px) 0 100px;
+    color: var(--ink);
+    font-family: "Archivo", Arial, sans-serif;
+  }
+
+  .drop-page :where(h1, h2, h3, p, label, span, strong, small) {
+    color: inherit;
+  }
+
+  .drop-page a {
+    color: #244f32;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+
+  .drop-page a:hover {
+    color: #153920;
   }
 
   .kicker,
@@ -269,57 +305,80 @@ const products = [
   .product-eyebrow,
   .artwork-series,
   .artwork-foot {
-    font-family: Arial, Helvetica, sans-serif;
+    margin: 0;
+    font-family: "Archivo", Arial, sans-serif;
     letter-spacing: 0.13em;
     text-transform: uppercase;
-    font-size: 0.72rem;
+    font-size: 0.74rem;
+    font-weight: 700;
+  }
+
+  .kicker,
+  .index,
+  .product-eyebrow {
+    color: var(--accent);
   }
 
   .drop-hero {
-    border-top: 1px solid var(--line);
+    border-top: 1px solid var(--line-strong);
     border-bottom: 1px solid var(--line);
-    padding: clamp(42px, 8vw, 92px) 0 clamp(36px, 6vw, 68px);
+    padding: clamp(48px, 8vw, 96px) 0 clamp(42px, 6vw, 72px);
+  }
+
+  .drop-hero h1,
+  .intro h2,
+  .waitlist h2,
+  .method h2 {
+    font-family: "Newsreader", Georgia, serif;
+    color: var(--ink);
   }
 
   .drop-hero h1 {
-    margin: 14px 0 18px;
-    font-size: clamp(4.2rem, 13vw, 10rem);
-    line-height: 0.84;
-    letter-spacing: -0.065em;
+    margin: 15px 0 20px;
+    font-size: clamp(4.6rem, 13vw, 10rem);
+    line-height: 0.82;
+    letter-spacing: -0.06em;
     font-weight: 600;
   }
 
   .lead {
     max-width: 820px;
     margin: 0;
-    font-size: clamp(1.25rem, 2.7vw, 2rem);
-    line-height: 1.28;
+    color: #28342b;
+    font-family: "Newsreader", Georgia, serif;
+    font-size: clamp(1.35rem, 2.7vw, 2.05rem);
+    line-height: 1.3;
   }
 
   .status-note {
-    max-width: 800px;
+    max-width: 820px;
     margin-top: 30px;
-    border-left: 3px solid var(--accent);
-    padding: 12px 16px;
-    color: var(--muted);
-    line-height: 1.5;
+    border-left: 4px solid var(--accent);
+    background: var(--surface-soft);
+    padding: 16px 18px;
+    color: #354238;
+    line-height: 1.6;
+  }
+
+  .status-note strong {
+    color: var(--ink);
   }
 
   .intro,
   .method {
     display: grid;
-    grid-template-columns: minmax(140px, 0.7fr) minmax(0, 2fr);
-    gap: 32px;
-    padding: 54px 0;
+    grid-template-columns: minmax(150px, 0.7fr) minmax(0, 2fr);
+    gap: clamp(28px, 5vw, 60px);
+    padding: clamp(50px, 6vw, 72px) 0;
     border-bottom: 1px solid var(--line);
   }
 
   .intro h2,
   .waitlist h2,
   .method h2 {
-    margin: 0 0 14px;
-    font-size: clamp(1.8rem, 4vw, 3.4rem);
-    line-height: 1.02;
+    margin: 0 0 16px;
+    font-size: clamp(2.1rem, 4vw, 3.6rem);
+    line-height: 1;
     letter-spacing: -0.035em;
   }
 
@@ -327,71 +386,92 @@ const products = [
   .method p:last-child,
   .waitlist-copy > p:not(.index):not(.selected-copy) {
     max-width: 720px;
+    margin: 0;
     color: var(--muted);
-    font-size: 1.06rem;
-    line-height: 1.65;
+    font-size: 1.08rem;
+    line-height: 1.72;
   }
 
   .launch-rule {
     max-width: 720px;
-    margin-top: 22px;
-    border: 1px solid var(--line);
-    padding: 14px 16px;
-    line-height: 1.5;
+    margin-top: 24px;
+    border: 1px solid var(--line-strong);
+    background: var(--surface);
+    padding: 16px 18px;
+    color: #354238;
+    line-height: 1.6;
+  }
+
+  .launch-rule strong {
+    color: var(--ink);
   }
 
   .product-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 1px;
-    background: var(--line);
+    gap: 16px;
+    padding: 28px 0;
     border-bottom: 1px solid var(--line);
   }
 
   .product-card {
-    background: var(--paper);
-    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    padding: 16px;
   }
 
   .product-card.is-selected {
-    outline: 2px solid var(--accent);
-    outline-offset: -2px;
+    outline: 3px solid var(--accent);
+    outline-offset: -3px;
   }
 
   .artwork {
     aspect-ratio: 4 / 5;
-    background: #1c211b;
-    color: #f1ead7;
+    background: #172019;
+    color: #f6f1e4;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     padding: 20px;
   }
 
+  .artwork :where(span, strong) {
+    color: #f6f1e4;
+  }
+
   .artwork strong {
     max-width: 10ch;
+    font-family: "Archivo", Arial, sans-serif;
     font-size: clamp(2rem, 4vw, 4rem);
     line-height: 0.94;
     letter-spacing: -0.05em;
-    font-weight: 650;
+    font-weight: 700;
   }
 
   .artwork-foot {
-    opacity: 0.72;
+    opacity: 0.84;
   }
 
   .product-body {
-    padding: 23px 3px 4px;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    padding: 24px 3px 4px;
   }
 
   .product-body h3 {
-    margin: 8px 0 10px;
-    font-size: 1.35rem;
-    line-height: 1.15;
+    margin: 8px 0 12px;
+    color: var(--ink);
+    font-family: "Newsreader", Georgia, serif;
+    font-size: 1.6rem;
+    line-height: 1.08;
   }
 
   .pricing {
-    margin: 15px 0 18px;
+    margin: 14px 0 18px;
     padding: 14px 0;
     border-top: 1px solid var(--line);
     border-bottom: 1px solid var(--line);
@@ -401,39 +481,42 @@ const products = [
     display: flex;
     justify-content: space-between;
     gap: 10px;
-    margin: 0 0 5px;
+    margin: 0 0 7px;
     color: var(--muted);
-    font-size: 0.8rem;
+    font-size: 0.82rem;
   }
 
   .reference-price strong {
-    font-size: 0.95rem;
-    font-weight: 500;
+    color: var(--ink);
+    font-size: 0.96rem;
+    font-weight: 600;
   }
 
   .launch-price {
     display: flex;
+    flex-wrap: wrap;
     align-items: baseline;
-    gap: 9px;
+    gap: 8px;
     margin: 0;
+    color: var(--ink);
     font-size: 2rem;
     letter-spacing: -0.04em;
     font-weight: 700;
   }
 
   .launch-price span {
-    font-size: 0.72rem;
-    letter-spacing: 0;
     color: var(--muted);
+    font-size: 0.74rem;
+    letter-spacing: 0;
     font-weight: 500;
   }
 
   .saving {
     display: inline-block;
-    margin: 7px 0 0;
-    padding: 4px 7px;
+    margin: 8px 0 0;
+    padding: 5px 8px;
     background: var(--accent);
-    color: var(--paper);
+    color: #fffdf7 !important;
     font-size: 0.7rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -441,39 +524,56 @@ const products = [
 
   .product-note {
     min-height: 7em;
+    margin: 0 0 18px;
     color: var(--muted);
-    line-height: 1.55;
+    line-height: 1.62;
   }
 
   .interest-button,
   .submit-button {
     width: 100%;
+    min-height: 46px;
     border: 1px solid var(--ink);
     background: transparent;
-    color: inherit;
+    color: var(--ink);
     padding: 13px 15px;
     cursor: pointer;
     font: inherit;
     font-weight: 700;
   }
 
+  .interest-button {
+    margin-top: auto;
+  }
+
   .interest-button:hover,
   .interest-button[aria-pressed="true"],
   .submit-button:not(:disabled):hover {
     background: var(--ink);
-    color: var(--paper);
+    color: #fffdf7;
+  }
+
+  .interest-button:focus-visible,
+  .submit-button:focus-visible,
+  .waitlist-form input:focus-visible,
+  .consent-row input:focus-visible {
+    outline: 3px solid #8ca45e;
+    outline-offset: 3px;
   }
 
   .waitlist {
     display: grid;
     grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
     gap: clamp(36px, 7vw, 92px);
-    padding: clamp(64px, 10vw, 112px) 0;
-    border-bottom: 1px solid var(--line);
+    margin: 34px 0 0;
+    padding: clamp(38px, 6vw, 64px);
+    border: 1px solid var(--line-strong);
+    background: var(--surface-soft);
   }
 
   .selected-copy {
-    margin-top: 24px;
+    margin: 25px 0 0;
+    color: var(--ink);
     font-weight: 700;
   }
 
@@ -481,21 +581,29 @@ const products = [
     display: grid;
     gap: 12px;
     align-content: start;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    padding: clamp(20px, 3vw, 30px);
   }
 
   .waitlist-form > label:not(.consent-row) {
-    font-size: 0.82rem;
+    color: var(--ink);
+    font-size: 0.84rem;
     font-weight: 700;
   }
 
   .waitlist-form input[type="email"] {
     width: 100%;
     box-sizing: border-box;
-    border: 1px solid var(--ink);
-    background: transparent;
-    color: inherit;
+    border: 1px solid var(--line-strong);
+    background: #ffffff;
+    color: var(--ink);
     padding: 14px;
     font: inherit;
+  }
+
+  .waitlist-form input[type="email"]::placeholder {
+    color: #707970;
   }
 
   .consent-row {
@@ -505,23 +613,28 @@ const products = [
     align-items: start;
     margin: 8px 0 3px;
     color: var(--muted);
-    font-size: 0.82rem;
-    line-height: 1.45;
+    font-size: 0.84rem;
+    line-height: 1.5;
+  }
+
+  .consent-row a {
+    font-weight: 700;
   }
 
   .submit-button {
     background: var(--ink);
-    color: var(--paper);
+    color: #fffdf7;
   }
 
   .submit-button:disabled {
     cursor: not-allowed;
-    opacity: 0.42;
+    opacity: 0.5;
   }
 
   .form-status {
-    min-height: 1.5em;
+    min-height: 1.4em;
     margin: 0;
+    color: var(--ink);
     font-size: 0.9rem;
   }
 
@@ -533,16 +646,65 @@ const products = [
     overflow: hidden;
   }
 
-  @media (max-width: 820px) {
-    .product-grid,
+  .method {
+    margin-top: 34px;
+    border-top: 1px solid var(--line);
+  }
+
+  @media (max-width: 900px) {
+    .product-grid {
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+
+    .product-card {
+      display: grid;
+      grid-template-columns: minmax(180px, 0.75fr) minmax(0, 1.25fr);
+      gap: 22px;
+    }
+
+    .product-body {
+      padding-top: 8px;
+    }
+
+    .product-note {
+      min-height: 0;
+    }
+  }
+
+  @media (max-width: 760px) {
+    .drop-page {
+      width: min(100% - 28px, 1180px);
+      padding-top: 34px;
+      padding-bottom: 70px;
+    }
+
     .intro,
     .method,
     .waitlist {
       grid-template-columns: 1fr;
     }
 
-    .product-note {
-      min-height: 0;
+    .waitlist {
+      padding: 26px 20px;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .drop-hero h1 {
+      font-size: clamp(4rem, 23vw, 6rem);
+    }
+
+    .product-card {
+      display: block;
+    }
+
+    .product-body {
+      padding-top: 22px;
+    }
+
+    .artwork {
+      aspect-ratio: 5 / 4;
     }
   }
 </style>
