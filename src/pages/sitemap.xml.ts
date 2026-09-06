@@ -56,6 +56,21 @@ function formatLastmod(date: string | undefined): string | undefined {
   }
 }
 
+function toValidDate(value: unknown): Date | null {
+  if (!value) return null;
+  const d = value instanceof Date ? value : new Date(String(value));
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+// Per SEO la data effettiva non può mai precedere la pubblicazione.
+// Un updatedDate legacy più vecchio viene ignorato e si usa publishDate.
+function effectiveModifiedDate(post: CollectionEntry<"blog">): Date | null {
+  const published = toValidDate(post.data.publishDate);
+  const updated = toValidDate(post.data.updatedDate);
+  if (updated && published && updated.getTime() > published.getTime()) return updated;
+  return published ?? updated;
+}
+
 // Normalizza URL: assicura trailing slash e base URL assoluto
 function normalizeUrl(path: string): string {
   if (!path) return `${SITE_URL}/`;
@@ -169,20 +184,16 @@ async function structuralRouteExists(
 }
 
 function postLastmodIso(post: CollectionEntry<"blog">): string | undefined {
-  const dateRaw = post.data.updatedDate ?? post.data.publishDate;
-  if (!dateRaw) return undefined;
-  const d = dateRaw instanceof Date ? dateRaw : new Date(String(dateRaw));
-  if (Number.isNaN(d.getTime())) return undefined;
-  return formatLastmod(d.toISOString());
+  const d = effectiveModifiedDate(post);
+  return d ? formatLastmod(d.toISOString()) : undefined;
 }
 
 function maxLastmodFromPosts(posts: CollectionEntry<"blog">[]): string | undefined {
   let best: number | undefined;
   for (const p of posts) {
-    const d = p.data.updatedDate ?? p.data.publishDate;
+    const d = effectiveModifiedDate(p);
     if (!d) continue;
-    const t = new Date(d instanceof Date ? d : String(d)).getTime();
-    if (Number.isNaN(t)) continue;
+    const t = d.getTime();
     if (best === undefined || t > best) best = t;
   }
   return best !== undefined ? formatLastmod(new Date(best).toISOString()) : undefined;
