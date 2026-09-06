@@ -45,5 +45,6 @@ export const FOOTER_EXPLORE_NAVIGATION: readonly NavigationItem[] = [
   { label: "Canapalandia Lab", href: "/lab/" },
   { label: "Ribaltatore AI", href: "/ribaltatore/" },
   { label: "Frasi Ribaltate", href: "/frasi-ribaltate/" },
+  { label: "Collabora con Canapalandia", href: "/collabora-con-canapalandia/" },
   { label: "Mappa del sito", href: "/mappa-del-sito/" },
 ] as const;

@@ -124,6 +124,51 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
   };
 
   /**
+   * SiteLayout crea il landmark <main id="contenuto">. Alcune route legacy
+   * contengono ancora un secondo <main> nel proprio template. Il browser lo
+   * tollera, ma l'HTML non è semanticamente corretto. Normalizziamo l'output
+   * rendendo eventuali <main> interni semplici <div>, senza alterare il landmark
+   * principale del layout.
+   */
+  const normalizeNestedMainLandmarks = (html: string): string => {
+    let normalized = html;
+
+    while (true) {
+      const outerMatch = /<main\b[^>]*id=["']contenuto["'][^>]*>/i.exec(normalized);
+      if (!outerMatch || outerMatch.index === undefined) break;
+
+      const searchFrom = outerMatch.index + outerMatch[0].length;
+      const tail = normalized.slice(searchFrom);
+      const innerMatch = /<main\b([^>]*)>/i.exec(tail);
+      if (!innerMatch || innerMatch.index === undefined) break;
+
+      const innerStart = searchFrom + innerMatch.index;
+      const innerOpenEnd = innerStart + innerMatch[0].length;
+      const innerClose = normalized.indexOf("</main>", innerOpenEnd);
+      if (innerClose === -1) break;
+
+      normalized =
+        normalized.slice(0, innerStart) +
+        `<div${innerMatch[1]}>` +
+        normalized.slice(innerOpenEnd, innerClose) +
+        "</div>" +
+        normalized.slice(innerClose + "</main>".length);
+    }
+
+    return normalized;
+  };
+
+  /**
+   * La pagina Sostienici dedicata pubblica solo i dati necessari al bonifico.
+   * Se in futuro il catch-all legacy dovesse tornare a servire lo stesso slug,
+   * rimuoviamo comunque i dettagli bancari accessori rimasti nel vecchio markup.
+   */
+  const minimizeLegacySupportHtml = (html: string): string =>
+    html
+      .replace(/<li><strong>Banca:<\/strong>[\s\S]*?<\/li>/gi, "")
+      .replace(/<li><strong>Sede:<\/strong>[\s\S]*?<\/li>/gi, "");
+
+  /**
    * Drop 001 is a private demand-test prototype.
    * It must never become reachable just because the branch is previewed/deployed.
    * Explicit opt-in only: DROP_001_TEST_ENABLED=true.
@@ -333,6 +378,19 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
   }
 
   let response = await next();
+
+  // Corregge semanticamente eventuali landmark <main> annidati rimasti nei template legacy.
+  const initialContentType = response.headers.get("content-type") || "";
+  if (response.status === 200 && initialContentType.includes("text/html")) {
+    const html = await response.text();
+    let normalizedHtml = normalizeNestedMainLandmarks(html);
+
+    if (pathNoSlash.toLowerCase() === "sostieni-la-nostra-causa") {
+      normalizedHtml = minimizeLegacySupportHtml(normalizedHtml);
+    }
+
+    response = rebuildHtmlResponse(response, normalizedHtml);
+  }
 
   // Identità editoriale: byline e BlogPosting coerenti su homepage e blog.
   const contentType = response.headers.get("content-type") || "";
