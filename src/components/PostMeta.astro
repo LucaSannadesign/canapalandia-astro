@@ -35,22 +35,15 @@ function getDateTime(value: Date | string | number | null | undefined): string {
   return d.toISOString().split("T")[0];
 }
 
-// Helper per confrontare solo le date (ignora l'orario)
-function isSameDate(date1: Date | null, date2: Date | null): boolean {
-  if (!date1 || !date2) return false;
-  return (
-    date1.getFullYear() === date2.getFullYear() &&
-    date1.getMonth() === date2.getMonth() &&
-    date1.getDate() === date2.getDate()
-  );
-}
-
 // Normalizza le date
 const pubDate = toDate(publishDate);
 const updDate = toDate(updatedDate);
 
-// Mostra "Aggiornato il..." solo se updatedDate esiste ed è diversa da publishDate
-const showUpdated = updDate && pubDate && !isSameDate(pubDate, updDate);
+// Mostra "Aggiornato il..." solo quando l'aggiornamento è realmente successivo
+// alla pubblicazione. In questo modo dati legacy incoerenti non vengono esposti.
+const showUpdated = Boolean(
+  updDate && pubDate && updDate.getTime() > pubDate.getTime(),
+);
 
 const formattedPublishDate = formatDate(publishDate);
 const publishDateTime = getDateTime(publishDate);

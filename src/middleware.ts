@@ -40,6 +40,90 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     });
 
   /**
+   * Normalizza l'identità editoriale nelle pagine pubbliche senza dover migrare
+   * immediatamente tutti i frontmatter legacy.
+   *
+   * Regole:
+   * - byline visibile: sempre "Canapalandia";
+   * - BlogPosting JSON-LD: author sempre Organization/Canapalandia;
+   * - dateModified non può precedere datePublished.
+   */
+  const normalizeEditorialHtml = (html: string): string => {
+    let normalized = html
+      .replace(
+        /(<p[^>]*class=["'][^"']*\bpost-author\b[^"']*["'][^>]*>\s*Di\s*<strong[^>]*>)[\s\S]*?(<\/strong>\s*<\/p>)/gi,
+        "$1Canapalandia$2",
+      )
+      .replace(
+        /(<span[^>]*class=["'][^"']*\bcl-byline\b[^"']*["'][^>]*>\s*di\s*)[^<]*(<\/span>)/gi,
+        "$1Canapalandia$2",
+      );
+
+    const normalizeJsonLdNode = (node: unknown): unknown => {
+      if (Array.isArray(node)) return node.map(normalizeJsonLdNode);
+      if (!node || typeof node !== "object") return node;
+
+      const data = node as Record<string, unknown>;
+      const rawType = data["@type"];
+      const isBlogPosting = Array.isArray(rawType)
+        ? rawType.includes("BlogPosting")
+        : rawType === "BlogPosting";
+
+      if (isBlogPosting) {
+        data.author = {
+          "@type": "Organization",
+          name: "Canapalandia",
+        };
+
+        const publishedRaw = data.datePublished;
+        const modifiedRaw = data.dateModified;
+        const published =
+          typeof publishedRaw === "string" ? Date.parse(publishedRaw) : Number.NaN;
+        const modified =
+          typeof modifiedRaw === "string" ? Date.parse(modifiedRaw) : Number.NaN;
+
+        if (
+          Number.isFinite(published) &&
+          (!Number.isFinite(modified) || modified < published)
+        ) {
+          data.dateModified = publishedRaw;
+        }
+      }
+
+      Object.keys(data).forEach((key) => {
+        data[key] = normalizeJsonLdNode(data[key]);
+      });
+
+      return data;
+    };
+
+    normalized = normalized.replace(
+      /<script([^>]*type=["']application\/ld\+json["'][^>]*)>([\s\S]*?)<\/script>/gi,
+      (match, attrs, jsonText) => {
+        try {
+          const parsed = JSON.parse(jsonText);
+          const cleaned = normalizeJsonLdNode(parsed);
+          return `<script${attrs}>${JSON.stringify(cleaned)}</script>`;
+        } catch {
+          return match;
+        }
+      },
+    );
+
+    return normalized;
+  };
+
+  const rebuildHtmlResponse = (source: Response, html: string): Response => {
+    const headers = new Headers(source.headers);
+    headers.delete("content-length");
+    return new Response(html, {
+      status: source.status,
+      statusText: source.statusText,
+      headers,
+    });
+  };
+
+  /**
    * Drop 001 is a private demand-test prototype.
    * It must never become reachable just because the branch is previewed/deployed.
    * Explicit opt-in only: DROP_001_TEST_ENABLED=true.
@@ -250,6 +334,18 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
 
   let response = await next();
 
+  // Identità editoriale: byline e BlogPosting coerenti su homepage e blog.
+  const contentType = response.headers.get("content-type") || "";
+  const shouldNormalizeEditorialHtml =
+    response.status === 200 &&
+    contentType.includes("text/html") &&
+    (pathNoSlash === "" || pathNoSlash === "blog" || pathNoSlash.startsWith("blog/"));
+
+  if (shouldNormalizeEditorialHtml) {
+    const html = await response.text();
+    response = rebuildHtmlResponse(response, normalizeEditorialHtml(html));
+  }
+
   // Lab-only enhancement: load the final PDF report polisher without touching the core COA parser.
   if (
     pathNoSlash.toLowerCase() === "lab" &&
@@ -264,13 +360,7 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
         ? html.replace("</body>", `${scriptTag}</body>`)
         : `${html}${scriptTag}`;
 
-    const headers = new Headers(response.headers);
-    headers.delete("content-length");
-    response = new Response(enhancedHtml, {
-      status: response.status,
-      statusText: response.statusText,
-      headers,
-    });
+    response = rebuildHtmlResponse(response, enhancedHtml);
   }
 
   const hostname = context.url.hostname;
