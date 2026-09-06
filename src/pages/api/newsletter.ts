@@ -3,19 +3,30 @@ export const prerender = false;
 import type { APIRoute } from "astro";
 
 const BUTTONDOWN_API_URL = "https://api.buttondown.com/v1/subscribers";
+
+type Campaign = "drop-001" | "hemp-food-001";
+
 const DROP_001_PREFERENCES = new Set(["tshirt", "poster", "tote"]);
 const DROP_001_CREATIVE_VERSIONS = new Set(["claims-v2", "neutral-format-v1"]);
+const HEMP_FOOD_001_PREFERENCES = new Set(["semi-decorticati-500g"]);
+const HEMP_FOOD_001_CREATIVE_VERSIONS = new Set(["seed-pilot-v1"]);
 
-function normalizedCampaign(value: unknown): string | null {
-  return value === "drop-001" ? "drop-001" : null;
+function normalizedCampaign(value: unknown): Campaign | null {
+  return value === "drop-001" || value === "hemp-food-001" ? value : null;
 }
 
-function normalizedPreference(value: unknown): string | null {
-  return typeof value === "string" && DROP_001_PREFERENCES.has(value) ? value : null;
+function normalizedPreference(value: unknown, campaign: Campaign | null): string | null {
+  if (typeof value !== "string") return null;
+  if (campaign === "drop-001" && DROP_001_PREFERENCES.has(value)) return value;
+  if (campaign === "hemp-food-001" && HEMP_FOOD_001_PREFERENCES.has(value)) return value;
+  return null;
 }
 
-function normalizedCreativeVersion(value: unknown): string | null {
-  return typeof value === "string" && DROP_001_CREATIVE_VERSIONS.has(value) ? value : null;
+function normalizedCreativeVersion(value: unknown, campaign: Campaign | null): string | null {
+  if (typeof value !== "string") return null;
+  if (campaign === "drop-001" && DROP_001_CREATIVE_VERSIONS.has(value)) return value;
+  if (campaign === "hemp-food-001" && HEMP_FOOD_001_CREATIVE_VERSIONS.has(value)) return value;
+  return null;
 }
 
 function jsonResponse(message: string, status: number): Response {
@@ -25,13 +36,19 @@ function jsonResponse(message: string, status: number): Response {
   });
 }
 
+function isCampaignEnabled(campaign: Campaign | null): boolean {
+  if (campaign === "drop-001") return import.meta.env.DROP_001_TEST_ENABLED === "true";
+  if (campaign === "hemp-food-001") return import.meta.env.HEMP_FOOD_001_TEST_ENABLED === "true";
+  return true;
+}
+
 export const POST: APIRoute = async ({ request }) => {
   try {
     const contentType = request.headers.get("content-type") || "";
     let email: string | null = null;
     let consent: string | boolean | null = null;
     let hp: string | null = null;
-    let campaign: string | null = null;
+    let campaign: Campaign | null = null;
     let preference: string | null = null;
     let creativeVersion: string | null = null;
 
@@ -41,23 +58,23 @@ export const POST: APIRoute = async ({ request }) => {
       consent = data.consent || null;
       hp = data.hp || null;
       campaign = normalizedCampaign(data.campaign);
-      preference = normalizedPreference(data.preference);
-      creativeVersion = normalizedCreativeVersion(data.creativeVersion);
+      preference = normalizedPreference(data.preference, campaign);
+      creativeVersion = normalizedCreativeVersion(data.creativeVersion, campaign);
     } else {
       const form = await request.formData();
       email = (form.get("email") as string) || null;
       consent = (form.get("consent") as string) || null;
       hp = (form.get("hp") as string) || null;
       campaign = normalizedCampaign(form.get("campaign"));
-      preference = normalizedPreference(form.get("preference"));
-      creativeVersion = normalizedCreativeVersion(form.get("creativeVersion"));
+      preference = normalizedPreference(form.get("preference"), campaign);
+      creativeVersion = normalizedCreativeVersion(form.get("creativeVersion"), campaign);
     }
 
     if (hp && hp.trim() !== "") {
       return jsonResponse("ok", 200);
     }
 
-    if (campaign === "drop-001" && import.meta.env.DROP_001_TEST_ENABLED !== "true") {
+    if (campaign && !isCampaignEnabled(campaign)) {
       return new Response(JSON.stringify({ message: "Campagna non disponibile" }), {
         status: 404,
         headers: {
@@ -71,11 +88,11 @@ export const POST: APIRoute = async ({ request }) => {
       return jsonResponse("Email non valida", 400);
     }
 
-    if (campaign === "drop-001" && !preference) {
-      return jsonResponse("Seleziona il prodotto che ti interessa", 400);
+    if (campaign && !preference) {
+      return jsonResponse("Preferenza prodotto non valida", 400);
     }
 
-    if (campaign === "drop-001" && !creativeVersion) {
+    if (campaign && !creativeVersion) {
       return jsonResponse("Versione creativa non valida", 400);
     }
 
@@ -91,14 +108,13 @@ export const POST: APIRoute = async ({ request }) => {
 
     const xff = request.headers.get("x-forwarded-for") || "";
     const ip_address = xff.split(",")[0]?.trim() || undefined;
-    const isDrop001 = campaign === "drop-001";
 
     const metadata: Record<string, string> = { source: "canapalandia-astro" };
-    if (isDrop001) {
-      metadata.campaign = "drop-001";
+    if (campaign) {
+      metadata.campaign = campaign;
       metadata.preference = preference!;
       metadata.creative_version = creativeVersion!;
-      metadata.consent_context = "drop-001-waitlist";
+      metadata.consent_context = `${campaign}-waitlist`;
     }
 
     const subscriberPayload: {
@@ -113,8 +129,8 @@ export const POST: APIRoute = async ({ request }) => {
     };
 
     // La newsletter ordinaria mantiene il tag storico.
-    // Drop 001 resta metadata-first e indipendente dalla feature Tags.
-    if (!isDrop001) {
+    // I demand test restano metadata-first e indipendenti dalla feature Tags.
+    if (!campaign) {
       subscriberPayload.tags = ["canapalandia-site"];
     }
 
