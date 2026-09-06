@@ -5,6 +5,7 @@ import Layout from "../../layouts/MigratedLayout.astro";
 import { PRIMARY_EDITORIAL_CATEGORY_SLUGS } from "../../config/navigation";
 import { categoryHref } from "../../lib/categoryUrl";
 import { isPublishedBlogEntry } from "../../lib/blogVisibility";
+import { toPlainText } from "../../lib/utils";
 
 // Paginazione statica: pagina 1 è sempre prerenderizzata
 
@@ -37,6 +38,7 @@ function formatUpdatedLabel(
   const pub = publishDate instanceof Date ? publishDate : new Date(String(publishDate));
   const upd = updatedDate instanceof Date ? updatedDate : new Date(String(updatedDate));
   if (Number.isNaN(pub.getTime()) || Number.isNaN(upd.getTime())) return "";
+  if (upd.getTime() <= pub.getTime()) return "";
   if (
     pub.getFullYear() === upd.getFullYear() &&
     pub.getMonth() === upd.getMonth() &&
@@ -127,7 +129,7 @@ const pagePosts = sortedPosts.slice(0, PAGE_SIZE);
 const postsIndex = sortedPosts.map((p) => ({
   href: postHref(p),
   title: p.data.title ?? "",
-  description: p.data.description ?? "",
+  description: toPlainText(p.data.description),
   category: p.data.category ?? "",
   tags: Array.isArray(p.data.tags) ? p.data.tags : [],
   date: formatDate(publishDateOf(p)),
