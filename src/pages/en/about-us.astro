@@ -1,0 +1,86 @@
+---
+import InstitutionalPage from "../../components/InstitutionalPage.astro";
+
+const SITE = import.meta.env.SITE || "https://canapalandia.com";
+const canonical = `${SITE}/en/about-us/`;
+---
+
+<InstitutionalPage
+  title="About Canapalandia | Independent hemp and cannabis information"
+  description="Canapalandia is an independent editorial project covering hemp, CBD, cannabis policy, research and culture. We do not operate an online store or sell products directly."
+  canonical={canonical}
+  eyebrow="Canapalandia since 2016"
+  heading="Independent information about hemp, cannabis policy and culture"
+  lead="Canapalandia is an independent editorial project. We publish news, explainers, guides and tools to help readers understand a complex and fast-changing field without presenting editorial information as a sales pitch or medical advice."
+  currentLabel="About us"
+>
+  <section>
+    <h2>What Canapalandia is today</h2>
+    <p>
+      Canapalandia is an online editorial project focused on industrial hemp, CBD,
+      cannabis policy, research, sustainability and culture. We do not operate an
+      online store, process product orders or sell cannabis- or hemp-based products
+      directly.
+    </p>
+    <p>
+      Our goal is to make technical and controversial topics easier to understand,
+      while separating facts, sources, interpretation and opinion as clearly as
+      possible.
+    </p>
+  </section>
+
+  <section>
+    <h2>Where the project comes from</h2>
+    <p>
+      Canapalandia started in 2016 as a blog about hemp and cannabis culture. The
+      project has gone through different phases, including an earlier commercial
+      experience. Today its main role is editorial: informing, explaining and
+      building useful tools for readers.
+    </p>
+    <p class="institutional-note">
+      Some older English pages and articles belong to previous phases of the
+      project and are progressively reviewed when they no longer represent the
+      current Canapalandia.
+    </p>
+  </section>
+
+  <section>
+    <h2>How we work</h2>
+    <ul>
+      <li>We prioritize primary sources, official documents and scientific studies when available.</li>
+      <li>We add dates and context when laws, research or news may change over time.</li>
+      <li>We distinguish editorial content from commercial collaborations.</li>
+      <li>We update or correct content when better information becomes available.</li>
+      <li>Our content is not medical or legal advice.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Commercial relationships and transparency</h2>
+    <p>
+      Canapalandia may support its editorial work through advertising, sponsored
+      content, selected partnerships, affiliate links and voluntary reader support.
+      Commercial collaborations must be identifiable and should not determine the
+      conclusions of independent editorial coverage.
+    </p>
+    <p>
+      Paid and affiliate links are qualified appropriately. Companies and projects
+      interested in editorial collaborations can review our
+      <a href="/pubblicita/">advertising and partnership options</a>.
+    </p>
+  </section>
+
+  <section>
+    <h2>Information first</h2>
+    <p>
+      We do not promise therapeutic results, certify the legality or safety of a
+      product, or replace professional medical or legal advice. Our role is to give
+      readers clearer context, better sources and practical ways to understand the
+      information available to them.
+    </p>
+    <p>
+      For the current Italian editorial profile, visit
+      <a href="/chi-siamo/">Chi siamo</a>.
+    </p>
+  </section>
+</InstitutionalPage>
