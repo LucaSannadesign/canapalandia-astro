@@ -66,7 +66,6 @@ const BLOG_FORCED_LEGACY_REVIEW_SLUGS = new Set<string>([
   "migliori-snack-canapa-vita-sana",
   "proteine-canapa-sportivi-vegani",
   "i-benefici-della-canapa-cosa-non-sai-superfood",
-  "come-integrare-i-semi-di-canapa-nella-tua-dieta",
   "nuovo-partner-canapalandia-nordic-oil",
   "cannabis-light-e-corte-di-cassazione-il-decreto-sicurezza-traballa",
   "canapa-light-sentenza-ue-decreto-sicurezza-2025",
