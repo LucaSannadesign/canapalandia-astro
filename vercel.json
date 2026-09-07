@@ -15,6 +15,36 @@
   ],
   "redirects": [
     {
+      "source": "/missione",
+      "destination": "/chi-siamo/missione/",
+      "permanent": true
+    },
+    {
+      "source": "/missione/",
+      "destination": "/chi-siamo/missione/",
+      "permanent": true
+    },
+    {
+      "source": "/sostieni-la-causa",
+      "destination": "/sostieni-la-nostra-causa/",
+      "permanent": true
+    },
+    {
+      "source": "/sostieni-la-causa/",
+      "destination": "/sostieni-la-nostra-causa/",
+      "permanent": true
+    },
+    {
+      "source": "/disclaimer",
+      "destination": "/disclaimer-legale-canapalandia/",
+      "permanent": true
+    },
+    {
+      "source": "/disclaimer/",
+      "destination": "/disclaimer-legale-canapalandia/",
+      "permanent": true
+    },
+    {
       "source": "/en/cannabis-laws-italy-2025",
       "destination": "/blog/cannabis-laws-italy/",
       "permanent": true
