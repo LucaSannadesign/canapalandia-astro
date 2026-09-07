@@ -6,7 +6,7 @@ import mdx from "@astrojs/mdx";
 
 const site = "https://canapalandia.com";
 
-/** 301: slug blog evergreen, hub tag legacy, paginazione blog page/1, allineati a URL pubblici reali */
+/** 301: slug blog evergreen, route strutturali legacy, hub tag legacy e paginazione */
 const evergreenRedirects = {
   "/blog/cannabis-laws-italy-2025/": "/blog/cannabis-laws-italy/",
   "/blog/top-hemp-strains-2025/": "/blog/top-hemp-strains/",
@@ -24,6 +24,10 @@ const evergreenRedirects = {
     "/blog/decreto-sicurezza-cannabis-light/",
   "/blog/legalizzazione-cannabis-europa-2025-aggiornamenti/":
     "/blog/legalizzazione-cannabis-europa-aggiornamenti/",
+  // Route strutturali storiche → URL canoniche attuali
+  "/missione/": "/chi-siamo/missione/",
+  "/sostieni-la-causa/": "/sostieni-la-nostra-causa/",
+  "/disclaimer/": "/disclaimer-legale-canapalandia/",
   "/tag/": "/blog/",
   "/blog/page/1/": "/blog/",
   // Categorie WP thin → hub (allineato a middleware)
