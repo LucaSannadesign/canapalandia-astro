@@ -12,11 +12,24 @@ const {
   updatedDate,
 } = Astro.props;
 
+const EN_BLOG_CATEGORIES = new Set([
+  "cannabis-news",
+  "cannabis-legalization",
+  "cbd-and-nutrition",
+  "cannabis-and-innovation",
+  "medical-cannabis",
+  "hemp-sustainability",
+  "health-wellness",
+]);
+
+const rawCategory = category && typeof category === "string" ? category.trim() : null;
+const categoryKey = rawCategory?.toLowerCase() || "";
+const isEnglish = EN_BLOG_CATEGORIES.has(categoryKey);
+const locale = isEnglish ? "en-GB" : "it-IT";
+
 function toDate(value: Date | string | number | null | undefined): Date | null {
   if (!value) return null;
-  if (value instanceof Date) {
-    return Number.isNaN(value.getTime()) ? null : value;
-  }
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
   const d = new Date(String(value));
   return Number.isNaN(d.getTime()) ? null : d;
 }
@@ -24,7 +37,7 @@ function toDate(value: Date | string | number | null | undefined): Date | null {
 function formatDate(value: Date | string | number | null | undefined): string {
   const d = toDate(value);
   if (!d) return "";
-  return d.toLocaleDateString("it-IT", { year: "numeric", month: "long", day: "numeric" });
+  return d.toLocaleDateString(locale, { year: "numeric", month: "long", day: "numeric" });
 }
 
 function isSameDate(date1: Date | null, date2: Date | null): boolean {
@@ -39,14 +52,12 @@ function isSameDate(date1: Date | null, date2: Date | null): boolean {
 const pubDate = toDate(publishDate);
 const updDate = toDate(updatedDate);
 const showUpdated = Boolean(
-  updDate &&
-  pubDate &&
-  !isSameDate(pubDate, updDate) &&
-  updDate.getTime() > pubDate.getTime()
+  updDate && pubDate && !isSameDate(pubDate, updDate) && updDate.getTime() > pubDate.getTime()
 );
-const updatedLabel = showUpdated ? `Aggiornato il ${formatDate(updatedDate)}` : "";
+const updatedLabel = showUpdated
+  ? `${isEnglish ? "Updated" : "Aggiornato il"} ${formatDate(updatedDate)}`
+  : "";
 
-// Sanitizza excerpt: converte qualsiasi tipo in stringa pulita
 const excerptSafe = toPlainText(excerpt);
 
 const CATEGORY_PUBLIC_LABELS: Record<string, string> = {
@@ -54,21 +65,22 @@ const CATEGORY_PUBLIC_LABELS: Record<string, string> = {
   normativa: "Normativa",
   "cbd-alimentazione": "CBD",
   "canapa-e-ambiente": "Canapa",
+  "cannabis-news": "Cannabis news",
+  "cannabis-legalization": "Cannabis policy",
+  "cbd-and-nutrition": "CBD & nutrition",
+  "cannabis-and-innovation": "Cannabis & innovation",
+  "medical-cannabis": "Medical cannabis",
+  "hemp-sustainability": "Hemp & sustainability",
+  "health-wellness": "Health & wellness",
 };
 
-const rawCategory = category && typeof category === "string" ? category.trim() : null;
-const categoryKey = rawCategory?.toLowerCase() || "";
 const categoryName = rawCategory ? (CATEGORY_PUBLIC_LABELS[categoryKey] || rawCategory) : null;
 
 function normalizeHref(input: unknown): string {
   if (typeof input !== "string") return "/";
   const raw = input.trim();
   if (!raw || raw === "undefined" || raw === "/undefined/") return "/";
-
-  // allow absolute links
   if (/^(https?:|mailto:|tel:)/i.test(raw)) return raw;
-
-  // normalize relative internal links
   return raw.startsWith("/") ? raw : `/${raw}`;
 }
 
@@ -76,46 +88,38 @@ const safeHref = normalizeHref(href);
 ---
 
 <article class="card post-card">
-    <a class="cardLink" href={safeHref}>
-        <div class="thumb">
-            {
-                img ? (
-                    <img
-                        src={img}
-                        alt={title || ""}
-                        loading="lazy"
-                        decoding="async"
-                        referrerpolicy="no-referrer"
-                        onerror="this.onerror=null;this.src='/images/placeholder.svg';"
-                    />
-                ) : null
-            }
-        </div>
+  <a class="cardLink" href={safeHref}>
+    <div class="thumb">
+      {img ? (
+        <img
+          src={img}
+          alt={title || ""}
+          loading="lazy"
+          decoding="async"
+          referrerpolicy="no-referrer"
+          onerror="this.onerror=null;this.src='/images/placeholder.svg';"
+        />
+      ) : null}
+    </div>
 
-        <div class="cardBody">
-            <p class="cardMeta">{date}</p>
-            {updatedLabel ? (
-                <p class="cardMeta cardMeta--updated">{updatedLabel}</p>
-            ) : null}
-            {categoryName ? (
-                <span class="badge badge--cat">{categoryName}</span>
-            ) : null}
-            <h3 class="card-title clamp-2" set:html={title} />
-            {excerptSafe ? (
-                <p class="card-excerpt clamp-3">{excerptSafe}</p>
-            ) : null}
-            <div class="card-footer">
-                <span class="card-read">Leggi →</span>
-            </div>
-        </div>
-    </a>
+    <div class="cardBody">
+      <p class="cardMeta">{date}</p>
+      {updatedLabel ? <p class="cardMeta cardMeta--updated">{updatedLabel}</p> : null}
+      {categoryName ? <span class="badge badge--cat">{categoryName}</span> : null}
+      <h3 class="card-title clamp-2" set:html={title} />
+      {excerptSafe ? <p class="card-excerpt clamp-3">{excerptSafe}</p> : null}
+      <div class="card-footer">
+        <span class="card-read">{isEnglish ? "Read →" : "Leggi →"}</span>
+      </div>
+    </div>
+  </a>
 </article>
 
 <style>
-    .cardMeta--updated {
-        margin: -0.15rem 0 var(--space-sm);
-        font-size: 0.8125rem;
-        color: var(--muted);
-        opacity: 0.85;
-    }
+  .cardMeta--updated {
+    margin: -0.15rem 0 var(--space-sm);
+    font-size: 0.8125rem;
+    color: var(--muted);
+    opacity: 0.85;
+  }
 </style>
