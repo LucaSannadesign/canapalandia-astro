@@ -91,9 +91,9 @@ if (!fs.existsSync(LOCALIZATION_FILE)) {
   for (const required of [
     "translationAlternates",
     "LanguageSwitcher",
-    'hreflang=\\"it\\"',
-    'hreflang=\\"en\\"',
-    'hreflang=\\"x-default\\"',
+    'hreflang="it"',
+    'hreflang="en"',
+    'hreflang="x-default"',
   ]) {
     if (!routeSource.includes(required)) {
       errors.push(`Blog route missing localization guard: ${required}`);
