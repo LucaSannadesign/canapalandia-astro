@@ -14,7 +14,9 @@
     "export:content": "node scripts/export-db-to-content.mjs",
     "cover": "node scripts/generate-cover.mjs",
     "auto-post:dry": "node scripts/auto-post.mjs --dry-run",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "i18n:audit": "node scripts/i18n-audit.mjs",
+    "i18n:check": "npm run i18n:audit && npm run build"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.1",
