@@ -1,4 +1,6 @@
 ---
+import { getCollection, getEntry } from "astro:content";
+
 interface Props {
   publishDate: Date | string | number | null | undefined;
   updatedDate?: Date | string | number | null | undefined;
@@ -6,7 +8,36 @@ interface Props {
   lang?: "it" | "en";
 }
 
-const { publishDate, updatedDate, slug, lang = "it" } = Astro.props as Props;
+const { publishDate, updatedDate, slug, lang: langProp } = Astro.props as Props;
+
+const EN_BLOG_CATEGORIES = new Set([
+  "cannabis-news",
+  "cannabis-legalization",
+  "cbd-and-nutrition",
+  "cannabis-and-innovation",
+  "medical-cannabis",
+  "hemp-sustainability",
+  "health-wellness",
+]);
+
+async function detectLanguage(): Promise<"it" | "en"> {
+  if (langProp) return langProp;
+
+  try {
+    let entry = await getEntry("blog", slug);
+    if (!entry) {
+      const all = await getCollection("blog");
+      entry = all.find((item) => (item.data.slug || item.id || "").trim() === slug);
+    }
+
+    const category = entry?.data.category;
+    return typeof category === "string" && EN_BLOG_CATEGORIES.has(category) ? "en" : "it";
+  } catch {
+    return "it";
+  }
+}
+
+const lang = await detectLanguage();
 const locale = lang === "en" ? "en-GB" : "it-IT";
 const updatedLabel = lang === "en" ? "Updated" : "Aggiornato il";
 
