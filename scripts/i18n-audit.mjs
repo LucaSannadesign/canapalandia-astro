@@ -88,9 +88,16 @@ if (!fs.existsSync(LOCALIZATION_FILE)) {
 
   const routeFile = path.join(ROOT, "src", "pages", "blog", "[slug].astro");
   const routeSource = fs.existsSync(routeFile) ? fs.readFileSync(routeFile, "utf8") : "";
-  for (const required of ["translationAlternates", "LanguageSwitcher", 'hreflang=\\"it\\"', 'hreflang=\\"en\\"', 'hreflang=\\"x-default\\"']) {
-    const needle = required.replaceAll('\\"', '"');
-    if (!routeSource.includes(needle)) errors.push(`Blog route missing localization guard: ${needle}`);
+  for (const required of [
+    "translationAlternates",
+    "LanguageSwitcher",
+    'hreflang=\\"it\\"',
+    'hreflang=\\"en\\"',
+    'hreflang=\\"x-default\\"',
+  ]) {
+    if (!routeSource.includes(required)) {
+      errors.push(`Blog route missing localization guard: ${required}`);
+    }
   }
 
   const shareSource = fs.readFileSync(path.join(ROOT, "src", "components", "PostShare.astro"), "utf8");
