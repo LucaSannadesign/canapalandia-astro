@@ -12,7 +12,6 @@ permissions:
 
 jobs:
   rebuild:
-    if: github.event.head_commit.message != 'feat(content): replace hempcrete hero with compressed WebP'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -34,6 +33,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add public/images/can-260911-hempcrete-hero.webp
-          git rm -r .tmp-hempcrete
           git commit -m "feat(content): replace hempcrete hero with compressed WebP"
           git push origin HEAD:draft/can-260911-hempcrete
