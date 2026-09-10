@@ -1,0 +1,84 @@
+---
+import type { SiteLanguage } from "../lib/localization";
+
+interface Props {
+  currentLanguage: SiteLanguage;
+  italianUrl?: string | null;
+  englishUrl?: string | null;
+}
+
+const { currentLanguage, italianUrl, englishUrl } = Astro.props as Props;
+const hasPair = Boolean(italianUrl && englishUrl);
+---
+
+{hasPair ? (
+  <nav class="language-switcher" aria-label={currentLanguage === "en" ? "Article language" : "Lingua dell'articolo"}>
+    <span class="language-switcher__label">
+      {currentLanguage === "en" ? "Language" : "Lingua"}
+    </span>
+    <div class="language-switcher__options">
+      <a
+        href={italianUrl!}
+        lang="it"
+        hreflang="it"
+        aria-current={currentLanguage === "it" ? "page" : undefined}
+      >
+        IT
+      </a>
+      <a
+        href={englishUrl!}
+        lang="en"
+        hreflang="en"
+        aria-current={currentLanguage === "en" ? "page" : undefined}
+      >
+        EN
+      </a>
+    </div>
+  </nav>
+) : null}
+
+<style>
+  .language-switcher {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.65rem;
+    margin: 0 0 1rem;
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+  }
+
+  .language-switcher__label {
+    color: var(--muted);
+  }
+
+  .language-switcher__options {
+    display: inline-flex;
+    padding: 0.2rem;
+    gap: 0.15rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--r-full);
+    background: color-mix(in oklab, var(--panel) 88%, transparent);
+  }
+
+  .language-switcher a {
+    min-width: 2.35rem;
+    padding: 0.35rem 0.55rem;
+    border-radius: var(--r-full);
+    color: var(--muted);
+    text-align: center;
+    text-decoration: none;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+  }
+
+  .language-switcher a[aria-current="page"] {
+    background: var(--brand);
+    color: var(--brand-ink);
+  }
+
+  .language-switcher a:focus-visible {
+    outline: 3px solid color-mix(in oklab, var(--brand) 45%, transparent);
+    outline-offset: 2px;
+  }
+</style>
