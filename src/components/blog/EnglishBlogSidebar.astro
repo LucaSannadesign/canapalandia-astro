@@ -1,0 +1,227 @@
+---
+import { getCollection, type CollectionEntry } from "astro:content";
+import { isPublishedBlogEntry } from "../../lib/blogVisibility";
+import { languageFromCategory } from "../../lib/localization";
+
+interface Props {
+  currentSlug: string;
+  category?: string | null;
+  tags?: string[];
+}
+
+const { currentSlug, category = null, tags = [] } = Astro.props as Props;
+const now = new Date();
+const allPosts = await getCollection("blog");
+
+function normalize(value: unknown): string {
+  return String(value || "").trim().toLowerCase();
+}
+
+function normalizeTags(value: unknown): string[] {
+  return Array.isArray(value) ? value.map(normalize).filter(Boolean) : [];
+}
+
+function publicSlug(entry: CollectionEntry<"blog">): string {
+  return String(entry.data.slug || entry.id || "").replace(/\.mdx?$/, "").trim();
+}
+
+function href(entry: CollectionEntry<"blog">): string {
+  return `/blog/${publicSlug(entry)}/`;
+}
+
+function image(entry: CollectionEntry<"blog">): string {
+  const raw = entry.data.image || entry.data.coverImage || "/images/logo-canapalandia_1024.webp";
+  if (typeof raw !== "string") return "/images/logo-canapalandia_1024.webp";
+  if (/^https?:\/\//i.test(raw) || raw.startsWith("/")) return raw;
+  return `/${raw}`;
+}
+
+function dateValue(entry: CollectionEntry<"blog">): number {
+  const raw = entry.data.publishDate || entry.data.updatedDate;
+  const date = raw instanceof Date ? raw : new Date(String(raw || "1970-01-01"));
+  return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+}
+
+function dateLabel(entry: CollectionEntry<"blog">): string {
+  const raw = entry.data.publishDate || entry.data.updatedDate;
+  const date = raw instanceof Date ? raw : new Date(String(raw || ""));
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
+
+const englishPosts = allPosts
+  .filter((post) => languageFromCategory(post.data.category) === "en" && isPublishedBlogEntry(post, now))
+  .sort((a, b) => dateValue(b) - dateValue(a));
+
+const normalizedSlug = normalize(currentSlug);
+const currentCategory = normalize(category);
+const currentTags = normalizeTags(tags);
+
+const relatedPosts = englishPosts
+  .filter((post) => normalize(publicSlug(post)) !== normalizedSlug)
+  .map((post) => {
+    const sameCategory = currentCategory && normalize(post.data.category) === currentCategory;
+    const sharedTags = currentTags.filter((tag) => normalizeTags(post.data.tags).includes(tag)).length;
+    return { post, score: (sameCategory ? 10 : 0) + sharedTags * 3, date: dateValue(post) };
+  })
+  .filter(({ score }) => score > 0)
+  .sort((a, b) => b.score - a.score || b.date - a.date)
+  .slice(0, 3)
+  .map(({ post }) => post);
+
+const recentPosts = englishPosts
+  .filter((post) => normalize(publicSlug(post)) !== normalizedSlug)
+  .slice(0, 4);
+
+const socialLinks = [
+  ["Facebook", "https://www.facebook.com/canapalandia.official"],
+  ["Instagram", "https://www.instagram.com/canapalandia.official/"],
+  ["YouTube", "https://www.youtube.com/@canapalandia"],
+  ["LinkedIn", "https://www.linkedin.com/company/canapalandia/"],
+] as const;
+---
+
+<aside aria-label="English blog sidebar" class="english-sidebar">
+  {relatedPosts.length > 0 ? (
+    <section class="sidebar-card" aria-labelledby="en-related-title">
+      <p class="kicker">Selected for you</p>
+      <h2 id="en-related-title">Related articles</h2>
+      <div class="story-list">
+        {relatedPosts.map((post) => (
+          <a href={href(post)} class="story">
+            <img src={image(post)} alt="" loading="lazy" decoding="async" />
+            <span>
+              <strong>{post.data.title}</strong>
+              <small>{dateLabel(post)}</small>
+            </span>
+          </a>
+        ))}
+      </div>
+    </section>
+  ) : null}
+
+  <section class="sidebar-card" aria-labelledby="en-latest-title">
+    <p class="kicker">Canapalandia in English</p>
+    <h2 id="en-latest-title">Latest articles</h2>
+    {recentPosts.length > 0 ? (
+      <div class="story-list">
+        {recentPosts.map((post) => (
+          <a href={href(post)} class="story">
+            <img src={image(post)} alt="" loading="lazy" decoding="async" />
+            <span>
+              <strong>{post.data.title}</strong>
+              <small>{dateLabel(post)}</small>
+            </span>
+          </a>
+        ))}
+      </div>
+    ) : (
+      <p class="empty">More English articles are being reviewed. We publish them only after editorial and SEO checks.</p>
+    )}
+  </section>
+
+  <section class="sidebar-card" aria-labelledby="en-follow-title">
+    <h2 id="en-follow-title">Follow Canapalandia</h2>
+    <div class="social-list">
+      {socialLinks.map(([label, url]) => (
+        <a href={url} target="_blank" rel="noopener noreferrer">{label}</a>
+      ))}
+      <a href="/rss.xml">RSS</a>
+    </div>
+  </section>
+</aside>
+
+<style>
+  .english-sidebar {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .sidebar-card {
+    padding: 1.1rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--r-md);
+    background: color-mix(in oklab, var(--panel) 90%, transparent);
+  }
+
+  .sidebar-card h2 {
+    margin: 0 0 0.9rem;
+    font-family: var(--font-editorial);
+    font-size: 1.25rem;
+    line-height: 1.2;
+  }
+
+  .kicker {
+    margin: 0 0 0.35rem;
+    color: var(--brand);
+    font-family: var(--font-ui);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .story-list {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .story {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 0.75rem;
+    align-items: center;
+    color: var(--text);
+    text-decoration: none;
+  }
+
+  .story img {
+    width: 72px;
+    height: 58px;
+    object-fit: cover;
+    border-radius: var(--r-sm);
+    background: var(--panel-2);
+  }
+
+  .story span {
+    display: grid;
+    gap: 0.25rem;
+  }
+
+  .story strong {
+    font-family: var(--font-ui);
+    font-size: 0.88rem;
+    line-height: 1.28;
+  }
+
+  .story small,
+  .empty {
+    color: var(--muted);
+    font-size: var(--text-xs);
+    line-height: 1.45;
+  }
+
+  .social-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .social-list a {
+    padding: 0.45rem 0.65rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--r-full);
+    color: var(--text);
+    text-decoration: none;
+    font-family: var(--font-ui);
+    font-size: var(--text-xs);
+    font-weight: 700;
+  }
+
+  .story:hover strong,
+  .story:focus-visible strong,
+  .social-list a:hover,
+  .social-list a:focus-visible {
+    color: var(--brand);
+  }
+</style>
