@@ -82,7 +82,9 @@ if (!fs.existsSync(LOCALIZATION_FILE)) {
 
     const expectedEnCanonical = `https://canapalandia.com/blog/${pair.en}/`;
     if (en.canonical && en.canonical !== expectedEnCanonical) {
-      errors.push(`Unexpected EN canonical for ${pair.en}: ${en.canonical}`);
+      warnings.push(
+        `Legacy/stale EN frontmatter canonical for ${pair.en}: ${en.canonical} (runtime route uses ${expectedEnCanonical})`
+      );
     }
   }
 
