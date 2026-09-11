@@ -1,0 +1,332 @@
+---
+import { getCollection, type CollectionEntry } from "astro:content";
+
+type Post = CollectionEntry<"blog">;
+
+const NOW = new Date();
+const UPDATED_WINDOW_DAYS = 180;
+const MIN_AGE_BEFORE_UPDATE_DAYS = 7;
+const ONE_DAY = 86_400_000;
+
+const EN_CATEGORIES = new Set([
+  "cannabis-news",
+  "cannabis-legalization",
+  "cbd-and-nutrition",
+  "cannabis-and-innovation",
+  "medical-cannabis",
+  "hemp-sustainability",
+  "health-wellness",
+]);
+
+function asDate(value: unknown): Date | null {
+  if (!value) return null;
+  const date = value instanceof Date ? value : new Date(String(value));
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function publishDate(post: Post): Date | null {
+  return asDate(post.data.publishDate);
+}
+
+function updatedDate(post: Post): Date | null {
+  return asDate(post.data.updatedDate);
+}
+
+function getSlug(post: Post): string {
+  return post.slug ?? post.data.slug ?? "";
+}
+
+function postHref(post: Post): string {
+  return `/blog/${getSlug(post)}/`;
+}
+
+function normalizeImgSrc(src: unknown): string {
+  const value = typeof src === "string" ? src.trim() : "";
+  if (!value) return "/images/placeholder.svg";
+  if (value.startsWith("http://") || value.startsWith("https://") || value.startsWith("/")) {
+    return value;
+  }
+  return `/${value}`;
+}
+
+function normalizeImage(post: Post): string {
+  const raw = post.data.image || post.data.coverImage || "";
+  const src = raw && typeof raw === "object" && "src" in raw
+    ? (raw as Record<string, unknown>).src
+    : raw;
+  return normalizeImgSrc(src);
+}
+
+function isItalian(post: Post): boolean {
+  const category = post.data.category;
+  return !(typeof category === "string" && EN_CATEGORIES.has(category));
+}
+
+function isPublished(post: Post): boolean {
+  const { draft, status, editorialStatus } = post.data;
+  if (draft === true || status === "draft" || status === "test") return false;
+  if (editorialStatus === "legacy-review") return false;
+  const published = publishDate(post);
+  return published !== null && published.getTime() <= NOW.getTime();
+}
+
+const formatUpdatedDate = (date: Date): string =>
+  date.toLocaleDateString("it-IT", { year: "numeric", month: "long", day: "numeric" });
+
+let posts: Post[] = [];
+try {
+  posts = await getCollection("blog");
+} catch {
+  console.warn("[HomeUpdatedArticles] Nessun contenuto disponibile");
+}
+
+const recentUpdateCutoff = NOW.getTime() - UPDATED_WINDOW_DAYS * ONE_DAY;
+
+const updatedPosts = posts
+  .filter((post) => isPublished(post) && isItalian(post) && getSlug(post) !== "")
+  .filter((post) => {
+    const published = publishDate(post);
+    const updated = updatedDate(post);
+    if (!published || !updated) return false;
+
+    const updateIsMeaningful = updated.getTime() - published.getTime() >= MIN_AGE_BEFORE_UPDATE_DAYS * ONE_DAY;
+    const updateIsRecent = updated.getTime() >= recentUpdateCutoff && updated.getTime() <= NOW.getTime();
+
+    return updateIsMeaningful && updateIsRecent;
+  })
+  .sort((a, b) => (updatedDate(b)?.getTime() ?? 0) - (updatedDate(a)?.getTime() ?? 0))
+  .slice(0, 4);
+---
+
+{updatedPosts.length > 0 && (
+  <section class="updated-articles" aria-labelledby="updated-articles-title">
+    <div class="updated-articles__container">
+      <div class="updated-articles__head">
+        <div>
+          <p class="updated-articles__eyebrow">Dalla redazione</p>
+          <h2 id="updated-articles-title" class="updated-articles__title">Articoli aggiornati</h2>
+        </div>
+        <p class="updated-articles__intro">
+          Contenuti già pubblicati che abbiamo rivisto, ampliato o aggiornato con nuove fonti.
+        </p>
+      </div>
+
+      <div class="updated-articles__grid">
+        {updatedPosts.map((post) => {
+          const updated = updatedDate(post) as Date;
+          return (
+            <article class="updated-card">
+              <a class="updated-card__media" href={postHref(post)} aria-hidden="true" tabindex="-1">
+                <img
+                  src={normalizeImage(post)}
+                  alt=""
+                  width="560"
+                  height="315"
+                  loading="lazy"
+                  decoding="async"
+                  onerror="this.onerror=null;this.src='/images/placeholder.svg';"
+                />
+              </a>
+
+              <div class="updated-card__body">
+                <p class="updated-card__meta">
+                  <span class="updated-card__badge">Aggiornato</span>
+                  <time datetime={updated.toISOString()}>{formatUpdatedDate(updated)}</time>
+                </p>
+
+                <h3 class="updated-card__title">
+                  <a href={postHref(post)}>{post.data.title}</a>
+                </h3>
+
+                {post.data.description && (
+                  <p class="updated-card__description">{post.data.description}</p>
+                )}
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    </div>
+  </section>
+)}
+
+<style>
+  .updated-articles {
+    background: var(--cl-paper, #f3efe4);
+    border-block: 1px solid var(--cl-rule, #d7d1c0);
+    color: var(--cl-text, #293128);
+    padding: clamp(40px, 5vw, 64px) 0;
+  }
+
+  .updated-articles__container {
+    max-width: 1240px;
+    margin-inline: auto;
+    padding-inline: clamp(16px, 4vw, 56px);
+  }
+
+  .updated-articles__head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 0.8fr);
+    gap: 24px;
+    align-items: end;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--cl-rule-strong, #405247);
+    margin-bottom: clamp(24px, 3vw, 36px);
+  }
+
+  .updated-articles__eyebrow {
+    margin: 0 0 6px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--cl-kicker, #356b49);
+  }
+
+  .updated-articles__title {
+    margin: 0;
+    font-family: "Newsreader", Georgia, "Times New Roman", serif;
+    font-size: clamp(30px, 4vw, 44px);
+    line-height: 1;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    color: var(--cl-heading, #173020);
+  }
+
+  .updated-articles__intro {
+    margin: 0;
+    max-width: 48ch;
+    justify-self: end;
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--cl-body, #484b40);
+  }
+
+  .updated-articles__grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: clamp(18px, 2.4vw, 28px);
+  }
+
+  .updated-card {
+    min-width: 0;
+  }
+
+  .updated-card__media {
+    display: block;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-radius: var(--r-sm, 3px);
+    background: var(--cl-mint, #eaf0e6);
+  }
+
+  .updated-card__media img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 220ms ease;
+  }
+
+  .updated-card:hover .updated-card__media img {
+    transform: scale(1.02);
+  }
+
+  .updated-card__body {
+    padding-top: 14px;
+  }
+
+  .updated-card__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 10px;
+    font-size: 11px;
+    color: var(--cl-muted, #6b7065);
+  }
+
+  .updated-card__badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: var(--r-full, 999px);
+    background: var(--cl-heading, #173020);
+    color: var(--cl-surface, #fbfaf5);
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .updated-card__title {
+    margin: 0;
+    font-family: "Newsreader", Georgia, "Times New Roman", serif;
+    font-size: clamp(21px, 2vw, 27px);
+    line-height: 1.08;
+    font-weight: 500;
+    color: var(--cl-heading, #173020);
+  }
+
+  .updated-card__title a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .updated-card__title a:hover {
+    color: var(--cl-kicker, #356b49);
+  }
+
+  .updated-card__description {
+    margin: 10px 0 0;
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--cl-body, #484b40);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  @media (max-width: 980px) {
+    .updated-articles__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 680px) {
+    .updated-articles__head {
+      grid-template-columns: 1fr;
+      align-items: start;
+    }
+
+    .updated-articles__intro {
+      justify-self: start;
+    }
+
+    .updated-articles__grid {
+      grid-template-columns: 1fr;
+    }
+
+    .updated-card {
+      display: grid;
+      grid-template-columns: 120px minmax(0, 1fr);
+      gap: 14px;
+      align-items: start;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--cl-rule, #d7d1c0);
+    }
+
+    .updated-card__media {
+      aspect-ratio: 1 / 1;
+    }
+
+    .updated-card__body {
+      padding-top: 0;
+    }
+
+    .updated-card__description {
+      display: none;
+    }
+  }
+</style>
