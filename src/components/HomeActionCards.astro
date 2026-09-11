@@ -1,4 +1,6 @@
 ---
+import HomeUpdatedArticles from "./HomeUpdatedArticles.astro";
+
 interface ActionLink {
   href: string;
   label: string;
@@ -61,6 +63,8 @@ const cards: ActionCard[] = [
   }
 ];
 ---
+
+<HomeUpdatedArticles />
 
 <section class="action-cards-section">
   <div class="container">
