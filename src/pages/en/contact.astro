@@ -1,0 +1,112 @@
+---
+import EnglishSiteLayout from "../../layouts/EnglishSiteLayout.astro";
+
+const title = "Contact, corrections and partnerships | Canapalandia";
+const description = "Contact the Canapalandia editorial team for corrections, tips, editorial requests, partnerships and collaborations.";
+const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/en/contact/`;
+const sent = Astro.url.searchParams.get("sent") === "1";
+---
+
+<EnglishSiteLayout title={title} description={description} canonical={canonical} alternateIt="/contatti/">
+  <section class="en-contact">
+    <header class="en-contact__head">
+      <p class="eyebrow">Contact</p>
+      <h1>Contact Canapalandia</h1>
+      <p>Corrections, tips, partnerships or editorial requests: send us a message here.</p>
+    </header>
+
+    {sent ? (
+      <div class="en-contact__success" role="status" aria-live="polite">
+        Your message was sent successfully. Thank you — we will reply as soon as possible.
+      </div>
+    ) : null}
+
+    <div class="en-contact__grid">
+      <section class="en-contact__card">
+        <h2>Send a message</h2>
+        <form method="POST" action="/api/contatti">
+          <input type="hidden" name="lang" value="en" />
+          <input class="hp" type="text" name="_gotcha" tabindex="-1" autocomplete="off" aria-hidden="true" />
+
+          <label for="en-contact-name">Name</label>
+          <input id="en-contact-name" name="name" type="text" autocomplete="name" required />
+
+          <label for="en-contact-email">Email</label>
+          <input id="en-contact-email" name="email" type="email" autocomplete="email" required />
+
+          <label for="en-contact-subject">Subject</label>
+          <input id="en-contact-subject" name="subject" type="text" placeholder="Correction / Collaboration / Editorial request" required />
+
+          <label for="en-contact-message">Message</label>
+          <textarea id="en-contact-message" name="message" rows="7" required></textarea>
+
+          <label class="en-contact__check">
+            <input type="checkbox" name="privacy" required />
+            <span>I have read and accept the <a href="/en/privacy/">Privacy Policy</a>.</span>
+          </label>
+
+          <div class="en-contact__actions">
+            <button type="submit">Send</button>
+            <a href="/en/">Back to home</a>
+          </div>
+
+          <p class="en-contact__note">For corrections, please include the article URL and a short description of the issue.</p>
+        </form>
+      </section>
+
+      <aside class="en-contact__aside">
+        <section class="en-contact__card">
+          <h2>What you can contact us about</h2>
+          <ul>
+            <li><strong>Topics:</strong> CBD, industrial hemp, cannabis policy and current affairs</li>
+            <li><strong>Corrections:</strong> factual errors, broken sources or context that needs updating</li>
+            <li><strong>Partnerships:</strong> transparent and clearly disclosed collaborations</li>
+          </ul>
+        </section>
+
+        <section class="en-contact__card">
+          <h2>Response time</h2>
+          <p>We normally reply within 24–72 hours, depending on the editorial workload.</p>
+        </section>
+
+        <section class="en-contact__card">
+          <h2>Follow Canapalandia</h2>
+          <p>Keep up with regulatory developments, reporting and new long-form articles.</p>
+          <p class="en-contact__social">
+            <a href="https://www.facebook.com/canapalandia.official" target="_blank" rel="noopener noreferrer">Facebook</a>
+            <a href="https://www.instagram.com/canapalandia.official/" target="_blank" rel="noopener noreferrer">Instagram</a>
+            <a href="https://www.youtube.com/@canapalandia" target="_blank" rel="noopener noreferrer">YouTube</a>
+            <a href="https://www.linkedin.com/company/canapalandia/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+          </p>
+        </section>
+      </aside>
+    </div>
+  </section>
+</EnglishSiteLayout>
+
+<style>
+  .en-contact { max-width: 1120px; margin: 0 auto; padding: 2.5rem 0 5rem; }
+  .en-contact__head { max-width: 760px; margin-bottom: 2rem; }
+  .eyebrow { color:var(--brand); font:700 .78rem/1.2 Archivo,sans-serif; letter-spacing:.1em; text-transform:uppercase; }
+  h1 { margin:.35rem 0 .7rem; font:500 clamp(3rem,7vw,5.6rem)/.95 Newsreader,serif; }
+  .en-contact__head > p:last-child { color:var(--muted); font-size:1.08rem; line-height:1.6; }
+  .en-contact__success { margin:0 0 1.5rem; padding:1rem; border:1px solid var(--brand); border-radius:3px; background:color-mix(in oklab,var(--brand) 10%,transparent); }
+  .en-contact__grid { display:grid; grid-template-columns:minmax(0,1.3fr) minmax(280px,.7fr); gap:1.5rem; align-items:start; }
+  .en-contact__card { border:1px solid var(--border); border-radius:var(--r-md); padding:1.25rem; background:color-mix(in oklab,var(--panel) 82%,transparent); }
+  .en-contact__card h2 { margin:.1rem 0 1rem; font:500 1.75rem/1.1 Newsreader,serif; }
+  form { display:grid; gap:.55rem; }
+  form > label:not(.en-contact__check) { margin-top:.55rem; font-weight:700; }
+  form input:not([type="checkbox"]), form textarea { width:100%; padding:.78rem .85rem; border:1px solid var(--border); border-radius:3px; background:var(--bg); color:var(--text); }
+  .hp { position:absolute; left:-9999px; }
+  .en-contact__check { display:flex; align-items:flex-start; gap:.55rem; margin-top:.7rem; color:var(--muted); font-size:.9rem; }
+  .en-contact__check a { color:var(--brand); }
+  .en-contact__actions { display:flex; gap:.6rem; align-items:center; margin-top:.7rem; }
+  .en-contact__actions button { border:0; border-radius:3px; padding:.75rem 1rem; background:var(--brand); color:#102b19; font-weight:800; cursor:pointer; }
+  .en-contact__actions a { border:1px solid var(--border); border-radius:3px; padding:.7rem .95rem; text-decoration:none; }
+  .en-contact__note, .en-contact__card p, .en-contact__card li { color:var(--muted); line-height:1.55; }
+  .en-contact__aside { display:grid; gap:1rem; }
+  .en-contact__card ul { padding-left:1.1rem; margin:0; }
+  .en-contact__social { display:flex; flex-wrap:wrap; gap:.6rem; }
+  .en-contact__social a { color:var(--brand); font-weight:700; text-decoration:none; }
+  @media(max-width:800px){.en-contact__grid{grid-template-columns:1fr}}
+</style>

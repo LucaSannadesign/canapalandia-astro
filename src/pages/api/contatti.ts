@@ -12,24 +12,28 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     const message = String(form.get("message") || "").trim();
     const privacy = form.get("privacy");
     const hp = String(form.get("_gotcha") || "").trim();
+    const lang = String(form.get("lang") || "").trim().toLowerCase() === "en" ? "en" : "it";
+    const successPath = lang === "en" ? "/en/contact/?sent=1" : "/contatti/?sent=1";
+    const reply = (it: string, en: string, status: number) =>
+      new Response(lang === "en" ? en : it, { status });
 
     if (hp) {
-      return redirect("/contatti/?sent=1", 303);
+      return redirect(successPath, 303);
     }
 
     if (!name || !email || !subject || !message || !privacy) {
-      return new Response("Dati mancanti", { status: 400 });
+      return reply("Dati mancanti", "Missing required fields", 400);
     }
 
     if (!/\S+@\S+\.\S+/.test(email)) {
-      return new Response("Email non valida", { status: 400 });
+      return reply("Email non valida", "Invalid email address", 400);
     }
 
     const apiKey = import.meta.env.RESEND_API_KEY;
 
     if (!apiKey) {
       console.error("[Contatti] RESEND_API_KEY mancante");
-      return new Response("Configurazione email mancante", { status: 500 });
+      return reply("Configurazione email mancante", "Email service is not configured", 500);
     }
 
     const response = await fetch("https://api.resend.com/emails", {
@@ -44,10 +48,11 @@ export const POST: APIRoute = async ({ request, redirect }) => {
         reply_to: email,
         subject: `Canapalandia — ${subject}`,
         text: [
-          `Nome: ${name}`,
+          `Lingua / Language: ${lang}`,
+          `Nome / Name: ${name}`,
           `Email: ${email}`,
           "",
-          "Messaggio:",
+          "Messaggio / Message:",
           message,
         ].join("\n"),
       }),
@@ -56,12 +61,12 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     if (!response.ok) {
       const error = await response.text();
       console.error("[Contatti] Resend error:", response.status, error);
-      return new Response("Errore durante l'invio", { status: 500 });
+      return reply("Errore durante l'invio", "There was an error sending your message", 500);
     }
 
-    return redirect("/contatti/?sent=1", 303);
+    return redirect(successPath, 303);
   } catch (error) {
     console.error("[Contatti] Error:", error);
-    return new Response("Errore interno", { status: 500 });
+    return new Response("Internal server error", { status: 500 });
   }
 };

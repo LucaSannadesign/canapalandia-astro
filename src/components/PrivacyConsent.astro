@@ -1,163 +1,78 @@
 ---
 const GA_ID = import.meta.env.PUBLIC_GA_ID || "";
 const AHREFS_KEY = "GQJf5NXsoIXET0VGyxgtkw";
+const lang = Astro.props.lang === "en" ? "en" : "it";
+const copy = lang === "en"
+  ? {
+      close: "Continue without analytics",
+      eyebrow: "Privacy",
+      title: "Choose whether to help us with anonymous measurement",
+      body: "By default we use only what is necessary for the site to work. With your consent we can enable measurement tools to understand which content works better and improve Canapalandia.",
+      services: "Optional measurement: Google Analytics, Ahrefs Analytics, Vercel Web Analytics and Speed Insights.",
+      details: "Details in the Cookie Policy",
+      detailsHref: "/en/cookies/",
+      reject: "Reject",
+      accept: "Accept analytics",
+    }
+  : {
+      close: "Continua senza analytics",
+      eyebrow: "Privacy",
+      title: "Scegli se aiutarci con le statistiche",
+      body: "Per impostazione predefinita usiamo solo ciò che serve al funzionamento del sito. Con il tuo consenso possiamo attivare strumenti di misurazione per capire quali contenuti funzionano meglio e migliorare Canapalandia.",
+      services: "Misurazione opzionale: Google Analytics, Ahrefs Analytics, Vercel Web Analytics e Speed Insights.",
+      details: "Dettagli nella Cookie Policy",
+      detailsHref: "/cookie-policy/",
+      reject: "Rifiuta",
+      accept: "Accetta analytics",
+    };
 ---
 
-<div
-  id="privacy-consent"
-  class="privacy-consent"
-  data-ga-id={GA_ID}
-  data-ahrefs-key={AHREFS_KEY}
-  hidden
->
-  <div
-    class="privacy-consent__panel"
-    role="dialog"
-    aria-labelledby="privacy-consent-title"
-    aria-describedby="privacy-consent-copy"
-  >
-    <button
-      class="privacy-consent__close"
-      type="button"
-      data-consent-reject
-      aria-label="Continua senza analytics"
-    >×</button>
-
+<div id="privacy-consent" class="privacy-consent" data-ga-id={GA_ID} data-ahrefs-key={AHREFS_KEY} hidden>
+  <div class="privacy-consent__panel" role="dialog" aria-labelledby="privacy-consent-title" aria-describedby="privacy-consent-copy">
+    <button class="privacy-consent__close" type="button" data-consent-reject aria-label={copy.close}>×</button>
     <div class="privacy-consent__content">
-      <p class="privacy-consent__eyebrow">Privacy</p>
-      <h2 id="privacy-consent-title">Scegli se aiutarci con le statistiche</h2>
-      <p id="privacy-consent-copy">
-        Per impostazione predefinita usiamo solo ciò che serve al funzionamento del sito.
-        Con il tuo consenso possiamo attivare strumenti di misurazione per capire quali
-        contenuti funzionano meglio e migliorare Canapalandia.
-      </p>
-      <p class="privacy-consent__services">
-        Misurazione opzionale: Google Analytics, Ahrefs Analytics, Vercel Web Analytics e Speed Insights.
-      </p>
-      <a class="privacy-consent__details" href="/cookie-policy/">Dettagli nella Cookie Policy</a>
+      <p class="privacy-consent__eyebrow">{copy.eyebrow}</p>
+      <h2 id="privacy-consent-title">{copy.title}</h2>
+      <p id="privacy-consent-copy">{copy.body}</p>
+      <p class="privacy-consent__services">{copy.services}</p>
+      <a class="privacy-consent__details" href={copy.detailsHref}>{copy.details}</a>
     </div>
-
     <div class="privacy-consent__actions">
-      <button class="privacy-consent__button privacy-consent__button--ghost" type="button" data-consent-reject>
-        Rifiuta
-      </button>
-      <button class="privacy-consent__button privacy-consent__button--primary" type="button" data-consent-accept>
-        Accetta analytics
-      </button>
+      <button class="privacy-consent__button privacy-consent__button--ghost" type="button" data-consent-reject>{copy.reject}</button>
+      <button class="privacy-consent__button privacy-consent__button--primary" type="button" data-consent-accept>{copy.accept}</button>
     </div>
   </div>
 </div>
 
 <style>
-  .privacy-consent {
-    position: fixed;
-    inset: auto 0 0;
-    z-index: 10000;
-    padding: 18px;
-    pointer-events: none;
-  }
+  .privacy-consent { position: fixed; inset: auto 0 0; z-index: 10000; padding: 18px; pointer-events: none; }
   .privacy-consent__panel {
-    position: relative;
-    width: min(920px, 100%);
-    margin: 0 auto;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 22px;
-    align-items: end;
-    padding: 24px 26px;
-    border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
-    border-radius: var(--r-md);
-    background: color-mix(in srgb, var(--panel) 97%, transparent);
-    color: var(--text);
-    box-shadow: 0 22px 60px rgba(0, 0, 0, .28);
-    backdrop-filter: blur(14px);
-    pointer-events: auto;
+    position: relative; width: min(920px, 100%); margin: 0 auto; display: grid;
+    grid-template-columns: minmax(0, 1fr) auto; gap: 22px; align-items: end; padding: 24px 26px;
+    border: 1px solid color-mix(in srgb, var(--border) 84%, transparent); border-radius: var(--r-md);
+    background: color-mix(in srgb, var(--panel) 97%, transparent); color: var(--text);
+    box-shadow: 0 22px 60px rgba(0, 0, 0, .28); backdrop-filter: blur(14px); pointer-events: auto;
   }
   .privacy-consent__content { max-width: 650px; }
-  .privacy-consent__eyebrow {
-    margin: 0 0 6px;
-    font: 700 11px/1.2 var(--font-ui, "Archivo", sans-serif);
-    letter-spacing: .12em;
-    text-transform: uppercase;
-    color: var(--brand);
-  }
-  .privacy-consent h2 {
-    margin: 0 36px 8px 0;
-    font: 700 clamp(20px, 2.5vw, 27px)/1.12 var(--font-serif, "Source Serif 4", serif);
-    color: var(--text);
-  }
-  .privacy-consent p {
-    margin: 0;
-    font: 400 14px/1.55 var(--font-ui, "Archivo", sans-serif);
-  }
-  .privacy-consent__services {
-    margin-top: 8px !important;
-    color: var(--muted);
-    font-size: 12.5px !important;
-  }
-  .privacy-consent__details {
-    display: inline-block;
-    margin-top: 10px;
-    font: 600 12.5px/1.3 var(--font-ui, "Archivo", sans-serif);
-  }
-  .privacy-consent__actions {
-    display: flex;
-    gap: 9px;
-    align-items: center;
-    justify-content: flex-end;
-    flex-wrap: wrap;
-  }
-  .privacy-consent__button,
-  .privacy-consent__close {
-    font-family: var(--font-ui, "Archivo", sans-serif);
-    cursor: pointer;
-  }
-  .privacy-consent__button {
-    min-height: 42px;
-    padding: 0 16px;
-    border-radius: var(--r-md);
-    border: 1px solid var(--border);
-    font-size: 13px;
-    font-weight: 700;
-  }
+  .privacy-consent__eyebrow { margin: 0 0 6px; font: 700 11px/1.2 var(--font-ui, "Archivo", sans-serif); letter-spacing: .12em; text-transform: uppercase; color: var(--brand); }
+  .privacy-consent h2 { margin: 0 36px 8px 0; font: 700 clamp(20px, 2.5vw, 27px)/1.12 var(--font-serif, "Source Serif 4", serif); color: var(--text); }
+  .privacy-consent p { margin: 0; font: 400 14px/1.55 var(--font-ui, "Archivo", sans-serif); }
+  .privacy-consent__services { margin-top: 8px !important; color: var(--muted); font-size: 12.5px !important; }
+  .privacy-consent__details { display: inline-block; margin-top: 10px; font: 600 12.5px/1.3 var(--font-ui, "Archivo", sans-serif); }
+  .privacy-consent__actions { display: flex; gap: 9px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+  .privacy-consent__button, .privacy-consent__close { font-family: var(--font-ui, "Archivo", sans-serif); cursor: pointer; }
+  .privacy-consent__button { min-height: 42px; padding: 0 16px; border-radius: var(--r-md); border: 1px solid var(--border); font-size: 13px; font-weight: 700; }
   .privacy-consent__button--ghost { background: transparent; color: var(--text); }
   .privacy-consent__button--primary { border-color: var(--brand); background: var(--brand); color: #fff; }
-  .privacy-consent__button:focus-visible,
-  .privacy-consent__close:focus-visible,
-  .privacy-consent__details:focus-visible {
-    outline: 2px solid var(--brand);
-    outline-offset: 3px;
-  }
-  .privacy-consent__close {
-    position: absolute;
-    top: 10px;
-    right: 12px;
-    width: 34px;
-    height: 34px;
-    border: 0;
-    background: transparent;
-    color: var(--muted);
-    font-size: 27px;
-    line-height: 1;
-  }
+  .privacy-consent__button:focus-visible, .privacy-consent__close:focus-visible, .privacy-consent__details:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
+  .privacy-consent__close { position: absolute; top: 10px; right: 12px; width: 34px; height: 34px; border: 0; background: transparent; color: var(--muted); font-size: 27px; line-height: 1; }
   @media (max-width: 760px) {
     .privacy-consent { padding: 10px; }
-    .privacy-consent__panel {
-      grid-template-columns: 1fr;
-      gap: 16px;
-      padding: 20px;
-      border-radius: var(--r-md);
-    }
-    .privacy-consent__actions {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      width: 100%;
-    }
+    .privacy-consent__panel { grid-template-columns: 1fr; gap: 16px; padding: 20px; border-radius: var(--r-md); }
+    .privacy-consent__actions { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
     .privacy-consent__button { width: 100%; }
   }
-  @media (max-width: 430px) {
-    .privacy-consent__actions { grid-template-columns: 1fr; }
-  }
+  @media (max-width: 430px) { .privacy-consent__actions { grid-template-columns: 1fr; } }
 </style>
 
 <script>
@@ -188,34 +103,19 @@ const AHREFS_KEY = "GQJf5NXsoIXET0VGyxgtkw";
       if (typeof parsed.analytics !== "boolean" || typeof parsed.timestamp !== "number") return null;
       if (Date.now() - parsed.timestamp > SIX_MONTHS_MS) return null;
       return parsed;
-    } catch {
-      return null;
-    }
+    } catch { return null; }
   };
 
   const saveChoice = (analytics: boolean) => {
-    try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ version: CONSENT_VERSION, analytics, timestamp: Date.now() }),
-      );
-    } catch {}
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: CONSENT_VERSION, analytics, timestamp: Date.now() })); } catch {}
   };
 
   const loadGoogleAnalytics = (gaId: string) => {
     if (!gaId) return;
-
     analyticsWindow.dataLayer = analyticsWindow.dataLayer || [];
-
-    // Implementazione equivalente allo snippet ufficiale Google:
-    // gtag() deve accodare l'oggetto `arguments` nel dataLayer.
     if (!analyticsWindow.gtag) {
-      analyticsWindow.gtag = function (..._args: unknown[]) {
-        analyticsWindow.dataLayer?.push(arguments);
-      };
+      analyticsWindow.gtag = function (..._args: unknown[]) { analyticsWindow.dataLayer?.push(arguments); };
     }
-
-    // Evita di aggiungere due volte gtag.js nella stessa pagina.
     if (!document.querySelector("script[data-consent-google-analytics]")) {
       const script = document.createElement("script");
       script.async = true;
@@ -223,7 +123,6 @@ const AHREFS_KEY = "GQJf5NXsoIXET0VGyxgtkw";
       script.dataset.consentGoogleAnalytics = "1";
       document.head.appendChild(script);
     }
-
     analyticsWindow.gtag("js", new Date());
     analyticsWindow.gtag("consent", "update", {
       analytics_storage: "granted",
@@ -234,17 +133,10 @@ const AHREFS_KEY = "GQJf5NXsoIXET0VGyxgtkw";
     analyticsWindow.gtag("config", gaId);
   };
 
-  const trackEvent = (
-    eventName: string,
-    params: Record<string, string | number | boolean> = {},
-  ) => {
+  const trackEvent = (eventName: string, params: Record<string, string | number | boolean> = {}) => {
     if (!readChoice()?.analytics || !analyticsWindow.gtag) return;
-    analyticsWindow.gtag("event", eventName, {
-      page_path: window.location.pathname,
-      ...params,
-    });
+    analyticsWindow.gtag("event", eventName, { page_path: window.location.pathname, ...params });
   };
-
   analyticsWindow.canapalandiaTrack = trackEvent;
 
   const loadAhrefsAnalytics = (key: string) => {
@@ -279,141 +171,97 @@ const AHREFS_KEY = "GQJf5NXsoIXET0VGyxgtkw";
       .filter((name) => name && (name === "_ga" || name.startsWith("_ga_") || name === "_gid" || name.startsWith("_gat")));
     const domains = [window.location.hostname, `.${window.location.hostname}`, ".canapalandia.com", "canapalandia.com"];
     for (const name of names) {
-      for (const domain of domains) {
-        document.cookie = `${name}=; Max-Age=0; path=/; domain=${domain}; SameSite=Lax`;
-      }
+      for (const domain of domains) document.cookie = `${name}=; Max-Age=0; path=/; domain=${domain}; SameSite=Lax`;
       document.cookie = `${name}=; Max-Age=0; path=/; SameSite=Lax`;
     }
   };
 
-  const showPanel = () => {
-    if (!(root instanceof HTMLElement)) return;
-    root.hidden = false;
-  };
+  const showPanel = () => { if (root instanceof HTMLElement) root.hidden = false; };
   const hidePanel = () => { if (root instanceof HTMLElement) root.hidden = true; };
-
   const choose = (analytics: boolean, reloadOnRevoke = false) => {
     saveChoice(analytics);
     hidePanel();
-    if (analytics) {
-      activateAnalytics();
-      return;
+    if (analytics) activateAnalytics();
+    else {
+      clearGoogleAnalyticsCookies();
+      if (reloadOnRevoke) window.location.reload();
     }
-    clearGoogleAnalyticsCookies();
-    if (reloadOnRevoke) window.location.reload();
   };
 
   if (root instanceof HTMLElement) {
     const existing = readChoice();
     if (existing?.analytics) activateAnalytics();
     else if (!existing) showPanel();
-
-    root.querySelectorAll<HTMLElement>("[data-consent-accept]").forEach((button) => {
-      button.addEventListener("click", () => choose(true));
-    });
-    root.querySelectorAll<HTMLElement>("[data-consent-reject]").forEach((button) => {
-      button.addEventListener("click", () => choose(false, Boolean(readChoice()?.analytics)));
-    });
+    root.querySelectorAll<HTMLElement>("[data-consent-accept]").forEach((button) => button.addEventListener("click", () => choose(true)));
+    root.querySelectorAll<HTMLElement>("[data-consent-reject]").forEach((button) => button.addEventListener("click", () => choose(false, Boolean(readChoice()?.analytics))));
   }
 
   document.querySelectorAll<HTMLElement>("[data-open-privacy-consent]").forEach((button) => {
-    button.addEventListener("click", (event) => {
-      event.preventDefault();
-      showPanel();
-    });
+    button.addEventListener("click", (event) => { event.preventDefault(); showPanel(); });
   });
 
   const setupCoreAnalyticsEvents = () => {
     if (analyticsWindow.__canapalandiaAnalyticsEventsReady) return;
     analyticsWindow.__canapalandiaAnalyticsEventsReady = true;
 
-    // 1) CTA partnership/pubblicità: misura l'interesse commerciale, non un lead completato.
     document.addEventListener("click", (event) => {
       if (!(event.target instanceof Element)) return;
-      const link = event.target.closest<HTMLAnchorElement>('a[href="/pubblicita/"], a[href^="/pubblicita/?"], a[href="https://canapalandia.com/pubblicita/"], a[href="https://www.canapalandia.com/pubblicita/"]');
-      if (link) {
-        trackEvent("partner_cta_click", {
-          link_text: (link.textContent || "").trim().slice(0, 100),
-        });
-      }
+      const commercialLink = event.target.closest<HTMLAnchorElement>(
+        'a[href="/pubblicita/"], a[href^="/pubblicita/?"], a[href="/en/advertising/"], a[href^="/en/advertising/?"]',
+      );
+      if (commercialLink) trackEvent("partner_cta_click", { link_text: (commercialLink.textContent || "").trim().slice(0, 100) });
 
-      // 2) Demand test: click esplicito di interesse su Bottega o Drop 001.
       const hempInterest = event.target.closest<HTMLElement>("[data-interest-cta]");
-      if (hempInterest) {
-        trackEvent("demand_test_interest", {
-          campaign: "hemp-food-001",
-          preference: "semi-decorticati-500g",
-        });
-        return;
-      }
-
-      const dropInterest = event.target.closest<HTMLElement>(".interest-button[data-product]");
-      if (dropInterest && window.location.pathname.startsWith("/drop-001")) {
-        trackEvent("demand_test_interest", {
-          campaign: "drop-001",
-          preference: dropInterest.dataset.product || "unknown",
-          concept: dropInterest.dataset.concept || "unknown",
-        });
-      }
+      if (hempInterest) trackEvent("demand_test_interest", { campaign: "hemp-food-001", preference: "semi-decorticati-500g" });
     }, { passive: true });
 
-    // 3) Newsletter: registra solo una risposta di iscrizione riuscita.
     const newsletterFeedback = document.getElementById("homeNewsletterFeedback");
     if (newsletterFeedback instanceof HTMLElement) {
       const readNewsletterSuccess = () => {
-        if (newsletterFeedback.dataset.gaTracked === "1") return;
-        if (newsletterFeedback.dataset.state !== "ok") return;
+        if (newsletterFeedback.dataset.gaTracked === "1" || newsletterFeedback.dataset.state !== "ok") return;
         newsletterFeedback.dataset.gaTracked = "1";
-        trackEvent("newsletter_signup", { location: "home" });
+        trackEvent("newsletter_signup", { location: window.location.pathname.startsWith("/en/") ? "en" : "home" });
       };
-      new MutationObserver(readNewsletterSuccess).observe(newsletterFeedback, {
-        attributes: true,
-        attributeFilter: ["data-state"],
-        childList: true,
-        characterData: true,
-        subtree: true,
-      });
+      new MutationObserver(readNewsletterSuccess).observe(newsletterFeedback, { attributes: true, attributeFilter: ["data-state"], childList: true, characterData: true, subtree: true });
       readNewsletterSuccess();
     }
 
-    // 4) Waitlist Bottega/Drop: misura solo il successo della registrazione.
     const demandStatus = document.getElementById("formStatus");
     if (demandStatus instanceof HTMLElement) {
       const readDemandSuccess = () => {
         if (demandStatus.dataset.gaTracked === "1") return;
         const message = (demandStatus.textContent || "").trim();
-        if (!/^(Grazie\.|Sei già)/i.test(message)) return;
-
-        const isDrop = window.location.pathname.startsWith("/drop-001");
+        if (!/^(Grazie\.|Sei già|Thank you\.|You are already)/i.test(message)) return;
         const preferenceInput = document.querySelector<HTMLInputElement>('input[name="preference"]');
         demandStatus.dataset.gaTracked = "1";
-        trackEvent("demand_test_signup", {
-          campaign: isDrop ? "drop-001" : "hemp-food-001",
-          preference: preferenceInput?.value || (isDrop ? "unknown" : "semi-decorticati-500g"),
-        });
+        trackEvent("demand_test_signup", { campaign: "hemp-food-001", preference: preferenceInput?.value || "semi-decorticati-500g" });
       };
-      new MutationObserver(readDemandSuccess).observe(demandStatus, {
-        childList: true,
-        characterData: true,
-        subtree: true,
-      });
+      new MutationObserver(readDemandSuccess).observe(demandStatus, { childList: true, characterData: true, subtree: true });
       readDemandSuccess();
     }
 
-    // 5) Ribaltatore AI: evento solo quando compare un risultato realmente generato.
-    const ribaltatoreResult = document.getElementById("risultato-ribaltato");
-    if (ribaltatoreResult instanceof HTMLElement) {
-      const readRibaltatoreSuccess = () => {
-        const quote = ribaltatoreResult.querySelector<HTMLElement>(".risultato-card__quote-content");
+    const italianReframerResult = document.getElementById("risultato-ribaltato");
+    if (italianReframerResult instanceof HTMLElement) {
+      const readItalianReframerSuccess = () => {
+        const quote = italianReframerResult.querySelector<HTMLElement>(".risultato-card__quote-content");
         if (!quote || quote.dataset.gaTracked === "1") return;
         quote.dataset.gaTracked = "1";
-        trackEvent("ribaltatore_generate");
+        trackEvent("ribaltatore_generate", { language: "it" });
       };
-      new MutationObserver(readRibaltatoreSuccess).observe(ribaltatoreResult, {
-        childList: true,
-        subtree: true,
-      });
-      readRibaltatoreSuccess();
+      new MutationObserver(readItalianReframerSuccess).observe(italianReframerResult, { childList: true, subtree: true });
+      readItalianReframerSuccess();
+    }
+
+    const englishReframerResult = document.getElementById("en-reframer-result");
+    if (englishReframerResult instanceof HTMLElement) {
+      const readEnglishReframerSuccess = () => {
+        const card = englishReframerResult.querySelector<HTMLElement>(".result-card");
+        if (!card || card.dataset.gaTracked === "1") return;
+        card.dataset.gaTracked = "1";
+        trackEvent("ribaltatore_generate", { language: "en" });
+      };
+      new MutationObserver(readEnglishReframerSuccess).observe(englishReframerResult, { childList: true, subtree: true });
+      readEnglishReframerSuccess();
     }
   };
 

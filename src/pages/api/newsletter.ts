@@ -4,27 +4,25 @@ import type { APIRoute } from "astro";
 
 const BUTTONDOWN_API_URL = "https://api.buttondown.com/v1/subscribers";
 
-type Campaign = "drop-001" | "hemp-food-001";
+type Campaign = "hemp-food-001";
+type UiLang = "it" | "en";
+type EnglishFormStatus = "success" | "exists" | "error";
 
-const DROP_001_PREFERENCES = new Set(["tshirt", "poster", "tote"]);
-const DROP_001_CREATIVE_VERSIONS = new Set(["claims-v2", "neutral-format-v1"]);
 const HEMP_FOOD_001_PREFERENCES = new Set(["semi-decorticati-500g"]);
 const HEMP_FOOD_001_CREATIVE_VERSIONS = new Set(["seed-pilot-v1"]);
 
 function normalizedCampaign(value: unknown): Campaign | null {
-  return value === "drop-001" || value === "hemp-food-001" ? value : null;
+  return value === "hemp-food-001" ? value : null;
 }
 
 function normalizedPreference(value: unknown, campaign: Campaign | null): string | null {
   if (typeof value !== "string") return null;
-  if (campaign === "drop-001" && DROP_001_PREFERENCES.has(value)) return value;
   if (campaign === "hemp-food-001" && HEMP_FOOD_001_PREFERENCES.has(value)) return value;
   return null;
 }
 
 function normalizedCreativeVersion(value: unknown, campaign: Campaign | null): string | null {
   if (typeof value !== "string") return null;
-  if (campaign === "drop-001" && DROP_001_CREATIVE_VERSIONS.has(value)) return value;
   if (campaign === "hemp-food-001" && HEMP_FOOD_001_CREATIVE_VERSIONS.has(value)) return value;
   return null;
 }
@@ -37,22 +35,28 @@ function jsonResponse(message: string, status: number): Response {
 }
 
 function isCampaignEnabled(campaign: Campaign | null): boolean {
-  if (campaign === "drop-001") return import.meta.env.DROP_001_TEST_ENABLED === "true";
   if (campaign === "hemp-food-001") return import.meta.env.HEMP_FOOD_001_TEST_ENABLED === "true";
   return true;
 }
 
 export const POST: APIRoute = async ({ request }) => {
+  let lang: UiLang = "it";
+  const contentType = request.headers.get("content-type") || "";
+  const wantsJson = contentType.includes("application/json");
+
+  const englishFormRedirect = (status: EnglishFormStatus) =>
+    Response.redirect(new URL(`/en/newsletter-thanks/?status=${status}`, request.url), 303);
+
   try {
-    const contentType = request.headers.get("content-type") || "";
     let email: string | null = null;
     let consent: string | boolean | null = null;
     let hp: string | null = null;
     let campaign: Campaign | null = null;
     let preference: string | null = null;
     let creativeVersion: string | null = null;
+    let explicitLang = "";
 
-    if (contentType.includes("application/json")) {
+    if (wantsJson) {
       const data = await request.json();
       email = data.email || null;
       consent = data.consent || null;
@@ -60,6 +64,7 @@ export const POST: APIRoute = async ({ request }) => {
       campaign = normalizedCampaign(data.campaign);
       preference = normalizedPreference(data.preference, campaign);
       creativeVersion = normalizedCreativeVersion(data.creativeVersion, campaign);
+      explicitLang = String(data.lang || "").toLowerCase();
     } else {
       const form = await request.formData();
       email = (form.get("email") as string) || null;
@@ -68,48 +73,49 @@ export const POST: APIRoute = async ({ request }) => {
       campaign = normalizedCampaign(form.get("campaign"));
       preference = normalizedPreference(form.get("preference"), campaign);
       creativeVersion = normalizedCreativeVersion(form.get("creativeVersion"), campaign);
+      explicitLang = String(form.get("lang") || "").toLowerCase();
     }
 
+    const referer = request.headers.get("referer") || "";
+    lang = explicitLang === "en" || (!explicitLang && /\/en(?:\/|$)/.test(referer)) ? "en" : "it";
+    const msg = (it: string, en: string) => lang === "en" ? en : it;
+    const respond = (message: string, status: number, englishStatus: EnglishFormStatus = "error") =>
+      !wantsJson && lang === "en" ? englishFormRedirect(englishStatus) : jsonResponse(message, status);
+
     if (hp && hp.trim() !== "") {
-      return jsonResponse("ok", 200);
+      return !wantsJson && lang === "en" ? englishFormRedirect("success") : jsonResponse("ok", 200);
     }
 
     if (campaign && !isCampaignEnabled(campaign)) {
-      return new Response(JSON.stringify({ message: "Campagna non disponibile" }), {
-        status: 404,
-        headers: {
-          "Content-Type": "application/json",
-          "Cache-Control": "no-store",
-        },
-      });
+      return respond(msg("Campagna non disponibile", "Campaign not available"), 404);
     }
 
     if (!email || !/\S+@\S+\.\S+/.test(email)) {
-      return jsonResponse("Email non valida", 400);
+      return respond(msg("Email non valida", "Invalid email address"), 400);
     }
-
     if (campaign && !preference) {
-      return jsonResponse("Preferenza prodotto non valida", 400);
+      return respond(msg("Preferenza prodotto non valida", "Invalid product preference"), 400);
     }
-
     if (campaign && !creativeVersion) {
-      return jsonResponse("Versione creativa non valida", 400);
+      return respond(msg("Versione creativa non valida", "Invalid creative version"), 400);
     }
 
     const consentOk = consent === true || consent === "true" || consent === "on" || consent === "1";
     if (!consentOk) {
-      return jsonResponse("Devi accettare la Privacy Policy", 400);
+      return respond(msg("Devi accettare la Privacy Policy", "You must accept the Privacy Policy"), 400);
     }
 
     const apiKey = import.meta.env.BUTTONDOWN_API_KEY;
     if (!apiKey) {
-      return jsonResponse("Config newsletter mancante (BUTTONDOWN_API_KEY)", 500);
+      return respond(
+        msg("Config newsletter mancante (BUTTONDOWN_API_KEY)", "Newsletter configuration is missing (BUTTONDOWN_API_KEY)"),
+        500,
+      );
     }
 
     const xff = request.headers.get("x-forwarded-for") || "";
     const ip_address = xff.split(",")[0]?.trim() || undefined;
-
-    const metadata: Record<string, string> = { source: "canapalandia-astro" };
+    const metadata: Record<string, string> = { source: "canapalandia-astro", language: lang };
     if (campaign) {
       metadata.campaign = campaign;
       metadata.preference = preference!;
@@ -122,17 +128,9 @@ export const POST: APIRoute = async ({ request }) => {
       ip_address?: string;
       metadata: Record<string, string>;
       tags?: string[];
-    } = {
-      email_address: email,
-      ip_address,
-      metadata,
-    };
+    } = { email_address: email, ip_address, metadata };
 
-    // La newsletter ordinaria mantiene il tag storico.
-    // I demand test restano metadata-first e indipendenti dalla feature Tags.
-    if (!campaign) {
-      subscriberPayload.tags = ["canapalandia-site"];
-    }
+    if (!campaign) subscriberPayload.tags = ["canapalandia-site"];
 
     const response = await fetch(BUTTONDOWN_API_URL, {
       method: "POST",
@@ -145,35 +143,35 @@ export const POST: APIRoute = async ({ request }) => {
     });
 
     if (response.ok || response.status === 201) {
-      return jsonResponse("Iscrizione avvenuta con successo!", 200);
+      return respond(
+        msg("Iscrizione avvenuta con successo!", "Subscription successful! Please check your inbox if confirmation is required."),
+        200,
+        "success",
+      );
     }
 
     let errJson: any = null;
-    try {
-      errJson = await response.json();
-    } catch {
-      errJson = null;
-    }
-
+    try { errJson = await response.json(); } catch { errJson = null; }
     const code = errJson?.code as string | undefined;
     const detail = errJson?.detail as string | undefined;
     console.error(`[Newsletter] Buttondown error: ${response.status} - ${code || "unknown"} - ${detail || ""}`);
 
     if (code === "email_already_exists" || code === "subscriber_already_exists") {
-      return jsonResponse("Sei già iscritto 🙂", 409);
+      return respond(msg("Sei già iscritto 🙂", "You are already subscribed 🙂"), 409, "exists");
     }
-
     if (code === "email_invalid" || code === "email_empty") {
-      return jsonResponse("Email non valida", 400);
+      return respond(msg("Email non valida", "Invalid email address"), 400);
     }
-
     if (code === "rate_limited") {
-      return jsonResponse("Troppe richieste, riprova tra poco.", 429);
+      return respond(msg("Troppe richieste, riprova tra poco.", "Too many requests. Please try again shortly."), 429);
     }
-
-    return jsonResponse("Errore durante l’iscrizione. Riprova più tardi.", 500);
+    return respond(
+      msg("Errore durante l’iscrizione. Riprova più tardi.", "There was an error subscribing. Please try again later."),
+      500,
+    );
   } catch (error) {
     console.error("[Newsletter] Error:", error);
-    return jsonResponse("Errore interno", 500);
+    if (!wantsJson && lang === "en") return englishFormRedirect("error");
+    return jsonResponse(lang === "en" ? "Internal error" : "Errore interno", 500);
   }
 };

@@ -1,35 +1,30 @@
 ---
 /**
- * Route EN categoria: /en/categoria/[slug]/
- * Compatibilità WordPress: assorbe URL storici EN /en/categoria/slug/
- *
- * Se il sito non ha contenuti EN reali, mostra pagina minimale con noindex,follow.
- * Nessun 301 automatico verso /categoria/[slug]/: lo slug EN può non coincidere con `category` IT.
+ * Legacy compatibility route for historical WordPress-style /en/categoria/:slug URLs.
+ * Current English taxonomy lives at /en/category/:slug/.
  */
-import SiteLayout from "../../../layouts/SiteLayout.astro";
+import EnglishSiteLayout from "../../../layouts/EnglishSiteLayout.astro";
+import { EN_BLOG_CATEGORIES } from "../../../lib/localization";
 
 export const prerender = false;
 
-const slug = String(Astro.params.slug ?? "").trim();
+const slug = String(Astro.params.slug ?? "").trim().toLowerCase();
+if (!slug) return new Response(null, { status: 404, statusText: "Not Found" });
 
-// Per ora: pagina minimale con noindex (archivio EN legacy)
-// Se in futuro ci sono contenuti EN, aggiornare questa route
-const metadata = {
-  title: `Category: ${slug} — Canapalandia`,
-  description: "English category archive (legacy).",
-  canonical: `${import.meta.env.SITE || "https://canapalandia.com"}/en/categoria/${slug}/`,
-  robots: { index: false, follow: true },
-};
+if (EN_BLOG_CATEGORIES.has(slug)) {
+  return Astro.redirect(`/en/category/${slug}/`, 301);
+}
 ---
 
-<SiteLayout metadata={metadata}>
-  <main class="container page-shell">
-    <section class="card">
-      <h1>Category: {slug}</h1>
-      <p>This is a legacy English category archive. The site content is primarily in Italian.</p>
-      <p>
-        <a href={`/categoria/${slug}/`}>View Italian version</a> | <a href="/blog/">Go to Blog</a>
-      </p>
-    </section>
-  </main>
-</SiteLayout>
+<EnglishSiteLayout
+  title={`Legacy category: ${slug} | Canapalandia`}
+  description="Historical English category URL retained for compatibility."
+  canonical={`/en/categoria/${slug}/`}
+  robots="noindex,follow"
+>
+  <section class="card">
+    <h1>Historical category URL</h1>
+    <p>This legacy URL is kept so old links do not disappear, but it is not part of the current English taxonomy.</p>
+    <p><a href="/en/blog/">Browse the current English archive →</a></p>
+  </section>
+</EnglishSiteLayout>

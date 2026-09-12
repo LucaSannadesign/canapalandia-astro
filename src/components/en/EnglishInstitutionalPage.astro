@@ -1,0 +1,48 @@
+---
+import EnglishSiteLayout from "../../layouts/EnglishSiteLayout.astro";
+
+const {
+  title,
+  description,
+  canonical,
+  alternateIt,
+  eyebrow,
+  heading,
+  lead,
+  robots,
+} = Astro.props;
+---
+
+<EnglishSiteLayout
+  title={title}
+  description={description}
+  canonical={canonical}
+  alternateIt={alternateIt}
+  robots={robots}
+>
+  <article class="en-institutional">
+    <header class="en-institutional__header">
+      {eyebrow ? <p class="en-institutional__eyebrow">{eyebrow}</p> : null}
+      <h1>{heading}</h1>
+      {lead ? <p class="en-institutional__lead">{lead}</p> : null}
+    </header>
+    <div class="en-institutional__content">
+      <slot />
+    </div>
+  </article>
+</EnglishSiteLayout>
+
+<style>
+  .en-institutional { max-width: 840px; margin: 0 auto; padding: 2.7rem 0 5.5rem; }
+  .en-institutional__header { margin-bottom: 2.4rem; }
+  .en-institutional__eyebrow { margin: 0 0 .65rem; color: var(--brand); font: 700 .78rem/1.2 Archivo,sans-serif; letter-spacing: .1em; text-transform: uppercase; }
+  .en-institutional h1 { margin: 0 0 1rem; font: 500 clamp(3rem,7vw,5.5rem)/.95 Newsreader,serif; letter-spacing: -.03em; }
+  .en-institutional__lead { margin: 0; color: var(--muted); font-size: 1.14rem; line-height: 1.68; }
+  .en-institutional__content :global(section) { margin-top: 2.45rem; padding-top: 1.35rem; border-top: 1px solid var(--border); }
+  .en-institutional__content :global(h2) { margin: 0 0 .85rem; font: 500 clamp(1.65rem,3vw,2.05rem)/1.08 Newsreader,serif; }
+  .en-institutional__content :global(p), .en-institutional__content :global(li) { color: var(--muted); line-height: 1.72; }
+  .en-institutional__content :global(ul), .en-institutional__content :global(ol) { padding-left: 1.3rem; }
+  .en-institutional__content :global(a) { color: var(--brand); font-weight: 700; }
+  .en-institutional__content :global(code) { padding: .08rem .28rem; border-radius: 3px; background: var(--panel); color: var(--text); }
+  .en-institutional__content :global(.institutional-note) { padding: .9rem 1rem; border-left: 3px solid var(--brand); background: color-mix(in oklab,var(--panel) 82%,transparent); }
+</style>

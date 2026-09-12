@@ -1,0 +1,86 @@
+---
+export const prerender = false;
+
+import { getCollection } from "astro:content";
+import EnglishSiteLayout from "../../layouts/EnglishSiteLayout.astro";
+import { isReachableBlogEntry } from "../../lib/blogVisibility";
+import { languageFromCategory } from "../../lib/localization";
+
+const q = (Astro.url.searchParams.get("q") ?? "").trim();
+const tokens = q.toLowerCase().split(/\s+/).filter(Boolean).slice(0, 6);
+
+const posts = (await getCollection("blog"))
+  .filter((entry) => {
+    if (!isReachableBlogEntry(entry)) return false;
+    if (entry.data.editorialStatus === "legacy-review") return false;
+    if (languageFromCategory(entry.data.category) !== "en") return false;
+    const d = entry.data.publishDate ? new Date(entry.data.publishDate) : null;
+    return d && !Number.isNaN(d.getTime()) && d.getTime() <= Date.now();
+  })
+  .sort((a, b) => new Date(b.data.publishDate ?? 0).getTime() - new Date(a.data.publishDate ?? 0).getTime());
+
+const resultPosts = tokens.length
+  ? posts.filter((entry) => {
+      const haystack = `${entry.data.title ?? ""} ${entry.data.description ?? ""} ${entry.body ?? ""}`.toLowerCase();
+      return tokens.every((token) => haystack.includes(token));
+    }).slice(0, 30)
+  : posts.slice(0, 12);
+
+const slugOf = (entry: any) => String(entry.data.slug || entry.slug || entry.id || "").trim();
+const hrefOf = (entry: any) => `/blog/${slugOf(entry)}/`;
+const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/en/search/`;
+---
+
+<EnglishSiteLayout
+  title="Search Canapalandia in English"
+  description="Search English-language Canapalandia articles by topic or keyword."
+  canonical={canonical}
+  robots="noindex,follow"
+  alternateIt="/cerca/"
+>
+  <section class="en-search">
+    <header>
+      <p class="eyebrow">Search</p>
+      <h1>Search the English edition</h1>
+      <p>Find articles by topic, keyword or subject.</p>
+      <form method="get" action="/en/search/">
+        <label class="sr-only" for="en-q">Search</label>
+        <input id="en-q" name="q" type="search" placeholder="Search…" value={q} />
+        <button type="submit">Search</button>
+      </form>
+    </header>
+
+    <section aria-live="polite">
+      <h2>{tokens.length ? (resultPosts.length ? "Results" : "No results") : "Latest English articles"}</h2>
+      {tokens.length && !resultPosts.length ? <p>No matches were found for <strong>{q}</strong>.</p> : null}
+      <div class="grid">
+        {resultPosts.map((entry) => (
+          <article>
+            <h3><a href={hrefOf(entry)}>{entry.data.title}</a></h3>
+            {entry.data.description ? <p>{entry.data.description}</p> : null}
+          </article>
+        ))}
+      </div>
+    </section>
+  </section>
+</EnglishSiteLayout>
+
+<style>
+  .en-search { max-width: 1120px; margin: 0 auto; padding: 2rem 0 4rem; }
+  .en-search header { max-width: 720px; margin-bottom: 2.5rem; }
+  .eyebrow { color: var(--brand); font: 700 .78rem/1.2 Archivo,sans-serif; letter-spacing: .1em; text-transform: uppercase; }
+  h1 { margin: .3rem 0 .7rem; font: 500 clamp(2.8rem,6vw,5rem)/.96 Newsreader,serif; }
+  header > p:last-of-type { color: var(--muted); }
+  form { display:flex; gap:.6rem; margin-top:1.2rem; }
+  form input { flex:1; min-width:0; padding:.85rem .9rem; border:1px solid var(--border); border-radius:3px; background:var(--panel); color:var(--text); }
+  form button { border:0; border-radius:3px; padding:.85rem 1.1rem; background:var(--brand); color:#102b19; font-weight:800; cursor:pointer; }
+  section > h2 { font: 500 2rem/1 Newsreader,serif; }
+  .grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem; }
+  article { border-top:1px solid var(--border); padding:1rem 0; }
+  article h3 { margin:0 0 .5rem; font:500 1.45rem/1.08 Newsreader,serif; }
+  article h3 a { color:inherit; text-decoration:none; }
+  article h3 a:hover { color:var(--brand); }
+  article p { margin:0; color:var(--muted); line-height:1.55; }
+  @media(max-width:850px){.grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
+  @media(max-width:600px){form{flex-direction:column}.grid{grid-template-columns:1fr}}
+</style>

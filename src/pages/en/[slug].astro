@@ -1,0 +1,19 @@
+---
+import { getCollection } from "astro:content";
+import { isReachableBlogEntry } from "../../lib/blogVisibility";
+import { languageFromCategory } from "../../lib/localization";
+
+export const prerender = false;
+
+const slug = String(Astro.params.slug ?? "").trim();
+if (!slug) return Astro.rewrite("/en/404/");
+
+const entries = await getCollection("blog");
+const match = entries.find((entry) => {
+  const publicSlug = String(entry.data.slug || entry.slug || entry.id || "").trim();
+  return publicSlug === slug && languageFromCategory(entry.data.category) === "en" && isReachableBlogEntry(entry);
+});
+
+if (!match) return Astro.rewrite("/en/404/");
+return Astro.redirect(`/blog/${slug}/`, 301);
+---

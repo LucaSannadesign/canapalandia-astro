@@ -1,0 +1,56 @@
+---
+export const prerender = false;
+
+import EnglishTopicArchive from "../../../components/en/EnglishTopicArchive.astro";
+import { EN_BLOG_CATEGORIES } from "../../../lib/localization";
+
+const slug = String(Astro.params.slug ?? "").trim().toLowerCase();
+if (!slug || !EN_BLOG_CATEGORIES.has(slug)) {
+  return new Response(null, { status: 404, statusText: "Not Found" });
+}
+
+const labels: Record<string, { title: string; description: string }> = {
+  "cannabis-news": {
+    title: "Cannabis News",
+    description: "English-language Canapalandia reporting on cannabis, hemp, institutions, markets and current developments.",
+  },
+  "cannabis-legalization": {
+    title: "Cannabis Legalization & Regulation",
+    description: "English coverage of legalization, court decisions, regulation and policy developments in Italy, Europe and beyond.",
+  },
+  "cbd-and-nutrition": {
+    title: "CBD & Nutrition",
+    description: "English articles about CBD, hemp foods, nutrition and consumer information, with evidence and uncertainty clearly separated.",
+  },
+  "cannabis-and-innovation": {
+    title: "Cannabis & Innovation",
+    description: "English coverage of research, technology, materials, agriculture and innovation connected with cannabis and hemp.",
+  },
+  "medical-cannabis": {
+    title: "Medical Cannabis",
+    description: "English reporting and explainers on medical cannabis, access, research and regulation. Content is informational and not medical advice.",
+  },
+  "hemp-sustainability": {
+    title: "Hemp & Sustainability",
+    description: "English articles on industrial hemp, agriculture, materials, sustainability and environmental claims.",
+  },
+  "health-wellness": {
+    title: "Health & Wellness",
+    description: "English health and wellness coverage that distinguishes evidence, uncertainty and regulatory limits without making therapeutic promises.",
+  },
+};
+
+const info = labels[slug] ?? {
+  title: slug.replace(/-/g, " ").replace(/\b\w/g, (char) => char.toUpperCase()),
+  description: "English-language Canapalandia articles in this category.",
+};
+---
+
+<EnglishTopicArchive
+  title={info.title}
+  eyebrow="Category"
+  description={info.description}
+  categories={[slug]}
+  canonicalPath={`/en/category/${slug}/`}
+  basePath={`/en/category/${slug}/`}
+/>

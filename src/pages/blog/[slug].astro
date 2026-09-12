@@ -1,6 +1,7 @@
 ---
 import { getCollection, getEntry, render, type CollectionEntry } from "astro:content";
 import SiteLayout from "../../layouts/SiteLayout.astro";
+import EnglishSiteLayout from "../../layouts/EnglishSiteLayout.astro";
 import PostMeta from "../../components/PostMeta.astro";
 import PostShare from "../../components/PostShare.astro";
 import SupportCTA from "../../components/SupportCTA.astro";
@@ -43,6 +44,7 @@ if (!isReachableBlogEntry(entry)) {
 const isLegacyReview = entry.data.editorialStatus === "legacy-review";
 const lang: SiteLanguage = languageFromCategory(entry.data.category);
 const isEnglish = lang === "en";
+const PageLayout = isEnglish ? EnglishSiteLayout : SiteLayout;
 const { Content } = await render(entry);
 
 function normalizeImgSrc(src: unknown): string {
@@ -139,7 +141,7 @@ const jsonLd = !isLegacyReview
   : null;
 ---
 
-<SiteLayout metadata={metadata} yoastHeadHtml={hreflangHead} newsletter={!isEnglish}>
+<PageLayout metadata={metadata} yoastHeadHtml={hreflangHead} newsletter={!isEnglish}>
   {jsonLd ? (
     <script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLd).replace(/</g, "\\u003c")} />
   ) : null}
@@ -181,8 +183,8 @@ const jsonLd = !isLegacyReview
               {isEnglish
                 ? "This historical content is being reviewed against current sources. The previous text has been temporarily withdrawn from consultation and indexing. Do not use this page for medical or therapeutic decisions."
                 : "Questo contenuto storico conteneva formulazioni o indicazioni che richiedono una verifica con fonti aggiornate. Il testo precedente è stato temporaneamente ritirato dalla consultazione e dall'indicizzazione. Non usare questa pagina per decisioni sanitarie o terapeutiche."}
-              <a href="/disclaimer-legale-canapalandia/">
-                {isEnglish ? " View the legal disclaimer (Italian)." : " Consulta il disclaimer."}
+              <a href={isEnglish ? "/en/disclaimer/" : "/disclaimer-legale-canapalandia/"}>
+                {isEnglish ? " Read the legal disclaimer." : " Consulta il disclaimer."}
               </a>
             </p>
           </aside>
@@ -224,7 +226,7 @@ const jsonLd = !isLegacyReview
               <>
                 Canapalandia is an independent editorial project covering hemp, CBD, cannabis and policy.
                 Its content is for information only and does not constitute legal or medical advice.
-                <a href="/disclaimer-legale-canapalandia/"> Read the legal disclaimer (Italian).</a>
+                <a href="/en/disclaimer/"> Read the legal disclaimer.</a>
               </>
             ) : (
               <>
@@ -265,7 +267,7 @@ const jsonLd = !isLegacyReview
       </aside>
     </div>
   </div>
-</SiteLayout>
+</PageLayout>
 
 <style>
   .post-hero {

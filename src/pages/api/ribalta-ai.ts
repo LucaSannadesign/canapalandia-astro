@@ -1,13 +1,6 @@
 /**
- * API endpoint per Ribaltatore AI
- * 
- * Replica ESATTAMENTE il comportamento del PHP originale:
- * - Riceve POST con FormData (frase, email_trap)
- * - Valida honeypot (email_trap)
- * - Rate limit per IP (10 richieste / 10 minuti)
- * - Chiama OpenAI chat/completions (gpt-3.5-turbo, temperature 0.9)
- * - Prompt identico al PHP
- * - Salva in DB e restituisce JSON { id, originale, ribaltata }
+ * API endpoint for the Ribaltatore AI / AI Reframer.
+ * Supports the original Italian flow and the English UI through a `lang=en` field.
  */
 
 import type { APIRoute } from "astro";
@@ -16,23 +9,23 @@ import { checkRateLimit, extractClientIp } from "@/lib/rateLimit";
 import { cleanPhrase } from "@/lib/utils";
 import crypto from "node:crypto";
 
-/**
- * Chiama OpenAI API (chat/completions) come il PHP originale
- */
-async function callOpenAI(frase: string, apiKey: string): Promise<{ ok: true; ribaltata: string } | { ok: false; error: string }> {
-  // Prompt aggiornato: massimo 3 frasi, max 350 caratteri, tono ironico/antiproibizionista
-  const prompt = `Agisci come un attivista antiproibizionista e satirico. Ribalta con ironia e intelligenza lo slogan: "${frase}". Massimo 3 frasi, massimo 350 caratteri. Tono ironico e antiproibizionista, senza incitazione a violare leggi.`;
+type UiLang = "it" | "en";
 
-  // Parametri: modello e max_tokens da env con fallback
-  // Nota: in Astro, usa import.meta.env per variabili server-side (non PUBLIC_*)
+async function callOpenAI(
+  frase: string,
+  apiKey: string,
+  lang: UiLang,
+): Promise<{ ok: true; ribaltata: string } | { ok: false; error: string }> {
+  const prompt = lang === "en"
+    ? `Act as a witty anti-prohibition activist and satirist. Reframe the slogan: "${frase}" with irony, intelligence and factual common sense. Maximum 3 sentences and 350 characters. Write in English. Do not encourage breaking the law.`
+    : `Agisci come un attivista antiproibizionista e satirico. Ribalta con ironia e intelligenza lo slogan: "${frase}". Massimo 3 frasi, massimo 350 caratteri. Tono ironico e antiproibizionista, senza incitazione a violare leggi.`;
+
   const model = import.meta.env.OPENAI_MODEL_DEFAULT || "gpt-5-mini";
-  const temperature = parseFloat(import.meta.env.OPENAI_TEMPERATURE || "0.9");
   const maxTokens = parseInt(import.meta.env.OPENAI_MAX_OUTPUT_TOKENS || "2000", 10);
 
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
-
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -46,225 +39,127 @@ async function callOpenAI(frase: string, apiKey: string): Promise<{ ok: true; ri
       }),
       signal: controller.signal,
     });
-
     clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => "");
       return {
         ok: false,
-        error: `Errore OpenAI (${response.status}): ${errorText.slice(0, 200)}`,
+        error: lang === "en"
+          ? `OpenAI error (${response.status}): ${errorText.slice(0, 200)}`
+          : `Errore OpenAI (${response.status}): ${errorText.slice(0, 200)}`,
       };
     }
 
     const data: any = await response.json();
     const content = data?.choices?.[0]?.message?.content;
-
     if (!content || typeof content !== "string") {
-      return { ok: false, error: "Risposta OpenAI non valida." };
+      return { ok: false, error: lang === "en" ? "Invalid OpenAI response." : "Risposta OpenAI non valida." };
     }
 
-    // Sanitizza output: rimuovi eventuali tag HTML
     let ribaltata = content.trim().replace(/<[^>]*>/g, "");
-    
-    // Post-process: tronca a 400 caratteri se supera 420 (senza spezzare parola se possibile)
     if (ribaltata.length > 420) {
       let truncated = ribaltata.slice(0, 400);
-      // Cerca ultimo spazio prima del limite per non spezzare parola
       const lastSpace = truncated.lastIndexOf(" ");
-      if (lastSpace > 350) {
-        truncated = truncated.slice(0, lastSpace);
-      }
+      if (lastSpace > 350) truncated = truncated.slice(0, lastSpace);
       ribaltata = truncated + "…";
     }
-
     return { ok: true, ribaltata };
   } catch (err: any) {
     if (err.name === "AbortError") {
-      return { ok: false, error: "Timeout chiamata OpenAI." };
+      return { ok: false, error: lang === "en" ? "OpenAI request timed out." : "Timeout chiamata OpenAI." };
     }
-    return { ok: false, error: `Errore: ${err?.message || String(err)}` };
+    return { ok: false, error: lang === "en" ? `Error: ${err?.message || String(err)}` : `Errore: ${err?.message || String(err)}` };
   }
 }
 
 export const POST: APIRoute = async ({ request }) => {
   try {
-  // Verifica OPENAI_API_KEY all'inizio
-  // In Astro, usa import.meta.env per variabili server-side (non PUBLIC_*)
-  // Le variabili senza prefisso PUBLIC_ sono private e disponibili solo server-side
-  const apiKey = import.meta.env.OPENAI_API_KEY;
-  
-  // Log in DEV: verifica presenza key e info server
-  if (import.meta.env.DEV) {
-    const hasKey = Boolean(apiKey);
-    const hostname = request.headers.get("host") || "unknown";
-    console.log(`[ribalta-ai] OPENAI key present? ${hasKey ? "YES" : "NO"} | Host: ${hostname}`);
-  }
-  
-  if (!apiKey) {
-    return new Response(
-      JSON.stringify({ ok: false, error: "OPENAI_API_KEY non configurata." }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
-  }
+    const apiKey = import.meta.env.OPENAI_API_KEY;
+    const contentType = request.headers.get("content-type") || "";
+    let frase = "";
+    let trap = "";
+    let lang: UiLang = "it";
 
-  const contentType = request.headers.get("content-type") || "";
-  let frase: string = "";
-  let trap: string = "";
-
-  // 1. Accetta sia JSON che FormData
-  if (contentType.includes("application/json")) {
-    // Parse JSON
-    try {
-      const body = await request.json();
-      // Estrai frase con priorità: frase -> testo -> text -> prompt -> input
-      frase = (body.frase || body.testo || body.text || body.prompt || body.input || "").trim();
-      trap = String(body.email_trap || "").trim();
-    } catch (err) {
-      return new Response(
-        JSON.stringify({ ok: false, error: "Errore parsing JSON" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
+    if (contentType.includes("application/json")) {
+      try {
+        const body = await request.json();
+        frase = String(body.frase || body.testo || body.text || body.prompt || body.input || "").trim();
+        trap = String(body.email_trap || "").trim();
+        lang = String(body.lang || "").toLowerCase() === "en" ? "en" : "it";
+      } catch {
+        return new Response(JSON.stringify({ ok: false, error: "invalid_request" }), { status: 400, headers: { "Content-Type": "application/json" } });
+      }
+    } else {
+      try {
+        const form = await request.formData();
+        frase = String(form.get("frase") || "").trim();
+        trap = String(form.get("email_trap") || "").trim();
+        lang = String(form.get("lang") || "").toLowerCase() === "en" ? "en" : "it";
+      } catch {
+        return new Response(JSON.stringify({ ok: false, error: "invalid_request" }), { status: 400, headers: { "Content-Type": "application/json" } });
+      }
     }
-  } else {
-    // Parse FormData
-    try {
-      const form = await request.formData();
-      frase = String(form.get("frase") || "").trim();
-      trap = String(form.get("email_trap") || "").trim();
-    } catch (err) {
-      return new Response(
-        JSON.stringify({ ok: false, error: "Errore parsing form" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
+
+    const errorMessage = (it: string, en: string) => lang === "en" ? en : it;
+
+    if (!apiKey) {
+      return new Response(JSON.stringify({ ok: false, error: errorMessage("OPENAI_API_KEY non configurata.", "OPENAI_API_KEY is not configured.") }), { status: 500, headers: { "Content-Type": "application/json" } });
     }
-  }
+    if (trap) {
+      return new Response(JSON.stringify({ ok: false, error: errorMessage("Richiesta rifiutata (spam rilevato)", "Request rejected (spam detected)") }), { status: 400, headers: { "Content-Type": "application/json" } });
+    }
+    if (!frase) {
+      return new Response(JSON.stringify({ ok: false, error: "missing_frase" }), { status: 400, headers: { "Content-Type": "application/json" } });
+    }
+    if (frase.length < 3 || frase.length > 400) {
+      return new Response(JSON.stringify({ ok: false, error: errorMessage("Frase deve essere tra 3 e 400 caratteri", "The phrase must be between 3 and 400 characters") }), { status: 400, headers: { "Content-Type": "application/json" } });
+    }
 
-  // 2. Valida honeypot (email_trap)
-  if (trap) {
-    return new Response(
-      JSON.stringify({ ok: false, error: "Richiesta rifiutata (spam rilevato)" }),
-      {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
-  }
-
-  // 3. Valida frase (vuota o mancante)
-  if (!frase) {
-    return new Response(
-      JSON.stringify({ ok: false, error: "missing_frase" }),
-      {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
-  }
-  // 4. Vincoli: min 3 caratteri, max 400
-  if (frase.length < 3 || frase.length > 400) {
-    return new Response(
-      JSON.stringify({ ok: false, error: "Frase deve essere tra 3 e 400 caratteri" }),
-      {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
-  }
-
-  // 5. Rate limit per IP
-  const ip = extractClientIp(request);
-  const rateLimit = checkRateLimit(ip, 10, 10 * 60 * 1000); // 10 richieste / 10 minuti
-
-  if (!rateLimit.allowed) {
-    return new Response(
-      JSON.stringify({
-        ok: false,
-        error: "Troppe richieste. Riprova tra qualche minuto.",
-      }),
-      {
+    const ip = extractClientIp(request);
+    const rateLimit = checkRateLimit(ip, 10, 10 * 60 * 1000);
+    if (!rateLimit.allowed) {
+      return new Response(JSON.stringify({ ok: false, error: errorMessage("Troppe richieste. Riprova tra qualche minuto.", "Too many requests. Try again in a few minutes.") }), {
         status: 429,
-        headers: {
-          "Content-Type": "application/json",
-          "Retry-After": String(Math.ceil((rateLimit.resetAt - Date.now()) / 1000)),
-        },
-      },
-    );
-  }
+        headers: { "Content-Type": "application/json", "Retry-After": String(Math.ceil((rateLimit.resetAt - Date.now()) / 1000)) },
+      });
+    }
 
-  // 6. Chiama OpenAI (passa apiKey come parametro)
-  const aiResult = await callOpenAI(frase, apiKey);
+    const aiResult = await callOpenAI(frase, apiKey, lang);
+    if (!aiResult.ok) {
+      return new Response(JSON.stringify({ ok: false, error: aiResult.error }), { status: 500, headers: { "Content-Type": "application/json" } });
+    }
 
-  if (!aiResult.ok) {
-    return new Response(
-      JSON.stringify({ ok: false, error: aiResult.error }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
-  }
+    let id = 0;
+    let editToken: string | null = null;
+    let editExpiresAt: string | null = null;
+    const fraseOriginalePulita = cleanPhrase(frase);
+    const fraseRibaltataPulita = cleanPhrase(aiResult.ribaltata, true);
 
-  // 7. Salva in DB (Supabase)
-  let id: number = 0;
-  let editToken: string | null = null;
-  let editExpiresAt: string | null = null;
-  // Pulisci frasi da caratteri escapati prima di salvare e restituire
-  const fraseOriginalePulita = cleanPhrase(frase);
-  const fraseRibaltataPulita = cleanPhrase(aiResult.ribaltata, true); // Preserva newline
+    try {
+      const ipHash = ip ? crypto.createHash("sha256").update(ip).digest("hex") : null;
+      const insertResult = await insertRibaltata({
+        frase_originale: fraseOriginalePulita,
+        frase_ribaltata: fraseRibaltataPulita,
+        ip_hash: ipHash,
+      });
+      id = insertResult.id;
+      editToken = insertResult.editToken;
+      editExpiresAt = insertResult.editExpiresAt;
+    } catch (err: any) {
+      console.error("[ribalta-ai] Errore salvataggio DB:", err?.message);
+    }
 
-  try {
-    // Hash IP per privacy (opzionale, non obbligatorio)
-    const ipHash = ip ? crypto.createHash("sha256").update(ip).digest("hex") : null;
-    
-    const insertResult = await insertRibaltata({
-      frase_originale: fraseOriginalePulita,
-      frase_ribaltata: fraseRibaltataPulita,
-      ip_hash: ipHash,
-      // user_id: null per ora (opzionale per futuro)
-    });
-    
-    id = insertResult.id;
-    editToken = insertResult.editToken;
-    editExpiresAt = insertResult.editExpiresAt;
-  } catch (err: any) {
-    console.error("[ribalta-ai] Errore salvataggio DB:", err?.message);
-    // Anche se fallisce il salvataggio, restituisci il risultato (fallback con id=0)
-  }
-
-  // 8. Restituisci JSON con schema stabile (frasi già pulite) + token modifica
-  return new Response(
-    JSON.stringify({
+    return new Response(JSON.stringify({
       ok: true,
       id,
       originale: fraseOriginalePulita,
       ribaltata: fraseRibaltataPulita,
       editToken: editToken || null,
       editExpiresAt: editExpiresAt || null,
-    }),
-    {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    },
-  );
+    }), { status: 200, headers: { "Content-Type": "application/json" } });
   } catch (err: any) {
-    // Catch globale per errori inattesi (non dovrebbero mai verificarsi, ma meglio essere sicuri)
     console.error("[ribalta-ai] Errore inatteso:", err?.message || String(err));
-    return new Response(
-      JSON.stringify({ ok: false, error: "Errore interno del server" }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
+    return new Response(JSON.stringify({ ok: false, error: "Internal server error" }), { status: 500, headers: { "Content-Type": "application/json" } });
   }
 };

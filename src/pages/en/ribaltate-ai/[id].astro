@@ -1,0 +1,122 @@
+---
+export const prerender = false;
+
+import EnglishSiteLayout from "../../../layouts/EnglishSiteLayout.astro";
+import { getRibaltataById, getRelatedRibaltate } from "../../../lib/repositories/ribaltatoreRepo";
+import { cleanPhrase } from "../../../lib/utils";
+
+const id = Number(Astro.params.id ?? 0);
+if (!Number.isInteger(id) || id <= 0) return Astro.rewrite("/en/404/");
+
+let phrase: any = null;
+try {
+  phrase = await getRibaltataById(id);
+} catch (error: any) {
+  console.error("[en/ribaltate-ai] DB error:", error?.message || error);
+}
+if (!phrase) return Astro.rewrite("/en/404/");
+
+const original = cleanPhrase(phrase.frase_originale);
+const reframed = cleanPhrase(phrase.frase_ribaltata, true);
+const lines = reframed.split(/\n/).map((line: string) => line.trim()).filter(Boolean);
+const SITE = import.meta.env.SITE || "https://canapalandia.com";
+const canonical = `${SITE.replace(/\/+$/, "")}/en/ribaltate-ai/${phrase.id}/`;
+const alternateIt = `/ribaltate-ai/${phrase.id}/`;
+const title = `AI Reframer: ${reframed.slice(0, 58)}${reframed.length > 58 ? "…" : ""}`;
+const description = `A phrase reframed by Canapalandia's AI Reframer: ${original.slice(0, 140)}${original.length > 140 ? "…" : ""}`;
+
+let related: any[] = [];
+try {
+  related = await getRelatedRibaltate(phrase.id, 4);
+} catch (error: any) {
+  console.error("[en/ribaltate-ai] Related phrases error:", error?.message || error);
+}
+---
+
+<EnglishSiteLayout
+  title={`${title} | Canapalandia`}
+  description={description}
+  canonical={canonical}
+  alternateIt={alternateIt}
+  robots="noindex,follow"
+  ogType="article"
+>
+  <article class="detail">
+    <header>
+      <p class="eyebrow">AI Reframer</p>
+      <h1>🧠 Reframed phrase</h1>
+      <p class="intro">AI-generated satire for public debate. Verify factual claims before sharing them as facts.</p>
+    </header>
+
+    <section class="original">
+      <p class="label">Original slogan</p>
+      <blockquote>{original}</blockquote>
+    </section>
+
+    <section class="reframed">
+      <p class="label">Reframed with irony</p>
+      <div class="reframed-text">
+        {lines.map((line: string) => <p>{line}</p>)}
+      </div>
+    </section>
+
+    <div class="actions">
+      <button type="button" data-copy={reframed}>Copy text</button>
+      <button type="button" data-share data-share-text={reframed}>Share</button>
+      <a href={`/en/ribaltatore/?q=${encodeURIComponent(original)}`}>Reframe again</a>
+      <a href="/en/frasi-ribaltate/">Browse archive</a>
+    </div>
+    <p id="detail-status" class="status" aria-live="polite"></p>
+
+    {related.length ? (
+      <section class="related" aria-labelledby="related-title">
+        <h2 id="related-title">More reframed phrases</h2>
+        <div class="related-grid">
+          {related.map((item) => {
+            const itemText = cleanPhrase(item.frase_ribaltata, true);
+            return (
+              <a href={`/en/ribaltate-ai/${item.id}/`}>
+                <span>{itemText.slice(0, 150)}{itemText.length > 150 ? "…" : ""}</span>
+              </a>
+            );
+          })}
+        </div>
+      </section>
+    ) : null}
+  </article>
+
+  <script is:inline>
+    (() => {
+      const status = document.getElementById('detail-status');
+      document.querySelectorAll('[data-copy]').forEach((button) => {
+        button.addEventListener('click', async () => {
+          try {
+            await navigator.clipboard.writeText(button.getAttribute('data-copy') || '');
+            if (status) status.textContent = 'Copied.';
+          } catch {
+            if (status) status.textContent = 'Copying is not available in this browser.';
+          }
+        });
+      });
+      document.querySelectorAll('[data-share]').forEach((button) => {
+        button.addEventListener('click', async () => {
+          const text = button.getAttribute('data-share-text') || '';
+          if (navigator.share) {
+            try { await navigator.share({ title: 'Canapalandia AI Reframer', text, url: location.href }); } catch {}
+          } else {
+            try {
+              await navigator.clipboard.writeText(`${text}\n${location.href}`);
+              if (status) status.textContent = 'Share text copied.';
+            } catch {
+              if (status) status.textContent = 'Sharing is not available in this browser.';
+            }
+          }
+        });
+      });
+    })();
+  </script>
+</EnglishSiteLayout>
+
+<style>
+  .detail{max-width:860px;margin:0 auto;padding:3rem 0 5rem}.eyebrow,.label{color:var(--brand);font:700 .76rem/1.2 Archivo,sans-serif;letter-spacing:.1em;text-transform:uppercase}.detail h1{margin:.4rem 0 .8rem;font:500 clamp(3rem,7vw,5rem)/.95 Newsreader,serif}.intro{color:var(--muted);line-height:1.6}.original,.reframed{margin-top:2rem;padding:1.25rem;border:1px solid var(--border);border-radius:var(--r-md);background:var(--panel)}.original blockquote{margin:.8rem 0 0;color:var(--muted);font:500 1.3rem/1.5 Newsreader,serif}.reframed-text{margin-top:.8rem;padding-left:1rem;border-left:3px solid var(--brand)}.reframed-text p{margin:.65rem 0;font:500 clamp(1.25rem,3vw,1.7rem)/1.45 Newsreader,serif}.actions{display:flex;flex-wrap:wrap;gap:.55rem;margin-top:1.3rem}.actions button,.actions a{border:1px solid var(--border);border-radius:3px;background:transparent;color:var(--text);padding:.6rem .78rem;text-decoration:none;font-weight:700;cursor:pointer}.actions a:first-of-type{background:var(--brand);border-color:var(--brand);color:#102b19}.status{min-height:1.4em;color:var(--muted)}.related{margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--border)}.related h2{font:500 2rem/1.05 Newsreader,serif}.related-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.8rem}.related-grid a{padding:1rem;border:1px solid var(--border);border-radius:var(--r-md);color:var(--text);text-decoration:none;line-height:1.5}.related-grid a:hover{border-color:var(--brand)}@media(max-width:640px){.related-grid{grid-template-columns:1fr}}
+</style>

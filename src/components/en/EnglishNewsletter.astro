@@ -1,0 +1,29 @@
+<section class="en-newsletter" aria-labelledby="en-newsletter-title">
+  <div>
+    <p class="en-newsletter__eyebrow">Newsletter</p>
+    <h2 id="en-newsletter-title">Get the useful updates, not the noise.</h2>
+    <p>Occasional Canapalandia updates on hemp, CBD, cannabis policy and the stories worth following.</p>
+  </div>
+
+  <form class="en-newsletter__form" method="post" action="/api/newsletter">
+    <input type="hidden" name="lang" value="en" />
+    <div class="hp" aria-hidden="true">
+      <label for="en-newsletter-hp">Leave this field empty</label>
+      <input id="en-newsletter-hp" type="text" name="hp" tabindex="-1" autocomplete="off" />
+    </div>
+    <label for="en-newsletter-email">Email</label>
+    <div class="en-newsletter__row">
+      <input id="en-newsletter-email" type="email" name="email" autocomplete="email" required placeholder="name@email.com" />
+      <button type="submit">Subscribe</button>
+    </div>
+    <label class="en-newsletter__consent">
+      <input type="checkbox" name="consent" required />
+      <span>I agree to the processing described in the <a href="/en/privacy/">Privacy Policy</a>.</span>
+    </label>
+  </form>
+</section>
+
+<style>
+  .en-newsletter{display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,.8fr);gap:2rem;align-items:center;margin:0 0 3rem;padding:1.5rem;border:1px solid var(--border);border-radius:var(--r-md);background:var(--panel)}
+  .en-newsletter__eyebrow{margin:0 0 .45rem;color:var(--brand);font:700 .72rem/1 Archivo,sans-serif;letter-spacing:.1em;text-transform:uppercase}.en-newsletter h2{margin:0 0 .6rem;font:500 clamp(2rem,4vw,3rem)/.98 Newsreader,serif}.en-newsletter>div>p:last-child{margin:0;color:var(--muted);line-height:1.6}.en-newsletter__form{display:grid;gap:.55rem}.en-newsletter__form>label:first-of-type{font-weight:700}.en-newsletter__row{display:grid;grid-template-columns:1fr auto;gap:.5rem}.en-newsletter__row input{min-width:0;padding:.8rem .9rem;border:1px solid var(--border);border-radius:3px;background:var(--bg);color:var(--text)}.en-newsletter__row button{border:0;border-radius:3px;padding:.8rem 1rem;background:var(--brand);color:#102b19;font-weight:800;cursor:pointer}.en-newsletter__consent{display:flex;align-items:flex-start;gap:.5rem;color:var(--muted);font-size:.82rem;line-height:1.45}.hp{position:absolute;left:-9999px}@media(max-width:760px){.en-newsletter{grid-template-columns:1fr}.en-newsletter__row{grid-template-columns:1fr}.en-newsletter__row button{width:100%}}
+</style>

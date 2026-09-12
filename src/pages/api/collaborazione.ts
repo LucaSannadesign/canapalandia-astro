@@ -3,6 +3,7 @@ export const prerender = false;
 import type { APIRoute } from "astro";
 
 export const POST: APIRoute = async ({ request, redirect }) => {
+  let lang: "it" | "en" = "it";
   try {
     const form = await request.formData();
 
@@ -16,35 +17,26 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     const messaggio = String(form.get("messaggio") || "").trim();
     const privacy = form.get("privacy");
     const hp = String(form.get("_gotcha") || "").trim();
+    lang = String(form.get("lang") || "").toLowerCase() === "en" ? "en" : "it";
 
-    // Honeypot anti-spam
-    if (hp) {
-      return redirect("/grazie-collaborazione/", 303);
-    }
+    const successPath = lang === "en" ? "/en/thanks-collaboration/" : "/grazie-collaborazione/";
+    const reply = (it: string, en: string, status: number) =>
+      new Response(lang === "en" ? en : it, { status });
 
-    if (
-      !nome ||
-      !email ||
-      !azienda ||
-      !sitoWeb ||
-      !tipoContenuto ||
-      !argomento ||
-      !link ||
-      !messaggio ||
-      !privacy
-    ) {
-      return new Response("Dati mancanti", { status: 400 });
+    if (hp) return redirect(successPath, 303);
+
+    if (!nome || !email || !azienda || !sitoWeb || !tipoContenuto || !argomento || !link || !messaggio || !privacy) {
+      return reply("Dati mancanti", "Missing required fields", 400);
     }
 
     if (!/\S+@\S+\.\S+/.test(email)) {
-      return new Response("Email non valida", { status: 400 });
+      return reply("Email non valida", "Invalid email address", 400);
     }
 
     const apiKey = import.meta.env.RESEND_API_KEY;
-
     if (!apiKey) {
       console.error("[Collaborazione] RESEND_API_KEY mancante");
-      return new Response("Configurazione email mancante", { status: 500 });
+      return reply("Configurazione email mancante", "Email service is not configured", 500);
     }
 
     const response = await fetch("https://api.resend.com/emails", {
@@ -57,39 +49,36 @@ export const POST: APIRoute = async ({ request, redirect }) => {
         from: "Canapalandia <noreply@canapalandia.com>",
         to: ["info@canapalandia.com"],
         reply_to: email,
-        subject: `Proposta collaborazione — ${azienda} — ${argomento}`,
+        subject: `${lang === "en" ? "Collaboration proposal" : "Proposta collaborazione"} — ${azienda} — ${argomento}`,
         text: [
-          "NUOVA PROPOSTA DI COLLABORAZIONE",
+          lang === "en" ? "NEW COLLABORATION PROPOSAL" : "NUOVA PROPOSTA DI COLLABORAZIONE",
+          `Lingua / Language: ${lang}`,
           "",
-          `Nome: ${nome}`,
+          `Nome / Name: ${nome}`,
           `Email: ${email}`,
-          `Azienda / progetto: ${azienda}`,
-          `Sito web: ${sitoWeb}`,
-          `Tipo di contenuto: ${tipoContenuto}`,
-          `Argomento: ${argomento}`,
-          `Link da valutare: ${link}`,
+          `Azienda / Project: ${azienda}`,
+          `Sito web / Website: ${sitoWeb}`,
+          `Tipo / Format: ${tipoContenuto}`,
+          `Argomento / Topic: ${argomento}`,
+          `Link: ${link}`,
           "",
-          "Messaggio:",
+          "Messaggio / Message:",
           messaggio,
           "",
-          "Privacy: accettata",
+          "Privacy: accepted",
         ].join("\n"),
       }),
     });
 
     if (!response.ok) {
       const error = await response.text();
-      console.error(
-        "[Collaborazione] Resend error:",
-        response.status,
-        error
-      );
-      return new Response("Errore durante l'invio", { status: 500 });
+      console.error("[Collaborazione] Resend error:", response.status, error);
+      return reply("Errore durante l'invio", "There was an error sending the proposal", 500);
     }
 
-    return redirect("/grazie-collaborazione/", 303);
+    return redirect(successPath, 303);
   } catch (error) {
     console.error("[Collaborazione] Error:", error);
-    return new Response("Errore interno", { status: 500 });
+    return new Response(lang === "en" ? "Internal error" : "Errore interno", { status: 500 });
   }
 };

@@ -1,0 +1,98 @@
+---
+import EnglishSiteLayout from "../../layouts/EnglishSiteLayout.astro";
+---
+
+<EnglishSiteLayout
+  title="AI Reframer | Canapalandia"
+  description="Enter a prohibitionist slogan and let Canapalandia's AI Reframer turn it around with irony and common sense."
+  canonical="/en/ribaltatore/"
+  alternateIt="/ribaltatore/"
+>
+  <section class="reframer">
+    <header>
+      <p class="eyebrow">Canapalandia tool</p>
+      <h1>🧠 AI Reframer</h1>
+      <p>Enter a prohibitionist slogan and see it reframed with irony, context and common sense.</p>
+    </header>
+
+    <form id="en-reframer-form">
+      <input type="hidden" name="lang" value="en" />
+      <input type="text" name="email_trap" class="trap" tabindex="-1" autocomplete="off" aria-hidden="true" />
+      <label for="en-reframer-phrase">✍️ Enter the slogan</label>
+      <textarea id="en-reframer-phrase" name="frase" required minlength="3" maxlength="400" rows="5" placeholder="Example: Cannabis users are criminals"></textarea>
+      <p class="hint">3–400 characters. The result is satirical and informational; it does not encourage breaking the law.</p>
+      <button id="en-reframer-submit" type="submit">Reframe it →</button>
+    </form>
+
+    <div id="en-reframer-result" class="result" aria-live="polite"></div>
+
+    <aside class="about-tool">
+      <h2>A propaganda reframer, not a fact-checking oracle</h2>
+      <p>The tool is designed for satire and public debate. AI-generated output can be imperfect, so verify factual claims before sharing them as facts.</p>
+    </aside>
+  </section>
+
+  <script is:inline>
+    (() => {
+      const form = document.getElementById('en-reframer-form');
+      const result = document.getElementById('en-reframer-result');
+      const button = document.getElementById('en-reframer-submit');
+      if (!form || !result || !button) return;
+
+      const escapeHtml = (value) => String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        button.disabled = true;
+        button.textContent = 'Reframing…';
+        result.innerHTML = '<p class="loading">Thinking…</p>';
+        try {
+          const response = await fetch('/api/ribalta-ai', { method: 'POST', body: new FormData(form) });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || !data.ok) throw new Error(data.error || 'Unable to generate a response.');
+          const text = String(data.ribaltata || '').trim();
+          result.innerHTML = `
+            <article class="result-card">
+              <p class="result-label">REFRAMED</p>
+              <blockquote>${escapeHtml(text).replaceAll('\n', '<br>')}</blockquote>
+              <div class="result-actions">
+                <button type="button" data-copy>Copy</button>
+                <button type="button" data-share>Share</button>
+              </div>
+              <p class="result-status" aria-live="polite"></p>
+            </article>`;
+          const copy = result.querySelector('[data-copy]');
+          const share = result.querySelector('[data-share]');
+          const status = result.querySelector('.result-status');
+          copy?.addEventListener('click', async () => {
+            try { await navigator.clipboard.writeText(text); if (status) status.textContent = 'Copied.'; }
+            catch { if (status) status.textContent = 'Copy manually from the text above.'; }
+          });
+          share?.addEventListener('click', async () => {
+            if (navigator.share) {
+              try { await navigator.share({ title: 'Canapalandia AI Reframer', text, url: location.href }); }
+              catch {}
+            } else {
+              try { await navigator.clipboard.writeText(`${text}\n${location.href}`); if (status) status.textContent = 'Share text copied.'; }
+              catch { if (status) status.textContent = 'Sharing is not available in this browser.'; }
+            }
+          });
+        } catch (error) {
+          result.innerHTML = `<p class="error">${escapeHtml(error?.message || 'Something went wrong. Please try again.')}</p>`;
+        } finally {
+          button.disabled = false;
+          button.textContent = 'Reframe it →';
+        }
+      });
+    })();
+  </script>
+</EnglishSiteLayout>
+
+<style>
+  .reframer{max-width:850px;margin:0 auto;padding:3rem 0 5rem}.reframer header{text-align:center;margin-bottom:2.2rem}.eyebrow{color:var(--brand);font:700 .76rem/1.2 Archivo,sans-serif;letter-spacing:.1em;text-transform:uppercase}.reframer h1{margin:.4rem 0 .65rem;font:500 clamp(3rem,7vw,5rem)/.95 Newsreader,serif}.reframer header>p:last-child{max-width:620px;margin:.8rem auto 0;color:var(--muted);font-size:1.08rem;line-height:1.6}.reframer form{display:grid;gap:.6rem;padding:1.25rem;border:1px solid var(--border);border-radius:var(--r-md);background:var(--panel)}.reframer label{font-weight:800}.reframer textarea{width:100%;padding:.9rem;border:1px solid var(--border);border-radius:3px;background:var(--bg);color:var(--text);font:inherit;resize:vertical}.hint{margin:.1rem 0 .5rem;color:var(--muted);font-size:.86rem;line-height:1.45}.reframer form>button{justify-self:start;border:0;border-radius:3px;padding:.8rem 1rem;background:var(--brand);color:#102b19;font-weight:800;cursor:pointer}.reframer form>button:disabled{opacity:.55;cursor:wait}.trap{position:absolute;left:-9999px}.result{margin-top:1.5rem}.result-card{padding:1.4rem;border:1px solid var(--border);border-radius:var(--r-md);background:var(--panel)}.result-label{margin:0;color:var(--brand);font:700 .72rem/1 Archivo,sans-serif;letter-spacing:.1em}.result-card blockquote{margin:1rem 0;padding-left:1rem;border-left:3px solid var(--brand);font:500 clamp(1.3rem,3vw,1.8rem)/1.45 Newsreader,serif}.result-actions{display:flex;gap:.5rem}.result-actions button{border:1px solid var(--border);border-radius:3px;background:transparent;color:var(--text);padding:.55rem .75rem;cursor:pointer}.result-status{color:var(--muted);font-size:.85rem}.loading{color:var(--muted)}.error{padding:1rem;border-left:3px solid #b45309;background:var(--panel)}.about-tool{margin-top:2.5rem;padding-top:1.5rem;border-top:1px solid var(--border)}.about-tool h2{font:500 1.8rem/1.1 Newsreader,serif}.about-tool p{color:var(--muted);line-height:1.65}
+</style>
