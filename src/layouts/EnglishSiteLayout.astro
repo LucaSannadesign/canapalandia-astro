@@ -1,11 +1,13 @@
 ---
 import "../styles/app.css";
 import "../styles/footer-refinement.css";
+import PrivacyConsent from "../components/PrivacyConsent.astro";
 import {
   EN_FOOTER_EXPLORE_NAVIGATION,
   EN_PRIMARY_NAVIGATION,
   EN_UTILITY_NAVIGATION,
 } from "../config/navigation.en";
+import { findPageTranslationPair } from "../lib/siteLocalization";
 
 const THEME_STORAGE_KEY = "canapalandia_theme";
 const {
@@ -27,6 +29,8 @@ const canonicalRaw = canonicalProp ?? metadata?.canonical;
 const robotsRaw = robotsProp ?? metadata?.robots;
 const SITE_URL = import.meta.env.SITE || "https://canapalandia.com";
 const currentPath = Astro.url.pathname;
+const pagePair = findPageTranslationPair(currentPath);
+const resolvedAlternateIt = alternateIt ?? pagePair?.it;
 
 function normalizeRobots(robots: unknown): string {
   if (typeof robots === "string") return robots;
@@ -61,7 +65,7 @@ const canonicalFinal = absoluteUrl(canonicalRaw ?? currentPath);
 const robotsFinal = isProductionEnvironment() ? normalizeRobots(robotsRaw) : "noindex,nofollow";
 const ogImage = absoluteUrl(ogImageProp ?? metadata?.ogImage ?? "/images/logo-canapalandia_1024.webp");
 const ogType = ogTypeProp ?? metadata?.ogType ?? "website";
-const itHref = absoluteUrl(alternateIt);
+const itHref = absoluteUrl(resolvedAlternateIt);
 const enHref = canonicalFinal;
 const hasExternalHreflang = typeof yoastHeadHtml === "string" && yoastHeadHtml.includes("hreflang=");
 
@@ -78,7 +82,7 @@ function isCurrent(path: string): boolean {
     <link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/favicons/favicon-192.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/favicons/apple-touch-icon.png" />
-    <link rel="alternate" type="application/rss+xml" title="Canapalandia RSS" href="/rss.xml" />
+    <link rel="alternate" type="application/rss+xml" title="Canapalandia in English RSS" href="/en/rss.xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -196,7 +200,7 @@ function isCurrent(path: string): boolean {
           <h2 class="footer-title">Explore</h2>
           <div class="footer-links">
             {EN_FOOTER_EXPLORE_NAVIGATION.map((item) => <a href={item.href}>{item.label}</a>)}
-            <a href="/rss.xml">RSS</a>
+            <a href="/en/rss.xml">RSS</a>
           </div>
         </nav>
 
@@ -225,6 +229,8 @@ function isCurrent(path: string): boolean {
         <div class="footer-copy">© {new Date().getFullYear()} Canapalandia. All rights reserved.</div>
       </div>
     </footer>
+
+    <PrivacyConsent lang="en" />
 
     <a href="#top" class="scroll-to-top" aria-label="Back to top" aria-hidden="true"><span aria-hidden="true">↑</span><span class="sr-only">Back to top</span></a>
 
