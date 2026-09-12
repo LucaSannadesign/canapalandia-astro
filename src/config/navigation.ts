@@ -29,6 +29,7 @@ export const PRIMARY_NAVIGATION: readonly NavigationItem[] = [
   { label: "CBD", href: "/categoria/cbd-alimentazione/" },
   { label: "Canapa", href: "/categoria/canapa-e-ambiente/" },
   { label: "Blog", href: "/blog/" },
+  { label: "EN", href: "/en/" },
 ] as const;
 
 /** Link di utilità mostrati fuori dalla gerarchia editoriale principale. */
