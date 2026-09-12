@@ -1,0 +1,190 @@
+---
+import EnglishSiteLayout from "../../layouts/EnglishSiteLayout.astro";
+
+const creativeVersion = "neutral-format-v1";
+const products = [
+  {
+    id: "tshirt",
+    eyebrow: "01 · Wear",
+    name: "Bella+Canvas 3001 T-shirt",
+    concept: "CONCEPT 01",
+    price: "€29.90",
+    launchPrice: "€26.90",
+    saving: "Save €3.00",
+    note: "Front print. In this demand test the artwork is a neutral placeholder: we are mainly measuring format and price range.",
+  },
+  {
+    id: "poster",
+    eyebrow: "02 · Print",
+    name: "21 × 30 cm poster",
+    concept: "CONCEPT 02",
+    price: "€19.90",
+    launchPrice: "€17.90",
+    saving: "Save €2.00",
+    note: "Compact editorial poster. Final artwork would only be designed after IP and compliance checks.",
+  },
+  {
+    id: "tote",
+    eyebrow: "03 · Carry",
+    name: "BagBase W101 tote",
+    concept: "CONCEPT 03",
+    price: "€24.90",
+    launchPrice: "€21.90",
+    saving: "Save €3.00",
+    note: "38 × 42 cm shopper. The final DTF area would be validated in the product designer before any production.",
+  },
+];
+---
+
+<EnglishSiteLayout
+  title="Drop 001 — Interest test | Canapalandia"
+  description="Experimental format and price test for three editorial products. No checkout, order or payment."
+  canonical="/en/drop-001/"
+  alternateIt="/drop-001/"
+  robots="noindex,nofollow,noarchive"
+  shell={false}
+>
+  <main class="drop-page">
+    <section class="drop-hero" aria-labelledby="drop-title">
+      <p class="kicker">DROP 001 · FORMAT / PRICE TEST</p>
+      <h1 id="drop-title">Drop 001</h1>
+      <p class="lead">Three formats, three price ranges, no checkout. This experiment measures interest before a real product is designed.</p>
+      <div class="status-note" role="note">
+        <strong>Prototype / not for sale.</strong>
+        The visuals are neutral placeholders and do not represent brands or slogans intended for sale. No payment, order or purchase commitment is created.
+      </div>
+    </section>
+
+    <section class="intro" aria-labelledby="intro-title">
+      <p class="index">001 / INTEREST TEST</p>
+      <div>
+        <h2 id="intro-title">Which format would you be most likely to buy?</h2>
+        <p>We are comparing purchase intent, price range and format. To avoid anticipating IP clearance, the three visuals use neutral identifiers and do not test cannabis, marijuana or 420 slogans or trademarks.</p>
+        <div class="launch-rule"><strong>Waitlist benefit:</strong> if a real product later passes every gate, the list may receive a launch notice and a dedicated price.</div>
+      </div>
+    </section>
+
+    <section class="product-grid" aria-label="Drop 001 candidate products">
+      {products.map((product) => (
+        <article class="product-card" data-product-card={product.id}>
+          <div class="artwork" aria-label={`Graphic placeholder ${product.concept}`}>
+            <span class="artwork-series">DROP 001 / FORMAT TEST</span>
+            <strong>{product.concept}</strong>
+            <span class="artwork-foot">NEUTRAL PLACEHOLDER · NOT FOR SALE</span>
+          </div>
+          <div class="product-body">
+            <p class="product-eyebrow">{product.eyebrow}</p>
+            <h3>{product.name}</h3>
+            <div class="pricing">
+              <p class="reference-price"><span>Expected price</span><strong>{product.price}</strong></p>
+              <p class="launch-price">{product.launchPrice}<span>indicative waitlist price</span></p>
+              <p class="saving">{product.saving}</p>
+            </div>
+            <p class="product-note">{product.note}</p>
+            <button class="interest-button" type="button" data-product={product.id} data-product-name={product.name} data-concept={product.concept}>
+              I am interested in this format
+            </button>
+          </div>
+        </article>
+      ))}
+    </section>
+
+    <section class="waitlist" id="waitlist" aria-labelledby="waitlist-title">
+      <div class="waitlist-copy">
+        <p class="index">002 / WAITLIST</p>
+        <h2 id="waitlist-title">Register your interest</h2>
+        <p>Your email is used to measure a real preference and, if the project passes every gate, to notify you about a possible next step. No order is placed.</p>
+        <p class="selected-copy" id="selectedCopy">Choose one of the three products first.</p>
+      </div>
+
+      <form class="waitlist-form" id="dropWaitlistForm" method="post" action="/api/newsletter">
+        <input type="hidden" name="lang" value="en" />
+        <input type="hidden" name="campaign" value="drop-001" />
+        <input type="hidden" name="creativeVersion" value={creativeVersion} />
+        <input type="hidden" name="preference" id="preference" value="" />
+        <div class="hp-field" aria-hidden="true">
+          <label for="en-drop-hp">Leave this field empty</label>
+          <input id="en-drop-hp" name="hp" type="text" tabindex="-1" autocomplete="off" />
+        </div>
+        <label for="en-drop-email">Email</label>
+        <input id="en-drop-email" name="email" type="email" autocomplete="email" required placeholder="name@email.com" />
+        <label class="consent-row">
+          <input type="checkbox" name="consent" required />
+          <span>I agree to the processing of my data under the <a href="/en/privacy/">Privacy Policy</a> and to joining the Canapalandia update list.</span>
+        </label>
+        <button class="submit-button" type="submit" disabled>Join the waitlist</button>
+        <p class="form-status" id="formStatus" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section class="method" aria-labelledby="method-title">
+      <p class="index">003 / GATE</p>
+      <div>
+        <h2 id="method-title">What happens after the test</h2>
+        <p>The waitlist does not automatically open sales. Any GO still requires IP clearance for the brand and final artwork, tax and social-security checks, a fulfillment/platform preflight and a final compliance review.</p>
+      </div>
+    </section>
+  </main>
+
+  <script define:vars={{ creativeVersion }}>
+    const buttons = Array.from(document.querySelectorAll('.interest-button'));
+    const cards = Array.from(document.querySelectorAll('[data-product-card]'));
+    const preference = document.querySelector('#preference');
+    const selectedCopy = document.querySelector('#selectedCopy');
+    const submitButton = document.querySelector('.submit-button');
+    const form = document.querySelector('#dropWaitlistForm');
+    const status = document.querySelector('#formStatus');
+
+    function pushAnalytics(event, product, concept) {
+      if (Array.isArray(window.dataLayer)) window.dataLayer.push({ event, product, concept, creative_version: creativeVersion });
+    }
+
+    function selectProduct(product, productName, concept) {
+      if (!preference || !selectedCopy || !submitButton) return;
+      preference.value = product;
+      selectedCopy.textContent = `You selected: ${productName}. The visual shown is the neutral placeholder ${concept}.`;
+      submitButton.disabled = false;
+      cards.forEach((card) => card.classList.toggle('is-selected', card.dataset.productCard === product));
+      buttons.forEach((button) => {
+        const selected = button.dataset.product === product;
+        button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+        button.textContent = selected ? 'Format selected' : 'I am interested in this format';
+      });
+      pushAnalytics('drop_001_product_interest', product, concept);
+      document.querySelector('#waitlist')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    buttons.forEach((button) => {
+      button.setAttribute('aria-pressed', 'false');
+      button.addEventListener('click', () => {
+        const product = button.dataset.product;
+        const productName = button.dataset.productName;
+        const concept = button.dataset.concept;
+        if (product && productName && concept) selectProduct(product, productName, concept);
+      });
+    });
+
+    form?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!preference?.value || !status || !submitButton) return;
+      submitButton.disabled = true;
+      status.textContent = 'Registering your interest…';
+      try {
+        const response = await fetch('/api/newsletter', { method: 'POST', body: new FormData(form) });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data?.message || 'Unable to register your interest.');
+        status.textContent = data?.alreadySubscribed
+          ? 'You are already on the list. Your preference has been updated.'
+          : 'Thank you. Your interest has been registered; no order has been placed.';
+        pushAnalytics('drop_001_waitlist_signup', preference.value, 'selected');
+      } catch (error) {
+        status.textContent = error?.message || 'Something went wrong. Please try again.';
+        submitButton.disabled = false;
+      }
+    });
+  </script>
+</EnglishSiteLayout>
+
+<style>
+  .drop-page{max-width:1180px;margin:0 auto;padding:4rem 1.25rem 6rem}.drop-hero{max-width:820px}.kicker,.index,.product-eyebrow{color:var(--brand);font:700 .74rem/1.2 Archivo,sans-serif;letter-spacing:.1em;text-transform:uppercase}.drop-hero h1{margin:.45rem 0 .8rem;font:500 clamp(4rem,10vw,8rem)/.86 Newsreader,serif}.lead{font-size:1.2rem;line-height:1.65;color:var(--muted)}.status-note,.launch-rule{margin-top:1.2rem;padding:1rem;border-left:3px solid var(--brand);background:var(--panel);line-height:1.55}.intro,.method,.waitlist{display:grid;grid-template-columns:180px minmax(0,1fr);gap:2rem;margin-top:4rem;padding-top:1.5rem;border-top:1px solid var(--border)}.intro h2,.method h2,.waitlist h2{margin:0 0 .7rem;font:500 clamp(2rem,5vw,3rem)/1 Newsreader,serif}.intro p,.method p,.waitlist p{color:var(--muted);line-height:1.65}.product-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem;margin-top:3rem}.product-card{border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;background:var(--panel)}.product-card.is-selected{outline:2px solid var(--brand);outline-offset:2px}.artwork{aspect-ratio:4/5;display:flex;flex-direction:column;justify-content:space-between;padding:1rem;background:color-mix(in oklab,var(--panel) 70%,var(--bg));border-bottom:1px solid var(--border)}.artwork strong{align-self:center;margin:auto;font:700 clamp(2rem,5vw,4rem)/1 Archivo,sans-serif}.artwork-series,.artwork-foot{font:700 .65rem/1.2 Archivo,sans-serif;letter-spacing:.08em}.product-body{padding:1.1rem}.product-body h3{font:500 1.7rem/1.05 Newsreader,serif;margin:.4rem 0 1rem}.pricing{display:grid;gap:.35rem}.pricing p{margin:0}.reference-price{display:flex;justify-content:space-between;gap:1rem}.launch-price{font-size:1.35rem;font-weight:800}.launch-price span{display:block;color:var(--muted);font-size:.75rem;font-weight:500}.saving{color:var(--brand);font-weight:700}.product-note{min-height:5.5rem;color:var(--muted);line-height:1.55}.interest-button,.submit-button{border:0;border-radius:3px;padding:.75rem .9rem;background:var(--brand);color:#102b19;font-weight:800;cursor:pointer}.waitlist-form{display:grid;gap:.65rem;max-width:560px}.waitlist-form input[type='email']{padding:.85rem;border:1px solid var(--border);border-radius:3px;background:var(--panel);color:var(--text)}.consent-row{display:flex;gap:.55rem;align-items:flex-start;font-size:.9rem;color:var(--muted)}.hp-field{position:absolute;left:-9999px}.submit-button:disabled{opacity:.5;cursor:not-allowed}.form-status{min-height:1.4em}.selected-copy{font-weight:700}.method{margin-bottom:1rem}@media(max-width:850px){.product-grid{grid-template-columns:1fr}.intro,.method,.waitlist{grid-template-columns:1fr}.product-note{min-height:0}}
+</style>
