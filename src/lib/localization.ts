@@ -371,6 +371,14 @@ export const BLOG_TRANSLATION_PAIRS: readonly BlogTranslationPair[] = [
     it: "cannabis-terapeutica-walter-de-benedetto-e-stato-assolto-coltiva-la-cannabis-per-uso-medicinale",
     en: "walter-de-benedetto-medical-cannabis-acquittal",
   },
+  {
+    it: "il-ruolo-della-canapa-nella-rigenerazione-del-suolo",
+    en: "hemp-soil-regeneration",
+  },
+  {
+    it: "come-integrare-i-semi-di-canapa-nella-tua-dieta",
+    en: "how-to-incorporate-hemp-seeds-daily-diet",
+  },
 ] as const;
 
 export function languageFromCategory(category: unknown): SiteLanguage {
