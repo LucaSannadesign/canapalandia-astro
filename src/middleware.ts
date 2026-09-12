@@ -39,7 +39,6 @@ async function getEnglishBlogSlugs(): Promise<Set<string>> {
  * - handles legacy e-commerce URLs with semantic 301 where possible
  * - serves 410 for obsolete/junk/bot-like endpoints without replacements
  * - keeps noindex on preview/localhost environments
- * - keeps the Drop 001 demand test private unless explicitly enabled
  */
 export const onRequest: MiddlewareHandler = async (context, next) => {
   const { url } = context;
@@ -195,25 +194,6 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     });
   };
 
-  /**
-   * Drop 001 is a private demand-test prototype.
-   * It must never become reachable just because the branch is previewed/deployed.
-   * Explicit opt-in only: DROP_001_TEST_ENABLED=true.
-   */
-  if (
-    pathNoSlash.toLowerCase() === "drop-001" &&
-    import.meta.env.DROP_001_TEST_ENABLED !== "true"
-  ) {
-    return new Response("Not Found", {
-      status: 404,
-      headers: {
-        "Content-Type": "text/plain; charset=utf-8",
-        "Cache-Control": "no-store",
-        "X-Robots-Tag": "noindex, nofollow, noarchive",
-      },
-    });
-  }
-
   const exactGonePaths = new Set([
     "wp-login.php",
     "xmlrpc.php",
@@ -234,18 +214,6 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
    */
   if (pathNoSlash.toLowerCase() === "en/cannabis-laws-italy-2025") {
     return redirect301("/blog/cannabis-laws-italy/");
-  }
-
-  /**
-   * EN legacy `/en/tag/...` → hub IT `/tag/[slug]/` (slug identico).
-   * Prima della normalizzazione trailing-slash sotto: così anche richieste senza `/` finale
-   * possono 301 direttamente a `/tag/.../` in un solo hop (Vercel aggiunge spesso uno 308
-   * slash, ma non dipendiamo dall’ordine).
-   * Se in produzione vedi ancora 200 su queste URL, la build deployata non include questo blocco.
-   */
-  const enTagLegacy = pathNoSlash.match(/^en\/tag\/([^/]+)(?:\/page\/\d+)?$/);
-  if (enTagLegacy?.[1]) {
-    return redirect301(`/tag/${enTagLegacy[1]}/`);
   }
 
   /**
