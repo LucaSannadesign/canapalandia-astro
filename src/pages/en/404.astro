@@ -1,0 +1,29 @@
+---
+import EnglishSiteLayout from "../../layouts/EnglishSiteLayout.astro";
+---
+<EnglishSiteLayout
+  title="Page not found | Canapalandia"
+  description="The requested page could not be found."
+  robots="noindex,follow"
+  canonical="/en/404/"
+>
+  <section class="en-404">
+    <p>404</p>
+    <h1>Page not found</h1>
+    <p>The address may be outdated, incomplete or no longer available.</p>
+    <div>
+      <a href="/en/">English home</a>
+      <a href="/en/blog/">Browse English articles</a>
+      <a href="/en/search/">Search</a>
+    </div>
+  </section>
+</EnglishSiteLayout>
+<style>
+  .en-404 { max-width:800px; margin:0 auto; padding:5rem 0 7rem; text-align:center; }
+  .en-404 > p:first-child { color:var(--brand); font:700 .85rem/1 Archivo,sans-serif; letter-spacing:.12em; }
+  h1 { margin:.5rem 0 1rem; font:500 clamp(3.5rem,8vw,6rem)/.95 Newsreader,serif; }
+  .en-404 > p:nth-of-type(2) { color:var(--muted); line-height:1.6; }
+  .en-404 div { display:flex; flex-wrap:wrap; justify-content:center; gap:.65rem; margin-top:1.5rem; }
+  .en-404 a { border:1px solid var(--border); border-radius:3px; padding:.7rem .9rem; text-decoration:none; font-weight:700; }
+  .en-404 a:first-child { background:var(--brand); color:#102b19; border-color:var(--brand); }
+</style>
