@@ -1,0 +1,170 @@
+---
+import { getCollection, type CollectionEntry } from "astro:content";
+import EnglishSiteLayout from "../../layouts/EnglishSiteLayout.astro";
+import { isReachableBlogEntry } from "../../lib/blogVisibility";
+
+type Post = CollectionEntry<"blog">;
+
+const {
+  title,
+  description,
+  eyebrow,
+  categories = [],
+  canonicalPath,
+  alternateIt,
+} = Astro.props as {
+  title: string;
+  description: string;
+  eyebrow?: string;
+  categories: string[];
+  canonicalPath: string;
+  alternateIt?: string;
+};
+
+const all = await getCollection("blog");
+const posts = all
+  .filter((post) => {
+    if (!isReachableBlogEntry(post)) return false;
+    if (post.data.editorialStatus === "legacy-review") return false;
+    if (!categories.includes(String(post.data.category ?? ""))) return false;
+    const date = post.data.publishDate ? new Date(post.data.publishDate) : null;
+    return date && !Number.isNaN(date.getTime()) && date.getTime() <= Date.now();
+  })
+  .sort((a, b) => new Date(b.data.publishDate ?? 0).getTime() - new Date(a.data.publishDate ?? 0).getTime());
+
+const slugOf = (post: Post) => String(post.data.slug || post.slug || post.id || "").trim();
+const hrefOf = (post: Post) => `/blog/${slugOf(post)}/`;
+const dateOf = (post: Post) => {
+  const d = post.data.publishDate ? new Date(post.data.publishDate) : null;
+  return d && !Number.isNaN(d.getTime())
+    ? d.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
+    : "";
+};
+const imageOf = (post: Post) => {
+  const raw = post.data.image || post.data.coverImage || "";
+  const value = raw && typeof raw === "object" && "src" in raw ? (raw as { src?: unknown }).src : raw;
+  const src = typeof value === "string" ? value.trim() : "";
+  if (!src) return "/images/placeholder.svg";
+  if (/^https?:\/\//i.test(src) || src.startsWith("/")) return src;
+  return `/${src}`;
+};
+const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}${canonicalPath}`;
+---
+
+<EnglishSiteLayout
+  title={`${title} | Canapalandia`}
+  description={description}
+  canonical={canonical}
+  alternateIt={alternateIt}
+  shell={false}
+>
+  <section class="en-archive">
+    <div class="container en-archive__inner">
+      <header class="en-archive__header">
+        {eyebrow ? <p class="en-archive__eyebrow">{eyebrow}</p> : null}
+        <h1>{title}</h1>
+        <p>{description}</p>
+      </header>
+
+      {posts.length ? (
+        <div class="en-archive__grid">
+          {posts.map((post, index) => (
+            <article class:list={["en-story", { "en-story--lead": index === 0 }]}>
+              <a class="en-story__media" href={hrefOf(post)} aria-hidden="true" tabindex="-1">
+                <img
+                  src={imageOf(post)}
+                  alt=""
+                  loading={index === 0 ? "eager" : "lazy"}
+                  decoding="async"
+                  onerror="this.onerror=null;this.src='/images/placeholder.svg';"
+                />
+              </a>
+              <div class="en-story__body">
+                <p class="en-story__meta">{dateOf(post)}</p>
+                <h2><a href={hrefOf(post)}>{post.data.title}</a></h2>
+                {post.data.description ? <p class="en-story__dek">{post.data.description}</p> : null}
+                <a class="en-story__read" href={hrefOf(post)}>Read article <span aria-hidden="true">→</span></a>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <p class="en-archive__empty">No published English articles are available in this section yet.</p>
+      )}
+    </div>
+  </section>
+</EnglishSiteLayout>
+
+<style>
+  .en-archive { padding: clamp(3rem, 7vw, 6rem) 0 6rem; }
+  .en-archive__inner { max-width: 1180px; }
+  .en-archive__header { max-width: 760px; margin-bottom: 2.8rem; }
+  .en-archive__eyebrow {
+    margin: 0 0 .75rem;
+    color: var(--brand);
+    font: 700 .78rem/1.2 Archivo, sans-serif;
+    letter-spacing: .11em;
+    text-transform: uppercase;
+  }
+  .en-archive__header h1 {
+    margin: 0 0 1rem;
+    font-family: Newsreader, serif;
+    font-size: clamp(2.8rem, 7vw, 5.6rem);
+    line-height: .96;
+    letter-spacing: -.035em;
+  }
+  .en-archive__header > p:last-child {
+    margin: 0;
+    max-width: 68ch;
+    color: var(--muted);
+    font-size: 1.08rem;
+    line-height: 1.65;
+  }
+  .en-archive__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 2.2rem 1.5rem;
+  }
+  .en-story {
+    border-top: 1px solid var(--border);
+    padding-top: 1rem;
+  }
+  .en-story--lead { grid-column: span 2; }
+  .en-story__media {
+    display: block;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    border-radius: var(--r-sm);
+    margin-bottom: 1rem;
+    background: var(--panel);
+  }
+  .en-story--lead .en-story__media { aspect-ratio: 16 / 8.5; }
+  .en-story__media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .en-story__meta {
+    margin: 0 0 .55rem;
+    color: var(--muted);
+    font: 600 .75rem/1.4 Archivo, sans-serif;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+  .en-story h2 {
+    margin: 0 0 .7rem;
+    font-family: Newsreader, serif;
+    font-size: clamp(1.65rem, 3vw, 2.35rem);
+    line-height: 1.04;
+  }
+  .en-story h2 a { color: inherit; text-decoration: none; }
+  .en-story h2 a:hover { color: var(--brand); }
+  .en-story__dek { color: var(--muted); line-height: 1.6; margin: 0 0 1rem; }
+  .en-story__read { font-weight: 700; color: var(--brand); text-decoration: none; }
+  .en-archive__empty { color: var(--muted); padding: 2rem 0; }
+  @media (max-width: 900px) {
+    .en-archive__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .en-story--lead { grid-column: span 2; }
+  }
+  @media (max-width: 640px) {
+    .en-archive { padding-top: 2.2rem; }
+    .en-archive__grid { grid-template-columns: 1fr; }
+    .en-story--lead { grid-column: auto; }
+  }
+</style>
