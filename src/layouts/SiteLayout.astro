@@ -9,6 +9,7 @@ import {
   PRIMARY_NAVIGATION,
   UTILITY_NAVIGATION,
 } from "../config/navigation";
+import { findPageTranslationPair } from "../lib/siteLocalization";
 
 const THEME_STORAGE_KEY = "canapalandia_theme";
 const { 
@@ -46,6 +47,7 @@ function normalizeRobots(robots: unknown): string {
 
 const robotsNormalized = normalizeRobots(robotsRaw);
 const currentPath = Astro.url.pathname;
+const pageTranslationPair = findPageTranslationPair(currentPath);
 const isTagArchivePath =
   currentPath === "/tag/" ||
   currentPath.startsWith("/tag/") ||
@@ -176,6 +178,10 @@ const yoastHeadCleaned = cleanYoastHead(yoastHeadHtml);
 
 // Base site URL
 const SITE_URL = import.meta.env.SITE || "https://canapalandia.com";
+const structuralEnglishHref = pageTranslationPair?.en
+  ? new URL(pageTranslationPair.en, SITE_URL).toString()
+  : undefined;
+const hasExternalHreflang = /hreflang=/i.test(yoastHeadCleaned);
 
 // Helper per normalizzare og:image (preferisce JPG/PNG su WEBP per Telegram)
 function normalizeOgImage(imagePath: string | undefined | null): string {
@@ -245,6 +251,13 @@ const useHomeLightBg =
     {descriptionFinal ? <meta name="description" content={descriptionFinal} /> : null}
     {canonicalFinal ? <link rel="canonical" href={canonicalFinal} /> : null}
     <meta name="robots" content={robotsFinalWithTagPolicy} />
+    {!hasExternalHreflang && pageTranslationPair && canonicalFinal && structuralEnglishHref ? (
+      <>
+        <link rel="alternate" hreflang="it" href={canonicalFinal} />
+        <link rel="alternate" hreflang="en" href={structuralEnglishHref} />
+        <link rel="alternate" hreflang="x-default" href={canonicalFinal} />
+      </>
+    ) : null}
     
     {/* OpenGraph meta tags */}
     <meta property="og:type" content={ogType} />
@@ -285,6 +298,33 @@ const useHomeLightBg =
       html[data-theme="light"] .nav a[aria-current="page"],
       html[data-theme="light"] .mobile-menu__content a[aria-current="page"] {
         color: #f8fbf7 !important;
+      }
+      .global-language {
+        display: inline-flex;
+        align-items: center;
+        gap: .1rem;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: .2rem;
+        font: 600 .78rem/1 Archivo, sans-serif;
+      }
+      .global-language a,
+      .global-language span {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 2rem;
+        min-height: 2rem;
+        padding: 0 .45rem;
+        border-radius: 999px;
+        text-decoration: none;
+      }
+      .global-language span[aria-current="page"] {
+        background: var(--brand);
+        color: #0d2717;
+      }
+      @media (max-width: 900px) {
+        .header-actions > .global-language { display: none; }
       }
     </style>
   </head>
@@ -365,6 +405,13 @@ const useHomeLightBg =
             Cerca
           </a>
 
+          {structuralEnglishHref ? (
+            <nav class="global-language" aria-label="Lingua del sito">
+              <span aria-current="page">IT</span>
+              <a href={structuralEnglishHref} hreflang="en" lang="en">EN</a>
+            </nav>
+          ) : null}
+
           <button
             type="button"
             class="theme-toggle__btn"
@@ -423,6 +470,7 @@ const useHomeLightBg =
             {item.label}
           </a>
         ))}
+        {structuralEnglishHref ? <a href={structuralEnglishHref} hreflang="en" lang="en">English</a> : null}
 
         <button
           type="button"
