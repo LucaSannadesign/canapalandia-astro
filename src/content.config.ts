@@ -1,6 +1,7 @@
 import { defineCollection, z } from "astro:content";
 // 1. Aggiunto l'import per il loader
 import { glob } from "astro/loaders";
+import { languageFromCategory, type SiteLanguage } from "./lib/localization";
 
 /** Categorie blog consentite: non introdurne di nuove nel frontmatter senza decisione editoriale esplicita (aggiornare questa lista di conseguenza). */
 const BLOG_CATEGORY_WHITELIST = [
@@ -84,6 +85,9 @@ const BLOG_FORCED_LEGACY_REVIEW_SLUGS = new Set<string>([
 const LEGACY_REVIEW_TITLE = "Articolo d’archivio in revisione editoriale";
 const LEGACY_REVIEW_DESCRIPTION =
   "Contenuto storico temporaneamente ritirato dalla consultazione e dall’indicizzazione mentre la redazione verifica fonti, formulazioni e contesto.";
+const LEGACY_REVIEW_TITLE_EN = "Archive article under editorial review";
+const LEGACY_REVIEW_DESCRIPTION_EN =
+  "Historical content temporarily withdrawn from consultation and indexing while the editorial team reviews sources, wording and context.";
 const LEGACY_REVIEW_IMAGE = "/images/logo-canapalandia_1024.webp";
 
 const blog = defineCollection({
@@ -186,21 +190,27 @@ const blog = defineCollection({
       );
       const isLegacyReview =
         isForcedLegacyReview || data.editorialStatus === "legacy-review";
+      // La lingua va fissata prima di azzerare `category` per la quarantena.
+      const language: SiteLanguage = languageFromCategory(data.category);
+      const legacyTitle = language === "en" ? LEGACY_REVIEW_TITLE_EN : LEGACY_REVIEW_TITLE;
 
       return {
         ...data,
+        language,
         editorialStatus: isLegacyReview
           ? ("legacy-review" as const)
           : data.editorialStatus,
-        title: isLegacyReview ? LEGACY_REVIEW_TITLE : data.title,
+        title: isLegacyReview ? legacyTitle : data.title,
         description: isLegacyReview
-          ? LEGACY_REVIEW_DESCRIPTION
+          ? language === "en"
+            ? LEGACY_REVIEW_DESCRIPTION_EN
+            : LEGACY_REVIEW_DESCRIPTION
           : data.description,
         category: isLegacyReview ? undefined : data.category,
         tags: isLegacyReview ? [] : data.tags,
         image: isLegacyReview ? LEGACY_REVIEW_IMAGE : data.image,
         coverImage: isLegacyReview ? LEGACY_REVIEW_IMAGE : data.coverImage,
-        coverAlt: isLegacyReview ? LEGACY_REVIEW_TITLE : data.coverAlt,
+        coverAlt: isLegacyReview ? legacyTitle : data.coverAlt,
         homeFeatured: isLegacyReview ? false : data.homeFeatured,
         socialShare: isLegacyReview ? false : data.socialShare,
         instagramShare: isLegacyReview ? false : data.instagramShare,

@@ -381,8 +381,31 @@ export const BLOG_TRANSLATION_PAIRS: readonly BlogTranslationPair[] = [
   },
 ] as const;
 
+/**
+ * Archivi `/en/category/<slug>/` i cui post sono interamente contenuti in un hub editoriale EN
+ * (prop `categories` di src/pages/en/{news,policy,cbd,hemp}.astro). Restano raggiungibili,
+ * ma sono noindex,follow e fuori sitemap per non competere con gli hub.
+ */
+export const EN_CATEGORY_ARCHIVES_COVERED_BY_HUBS = new Set<string>([
+  "cannabis-news", // /en/news/
+  "cannabis-and-innovation", // /en/news/, /en/hemp/
+  "cannabis-legalization", // /en/policy/
+  "medical-cannabis", // /en/policy/
+  "cbd-and-nutrition", // /en/cbd/
+  "health-wellness", // /en/cbd/
+  "hemp-sustainability", // /en/hemp/
+]);
+
 export function languageFromCategory(category: unknown): SiteLanguage {
   return typeof category === "string" && EN_BLOG_CATEGORIES.has(category) ? "en" : "it";
+}
+
+/**
+ * Lingua editoriale di un post. `language` è fissata dallo schema prima che la quarantena
+ * `legacy-review` azzeri `category`: lo stato editoriale non deve cambiare la lingua.
+ */
+export function blogEntryLanguage(data: { language?: SiteLanguage; category?: unknown }): SiteLanguage {
+  return data.language ?? languageFromCategory(data.category);
 }
 
 export function findBlogTranslationPair(slug: string): BlogTranslationPair | null {
@@ -396,9 +419,18 @@ export function blogUrl(slug: string, siteUrl = "https://canapalandia.com"): str
   return `${base}/blog/${slug}/`;
 }
 
-export function translationAlternates(slug: string, siteUrl = "https://canapalandia.com") {
+/**
+ * Alternate IT/EN per uno slug. Con `isIndexable`, restituisce null se una delle due URL
+ * non è indicizzabile: hreflang e sitemap non devono unire pagine index e noindex.
+ */
+export function translationAlternates(
+  slug: string,
+  siteUrl = "https://canapalandia.com",
+  isIndexable?: (slug: string) => boolean,
+) {
   const pair = findBlogTranslationPair(slug);
   if (!pair) return null;
+  if (isIndexable && !(isIndexable(pair.it) && isIndexable(pair.en))) return null;
 
   return {
     pair,

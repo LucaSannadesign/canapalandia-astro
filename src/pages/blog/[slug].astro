@@ -12,10 +12,10 @@ import RelatedPosts from "../../components/RelatedPosts.astro";
 import PostBodyH1 from "../../components/PostBodyH1.astro";
 import PostAttachments from "../../components/PostAttachments.astro";
 import LanguageSwitcher from "../../components/LanguageSwitcher.astro";
-import { isReachableBlogEntry } from "../../lib/blogVisibility";
+import { isPublishedBlogEntry, isReachableBlogEntry } from "../../lib/blogVisibility";
 import { FEATURES } from "../../lib/consts";
 import {
-  languageFromCategory,
+  blogEntryLanguage,
   translationAlternates,
   type SiteLanguage,
 } from "../../lib/localization";
@@ -42,7 +42,7 @@ if (!isReachableBlogEntry(entry)) {
 }
 
 const isLegacyReview = entry.data.editorialStatus === "legacy-review";
-const lang: SiteLanguage = languageFromCategory(entry.data.category);
+const lang: SiteLanguage = blogEntryLanguage(entry.data);
 const isEnglish = lang === "en";
 const PageLayout = isEnglish ? EnglishSiteLayout : SiteLayout;
 const { Content } = await render(entry);
@@ -77,11 +77,17 @@ const postImage = normalizeImage(entry);
 const SITE_URL = import.meta.env.SITE || "https://canapalandia.com";
 const alternates = translationAlternates(slug, SITE_URL);
 
-const hreflangHead = alternates
+// hreflang solo se entrambe le URL della coppia sono indicizzabili (no legacy-review/noindex).
+const allEntries = await getCollection("blog");
+const isIndexableSlug = (candidate: string) =>
+  allEntries.some((e) => (e.data?.slug || e.id || "").trim() === candidate && isPublishedBlogEntry(e));
+const seoAlternates = translationAlternates(slug, SITE_URL, isIndexableSlug);
+
+const hreflangHead = seoAlternates
   ? [
-      `<link rel="alternate" hreflang="it" href="${alternates.it}" />`,
-      `<link rel="alternate" hreflang="en" href="${alternates.en}" />`,
-      `<link rel="alternate" hreflang="x-default" href="${alternates.xDefault}" />`,
+      `<link rel="alternate" hreflang="it" href="${seoAlternates.it}" />`,
+      `<link rel="alternate" hreflang="en" href="${seoAlternates.en}" />`,
+      `<link rel="alternate" hreflang="x-default" href="${seoAlternates.xDefault}" />`,
     ].join("\n")
   : "";
 

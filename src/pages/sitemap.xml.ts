@@ -8,6 +8,7 @@ import { normalizeCategorySlug } from "../lib/categoryUrl";
 import { isPublishedBlogEntry } from "../lib/blogVisibility";
 import {
   EN_BLOG_CATEGORIES,
+  EN_CATEGORY_ARCHIVES_COVERED_BY_HUBS,
   languageFromCategory,
   translationAlternates,
 } from "../lib/localization";
@@ -230,12 +231,23 @@ export const GET: APIRoute = async () => {
   }
 
   const NOINDEX_SLUG_RE = /bozza|\/bozza|^test-/i;
+  const sitemapPostSlugs = new Set(
+    blogPosts
+      .map((post) => String(post.data.slug || post.id || "").trim())
+      .filter(
+        (publicSlug) =>
+          publicSlug &&
+          !NOINDEX_SLUG_RE.test(publicSlug) &&
+          !isRedirectSourcePath(normalizePathKey(`blog/${publicSlug}`)),
+      ),
+  );
   for (const post of blogPosts) {
     const publicSlug = String(post.data.slug || post.id || "").trim();
-    if (!publicSlug || NOINDEX_SLUG_RE.test(publicSlug)) continue;
-    const relPath = normalizePathKey(`blog/${publicSlug}`);
-    if (isRedirectSourcePath(relPath)) continue;
-    const translated = translationAlternates(publicSlug, SITE_URL);
+    if (!sitemapPostSlugs.has(publicSlug)) continue;
+    // Alternate solo se entrambe le URL della coppia sono in sitemap.
+    const translated = translationAlternates(publicSlug, SITE_URL, (candidate) =>
+      sitemapPostSlugs.has(candidate),
+    );
     urls.push({
       loc: normalizeUrl(`blog/${publicSlug}`),
       lastmod: postLastmodIso(post),
@@ -263,6 +275,7 @@ export const GET: APIRoute = async () => {
   }
 
   for (const slug of EN_BLOG_CATEGORIES) {
+    if (EN_CATEGORY_ARCHIVES_COVERED_BY_HUBS.has(slug)) continue;
     const inCat = blogPosts.filter(
       (post) => languageFromCategory(post.data.category) === "en" && post.data.category === slug,
     );

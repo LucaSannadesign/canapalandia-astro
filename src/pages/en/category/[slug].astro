@@ -2,7 +2,7 @@
 export const prerender = false;
 
 import EnglishTopicArchive from "../../../components/en/EnglishTopicArchive.astro";
-import { EN_BLOG_CATEGORIES } from "../../../lib/localization";
+import { EN_BLOG_CATEGORIES, EN_CATEGORY_ARCHIVES_COVERED_BY_HUBS } from "../../../lib/localization";
 
 const slug = String(Astro.params.slug ?? "").trim().toLowerCase();
 if (!slug || !EN_BLOG_CATEGORIES.has(slug)) {
@@ -53,4 +53,5 @@ const info = labels[slug] ?? {
   categories={[slug]}
   canonicalPath={`/en/category/${slug}/`}
   basePath={`/en/category/${slug}/`}
+  robots={EN_CATEGORY_ARCHIVES_COVERED_BY_HUBS.has(slug) ? "noindex,follow" : undefined}
 />
