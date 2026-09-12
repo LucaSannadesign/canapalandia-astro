@@ -58,7 +58,10 @@ const EN_STRUCTURAL_ROUTES = [
   "/en/frasi-ribaltate/",
 ] as const;
 
-const ALWAYS_INCLUDE_STRUCTURAL_ROUTES = new Set<string>(["/", "/blog/", "/lab/"]);
+const ALWAYS_INCLUDE_STRUCTURAL_ROUTES = new Set<string>([
+  ...IT_STRUCTURAL_ROUTES,
+  ...EN_STRUCTURAL_ROUTES,
+]);
 
 export const prerender = false;
 const SITE_URL = (import.meta.env.SITE || "https://canapalandia.com").replace(/\/+$/, "");
