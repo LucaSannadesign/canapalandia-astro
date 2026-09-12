@@ -11,6 +11,10 @@ export type PageTranslationPair = {
 export const PAGE_TRANSLATION_PAIRS: readonly PageTranslationPair[] = [
   { it: "/", en: "/en/" },
   { it: "/blog/", en: "/en/blog/" },
+  { it: "/categoria/cannabis-news-it/", en: "/en/news/" },
+  { it: "/categoria/normativa/", en: "/en/policy/" },
+  { it: "/categoria/cbd-alimentazione/", en: "/en/cbd/" },
+  { it: "/categoria/canapa-e-ambiente/", en: "/en/hemp/" },
   { it: "/cerca/", en: "/en/search/" },
   { it: "/chi-siamo/", en: "/en/about/" },
   { it: "/chi-siamo/missione/", en: "/en/mission/" },
