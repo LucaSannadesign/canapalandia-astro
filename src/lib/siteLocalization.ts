@@ -18,8 +18,6 @@ export const PAGE_TRANSLATION_PAIRS: readonly PageTranslationPair[] = [
   { it: "/cerca/", en: "/en/search/" },
   { it: "/chi-siamo/", en: "/en/about/" },
   { it: "/chi-siamo/missione/", en: "/en/mission/" },
-  { it: "/la-nostra-storia/", en: "/en/our-story/" },
-  { it: "/i-nostri-partner/", en: "/en/partners/" },
   { it: "/pubblicita/", en: "/en/advertising/" },
   { it: "/collabora-con-canapalandia/", en: "/en/collaborate/" },
   { it: "/contatti/", en: "/en/contact/" },
