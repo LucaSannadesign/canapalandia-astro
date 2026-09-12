@@ -3,6 +3,7 @@ import { defineConfig } from "astro/config";
 import vercel from "@astrojs/vercel";
 import { fileURLToPath } from "node:url";
 import mdx from "@astrojs/mdx";
+import demandTestTracking from "./src/integrations/demandTestTracking.mjs";
 
 const site = "https://canapalandia.com";
 
@@ -90,5 +91,6 @@ export default defineConfig({
 
   integrations: [
     mdx(),
+    demandTestTracking(),
   ],
 });
