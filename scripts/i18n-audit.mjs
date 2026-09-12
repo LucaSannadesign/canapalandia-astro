@@ -22,8 +22,18 @@ function frontmatter(source) {
 }
 
 function field(fm, key) {
-  const match = fm.match(new RegExp(`^${key}:\\s*["']?([^"'\\n]+)["']?\\s*$`, "m"));
-  return match?.[1]?.trim() || "";
+  const match = fm.match(new RegExp(`^${key}:\\s*(.+?)\\s*$`, "m"));
+  if (!match) return "";
+
+  const raw = match[1].trim();
+  if (
+    (raw.startsWith('"') && raw.endsWith('"')) ||
+    (raw.startsWith("'") && raw.endsWith("'"))
+  ) {
+    return raw.slice(1, -1).trim();
+  }
+
+  return raw;
 }
 
 function containsItalianSignals(text) {
