@@ -78,6 +78,7 @@ const BLOG_FORCED_LEGACY_REVIEW_SLUGS = new Set<string>([
   "cannabis-seed-banks-migliori-banche-seme-cannabis",
   "partner-seedsman",
   "partner-seedsman-canapalandia",
+  "cannabis-medica-il-successo-dei-modelli-australiano-e-portoghese-come-esempio-per-litalia",
 ]);
 
 const LEGACY_REVIEW_TITLE = "Articolo d’archivio in revisione editoriale";
