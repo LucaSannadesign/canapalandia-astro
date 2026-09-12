@@ -1,43 +1,49 @@
 ---
-import EnglishSiteLayout from "../../layouts/EnglishSiteLayout.astro";
+import EnglishInstitutionalPage from "../../components/en/EnglishInstitutionalPage.astro";
 ---
-<EnglishSiteLayout
-  title="About Canapalandia | Independent hemp, CBD and cannabis journalism"
-  description="Learn what Canapalandia is, what it covers and the editorial principles behind its reporting on hemp, CBD, cannabis and regulation."
+
+<EnglishInstitutionalPage
+  title="About us | Canapalandia"
+  description="Canapalandia is an independent editorial project covering hemp, CBD, cannabis light, regulation, research and culture. Learn who we are and how we work."
   canonical="/en/about/"
   alternateIt="/chi-siamo/"
+  eyebrow="Canapalandia since 2016"
+  heading="Independent information about hemp, without trying to sell you a product"
+  lead="Canapalandia began as a project dedicated to hemp culture and is now an independent magazine: we publish news, in-depth articles, tools and guides to help readers navigate a complex and constantly evolving sector."
 >
-  <article class="en-page">
-    <header>
-      <p class="eyebrow">About us</p>
-      <h1>Independent information on hemp, CBD, cannabis and policy.</h1>
-      <p class="lead">Canapalandia is an independent editorial project focused on clear, sourced reporting and practical explainers for readers who want context rather than slogans.</p>
-    </header>
+  <section>
+    <h2>What Canapalandia is today</h2>
+    <p>Canapalandia is an online editorial project covering industrial hemp, CBD, cannabis light, regulation, research, sustainability and culture. The site is not a shop and does not manage sales, orders or payments for hemp-based products.</p>
+    <p>Our aim is to turn topics that are often technical or controversial into more readable content, distinguishing, as far as possible, facts, sources, interpretations and opinions.</p>
+  </section>
 
-    <section>
-      <h2>What we cover</h2>
-      <p>Our work spans industrial hemp, CBD, cannabis policy, medical cannabis, sustainability, research, markets and the cultural debate surrounding these subjects in Italy and Europe.</p>
-      <p>English-language articles are selected and maintained as part of the same editorial archive, with explicit links to their Italian counterparts when a verified equivalent exists.</p>
-    </section>
+  <section>
+    <h2>Where we come from</h2>
+    <p>The project began in 2016 as a blog dedicated to hemp. Over the years it has gone through different phases, including a previous commercial experience. Today Canapalandia has returned to its main purpose: informing, explaining and creating useful tools for people who want to understand this world better.</p>
+    <p class="institutional-note">Some older pages and articles belong to the history of the project and are progressively updated when they no longer represent the current Canapalandia.</p>
+  </section>
 
-    <section>
-      <h2>How we work</h2>
-      <p>We distinguish facts from interpretation, regulations from political claims and preliminary evidence from stronger scientific conclusions. When a topic is uncertain or changing, we state that uncertainty directly.</p>
-      <p>Older material that no longer meets the current editorial standard can be placed under review and removed from indexing until its sources and wording are reassessed.</p>
-    </section>
+  <section>
+    <h2>How we work</h2>
+    <ul>
+      <li>We prefer primary sources, official documents and scientific studies when available.</li>
+      <li>We state dates and context when a rule, study or news story may change over time.</li>
+      <li>We separate editorial content from commercial collaborations.</li>
+      <li>We correct articles when errors or more up-to-date information emerge.</li>
+      <li>We do not present content as medical or legal advice.</li>
+    </ul>
+    <p>To report an error or propose a correction, use the <a href="/en/contact/">Contact page</a>.</p>
+  </section>
 
-    <section>
-      <h2>What Canapalandia is not</h2>
-      <p>Canapalandia is not a medical service, a legal-advice service or a substitute for professional advice. The editorial project does not present articles as individual therapeutic instructions.</p>
-    </section>
+  <section>
+    <h2>Independence and sustainability of the project</h2>
+    <p>Canapalandia may be supported through advertising, sponsored content, collaborations, affiliate links and voluntary reader contributions. When content results from a commercial collaboration, our aim is to make that relationship recognisable and keep it separate from ordinary editorial work.</p>
+    <p>A commercial relationship should not determine the conclusions of an informational article. For collaborations and advertising, see <a href="/en/advertising/">Advertising and collaborations</a>.</p>
+  </section>
 
-    <section>
-      <h2>Corrections and transparency</h2>
-      <p>If you find an error, an outdated source or a passage that needs more context, you can contact the editorial team. Commercial collaborations and advertising are kept separate from editorial content and should be clearly identified.</p>
-      <p><a href="/en/contact/">Contact the editorial team →</a></p>
-    </section>
-  </article>
-</EnglishSiteLayout>
-<style>
-  .en-page{max-width:820px;margin:0 auto;padding:2.5rem 0 5rem}.eyebrow{color:var(--brand);font:700 .78rem/1.2 Archivo,sans-serif;letter-spacing:.1em;text-transform:uppercase}.en-page h1{margin:.35rem 0 1rem;font:500 clamp(3rem,7vw,5.6rem)/.95 Newsreader,serif;letter-spacing:-.03em}.lead{font-size:1.15rem;color:var(--muted);line-height:1.65}.en-page section{margin-top:2.6rem;border-top:1px solid var(--border);padding-top:1.4rem}.en-page h2{font:500 2rem/1.1 Newsreader,serif}.en-page p{line-height:1.72;color:var(--muted)}.en-page a{color:var(--brand);font-weight:700;text-decoration:none}
-</style>
+  <section>
+    <h2>Tools, not verdicts</h2>
+    <p>Alongside articles, we develop small free tools. For example, <a href="/en/lab/">Canapalandia Lab</a> helps readers interpret selected data found in COA certificates. These tools are intended to help users orient themselves: they do not certify the legality, safety, quality or suitability for consumption of a product.</p>
+    <p>For limits on the use of the site's content, see the <a href="/en/disclaimer/">Legal Disclaimer</a>.</p>
+  </section>
+</EnglishInstitutionalPage>
