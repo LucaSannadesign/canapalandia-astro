@@ -1,0 +1,35 @@
+---
+import EnglishSiteLayout from "../../layouts/EnglishSiteLayout.astro";
+
+const status = Astro.url.searchParams.get("status") || "success";
+const exists = status === "exists";
+const error = status === "error";
+const title = error ? "Newsletter issue | Canapalandia" : "Newsletter subscription | Canapalandia";
+---
+
+<EnglishSiteLayout
+  title={title}
+  description="Canapalandia English newsletter subscription status."
+  canonical="/en/newsletter-thanks/"
+  robots="noindex,follow"
+>
+  <section class="thanks">
+    <p class="eyebrow">Newsletter</p>
+    <h1>{error ? "Something went wrong." : exists ? "You are already on the list." : "Thank you for subscribing."}</h1>
+    <p>
+      {error
+        ? "We could not complete the subscription. Please return to the English home page and try again later."
+        : exists
+          ? "This email address is already registered. No further action is needed."
+          : "Your request has been received. If confirmation is required, check your inbox and follow the confirmation link."}
+    </p>
+    <div>
+      <a class="primary" href="/en/">English home</a>
+      <a href="/en/blog/">Browse articles</a>
+    </div>
+  </section>
+</EnglishSiteLayout>
+
+<style>
+  .thanks{max-width:760px;margin:0 auto;padding:5rem 0 7rem;text-align:center}.eyebrow{color:var(--brand);font:700 .76rem/1.2 Archivo,sans-serif;letter-spacing:.1em;text-transform:uppercase}.thanks h1{margin:.5rem 0 1rem;font:500 clamp(3rem,7vw,5rem)/.95 Newsreader,serif}.thanks>p:nth-of-type(2){color:var(--muted);line-height:1.65}.thanks div{display:flex;flex-wrap:wrap;justify-content:center;gap:.65rem;margin-top:1.5rem}.thanks a{border:1px solid var(--border);border-radius:3px;padding:.7rem .9rem;text-decoration:none;font-weight:700}.thanks .primary{background:var(--brand);border-color:var(--brand);color:#102b19}
+</style>

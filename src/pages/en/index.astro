@@ -1,0 +1,293 @@
+---
+import { getCollection, type CollectionEntry } from "astro:content";
+import EnglishSiteLayout from "../../layouts/EnglishSiteLayout.astro";
+import { isReachableBlogEntry } from "../../lib/blogVisibility";
+
+type Post = CollectionEntry<"blog">;
+
+const EN_CATEGORIES = new Set([
+  "cannabis-news",
+  "cannabis-legalization",
+  "cbd-and-nutrition",
+  "cannabis-and-innovation",
+  "medical-cannabis",
+  "hemp-sustainability",
+  "health-wellness",
+]);
+
+const all = await getCollection("blog");
+const posts = all
+  .filter((post) => {
+    if (!isReachableBlogEntry(post)) return false;
+    if (post.data.editorialStatus === "legacy-review") return false;
+    if (!EN_CATEGORIES.has(String(post.data.category ?? ""))) return false;
+    const date = post.data.publishDate ? new Date(post.data.publishDate) : null;
+    return date && !Number.isNaN(date.getTime()) && date.getTime() <= Date.now();
+  })
+  .sort((a, b) => new Date(b.data.publishDate ?? 0).getTime() - new Date(a.data.publishDate ?? 0).getTime());
+
+const slugOf = (post: Post) => String(post.data.slug || post.slug || post.id || "").trim();
+const hrefOf = (post: Post) => `/blog/${slugOf(post)}/`;
+const dateOf = (post: Post) => {
+  const d = post.data.publishDate ? new Date(post.data.publishDate) : null;
+  return d && !Number.isNaN(d.getTime())
+    ? d.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
+    : "";
+};
+const imageOf = (post: Post) => {
+  const raw = post.data.image || post.data.coverImage || "";
+  const value = raw && typeof raw === "object" && "src" in raw ? (raw as { src?: unknown }).src : raw;
+  const src = typeof value === "string" ? value.trim() : "";
+  if (!src) return "/images/placeholder.svg";
+  if (/^https?:\/\//i.test(src) || src.startsWith("/")) return src;
+  return `/${src}`;
+};
+
+const hero = posts[0] ?? null;
+const latest = posts.slice(1, 7);
+const topicSections = [
+  { title: "News", href: "/en/news/", categories: ["cannabis-news", "cannabis-and-innovation"] },
+  { title: "Policy", href: "/en/policy/", categories: ["cannabis-legalization", "medical-cannabis"] },
+  { title: "CBD", href: "/en/cbd/", categories: ["cbd-and-nutrition", "health-wellness"] },
+  { title: "Hemp", href: "/en/hemp/", categories: ["hemp-sustainability", "cannabis-and-innovation"] },
+].map((section) => ({
+  ...section,
+  posts: posts.filter((post) => section.categories.includes(String(post.data.category ?? ""))).slice(0, 3),
+}));
+
+const SITE_URL = import.meta.env.SITE || "https://canapalandia.com";
+const canonical = `${SITE_URL}/en/`;
+const title = "Canapalandia in English | Cannabis, CBD, hemp and policy";
+const description = "Canapalandia's English edition: independent reporting and explainers on cannabis, CBD, hemp, regulation, health, sustainability and innovation in Italy and Europe.";
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      name: "Canapalandia in English",
+      url: canonical,
+      description,
+      inLanguage: "en",
+    },
+    {
+      "@type": "Organization",
+      name: "Canapalandia",
+      url: `${SITE_URL}/`,
+    },
+  ],
+};
+---
+
+<EnglishSiteLayout
+  title={title}
+  description={description}
+  canonical={canonical}
+  alternateIt="/"
+  shell={false}
+>
+  <script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLd).replace(/</g, "\\u003c")} />
+
+  <div class="en-home">
+    <section class="en-home__intro">
+      <div class="container en-home__introInner">
+        <p class="en-home__kicker">Canapalandia in English</p>
+        <h1>Hemp, CBD, cannabis and policy — without the noise.</h1>
+        <p class="en-home__lede">
+          Independent reporting, explainers and long-form articles from Italy and Europe. We separate
+          verified facts from claims, and regulation from slogans.
+        </p>
+        <div class="en-home__quicklinks" aria-label="Explore the English edition">
+          <a href="/en/news/">News</a>
+          <a href="/en/policy/">Policy</a>
+          <a href="/en/cbd/">CBD</a>
+          <a href="/en/hemp/">Hemp</a>
+          <a href="/en/blog/">All articles</a>
+        </div>
+      </div>
+    </section>
+
+    {hero ? (
+      <section class="en-home__hero" aria-labelledby="en-hero-title">
+        <div class="container en-home__heroGrid">
+          <a class="en-home__heroMedia" href={hrefOf(hero)} aria-hidden="true" tabindex="-1">
+            <img src={imageOf(hero)} alt="" loading="eager" fetchpriority="high" decoding="async" onerror="this.onerror=null;this.src='/images/placeholder.svg';" />
+          </a>
+          <article class="en-home__heroBody">
+            <p class="en-home__meta">Latest · {dateOf(hero)}</p>
+            <h2 id="en-hero-title"><a href={hrefOf(hero)}>{hero.data.title}</a></h2>
+            {hero.data.description ? <p>{hero.data.description}</p> : null}
+            <a class="en-home__button" href={hrefOf(hero)}>Read the article <span aria-hidden="true">→</span></a>
+          </article>
+        </div>
+      </section>
+    ) : null}
+
+    {latest.length ? (
+      <section class="en-home__latest" aria-labelledby="en-latest-title">
+        <div class="container">
+          <div class="en-home__sectionHead">
+            <h2 id="en-latest-title">Latest in English</h2>
+            <a href="/en/blog/">Browse the archive →</a>
+          </div>
+          <div class="en-home__latestGrid">
+            {latest.map((post) => (
+              <article class="en-home__card">
+                <a class="en-home__cardMedia" href={hrefOf(post)} aria-hidden="true" tabindex="-1">
+                  <img src={imageOf(post)} alt="" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='/images/placeholder.svg';" />
+                </a>
+                <p class="en-home__meta">{dateOf(post)}</p>
+                <h3><a href={hrefOf(post)}>{post.data.title}</a></h3>
+                {post.data.description ? <p>{post.data.description}</p> : null}
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+    ) : null}
+
+    <section class="en-home__topics" aria-label="English topics">
+      <div class="container">
+        {topicSections.map((section) => (
+          section.posts.length ? (
+            <div class="en-home__topic">
+              <div class="en-home__sectionHead">
+                <h2>{section.title}</h2>
+                <a href={section.href}>View section →</a>
+              </div>
+              <div class="en-home__topicGrid">
+                {section.posts.map((post) => (
+                  <article>
+                    <p class="en-home__meta">{dateOf(post)}</p>
+                    <h3><a href={hrefOf(post)}>{post.data.title}</a></h3>
+                    {post.data.description ? <p>{post.data.description}</p> : null}
+                  </article>
+                ))}
+              </div>
+            </div>
+          ) : null
+        ))}
+      </div>
+    </section>
+
+    <section class="en-home__principles">
+      <div class="container en-home__principlesGrid">
+        <div>
+          <p class="en-home__kicker">Editorial approach</p>
+          <h2>Clear language, current sources, explicit uncertainty.</h2>
+        </div>
+        <div>
+          <p>
+            Canapalandia is an independent information project. We do not sell cannabis or CBD products,
+            and our articles are not medical or legal advice. Where evidence is incomplete or regulation is
+            changing, we say so directly.
+          </p>
+          <a href="/en/about/">About Canapalandia →</a>
+          <a href="/en/disclaimer/">Editorial and legal disclaimer →</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="en-home__newsletter" id="newsletter" aria-labelledby="en-newsletter-title">
+      <div class="container en-home__newsletterGrid">
+        <div>
+          <p class="en-home__kicker">Free newsletter</p>
+          <h2 id="en-newsletter-title">What changed, what matters, and what to read next.</h2>
+          <p>A concise editorial selection of updates, analysis and official references.</p>
+        </div>
+        <form class="en-home__form" method="post" action="/api/newsletter">
+          <input type="text" name="hp" tabindex="-1" autocomplete="off" aria-hidden="true" class="en-home__hp" />
+          <label for="en-home-email">Email address</label>
+          <div class="en-home__formRow">
+            <input id="en-home-email" type="email" name="email" placeholder="name@example.com" autocomplete="email" required />
+            <button type="submit">Subscribe</button>
+          </div>
+          <label class="en-home__consent">
+            <input type="checkbox" name="consent" value="true" required />
+            <span>I agree to the processing of my data as described in the <a href="/en/privacy/">Privacy Policy</a>.</span>
+          </label>
+        </form>
+      </div>
+    </section>
+  </div>
+</EnglishSiteLayout>
+
+<style>
+  .en-home { --paper: color-mix(in oklab, var(--bg) 92%, white 8%); }
+  .en-home__intro { padding: clamp(3.5rem, 8vw, 7rem) 0 3rem; border-bottom: 1px solid var(--border); }
+  .en-home__introInner { max-width: 1180px; }
+  .en-home__kicker {
+    margin: 0 0 .8rem;
+    color: var(--brand);
+    font: 700 .78rem/1.2 Archivo, sans-serif;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+  }
+  .en-home__intro h1 {
+    max-width: 1000px;
+    margin: 0;
+    font-family: Newsreader, serif;
+    font-size: clamp(3.4rem, 8vw, 7.6rem);
+    line-height: .9;
+    letter-spacing: -.045em;
+  }
+  .en-home__lede {
+    max-width: 720px;
+    margin: 1.5rem 0 0;
+    color: var(--muted);
+    font-size: clamp(1.05rem, 2vw, 1.28rem);
+    line-height: 1.6;
+  }
+  .en-home__quicklinks { display: flex; flex-wrap: wrap; gap: .65rem; margin-top: 1.6rem; }
+  .en-home__quicklinks a {
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: .55rem .9rem;
+    text-decoration: none;
+    font-weight: 700;
+  }
+  .en-home__quicklinks a:hover { border-color: var(--brand); color: var(--brand); }
+  .en-home__hero { padding: 3rem 0; border-bottom: 1px solid var(--border); }
+  .en-home__heroGrid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(300px, .85fr); gap: 2.3rem; align-items: center; }
+  .en-home__heroMedia { display: block; aspect-ratio: 16/9; overflow: hidden; border-radius: var(--r-sm); background: var(--panel); }
+  .en-home__heroMedia img, .en-home__cardMedia img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .en-home__meta { margin: 0 0 .55rem; color: var(--muted); font: 600 .75rem/1.4 Archivo, sans-serif; text-transform: uppercase; letter-spacing: .06em; }
+  .en-home__heroBody h2 { margin: 0 0 1rem; font: 500 clamp(2.5rem, 5vw, 4.7rem)/.95 Newsreader, serif; letter-spacing: -.035em; }
+  .en-home__heroBody h2 a, .en-home h3 a { color: inherit; text-decoration: none; }
+  .en-home__heroBody > p:not(.en-home__meta) { color: var(--muted); line-height: 1.65; }
+  .en-home__button { display: inline-flex; margin-top: .6rem; padding: .78rem 1rem; border-radius: 3px; background: var(--brand); color: #102b19; font-weight: 800; text-decoration: none; }
+  .en-home__latest, .en-home__topics, .en-home__principles, .en-home__newsletter { padding: 3.4rem 0; border-bottom: 1px solid var(--border); }
+  .en-home__sectionHead { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: 1.4rem; }
+  .en-home__sectionHead h2 { margin: 0; font: 500 clamp(2rem, 4vw, 3.3rem)/1 Newsreader, serif; }
+  .en-home__sectionHead a { color: var(--brand); font-weight: 700; text-decoration: none; }
+  .en-home__latestGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2rem 1.35rem; }
+  .en-home__card { border-top: 1px solid var(--border); padding-top: .9rem; }
+  .en-home__cardMedia { display: block; aspect-ratio: 16/10; overflow: hidden; border-radius: var(--r-sm); margin-bottom: .9rem; background: var(--panel); }
+  .en-home__card h3, .en-home__topic h3 { margin: 0 0 .55rem; font: 500 1.55rem/1.08 Newsreader, serif; }
+  .en-home__card > p:last-child, .en-home__topic article > p:last-child { margin: 0; color: var(--muted); line-height: 1.55; }
+  .en-home__topic { padding: 2.4rem 0; border-top: 1px solid var(--border); }
+  .en-home__topic:first-child { padding-top: 0; border-top: 0; }
+  .en-home__topicGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.5rem; }
+  .en-home__topic article { padding-right: 1rem; }
+  .en-home__principlesGrid, .en-home__newsletterGrid { display: grid; grid-template-columns: .8fr 1.2fr; gap: 3rem; align-items: start; }
+  .en-home__principles h2, .en-home__newsletter h2 { margin: 0; font: 500 clamp(2.3rem, 5vw, 4.2rem)/.98 Newsreader, serif; }
+  .en-home__principlesGrid > div:last-child { color: var(--muted); line-height: 1.7; }
+  .en-home__principlesGrid > div:last-child a { display: block; margin-top: .7rem; color: var(--brand); font-weight: 700; text-decoration: none; }
+  .en-home__newsletter { background: color-mix(in oklab, var(--panel) 70%, transparent); }
+  .en-home__newsletter p { color: var(--muted); line-height: 1.6; }
+  .en-home__form label:first-of-type { display: block; font-weight: 700; margin-bottom: .45rem; }
+  .en-home__formRow { display: flex; gap: .5rem; }
+  .en-home__formRow input { flex: 1; min-width: 0; border: 1px solid var(--border); border-radius: 3px; background: var(--bg); color: var(--text); padding: .85rem .9rem; }
+  .en-home__formRow button { border: 0; border-radius: 3px; background: var(--brand); color: #102b19; font-weight: 800; padding: .85rem 1rem; cursor: pointer; }
+  .en-home__consent { display: flex !important; gap: .55rem; margin-top: .75rem !important; color: var(--muted); font-size: .86rem; font-weight: 400 !important; line-height: 1.45; }
+  .en-home__consent a { color: var(--brand); }
+  .en-home__hp { position: absolute; left: -9999px; }
+  @media (max-width: 900px) {
+    .en-home__heroGrid, .en-home__principlesGrid, .en-home__newsletterGrid { grid-template-columns: 1fr; }
+    .en-home__latestGrid, .en-home__topicGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 640px) {
+    .en-home__intro { padding-top: 2.5rem; }
+    .en-home__latestGrid, .en-home__topicGrid { grid-template-columns: 1fr; }
+    .en-home__formRow { flex-direction: column; }
+  }
+</style>

@@ -1,49 +1,33 @@
 ---
-/**
- * Route EN categoria paginazione: /en/categoria/[slug]/page/[page]/
- * Compatibilità WordPress: assorbe URL storici EN /en/categoria/slug/page/2/
- * 
- * page=1 canonicalizza a /en/categoria/[slug]/
- * Se il sito non ha contenuti EN reali, mostra pagina minimale con noindex,follow
- */
-import SiteLayout from "../../../../../layouts/SiteLayout.astro";
+/** Legacy compatibility route for /en/categoria/:slug/page/:page/. */
+import EnglishSiteLayout from "../../../../../layouts/EnglishSiteLayout.astro";
+import { EN_BLOG_CATEGORIES } from "../../../../../lib/localization";
 
 export const prerender = false;
 
-const slug = String(Astro.params.slug ?? "").trim();
-const pageParam = Astro.params.page;
-const pageNum = pageParam ? parseInt(pageParam, 10) : 1;
-
-// Validazione: page deve essere intero >= 1
-if (isNaN(pageNum) || pageNum < 1) {
-  return new Response(null, {
-    status: 404,
-    statusText: "Not Found",
-  });
+const slug = String(Astro.params.slug ?? "").trim().toLowerCase();
+const page = Number.parseInt(String(Astro.params.page ?? ""), 10);
+if (!slug || !Number.isInteger(page) || page < 1) {
+  return new Response(null, { status: 404, statusText: "Not Found" });
 }
 
-// page=1 canonicalizza a /en/categoria/[slug]/
-if (pageNum === 1) {
-  return Astro.redirect(`/en/categoria/${slug}/`, 301);
+if (EN_BLOG_CATEGORIES.has(slug)) {
+  const destination = page === 1
+    ? `/en/category/${slug}/`
+    : `/en/category/${slug}/page/${page}/`;
+  return Astro.redirect(destination, 301);
 }
-
-// Per ora: pagina minimale con noindex (archivio EN legacy)
-const metadata = {
-  title: `Category: ${slug} — Page ${pageNum} — Canapalandia`,
-  description: "English category archive (legacy).",
-  canonical: `${import.meta.env.SITE || "https://canapalandia.com"}/en/categoria/${slug}/page/${pageNum}/`,
-  robots: { index: false, follow: true },
-};
 ---
 
-<SiteLayout metadata={metadata}>
-  <main class="container page-shell">
-    <section class="card">
-      <h1>Category: {slug} — Page {pageNum}</h1>
-      <p>This is a legacy English category archive. The site content is primarily in Italian.</p>
-      <p>
-        <a href={`/categoria/${slug}/`}>View Italian version</a> | <a href="/blog/">Go to Blog</a>
-      </p>
-    </section>
-  </main>
-</SiteLayout>
+<EnglishSiteLayout
+  title={`Legacy category: ${slug} — Page ${page} | Canapalandia`}
+  description="Historical English category URL retained for compatibility."
+  canonical={`/en/categoria/${slug}/page/${page}/`}
+  robots="noindex,follow"
+>
+  <section class="card">
+    <h1>Historical category URL</h1>
+    <p>This legacy paginated URL is kept for compatibility and is not part of the current English taxonomy.</p>
+    <p><a href="/en/blog/">Browse the current English archive →</a></p>
+  </section>
+</EnglishSiteLayout>
