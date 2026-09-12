@@ -74,6 +74,10 @@ const BLOG_FORCED_LEGACY_REVIEW_SLUGS = new Set<string>([
   "olio-di-canapa-proprieta-benefici-usi-in-cucina",
   "canapa-salute-cardiovascolare-cosa-dice-scienza",
   "come-scegliere-prodotti-cbd",
+  "best-cannabis-seed-banks-affiliate-programs",
+  "cannabis-seed-banks-migliori-banche-seme-cannabis",
+  "partner-seedsman",
+  "partner-seedsman-canapalandia",
 ]);
 
 const LEGACY_REVIEW_TITLE = "Articolo d’archivio in revisione editoriale";
