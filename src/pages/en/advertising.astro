@@ -1,41 +1,125 @@
 ---
 import EnglishSiteLayout from "../../layouts/EnglishSiteLayout.astro";
+
+const EMAIL = "info@canapalandia.com";
+const WHATSAPP_URL = "https://wa.me/393403223494";
+const WHATSAPP_LABEL = "+39 340 32 23 494";
+
+const facts = [
+  ["Specialised audience", "Readers interested in hemp, CBD, regulation and sustainability."],
+  ["Editorial review", "Every piece is reviewed by the editorial team before publication."],
+  ["Transparency", "Sponsored content is clearly identified."],
+  ["Social distribution", "Content is shared through Canapalandia's project channels."],
+] as const;
+
+const plans = [
+  ["Article supplied by you", "€180", "one-off", "Editorial review, formatting, on-page SEO optimisation and publication."],
+  ["Article written by us", "€250", "one-off", "Concept and writing from an agreed brief, editorial review, on-page SEO and publication."],
+  ["Annual partnership", "€600", "/ year", "Four articles distributed during the year plus presence in the Partner section."],
+] as const;
+
+const formats = [
+  "Monthly banners on selected pages",
+  "Presence in the Partner section",
+  "Article-and-banner packages",
+  "Ongoing editorial collaborations",
+] as const;
+
+const criteria = [
+  "Original content in Italian.",
+  "Topics consistent with hemp, CBD, cannabis light, regulation, sustainability, wellness, culture and activism.",
+  "No therapeutic claims without sources.",
+  "Links are subject to editorial review.",
+  "Canapalandia may reject content that does not fit the editorial line.",
+  "Sponsored content must be clearly identified.",
+] as const;
 ---
+
 <EnglishSiteLayout
-  title="Advertising and collaborations | Canapalandia"
-  description="Advertising, sponsored content, editorial collaborations and partnership enquiries for Canapalandia."
+  title="Advertising and sponsored articles | Canapalandia"
+  description="Sponsored articles, guest posts, banners and editorial partnerships on Canapalandia, the magazine dedicated to hemp, CBD and regulation."
   canonical="/en/advertising/"
   alternateIt="/pubblicita/"
+  shell={false}
 >
-  <article class="en-page">
-    <header>
-      <p class="eyebrow">Advertising & partnerships</p>
-      <h1>Work with Canapalandia transparently.</h1>
-      <p class="lead">We consider advertising, sponsored projects, guest contributions and partnerships when they are relevant to the audience and clearly separated from independent editorial work.</p>
-    </header>
-
-    <section>
-      <h2>What we evaluate</h2>
-      <ul>
-        <li>Clearly labelled advertising placements.</li>
-        <li>Sponsored content with explicit commercial disclosure.</li>
-        <li>Editorial collaborations that add useful expertise or original information.</li>
-        <li>Partnerships related to hemp, CBD, sustainability, research, policy and adjacent sectors.</li>
-      </ul>
+  <div class="adv-en">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Advertising & collaborations</p>
+          <h1>Tell your story to an audience interested in hemp and CBD.</h1>
+          <p class="lead">Canapalandia hosts selected sponsored content and collaborations for companies, professionals and organisations in the sector. Every proposal is assessed editorially and presented to readers clearly and transparently.</p>
+          <div class="actions"><a class="primary" href="#contact">Request a proposal →</a><a href="#plans">View options</a></div>
+        </div>
+        <aside class="summary" aria-label="At a glance">
+          <h2>At a glance</h2>
+          <dl>{facts.map(([label,text]) => <div><dt>{label}</dt><dd>{text}</dd></div>)}</dl>
+        </aside>
+      </div>
     </section>
 
-    <section>
-      <h2>Editorial independence</h2>
-      <p>A commercial relationship does not buy a favourable editorial conclusion. Sponsored or commercial material should be recognisable as such, while independent reporting remains separate.</p>
+    <section class="section">
+      <div class="wrap">
+        <h2>Why work with Canapalandia</h2>
+        <div class="four">
+          <article><h3>A specialised audience</h3><p>Your project appears in a context focused on hemp, CBD, regulation, sustainability and culture.</p></article>
+          <article><h3>Editorial care</h3><p>Every piece is reviewed, formatted and adapted to Canapalandia's editorial style.</p></article>
+          <article><h3>Transparency</h3><p>Sponsored content is always clearly identified.</p></article>
+          <article><h3>Multi-channel distribution</h3><p>Editorial packages also include sharing through Canapalandia's social channels.</p></article>
+        </div>
+      </div>
     </section>
 
-    <section>
-      <h2>Send a proposal</h2>
-      <p>Describe the organisation, the proposed format, the objective, the relevant links and any timing requirements. We will assess fit, transparency and practical feasibility before discussing publication.</p>
-      <p><a class="cta" href="/en/contact/">Contact Canapalandia →</a></p>
+    <section id="plans" class="section alt">
+      <div class="wrap">
+        <p class="eyebrow">Options</p><h2>Choose the format that fits your project</h2>
+        <div class="plans">
+          {plans.map(([name,price,note,text], index) => (
+            <article class:list={["plan", {featured:index === 2}]}>
+              {index === 2 ? <p class="badge">Most complete</p> : null}
+              <h3>{name}</h3><p class="price"><strong>{price}</strong> <span>{note}</span></p><p>{text}</p>
+              <a href="#contact">Request a proposal</a>
+            </article>
+          ))}
+        </div>
+        <p class="small">All packages include distribution through Canapalandia's social channels.</p>
+      </div>
     </section>
-  </article>
+
+    <section class="section">
+      <div class="wrap two">
+        <div><p class="eyebrow">Other formats</p><h2>Tailored visibility</h2><p>We also consider ongoing collaborations and dedicated solutions for companies, professionals and sector events.</p><a href="#contact">Ask about availability and rates →</a></div>
+        <div><ul class="format-list">{formats.map((item) => <li>{item}</li>)}</ul><p class="small">Banners are available with a monthly commitment. Availability and rates depend on placement and duration.</p></div>
+      </div>
+    </section>
+
+    <section class="steps">
+      <div class="wrap"><p class="eyebrow">The process</p><h2>How it works</h2><ol>
+        <li><span>01</span><h3>Proposal</h3><p>Send us the topic, brand, goals and links you want us to evaluate.</p></li>
+        <li><span>02</span><h3>Assessment</h3><p>We check editorial fit, feasibility and the most appropriate format.</p></li>
+        <li><span>03</span><h3>Agreement</h3><p>We confirm activities, costs and payment arrangements.</p></li>
+        <li><span>04</span><h3>Publication</h3><p>We review or produce the content, publish it and handle the agreed distribution.</p></li>
+      </ol></div>
+    </section>
+
+    <section class="section">
+      <div class="wrap two">
+        <div><p class="eyebrow">Editorial policy</p><h2>Editorial criteria</h2><p>These are the standards we use to assess proposals and maintain a consistent relationship with readers.</p></div>
+        <ul class="criteria">{criteria.map((item) => <li>{item}</li>)}</ul>
+      </div>
+    </section>
+
+    <section id="contact" class="contact">
+      <div class="wrap panel">
+        <h2>Let's talk about your project</h2>
+        <p>Tell us about the brand, subject, objectives and links you want to promote. We will assess the proposal and suggest the most suitable format.</p>
+        <div class="actions"><a class="primary light" href={`mailto:${EMAIL}`}>Contact us by email</a><a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer">Message us on WhatsApp</a></div>
+        <dl class="details"><div><dt>Email</dt><dd><a href={`mailto:${EMAIL}`}>{EMAIL}</a></dd></div><div><dt>WhatsApp</dt><dd><a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer">{WHATSAPP_LABEL}</a></dd></div></dl>
+      </div>
+    </section>
+  </div>
 </EnglishSiteLayout>
+
 <style>
-  .en-page{max-width:820px;margin:0 auto;padding:2.5rem 0 5rem}.eyebrow{color:var(--brand);font:700 .78rem/1.2 Archivo,sans-serif;letter-spacing:.1em;text-transform:uppercase}.en-page h1{margin:.35rem 0 1rem;font:500 clamp(3rem,7vw,5.6rem)/.95 Newsreader,serif}.lead{font-size:1.14rem}.en-page section{margin-top:2.5rem;border-top:1px solid var(--border);padding-top:1.2rem}.en-page h2{font:500 1.9rem/1.1 Newsreader,serif}.en-page p,.en-page li{color:var(--muted);line-height:1.7}.en-page a{color:var(--brand);font-weight:700}.cta{text-decoration:none}
+  .adv-en{overflow:clip}.wrap{width:min(1160px,calc(100% - 2.5rem));margin-inline:auto}.hero{padding:clamp(3.5rem,7vw,6rem) 0}.hero-grid{display:grid;grid-template-columns:1.3fr .7fr;gap:3rem;align-items:start}.eyebrow{margin:0 0 .7rem;color:var(--brand);font:700 .76rem/1.2 Archivo,sans-serif;letter-spacing:.12em;text-transform:uppercase}.hero h1{max-width:16ch;margin:0;font:500 clamp(3rem,6vw,5.4rem)/.94 Newsreader,serif;letter-spacing:-.04em}.lead{max-width:60ch;color:var(--muted);font-size:1.12rem;line-height:1.65}.actions{display:flex;flex-wrap:wrap;gap:.7rem;margin-top:1.5rem}.actions a,.plan>a{display:inline-flex;padding:.72rem .95rem;border:1px solid var(--border);border-radius:3px;text-decoration:none;font-weight:800}.actions .primary,.plan>a{background:var(--brand);border-color:var(--brand);color:#102b19}.summary{padding:1.25rem;border:1px solid var(--border);border-radius:var(--r-md);background:var(--panel)}.summary h2{margin:0 0 .5rem;font-size:.78rem;text-transform:uppercase;letter-spacing:.1em}.summary dl{margin:0}.summary dl>div{padding:.9rem 0;border-top:1px solid var(--border)}.summary dt{font-weight:800}.summary dd{margin:.25rem 0 0;color:var(--muted);line-height:1.5}.section{padding:3.8rem 0;border-top:1px solid var(--border)}.section.alt{background:color-mix(in oklab,var(--panel) 65%,transparent)}.section h2,.steps h2,.contact h2{margin:.2rem 0 1.4rem;font:500 clamp(2.2rem,4vw,3.7rem)/1 Newsreader,serif}.four,.plans{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem}.four article{border-top:2px solid var(--brand);padding-top:1rem}.four h3,.plan h3{font:500 1.5rem/1.08 Newsreader,serif}.four p,.plan p,.two p{color:var(--muted);line-height:1.6}.plans{grid-template-columns:repeat(3,minmax(0,1fr))}.plan{display:flex;flex-direction:column;padding:1.4rem;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg)}.plan.featured{border-color:var(--brand)}.badge{align-self:flex-start;margin:0!important;padding:.25rem .5rem;border-radius:999px;background:var(--brand);color:#102b19!important;font-size:.7rem;font-weight:800;text-transform:uppercase}.price strong{font-size:2.2rem;color:var(--text)}.price span{font-size:.85rem}.plan>a{margin-top:auto;align-self:flex-start}.small{color:var(--muted);font-size:.88rem}.two{display:grid;grid-template-columns:.85fr 1.15fr;gap:3rem}.two a{color:var(--brand);font-weight:800}.format-list,.criteria{list-style:none;padding:0;margin:0}.format-list li,.criteria li{padding:.85rem 0;border-top:1px solid var(--border)}.steps{padding:4rem 0;background:#102218;color:#fff}.steps .eyebrow{color:#d8b978}.steps h2{color:#fff}.steps ol{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));list-style:none;padding:0;margin:0;border-top:1px solid rgba(255,255,255,.15)}.steps li{padding:1.3rem;border-right:1px solid rgba(255,255,255,.15)}.steps span{color:#9fb79a;font-size:.75rem}.steps h3{font:500 1.55rem/1.1 Newsreader,serif}.steps p{color:#bfcdbb;line-height:1.55}.contact{padding:0 0 5rem}.panel{padding:clamp(2rem,5vw,4rem);border-radius:22px;background:#173b29;color:#fff}.panel h2{color:#fff}.panel>p{max-width:60ch;color:#c6d3c2;line-height:1.65}.panel .actions a{color:#fff;border-color:rgba(255,255,255,.25)}.panel .actions .light{background:#fff;color:#173b29;border-color:#fff}.details{display:flex;gap:3rem;margin:2rem 0 0;padding-top:1.2rem;border-top:1px solid rgba(255,255,255,.15)}.details dt{color:#9fb79a;font-size:.75rem;text-transform:uppercase}.details dd{margin:.3rem 0 0}.details a{color:#d8b978}@media(max-width:900px){.hero-grid,.two{grid-template-columns:1fr}.four{grid-template-columns:repeat(2,1fr)}.plans{grid-template-columns:1fr}.steps ol{grid-template-columns:repeat(2,1fr)}}@media(max-width:600px){.four,.steps ol{grid-template-columns:1fr}.actions,.details{flex-direction:column;gap:.7rem}}
 </style>
