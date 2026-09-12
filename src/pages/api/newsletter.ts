@@ -4,29 +4,25 @@ import type { APIRoute } from "astro";
 
 const BUTTONDOWN_API_URL = "https://api.buttondown.com/v1/subscribers";
 
-type Campaign = "drop-001" | "hemp-food-001";
+type Campaign = "hemp-food-001";
 type UiLang = "it" | "en";
 type EnglishFormStatus = "success" | "exists" | "error";
 
-const DROP_001_PREFERENCES = new Set(["tshirt", "poster", "tote"]);
-const DROP_001_CREATIVE_VERSIONS = new Set(["claims-v2", "neutral-format-v1"]);
 const HEMP_FOOD_001_PREFERENCES = new Set(["semi-decorticati-500g"]);
 const HEMP_FOOD_001_CREATIVE_VERSIONS = new Set(["seed-pilot-v1"]);
 
 function normalizedCampaign(value: unknown): Campaign | null {
-  return value === "drop-001" || value === "hemp-food-001" ? value : null;
+  return value === "hemp-food-001" ? value : null;
 }
 
 function normalizedPreference(value: unknown, campaign: Campaign | null): string | null {
   if (typeof value !== "string") return null;
-  if (campaign === "drop-001" && DROP_001_PREFERENCES.has(value)) return value;
   if (campaign === "hemp-food-001" && HEMP_FOOD_001_PREFERENCES.has(value)) return value;
   return null;
 }
 
 function normalizedCreativeVersion(value: unknown, campaign: Campaign | null): string | null {
   if (typeof value !== "string") return null;
-  if (campaign === "drop-001" && DROP_001_CREATIVE_VERSIONS.has(value)) return value;
   if (campaign === "hemp-food-001" && HEMP_FOOD_001_CREATIVE_VERSIONS.has(value)) return value;
   return null;
 }
@@ -39,7 +35,6 @@ function jsonResponse(message: string, status: number): Response {
 }
 
 function isCampaignEnabled(campaign: Campaign | null): boolean {
-  if (campaign === "drop-001") return import.meta.env.DROP_001_TEST_ENABLED === "true";
   if (campaign === "hemp-food-001") return import.meta.env.HEMP_FOOD_001_TEST_ENABLED === "true";
   return true;
 }
