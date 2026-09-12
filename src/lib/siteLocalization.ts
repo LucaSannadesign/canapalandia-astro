@@ -31,7 +31,6 @@ export const PAGE_TRANSLATION_PAIRS: readonly PageTranslationPair[] = [
   { it: "/ribaltatore/", en: "/en/ribaltatore/" },
   { it: "/frasi-ribaltate/", en: "/en/frasi-ribaltate/" },
   { it: "/bottega/", en: "/en/bottega/" },
-  { it: "/drop-001/", en: "/en/drop-001/" },
   { it: "/grazie-collaborazione/", en: "/en/thanks-collaboration/" },
 ] as const;
 
