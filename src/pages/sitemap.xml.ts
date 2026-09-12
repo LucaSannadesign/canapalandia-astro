@@ -7,12 +7,11 @@ import { CATEGORY_INDEX_ALLOWLIST } from "../lib/categoryIndexAllowlist";
 import { normalizeCategorySlug } from "../lib/categoryUrl";
 import { isPublishedBlogEntry } from "../lib/blogVisibility";
 import {
-  BLOG_TRANSLATION_PAIRS,
   EN_BLOG_CATEGORIES,
   languageFromCategory,
   translationAlternates,
 } from "../lib/localization";
-import { findPageTranslationPair, PAGE_TRANSLATION_PAIRS } from "../lib/siteLocalization";
+import { findPageTranslationPair } from "../lib/siteLocalization";
 import { loadWp } from "../lib/wp";
 
 const PAGES_DIR = fileURLToPath(new URL("../pages", import.meta.url));
@@ -23,10 +22,8 @@ const IT_STRUCTURAL_ROUTES = [
   "/lab/",
   "/chi-siamo/",
   "/chi-siamo/missione/",
-  "/la-nostra-storia/",
   "/pubblicita/",
   "/collabora-con-canapalandia/",
-  "/i-nostri-partner/",
   "/sostieni-la-nostra-causa/",
   "/disclaimer-legale-canapalandia/",
   "/privacy-policy/",
@@ -48,8 +45,6 @@ const EN_STRUCTURAL_ROUTES = [
   "/en/lab/",
   "/en/about/",
   "/en/mission/",
-  "/en/our-story/",
-  "/en/partners/",
   "/en/advertising/",
   "/en/collaborate/",
   "/en/support/",
@@ -63,12 +58,7 @@ const EN_STRUCTURAL_ROUTES = [
   "/en/frasi-ribaltate/",
 ] as const;
 
-const ALWAYS_INCLUDE_STRUCTURAL_ROUTES = new Set<string>([
-  "/",
-  "/blog/",
-  "/lab/",
-  ...EN_STRUCTURAL_ROUTES,
-]);
+const ALWAYS_INCLUDE_STRUCTURAL_ROUTES = new Set<string>(["/", "/blog/", "/lab/"]);
 
 export const prerender = false;
 const SITE_URL = (import.meta.env.SITE || "https://canapalandia.com").replace(/\/+$/, "");
@@ -85,8 +75,7 @@ function escapeXml(input: unknown): string {
 function formatLastmod(date: string | undefined): string | undefined {
   if (!date) return undefined;
   const d = new Date(date);
-  if (Number.isNaN(d.getTime())) return undefined;
-  return d.toISOString().split("T")[0];
+  return Number.isNaN(d.getTime()) ? undefined : d.toISOString().split("T")[0];
 }
 
 function normalizeUrl(path: string): string {
@@ -176,7 +165,7 @@ async function structuralRouteExists(route: string, wpPagePaths: Set<string>): P
   if (ALWAYS_INCLUDE_STRUCTURAL_ROUTES.has(route)) return true;
   if (await astroRouteExists(route)) return true;
   const rel = normalizePathKey(route);
-  return Boolean(rel && wpPagePaths.has(rel));
+  return Boolean(rel && !rel.startsWith("en/") && wpPagePaths.has(rel));
 }
 
 function postLastmodIso(post: CollectionEntry<"blog">): string | undefined {
@@ -261,11 +250,12 @@ export const GET: APIRoute = async () => {
         normalizeCategorySlug(post.data.category || "") === canonicalCategorySlug,
     );
     if (!inCat.length) continue;
-    const relCat = normalizePathKey(`categoria/${canonicalCategorySlug}`);
-    if (isRedirectSourcePath(relCat)) continue;
+    const route = `/categoria/${canonicalCategorySlug}/`;
+    if (isRedirectSourcePath(normalizePathKey(route))) continue;
     urls.push({
-      loc: normalizeUrl(`categoria/${canonicalCategorySlug}`),
+      loc: normalizeUrl(route),
       lastmod: maxLastmodFromPosts(inCat),
+      alternates: pageAlternates(route),
     });
   }
 
@@ -275,16 +265,10 @@ export const GET: APIRoute = async () => {
     );
     if (!inCat.length) continue;
     urls.push({
-      loc: normalizeUrl(`en/category/${slug}`),
+      loc: normalizeUrl(`/en/category/${slug}/`),
       lastmod: maxLastmodFromPosts(inCat),
     });
   }
-
-  // Keep registry imports exercised by the sitemap gate: each verified article pair
-  // must resolve through translationAlternates above, while page pairs are emitted
-  // reciprocally through pageAlternates.
-  void BLOG_TRANSLATION_PAIRS;
-  void PAGE_TRANSLATION_PAIRS;
 
   const seenLoc = new Set<string>();
   const deduped = urls.filter((item) => {
@@ -297,15 +281,15 @@ export const GET: APIRoute = async () => {
     `<?xml version="1.0" encoding="UTF-8"?>\n` +
     `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n` +
     deduped.map((item) => {
-      const lastmod = item.lastmod ? `    <lastmod>${escapeXml(item.lastmod)}</lastmod>\n` : "";
-      const alternates = item.alternates
+      const alternateTags = item.alternates
         ? [
             `    <xhtml:link rel="alternate" hreflang="it" href="${escapeXml(item.alternates.it)}" />`,
             `    <xhtml:link rel="alternate" hreflang="en" href="${escapeXml(item.alternates.en)}" />`,
             `    <xhtml:link rel="alternate" hreflang="x-default" href="${escapeXml(item.alternates.xDefault)}" />`,
           ].join("\n") + "\n"
         : "";
-      return `  <url>\n    <loc>${escapeXml(item.loc)}</loc>\n${alternates}${lastmod}  </url>\n`;
+      const lastmodTag = item.lastmod ? `    <lastmod>${escapeXml(item.lastmod)}</lastmod>\n` : "";
+      return `  <url>\n    <loc>${escapeXml(item.loc)}</loc>\n${alternateTags}${lastmodTag}  </url>\n`;
     }).join("") +
     `</urlset>\n`;
 
