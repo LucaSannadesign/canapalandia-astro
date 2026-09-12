@@ -1,34 +1,31 @@
 ---
-/**
- * Route EN tag: /en/tag/[slug]/
- * Compatibilità WordPress: assorbe URL storici EN /en/tag/slug/
- * 
- * Se il sito non ha contenuti EN reali, mostra pagina minimale con noindex,follow
- */
-import SiteLayout from "../../../layouts/SiteLayout.astro";
-
 export const prerender = false;
 
-const slug = String(Astro.params.slug ?? "").trim();
+import { getCollection } from "astro:content";
+import EnglishTopicArchive from "../../../components/en/EnglishTopicArchive.astro";
+import { isReachableBlogEntry } from "../../../lib/blogVisibility";
+import { languageFromCategory } from "../../../lib/localization";
 
-// Per ora: pagina minimale con noindex (archivio EN legacy)
-// Se in futuro ci sono contenuti EN, aggiornare questa route
-const metadata = {
-  title: `Tag: ${slug} — Canapalandia`,
-  description: "English tag archive (legacy).",
-  canonical: `${import.meta.env.SITE || "https://canapalandia.com"}/en/tag/${slug}/`,
-  robots: { index: false, follow: true },
-};
+const slug = String(Astro.params.slug ?? "").trim().toLowerCase();
+if (!slug) return new Response(null, { status: 404, statusText: "Not Found" });
+
+const all = await getCollection("blog");
+const exists = all.some((post) => {
+  if (!isReachableBlogEntry(post) || post.data.editorialStatus === "legacy-review") return false;
+  if (languageFromCategory(post.data.category) !== "en") return false;
+  const tags = Array.isArray(post.data.tags) ? post.data.tags.map((tag) => String(tag).trim().toLowerCase()) : [];
+  return tags.includes(slug);
+});
+if (!exists) return new Response(null, { status: 404, statusText: "Not Found" });
+
+const title = slug.replace(/-/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 ---
 
-<SiteLayout metadata={metadata}>
-  <main class="container page-shell">
-    <section class="card">
-      <h1>Tag: {slug}</h1>
-      <p>This is a legacy English tag archive. The site content is primarily in Italian.</p>
-      <p>
-        <a href={`/tag/${slug}/`}>View Italian version</a> | <a href="/blog/">Go to Blog</a>
-      </p>
-    </section>
-  </main>
-</SiteLayout>
+<EnglishTopicArchive
+  title={title}
+  eyebrow="Tag"
+  description={`English-language Canapalandia articles tagged “${title}”.`}
+  tags={[slug]}
+  canonicalPath={`/en/tag/${slug}/`}
+  basePath={`/en/tag/${slug}/`}
+/>
