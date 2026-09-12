@@ -280,6 +280,10 @@ function isCurrent(path: string): boolean {
 </html>
 
 <style is:global>
+  html[data-theme="light"] .nav a[aria-current="page"],
+  html[data-theme="light"] .mobile-menu__content a[aria-current="page"] {
+    color: #f8fbf7 !important;
+  }
   .global-language {
     display: inline-flex;
     align-items: center;
