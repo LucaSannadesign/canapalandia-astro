@@ -1,49 +1,68 @@
 ---
+import { getCollection, getEntry } from "astro:content";
+
 interface Props {
   publishDate: Date | string | number | null | undefined;
   updatedDate?: Date | string | number | null | undefined;
-  slug: string; // Mantenuto per compatibilità futura (pageviews)
+  slug: string;
+  lang?: "it" | "en";
 }
 
-const { publishDate, updatedDate, slug } = Astro.props;
+const { publishDate, updatedDate, slug, lang: langProp } = Astro.props as Props;
 
-// TODO: Reintrodurre pageviews quando il tracking sarà stabile
-// Feature flag suggerito: SHOW_PAGEVIEWS (env/config) o showPageviews (frontmatter)
-// const SHOW_PAGEVIEWS = false; // Configurazione futura
+const EN_BLOG_CATEGORIES = new Set([
+  "cannabis-news",
+  "cannabis-legalization",
+  "cbd-and-nutrition",
+  "cannabis-and-innovation",
+  "medical-cannabis",
+  "hemp-sustainability",
+  "health-wellness",
+]);
 
-// Helper per convertire in Date | null
+async function detectLanguage(): Promise<"it" | "en"> {
+  if (langProp) return langProp;
+
+  try {
+    let entry = await getEntry("blog", slug);
+    if (!entry) {
+      const all = await getCollection("blog");
+      entry = all.find((item) => (item.data.slug || item.id || "").trim() === slug);
+    }
+
+    const category = entry?.data.category;
+    return typeof category === "string" && EN_BLOG_CATEGORIES.has(category) ? "en" : "it";
+  } catch {
+    return "it";
+  }
+}
+
+const lang = await detectLanguage();
+const locale = lang === "en" ? "en-GB" : "it-IT";
+const updatedLabel = lang === "en" ? "Updated" : "Aggiornato il";
+
 function toDate(value: Date | string | number | null | undefined): Date | null {
   if (!value) return null;
-  if (value instanceof Date) {
-    return Number.isNaN(value.getTime()) ? null : value;
-  }
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
   const d = new Date(String(value));
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-// Helper per formattare data
 function formatDate(value: Date | string | number | null | undefined): string {
   const d = toDate(value);
   if (!d) return "";
-  return d.toLocaleDateString("it-IT", { year: "numeric", month: "long", day: "numeric" });
+  return d.toLocaleDateString(locale, { year: "numeric", month: "long", day: "numeric" });
 }
 
-// Helper per ottenere datetime ISO (YYYY-MM-DD)
 function getDateTime(value: Date | string | number | null | undefined): string {
   const d = toDate(value);
   if (!d) return "";
   return d.toISOString().split("T")[0];
 }
 
-// Normalizza le date
 const pubDate = toDate(publishDate);
 const updDate = toDate(updatedDate);
-
-// Mostra "Aggiornato il..." solo quando l'aggiornamento è realmente successivo
-// alla pubblicazione. In questo modo dati legacy incoerenti non vengono esposti.
-const showUpdated = Boolean(
-  updDate && pubDate && updDate.getTime() > pubDate.getTime(),
-);
+const showUpdated = Boolean(updDate && pubDate && updDate.getTime() > pubDate.getTime());
 
 const formattedPublishDate = formatDate(publishDate);
 const publishDateTime = getDateTime(publishDate);
@@ -70,14 +89,11 @@ const updatedDateTime = showUpdated ? getDateTime(updatedDate) : "";
       <line x1="8" y1="2" x2="8" y2="6"></line>
       <line x1="3" y1="10" x2="21" y2="10"></line>
     </svg>
-    <time
-      class="post-meta__date"
-      datetime={publishDateTime}
-    >
+    <time class="post-meta__date" datetime={publishDateTime}>
       {formattedPublishDate}
     </time>
   </div>
-  
+
   {showUpdated ? (
     <div class="post-meta__item">
       <svg
@@ -94,42 +110,13 @@ const updatedDateTime = showUpdated ? getDateTime(updatedDate) : "";
       >
         <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"></path>
       </svg>
-      <span class="post-meta__label">Aggiornato il</span>
-      <time
-        class="post-meta__date"
-        datetime={updatedDateTime}
-      >
+      <span class="post-meta__label">{updatedLabel}</span>
+      <time class="post-meta__date" datetime={updatedDateTime}>
         {formattedUpdatedDate}
       </time>
     </div>
   ) : null}
-  
-  {/* TODO: Reintrodurre pageviews quando il tracking sarà stabile
-      Blocco rimosso temporaneamente per inaffidabilità dei dati.
-      Per riattivare:
-      1. Scommentare il blocco HTML qui sotto
-      2. Scommentare lo script define:vars={{ slug }}
-      3. Verificare che l'endpoint /api/pageviews/[slug] funzioni correttamente
-      4. Testare il caricamento asincrono delle visite
-  */}
-  {/* 
-  <div class="post-meta__item" id={`post-views-${slug}`}>
-    <svg class="post-meta__icon" ... aria-hidden="true">...</svg>
-    <span class="post-meta__views" aria-live="polite">
-      <span class="post-meta__views-placeholder">—</span> letture
-    </span>
-  </div>
-  */}
 </div>
-
-{/* TODO: Script per pageviews - da riattivare quando il tracking sarà stabile
-<script define:vars={{ slug }}>
-  (() => {
-    "use strict";
-    // ... codice per caricare pageviews da /api/pageviews/${slug}
-  })();
-</script>
-*/}
 
 <style>
   .post-meta {
@@ -168,18 +155,6 @@ const updatedDateTime = showUpdated ? getDateTime(updatedDate) : "";
     font-weight: var(--font-normal);
   }
 
-  /* TODO: CSS per pageviews - da riattivare quando il tracking sarà stabile
-  .post-meta__views {
-    color: var(--muted);
-  }
-
-  .post-meta__views-placeholder {
-    color: var(--muted);
-    font-weight: var(--font-medium);
-  }
-  */
-
-  /* Mobile: stack verticale se spazio limitato */
   @media (max-width: 640px) {
     .post-meta {
       gap: 1rem;
@@ -187,7 +162,6 @@ const updatedDateTime = showUpdated ? getDateTime(updatedDate) : "";
     }
   }
 
-  /* Accessibilità: focus visible */
   .post-meta__date:focus-visible {
     outline: 2px solid var(--brand);
     outline-offset: 2px;

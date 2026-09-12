@@ -10,15 +10,33 @@ type Attachment = {
 
 type Props = {
   attachments?: Attachment[];
+  lang?: "it" | "en";
 };
 
-const { attachments = [] } = Astro.props;
+const { attachments = [], lang = "it" } = Astro.props as Props;
+const isEnglish = lang === "en";
+const locale = isEnglish ? "en-GB" : "it-IT";
+const labels = isEnglish
+  ? {
+      eyebrow: "DOCUMENTS",
+      title: "Attached documents",
+      description: "Certificates, analyses and documents cited in this article.",
+      open: "Open document",
+      download: "Download",
+    }
+  : {
+      eyebrow: "DOCUMENTI",
+      title: "Documenti allegati",
+      description: "Certificati, analisi e documenti citati nell'articolo.",
+      open: "Apri documento",
+      download: "Scarica",
+    };
 
 function formatDate(value: Date | string | undefined): string | null {
   if (!value) return null;
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return null;
-  return new Intl.DateTimeFormat("it-IT", {
+  return new Intl.DateTimeFormat(locale, {
     day: "2-digit",
     month: "long",
     year: "numeric",
@@ -33,9 +51,9 @@ function isExternal(url: string): boolean {
 {attachments.length > 0 && (
   <aside class="post-attachments" aria-labelledby="post-attachments-title">
     <div class="post-attachments__head">
-      <p class="post-attachments__eyebrow">DOCUMENTI</p>
-      <h2 id="post-attachments-title">Documenti allegati</h2>
-      <p>Certificati, analisi e documenti citati nell'articolo.</p>
+      <p class="post-attachments__eyebrow">{labels.eyebrow}</p>
+      <h2 id="post-attachments-title">{labels.title}</h2>
+      <p>{labels.description}</p>
     </div>
 
     <div class="post-attachments__list">
@@ -66,11 +84,11 @@ function isExternal(url: string): boolean {
                   target="_blank"
                   rel={external ? "noopener noreferrer" : "noopener"}
                 >
-                  Apri documento <span aria-hidden="true">↗</span>
+                  {labels.open} <span aria-hidden="true">↗</span>
                 </a>
                 {!external && (
                   <a class="post-attachment__download" href={attachment.url} download>
-                    Scarica
+                    {labels.download}
                   </a>
                 )}
               </div>
@@ -91,9 +109,7 @@ function isExternal(url: string): boolean {
     background: color-mix(in oklab, var(--panel) 88%, transparent);
   }
 
-  .post-attachments__head {
-    margin-bottom: 1rem;
-  }
+  .post-attachments__head { margin-bottom: 1rem; }
 
   .post-attachments__eyebrow {
     margin: 0 0 0.35rem;
@@ -118,10 +134,7 @@ function isExternal(url: string): boolean {
     line-height: 1.55;
   }
 
-  .post-attachments__list {
-    display: grid;
-    gap: 0.75rem;
-  }
+  .post-attachments__list { display: grid; gap: 0.75rem; }
 
   .post-attachment {
     display: grid;
@@ -184,15 +197,8 @@ function isExternal(url: string): boolean {
     text-decoration: none;
   }
 
-  .post-attachment__open {
-    background: var(--brand);
-    color: #07140d;
-  }
-
-  .post-attachment__download {
-    border: 1px solid var(--border-subtle);
-    color: var(--text);
-  }
+  .post-attachment__open { background: var(--brand); color: #07140d; }
+  .post-attachment__download { border: 1px solid var(--border-subtle); color: var(--text); }
 
   .post-attachment__actions a:focus-visible {
     outline: 3px solid color-mix(in oklab, var(--brand) 45%, transparent);
@@ -200,12 +206,7 @@ function isExternal(url: string): boolean {
   }
 
   @media (max-width: 560px) {
-    .post-attachment {
-      grid-template-columns: 1fr;
-    }
-
-    .post-attachment__type {
-      justify-self: start;
-    }
+    .post-attachment { grid-template-columns: 1fr; }
+    .post-attachment__type { justify-self: start; }
   }
 </style>

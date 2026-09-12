@@ -14,8 +14,18 @@ const {
   currentSlug,
   category = null,
   tags = [],
-  title = "Continua a leggere",
+  title: titleProp,
 } = Astro.props as Props;
+
+const EN_BLOG_CATEGORIES = new Set([
+  "cannabis-news",
+  "cannabis-legalization",
+  "cbd-and-nutrition",
+  "cannabis-and-innovation",
+  "medical-cannabis",
+  "hemp-sustainability",
+  "health-wellness",
+]);
 
 function normalizeText(value: unknown): string {
   return String(value || "").trim().toLowerCase();
@@ -28,17 +38,9 @@ function normalizeTags(value: unknown): string[] {
 
 function toDate(value: Date | string | number | null | undefined): Date | null {
   if (!value) return null;
-  if (value instanceof Date) {
-    return Number.isNaN(value.getTime()) ? null : value;
-  }
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
   const d = new Date(String(value));
   return Number.isNaN(d.getTime()) ? null : d;
-}
-
-function formatDate(value: Date | string | number | null | undefined): string {
-  const d = toDate(value);
-  if (!d) return "";
-  return d.toLocaleDateString("it-IT", { year: "numeric", month: "long", day: "numeric" });
 }
 
 function normalizeImgSrc(src: unknown): string {
@@ -52,11 +54,7 @@ function normalizeImgSrc(src: unknown): string {
 function normalizeImage(entry: CollectionEntry<"blog">): string {
   const raw = entry.data.image || entry.data.coverImage || "";
   let srcValue: unknown = raw;
-
-  if (raw && typeof raw === "object" && "src" in raw) {
-    srcValue = (raw as { src?: unknown }).src;
-  }
-
+  if (raw && typeof raw === "object" && "src" in raw) srcValue = (raw as { src?: unknown }).src;
   return normalizeImgSrc(srcValue);
 }
 
@@ -66,15 +64,29 @@ function publicSlug(entry: CollectionEntry<"blog">): string {
 
 function postHref(entry: CollectionEntry<"blog">): string {
   const entrySlug = publicSlug(entry);
-  if (!entrySlug) return "/blog/";
-  return `/blog/${entrySlug}/`;
+  return entrySlug ? `/blog/${entrySlug}/` : "/blog/";
+}
+
+function languageOf(entry: CollectionEntry<"blog">): "it" | "en" {
+  const category = entry.data.category;
+  return typeof category === "string" && EN_BLOG_CATEGORIES.has(category) ? "en" : "it";
 }
 
 const currentCategory = normalizeText(category);
 const currentTags = normalizeTags(tags);
+const currentLanguage: "it" | "en" =
+  typeof category === "string" && EN_BLOG_CATEGORIES.has(category) ? "en" : "it";
+const locale = currentLanguage === "en" ? "en-GB" : "it-IT";
+const title = titleProp ?? (currentLanguage === "en" ? "Keep reading" : "Continua a leggere");
+const kicker = currentLanguage === "en" ? "Selected for you" : "Scelti per te";
+
+function formatDate(value: Date | string | number | null | undefined): string {
+  const d = toDate(value);
+  if (!d) return "";
+  return d.toLocaleDateString(locale, { year: "numeric", month: "long", day: "numeric" });
+}
 
 type ScoredPost = { post: CollectionEntry<"blog">; score: number; date: number };
-
 let relatedPosts: CollectionEntry<"blog">[] = [];
 
 try {
@@ -86,25 +98,21 @@ try {
     .filter(
       (p) =>
         isPublishedBlogEntry(p, now) &&
+        languageOf(p) === currentLanguage &&
         normalizeText(publicSlug(p)) !== currentSlugNormalized,
     )
     .map((p) => {
       const postCategory = normalizeText(p.data.category);
       const postTags = normalizeTags(p.data.tags);
       const sharedTags = currentTags.filter((tag) => postTags.includes(tag)).length;
-
       let score = 0;
       if (currentCategory && postCategory === currentCategory) score += 10;
       if (sharedTags > 0) score += sharedTags * 3;
-
       const d = toDate(p.data.publishDate ?? p.data.updatedDate);
       return { post: p, score, date: d ? d.getTime() : 0 };
     })
     .filter((item) => item.score > 0)
-    .sort((a, b) => {
-      if (b.score !== a.score) return b.score - a.score;
-      return b.date - a.date;
-    });
+    .sort((a, b) => b.score - a.score || b.date - a.date);
 
   relatedPosts = scored.slice(0, 3).map((item) => item.post);
 } catch (err) {
@@ -115,7 +123,7 @@ try {
 {relatedPosts.length > 0 ? (
   <section class="related-posts" aria-label={title}>
     <div class="section-head">
-      <p class="section-kicker">Scelti per te</p>
+      <p class="section-kicker">{kicker}</p>
       <h2>{title}</h2>
     </div>
 
@@ -123,7 +131,6 @@ try {
       {relatedPosts.map((p) => {
         const imgSrc = normalizeImage(p);
         const postDate = toDate(p.data.publishDate ?? p.data.updatedDate);
-
         return (
           <CardPost
             href={postHref(p)}
@@ -148,10 +155,7 @@ try {
     background: var(--panel);
   }
 
-  .section-head {
-    margin-bottom: 1.25rem;
-  }
-
+  .section-head { margin-bottom: 1.25rem; }
   .section-kicker {
     margin: 0 0 0.35rem;
     color: var(--brand);
@@ -161,30 +165,21 @@ try {
     text-transform: uppercase;
     letter-spacing: 0.07em;
   }
-
   .section-head h2 {
     font-size: 1.65rem;
     font-weight: 700;
     margin: 0;
     color: var(--text);
   }
-
   .related-posts__grid {
     display: grid;
     grid-template-columns: 1fr;
     gap: 1rem;
   }
-
   @media (min-width: 640px) {
-    .related-posts__grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
+    .related-posts__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
-
-  /* Su desktop i correlati sono già nella sidebar: evitiamo il doppione. */
   @media (min-width: 921px) {
-    .related-posts {
-      display: none;
-    }
+    .related-posts { display: none; }
   }
 </style>

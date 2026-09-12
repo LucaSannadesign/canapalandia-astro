@@ -1,5 +1,4 @@
 ---
-// MODIFICA 1: Importato getEntry e render al posto di getEntryBySlug
 import { getCollection, getEntry, render, type CollectionEntry } from "astro:content";
 import SiteLayout from "../../layouts/SiteLayout.astro";
 import PostMeta from "../../components/PostMeta.astro";
@@ -7,11 +6,18 @@ import PostShare from "../../components/PostShare.astro";
 import SupportCTA from "../../components/SupportCTA.astro";
 import Reactions from "../../components/Reactions.astro";
 import BlogSidebar from "../../components/blog/BlogSidebar.astro";
+import EnglishBlogSidebar from "../../components/blog/EnglishBlogSidebar.astro";
 import RelatedPosts from "../../components/RelatedPosts.astro";
 import PostBodyH1 from "../../components/PostBodyH1.astro";
 import PostAttachments from "../../components/PostAttachments.astro";
+import LanguageSwitcher from "../../components/LanguageSwitcher.astro";
 import { isReachableBlogEntry } from "../../lib/blogVisibility";
 import { FEATURES } from "../../lib/consts";
+import {
+  languageFromCategory,
+  translationAlternates,
+  type SiteLanguage,
+} from "../../lib/localization";
 
 export const prerender = false;
 
@@ -21,8 +27,7 @@ if (!slug) return new Response(null, { status: 404 });
 let entry = await getEntry("blog", slug);
 if (!entry) {
   const all = await getCollection("blog");
-  entry =
-    all.find((e) => (e.data?.slug || e.id || "").trim() === slug) ?? undefined;
+  entry = all.find((e) => (e.data?.slug || e.id || "").trim() === slug) ?? undefined;
 }
 if (!entry) return new Response(null, { status: 404 });
 
@@ -31,20 +36,15 @@ if (!publicSlug || publicSlug !== slug) {
   return new Response(null, { status: 404, statusText: "Not Found" });
 }
 
-// Un contenuto non pronto, in bozza/test o con data futura non è una pagina pubblica.
-// I contenuti legacy-review fanno eccezione solo alla discoverability: l'URL resta raggiungibile.
 if (!isReachableBlogEntry(entry)) {
   return new Response(null, { status: 404, statusText: "Not Found" });
 }
 
-// I contenuti legacy in revisione restano raggiungibili per preservare lo storico URL,
-// ma non devono essere indicizzati finché la revisione editoriale non è conclusa.
 const isLegacyReview = entry.data.editorialStatus === "legacy-review";
-
-// MODIFICA 3: Usata la nuova funzione render(entry)
+const lang: SiteLanguage = languageFromCategory(entry.data.category);
+const isEnglish = lang === "en";
 const { Content } = await render(entry);
 
-// Helper per normalizzare URL/path immagine
 function normalizeImgSrc(src: unknown): string {
   const s = typeof src === "string" ? src.trim() : "";
   if (!s) return "";
@@ -53,36 +53,35 @@ function normalizeImgSrc(src: unknown): string {
   return `/${s}`;
 }
 
-// Helper per normalizzare immagine post (supporta ImageMetadata objects)
 function normalizeImage(entry: CollectionEntry<"blog">): string {
   const raw = entry.data.image || entry.data.coverImage || "";
   let srcValue: unknown = raw;
-
   if (raw && typeof raw === "object" && raw !== null && "src" in raw) {
-    const srcObj = raw as { src?: unknown };
-    srcValue = srcObj.src;
+    srcValue = (raw as { src?: unknown }).src;
   }
-
   return normalizeImgSrc(srcValue);
 }
 
-// Helper per convertire Date/string/number/null/undefined in Date | null
 function toDate(value: Date | string | number | null | undefined): Date | null {
   if (!value) return null;
-  if (value instanceof Date) {
-    return Number.isNaN(value.getTime()) ? null : value;
-  }
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
   const d = new Date(String(value));
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-// Calcola cover image
 const rawCover = entry.data.image || entry.data.coverImage || "";
 const coverSrc = normalizeImgSrc(rawCover);
-
-// Calcola og:image dal post (coverImage o image)
 const postImage = normalizeImage(entry);
 const SITE_URL = import.meta.env.SITE || "https://canapalandia.com";
+const alternates = translationAlternates(slug, SITE_URL);
+
+const hreflangHead = alternates
+  ? [
+      `<link rel="alternate" hreflang="it" href="${alternates.it}" />`,
+      `<link rel="alternate" hreflang="en" href="${alternates.en}" />`,
+      `<link rel="alternate" hreflang="x-default" href="${alternates.xDefault}" />`,
+    ].join("\n")
+  : "";
 
 const metadata = {
   title: entry.data.title,
@@ -95,21 +94,19 @@ const metadata = {
   twitterCard: "summary_large_image",
 };
 
-// URL canonico per condivisione
 const canonicalUrl = metadata.canonical;
 const postTitle = entry.data.title;
+const showShare = entry.data.showShare !== false;
+const showSupportCta = entry.data.showSupportCta !== false;
 
-// Opzioni frontmatter per disabilitare blocchi
-const showShare = entry.data.showShare !== false; // default: true
-const showSupportCta = entry.data.showSupportCta !== false; // default: true
-
-// JSON-LD (Schema.org) - BlogPosting solo per articoli editorialmente pubblici.
-const canonicalAbs = metadata.canonical; // già assoluto
+const canonicalAbs = metadata.canonical;
 const imageAbs = postImage ? new URL(postImage, SITE_URL).toString() : undefined;
-
 const publishedISO = toDate(entry.data.publishDate)?.toISOString();
+const modifiedRaw = toDate(entry.data.updatedDate)?.toISOString();
 const modifiedISO =
-  toDate(entry.data.updatedDate)?.toISOString() || publishedISO;
+  modifiedRaw && publishedISO && Date.parse(modifiedRaw) >= Date.parse(publishedISO)
+    ? modifiedRaw
+    : publishedISO;
 
 const jsonLd = !isLegacyReview
   ? {
@@ -117,43 +114,47 @@ const jsonLd = !isLegacyReview
       "@type": "BlogPosting",
       "@id": `${canonicalAbs}#article`,
       mainEntityOfPage: { "@type": "WebPage", "@id": canonicalAbs },
-
       headline: entry.data.title,
       description: entry.data.description || "",
-
       ...(imageAbs ? { image: [imageAbs] } : {}),
-
       datePublished: publishedISO,
       dateModified: modifiedISO,
-
       author: {
         "@type": "Organization",
-        name: entry.data.author || "Canapalandia",
+        name: "Canapalandia",
+        url: `${SITE_URL.replace(/\/+$/, "")}/`,
       },
       publisher: {
         "@type": "Organization",
         name: "Canapalandia",
+        url: `${SITE_URL.replace(/\/+$/, "")}/`,
         logo: {
           "@type": "ImageObject",
           url: new URL("/favicons/favicon-192.png", SITE_URL).toString(),
         },
       },
-
-      inLanguage: "it-IT",
-      keywords: Array.isArray(entry.data.tags)
-        ? entry.data.tags.join(", ")
-        : undefined,
+      inLanguage: isEnglish ? "en" : "it-IT",
+      keywords: Array.isArray(entry.data.tags) ? entry.data.tags.join(", ") : undefined,
     }
   : null;
 ---
 
-<SiteLayout metadata={metadata}>
+<SiteLayout metadata={metadata} yoastHeadHtml={hreflangHead} newsletter={!isEnglish}>
   {jsonLd ? (
     <script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLd).replace(/</g, "\\u003c")} />
   ) : null}
+
   <div class="container page-shell">
     <div class="post-layout">
       <article class="post-main">
+        {alternates ? (
+          <LanguageSwitcher
+            currentLanguage={lang}
+            italianUrl={alternates.it}
+            englishUrl={alternates.en}
+          />
+        ) : null}
+
         <h1>{entry.data.title}</h1>
 
         <div class="post-meta-row">
@@ -161,20 +162,28 @@ const jsonLd = !isLegacyReview
             publishDate={entry.data.publishDate}
             updatedDate={entry.data.updatedDate}
             slug={slug}
+            lang={lang}
           />
-          <p class="post-author" aria-label="Autore articolo">
-            Di <strong>{entry.data.author || "Canapalandia"}</strong>
+          <p class="post-author" aria-label={isEnglish ? "Article author" : "Autore articolo"}>
+            {isEnglish ? "By" : "Di"} <strong>Canapalandia</strong>
           </p>
         </div>
 
         {isLegacyReview ? (
-          <aside class="post-legacy-warning" aria-label="Articolo d'archivio in revisione">
-            <strong>Articolo d'archivio in revisione editoriale</strong>
+          <aside
+            class="post-legacy-warning"
+            aria-label={isEnglish ? "Archive article under editorial review" : "Articolo d'archivio in revisione"}
+          >
+            <strong>
+              {isEnglish ? "Archive article under editorial review" : "Articolo d'archivio in revisione editoriale"}
+            </strong>
             <p>
-              Questo contenuto storico conteneva formulazioni o indicazioni che richiedono una verifica con fonti aggiornate.
-              Il testo precedente è stato temporaneamente ritirato dalla consultazione e dall'indicizzazione.
-              Non usare questa pagina per decisioni sanitarie o terapeutiche.
-              <a href="/disclaimer-legale-canapalandia/"> Consulta il disclaimer.</a>
+              {isEnglish
+                ? "This historical content is being reviewed against current sources. The previous text has been temporarily withdrawn from consultation and indexing. Do not use this page for medical or therapeutic decisions."
+                : "Questo contenuto storico conteneva formulazioni o indicazioni che richiedono una verifica con fonti aggiornate. Il testo precedente è stato temporaneamente ritirato dalla consultazione e dall'indicizzazione. Non usare questa pagina per decisioni sanitarie o terapeutiche."}
+              <a href="/disclaimer-legale-canapalandia/">
+                {isEnglish ? " View the legal disclaimer (Italian)." : " Consulta il disclaimer."}
+              </a>
             </p>
           </aside>
         ) : null}
@@ -196,8 +205,9 @@ const jsonLd = !isLegacyReview
         {isLegacyReview ? (
           <div class="post-content post-content--legacy" data-post-content>
             <p>
-              La redazione sta riesaminando fonti, formulazioni e contesto di questo articolo prima di renderlo nuovamente disponibile.
-              Nel frattempo puoi consultare gli articoli più recenti del sito e il disclaimer editoriale.
+              {isEnglish
+                ? "The editorial team is reviewing this article's sources, wording and context before making it available again."
+                : "La redazione sta riesaminando fonti, formulazioni e contesto di questo articolo prima di renderlo nuovamente disponibile. Nel frattempo puoi consultare gli articoli più recenti del sito e il disclaimer editoriale."}
             </p>
           </div>
         ) : (
@@ -206,30 +216,39 @@ const jsonLd = !isLegacyReview
           </div>
         )}
 
-        {!isLegacyReview ? <PostAttachments attachments={entry.data.attachments} /> : null}
+        {!isLegacyReview ? <PostAttachments attachments={entry.data.attachments} lang={lang} /> : null}
 
-        <aside class="post-editorial-note" aria-label="Nota editoriale">
+        <aside class="post-editorial-note" aria-label={isEnglish ? "Editorial note" : "Nota editoriale"}>
           <p>
-            Canapalandia è un progetto editoriale indipendente dedicato a canapa, CBD, cannabis light e
-            normativa in Italia. I contenuti hanno finalità informative e non costituiscono consulenza
-            legale o medica.
-            <a href="/disclaimer-legale-canapalandia/"> Leggi il disclaimer legale.</a>
+            {isEnglish ? (
+              <>
+                Canapalandia is an independent editorial project covering hemp, CBD, cannabis and policy.
+                Its content is for information only and does not constitute legal or medical advice.
+                <a href="/disclaimer-legale-canapalandia/"> Read the legal disclaimer (Italian).</a>
+              </>
+            ) : (
+              <>
+                Canapalandia è un progetto editoriale indipendente dedicato a canapa, CBD, cannabis light e
+                normativa in Italia. I contenuti hanno finalità informative e non costituiscono consulenza
+                legale o medica.
+                <a href="/disclaimer-legale-canapalandia/"> Leggi il disclaimer legale.</a>
+              </>
+            )}
           </p>
         </aside>
 
-        {/* Separatore */}
         <hr class="post-separator" aria-hidden="true" />
 
-        {/* Reazioni */}
-        {!isLegacyReview && FEATURES.REACTIONS && <Reactions slug={slug} />}
+        {!isLegacyReview && !isEnglish && FEATURES.REACTIONS && <Reactions slug={slug} />}
 
-        {/* Social Share */}
-        {!isLegacyReview ? <PostShare url={canonicalUrl} title={postTitle} showShare={showShare} /> : null}
+        {!isLegacyReview ? (
+          <PostShare url={canonicalUrl} title={postTitle} showShare={showShare} lang={lang} />
+        ) : null}
 
-        {/* CTA Sostienici */}
-        {!isLegacyReview ? <SupportCTA supportUrl="/sostieni-la-nostra-causa/" showSupportCta={showSupportCta} /> : null}
+        {!isLegacyReview && !isEnglish ? (
+          <SupportCTA supportUrl="/sostieni-la-nostra-causa/" showSupportCta={showSupportCta} />
+        ) : null}
 
-        {/* Articoli correlati */}
         <RelatedPosts
           currentSlug={slug}
           category={entry.data.category}
@@ -238,11 +257,14 @@ const jsonLd = !isLegacyReview
       </article>
 
       <aside class="post-sidebar">
-        <BlogSidebar />
+        {isEnglish ? (
+          <EnglishBlogSidebar currentSlug={slug} category={entry.data.category} tags={entry.data.tags} />
+        ) : (
+          <BlogSidebar />
+        )}
       </aside>
     </div>
   </div>
-
 </SiteLayout>
 
 <style>
@@ -260,7 +282,6 @@ const jsonLd = !isLegacyReview
     display: block;
   }
 
-  /* Separatore dopo contenuto post */
   .post-separator {
     margin: 3rem 0 2.5rem;
     border: none;
@@ -268,13 +289,6 @@ const jsonLd = !isLegacyReview
     opacity: 0.5;
   }
 
-  /* =========================================================
-     BLOG POST — TYPOGRAPHY (solo contenuto articolo)
-     Scope: .post-main .post-content
-     ========================================================= */
-
-  /* Corpo articolo in Source Serif 4: ~19px su desktop, interlinea 1.7,
-     misura di lettura ~70 caratteri. */
   .post-main .post-content {
     max-width: 72ch;
     width: 100%;
@@ -282,22 +296,14 @@ const jsonLd = !isLegacyReview
     font-size: clamp(1.0625rem, 0.4vw + 1rem, 1.1875rem);
   }
 
-  .post-main .post-content--legacy {
-    margin-top: 1.25rem;
-  }
+  .post-main .post-content--legacy { margin-top: 1.25rem; }
+  .post-main .post-content > * + * { margin-top: 1.15rem; }
 
-  /* Spazio verticale consistente tra blocchi */
-  .post-main .post-content > * + * {
-    margin-top: 1.15rem;
-  }
-
-  /* Paragrafi: ritmo regolare e leggibile */
   .post-main .post-content p {
     margin: 0 0 1.35rem;
     line-height: 1.7;
   }
 
-  /* Titoli: più spazio sopra (capitoli), meno sotto */
   .post-main .post-content :global(h2) {
     margin-top: 40px !important;
     margin-bottom: 0.9rem;
@@ -306,9 +312,7 @@ const jsonLd = !isLegacyReview
     scroll-margin-top: 96px;
   }
 
-  .post-main .post-content :global(h2:first-child) {
-    margin-top: 40px !important;
-  }
+  .post-main .post-content :global(h2:first-child) { margin-top: 40px !important; }
 
   .post-main .post-content h3 {
     margin: 2.6rem 0 0.65rem;
@@ -316,58 +320,37 @@ const jsonLd = !isLegacyReview
     scroll-margin-top: 96px;
   }
 
-  /* Titolo seguito da testo/lista: avvicina leggermente */
   .post-main .post-content h2 + p,
   .post-main .post-content h2 + ul,
   .post-main .post-content h2 + ol,
   .post-main .post-content h3 + p,
   .post-main .post-content h3 + ul,
-  .post-main .post-content h3 + ol {
-    margin-top: 0.25rem;
-  }
+  .post-main .post-content h3 + ol { margin-top: 0.25rem; }
 
-  /* Liste: più respirazione e indent corretto */
   .post-main .post-content ul,
   .post-main .post-content ol {
     margin: 0 0 1.1rem;
     padding-left: 1.25rem;
   }
 
-  .post-main .post-content li {
-    margin: 0.35rem 0;
-  }
+  .post-main .post-content li { margin: 0.35rem 0; }
+  .post-main .post-content li > p { margin: 0.55rem 0; }
 
-  .post-main .post-content li > p {
-    margin: 0.55rem 0;
-  }
-
-  /* Blockquote (se presenti) */
   .post-main .post-content blockquote {
     margin: 1.4rem 0;
     padding: 0.85rem 1rem;
     border-left: 3px solid var(--border);
   }
 
-  /* FAQ <details>: spaziatura e leggibilità */
   .post-main .post-content details {
     margin: 1.1rem 0;
     padding: 0.15rem 0;
   }
 
-  .post-main .post-content summary {
-    cursor: pointer;
-    line-height: 1.35;
-  }
+  .post-main .post-content summary { cursor: pointer; line-height: 1.35; }
+  .post-main .post-content details[open] > summary { margin-bottom: 0.55rem; }
+  .post-main .post-content details p { margin-bottom: 0.9rem; }
 
-  .post-main .post-content details[open] > summary {
-    margin-bottom: 0.55rem;
-  }
-
-  .post-main .post-content details p {
-    margin-bottom: 0.9rem;
-  }
-
-  /* HR dentro contenuto (se usato nel markdown) */
   .post-main .post-content hr {
     margin: 1.6rem 0;
     border: none;
@@ -409,16 +392,10 @@ const jsonLd = !isLegacyReview
   }
 
   @media (max-width: 640px) {
-    .post-main .post-content {
-      line-height: 1.7;
-    }
-
-    .post-main .post-content h3 {
-      margin-top: 1.8rem;
-    }
+    .post-main .post-content { line-height: 1.7; }
+    .post-main .post-content h3 { margin-top: 1.8rem; }
   }
 
-  /* Tighten post title leading and header spacing */
   .post-main h1 {
     line-height: 1.08;
     margin-bottom: 1rem;
@@ -432,10 +409,7 @@ const jsonLd = !isLegacyReview
     margin: 0 0 1.15rem;
   }
 
-  .post-meta-row :global(.post-meta) {
-    margin: 0;
-    padding: 0;
-  }
+  .post-meta-row :global(.post-meta) { margin: 0; padding: 0; }
 
   .post-author {
     margin: 0;
@@ -450,9 +424,7 @@ const jsonLd = !isLegacyReview
     font-weight: var(--font-semibold);
   }
 
-  .post-meta-row :global(.post-meta__date) {
-    white-space: nowrap;
-  }
+  .post-meta-row :global(.post-meta__date) { white-space: nowrap; }
 
   @media (max-width: 640px) {
     .post-meta-row {
@@ -509,7 +481,6 @@ const jsonLd = !isLegacyReview
     font-weight: var(--font-medium);
   }
 
-  /* CTA partnership: contrasto richiesto tra light e dark mode. */
   :global(html[data-theme="light"]) .post-sidebar :global(.promo-card__cta) {
     background: #0f6f3b;
     color: #ffffff !important;
@@ -531,7 +502,6 @@ const jsonLd = !isLegacyReview
     box-shadow: 0 8px 20px rgba(246, 231, 161, 0.2);
   }
 
-  /* Desktop: solo lo slot Partnership resta sticky mentre l'articolo scorre. */
   @media (min-width: 1024px) {
     .post-sidebar {
       align-self: stretch;
@@ -552,7 +522,6 @@ const jsonLd = !isLegacyReview
     }
   }
 
-  /* Tablet/mobile: la promo torna una normale card nel flusso. */
   @media (max-width: 1023px) {
     .post-sidebar :global(.promo-card) {
       position: relative;
