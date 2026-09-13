@@ -1,0 +1,39 @@
+name: Materialize CAN-260915 hero
+
+on:
+  push:
+    branches:
+      - fix/can-260915-hero-cache
+    paths:
+      - 'public/images/canapa-industriale-documenti-tracciabilita-seme-raccolto.webp.b64'
+      - '.github/workflows/materialize-can-260915-hero.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/can-260915-hero-cache
+      - name: Decode approved hero
+        run: |
+          base64 --decode public/images/canapa-industriale-documenti-tracciabilita-seme-raccolto.webp.b64 > public/images/canapa-industriale-documenti-tracciabilita-seme-raccolto-v2.webp
+          test "$(stat -c%s public/images/canapa-industriale-documenti-tracciabilita-seme-raccolto-v2.webp)" -gt 50000
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('public/images/canapa-industriale-documenti-tracciabilita-seme-raccolto-v2.webp')
+          b = p.read_bytes()
+          assert b[:4] == b'RIFF' and b[8:12] == b'WEBP', 'not a valid WebP container'
+          print(len(b))
+          PY
+      - name: Commit binary hero
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/images/canapa-industriale-documenti-tracciabilita-seme-raccolto-v2.webp
+          git diff --cached --quiet && exit 0
+          git commit -m "fix(hero): materialize approved CAN-260915 image"
+          git push origin HEAD:fix/can-260915-hero-cache
