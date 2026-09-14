@@ -3,7 +3,13 @@ import SiteLayout from "../../layouts/SiteLayout.astro";
 import PostMeta from "../../components/PostMeta.astro";
 import PostShare from "../../components/PostShare.astro";
 import SupportCTA from "../../components/SupportCTA.astro";
+import Reactions from "../../components/Reactions.astro";
+import BlogSidebar from "../../components/blog/BlogSidebar.astro";
+import RelatedPosts from "../../components/RelatedPosts.astro";
+import PostAttachments from "../../components/PostAttachments.astro";
+import PostBodyH1 from "../../components/PostBodyH1.astro";
 import PreviewContent from "../../preview/can-260918.mdx";
+import { FEATURES } from "../../lib/consts";
 
 export const prerender = false;
 
@@ -14,6 +20,10 @@ if (!import.meta.env.DEV) {
 const slug = "terpeni-canapa-cosa-sono";
 const title = "Terpeni della canapa: cosa sono, perché cambiano e cosa non possono dimostrare";
 const description = "Cosa sono i terpeni della canapa, perché il profilo cambia tra cultivar e lotti e perché una lista di terpeni non dimostra effetti clinici.";
+const publishDate = "2026-09-18";
+const updatedDate = "2026-09-14";
+const category = "Ricerca";
+const tags = ["canapa-sativa", "cannabinoidi", "ricerca"];
 const canonical = `https://canapalandia.com/blog/${slug}/`;
 const metadata = {
   title: `[PREVIEW] ${title}`,
@@ -24,75 +34,213 @@ const metadata = {
   ogSiteName: "Canapalandia",
   twitterCard: "summary_large_image",
 };
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "@id": `${canonical}#article`,
+  mainEntityOfPage: { "@type": "WebPage", "@id": canonical },
+  headline: title,
+  description,
+  datePublished: new Date(publishDate).toISOString(),
+  dateModified: new Date(updatedDate).toISOString(),
+  author: {
+    "@type": "Organization",
+    name: "Canapalandia",
+    url: "https://canapalandia.com/",
+  },
+  publisher: {
+    "@type": "Organization",
+    name: "Canapalandia",
+    url: "https://canapalandia.com/",
+    logo: {
+      "@type": "ImageObject",
+      url: "https://canapalandia.com/favicons/favicon-192.png",
+    },
+  },
+  inLanguage: "it-IT",
+  keywords: tags.join(", "),
+};
 ---
 
-<SiteLayout metadata={metadata} newsletter={false}>
+<SiteLayout metadata={metadata} newsletter={true}>
+  <script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLd).replace(/</g, "\\u003c")} />
+
   <div class="container page-shell">
-    <article class="preview-post">
-      <aside class="preview-banner">
-        <strong>ANTEPRIMA LOCALE — BOZZA NON PUBBLICATA</strong>
-        <span>Route DEV-only. Non viene generata né servita in produzione.</span>
+    <div class="post-layout">
+      <article class="post-main">
+        <aside class="preview-banner" aria-label="Anteprima locale">
+          <strong>ANTEPRIMA LOCALE — BOZZA NON PUBBLICATA</strong>
+          <span>Questa pagina esiste solo in astro dev e non viene generata in produzione.</span>
+        </aside>
+
+        <h1>{title}</h1>
+
+        <div class="post-meta-row">
+          <PostMeta publishDate={publishDate} updatedDate={updatedDate} slug={slug} lang="it" />
+          <p class="post-author" aria-label="Autore articolo">Di <strong>Canapalandia</strong></p>
+        </div>
+
+        <figure class="hero-gate" aria-label="Stato immagine hero">
+          <div class="hero-gate__placeholder">
+            <strong>Hero non ancora collegata</strong>
+            <span>Spazio 16:9 riservato alla hero definitiva.</span>
+          </div>
+          <figcaption>
+            Gate bloccante: l’immagine approvata deve essere presente nel repository e collegata a image/coverImage prima di qualsiasi pubblicazione.
+          </figcaption>
+        </figure>
+
+        <div class="post-content" data-post-content>
+          <PreviewContent components={{ h1: PostBodyH1 }} />
+        </div>
+
+        <PostAttachments attachments={[]} lang="it" />
+
+        <aside class="post-editorial-note" aria-label="Nota editoriale">
+          <p>
+            Canapalandia è un progetto editoriale indipendente dedicato a canapa, CBD, cannabis light e normativa in Italia. I contenuti hanno finalità informative e non costituiscono consulenza legale o medica.
+            <a href="/disclaimer-legale-canapalandia/"> Leggi il disclaimer legale.</a>
+          </p>
+        </aside>
+
+        <hr class="post-separator" aria-hidden="true" />
+
+        {FEATURES.REACTIONS && <Reactions slug={slug} />}
+
+        <PostShare url={canonical} title={title} showShare={true} lang="it" />
+        <SupportCTA supportUrl="/sostieni-la-nostra-causa/" showSupportCta={true} />
+
+        <RelatedPosts currentSlug={slug} category={category} tags={tags} />
+      </article>
+
+      <aside class="post-sidebar">
+        <BlogSidebar />
       </aside>
-
-      <h1>{title}</h1>
-
-      <div class="post-meta-row">
-        <PostMeta publishDate="2026-09-18" updatedDate="2026-09-14" slug={slug} lang="it" />
-        <p class="post-author" aria-label="Autore articolo">Di <strong>Canapalandia</strong></p>
-      </div>
-
-      <aside class="hero-gate">
-        <strong>Hero non ancora collegata</strong>
-        <p>La pubblicazione resta bloccata finché l’immagine approvata non è presente nel repository, collegata al frontmatter e verificata in locale.</p>
-      </aside>
-
-      <div class="post-content" data-post-content>
-        <PreviewContent />
-      </div>
-
-      <aside class="post-editorial-note" aria-label="Nota editoriale">
-        <p>
-          Canapalandia è un progetto editoriale indipendente dedicato a canapa, CBD, cannabis light e normativa in Italia. I contenuti hanno finalità informative e non costituiscono consulenza legale o medica.
-          <a href="/disclaimer-legale-canapalandia/"> Leggi il disclaimer legale.</a>
-        </p>
-      </aside>
-
-      <PostShare url={canonical} title={title} showShare={true} lang="it" />
-      <SupportCTA supportUrl="/sostieni-la-nostra-causa/" showSupportCta={true} />
-    </article>
+    </div>
   </div>
 </SiteLayout>
 
 <style>
-  .preview-post {
-    width: min(100%, 860px);
-    margin: 0 auto;
-    padding: 2rem 0 4rem;
-  }
-  .preview-banner,
-  .hero-gate {
+  .preview-banner {
     margin: 0 0 1.5rem;
-    padding: 0.95rem 1rem;
+    padding: 0.9rem 1rem;
     border: 1px solid color-mix(in oklab, var(--gold) 55%, var(--border));
     border-radius: var(--r-md);
-    background: var(--panel);
+    background: color-mix(in oklab, var(--panel) 88%, transparent);
     font-family: var(--font-ui);
   }
+
   .preview-banner strong,
-  .preview-banner span,
-  .hero-gate strong,
-  .hero-gate p { display: block; }
-  .preview-banner strong,
-  .hero-gate strong { margin-bottom: 0.25rem; }
-  .preview-banner span,
-  .hero-gate p { margin: 0; color: var(--muted); font-size: var(--text-sm); line-height: 1.5; }
-  .post-content {
+  .preview-banner span {
+    display: block;
+  }
+
+  .preview-banner strong {
+    margin-bottom: 0.25rem;
+    letter-spacing: 0.03em;
+  }
+
+  .preview-banner span {
+    color: var(--muted);
+    font-size: var(--text-sm);
+    line-height: 1.5;
+  }
+
+  .hero-gate {
+    width: 100%;
+    margin: 1.5rem 0 2rem;
+  }
+
+  .hero-gate__placeholder {
+    aspect-ratio: 16 / 9;
+    display: grid;
+    place-content: center;
+    gap: 0.35rem;
+    padding: 1.5rem;
+    text-align: center;
+    border: 1px dashed color-mix(in oklab, var(--gold) 55%, var(--border));
+    border-radius: var(--r-sm);
+    background: color-mix(in oklab, var(--panel) 88%, transparent);
+    font-family: var(--font-ui);
+  }
+
+  .hero-gate__placeholder strong,
+  .hero-gate__placeholder span {
+    display: block;
+  }
+
+  .hero-gate__placeholder span,
+  .hero-gate figcaption {
+    color: var(--muted);
+  }
+
+  .hero-gate figcaption {
+    margin-top: 0.55rem;
+    font-family: var(--font-ui);
+    font-size: var(--text-xs);
+    line-height: 1.45;
+  }
+
+  .post-separator {
+    margin: 3rem 0 2.5rem;
+    border: none;
+    border-top: 1px solid var(--border);
+    opacity: 0.5;
+  }
+
+  .post-main .post-content {
     max-width: 72ch;
     width: 100%;
+    line-height: 1.7;
     font-size: clamp(1.0625rem, 0.4vw + 1rem, 1.1875rem);
+  }
+
+  .post-main .post-content > * + * { margin-top: 1.15rem; }
+
+  .post-main .post-content p {
+    margin: 0 0 1.35rem;
     line-height: 1.7;
   }
-  .post-content :global(table) {
+
+  .post-main .post-content :global(h2) {
+    margin-top: 40px !important;
+    margin-bottom: 0.9rem;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    scroll-margin-top: 96px;
+  }
+
+  .post-main .post-content :global(h2:first-child) { margin-top: 40px !important; }
+
+  .post-main .post-content :global(h3) {
+    margin: 2.6rem 0 0.65rem;
+    line-height: 1.25;
+    scroll-margin-top: 96px;
+  }
+
+  .post-main .post-content :global(h2 + p),
+  .post-main .post-content :global(h2 + ul),
+  .post-main .post-content :global(h2 + ol),
+  .post-main .post-content :global(h3 + p),
+  .post-main .post-content :global(h3 + ul),
+  .post-main .post-content :global(h3 + ol) { margin-top: 0.25rem; }
+
+  .post-main .post-content :global(ul),
+  .post-main .post-content :global(ol) {
+    margin: 0 0 1.1rem;
+    padding-left: 1.25rem;
+  }
+
+  .post-main .post-content :global(li) { margin: 0.35rem 0; }
+
+  .post-main .post-content :global(blockquote) {
+    margin: 1.4rem 0;
+    padding: 0.85rem 1rem;
+    border-left: 3px solid var(--border);
+  }
+
+  .post-main .post-content :global(table) {
     display: block;
     width: 100%;
     overflow-x: auto;
@@ -101,14 +249,112 @@ const metadata = {
     font-family: var(--font-ui);
     font-size: 0.94rem;
   }
-  .post-content :global(th),
-  .post-content :global(td) {
+
+  .post-main .post-content :global(th),
+  .post-main .post-content :global(td) {
     padding: 0.72rem 0.8rem;
     border: 1px solid var(--border);
     vertical-align: top;
     text-align: left;
   }
-  .post-content :global(th) { background: var(--panel); }
-  .post-content :global(h2) { margin-top: 2.5rem; }
-  .post-content :global(h3) { margin-top: 2rem; }
+
+  .post-main .post-content :global(th) { background: var(--panel); }
+
+  .post-main .post-content :global(a[href]) {
+    color: #a7f3d0 !important;
+    text-decoration: underline;
+    text-decoration-color: rgba(167, 243, 208, 0.7);
+    text-underline-offset: 0.18em;
+  }
+
+  :global(html[data-theme="light"]) .post-main .post-content :global(a[href]) {
+    color: #169c48 !important;
+    text-decoration-color: rgba(22, 156, 72, 0.45);
+  }
+
+  .post-main h1 {
+    line-height: 1.08;
+    margin-bottom: 1rem;
+  }
+
+  .post-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.85rem 1.2rem;
+    margin: 0 0 1.15rem;
+  }
+
+  .post-meta-row :global(.post-meta) { margin: 0; padding: 0; }
+
+  .post-author {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--text-sm);
+    line-height: 1.45;
+    white-space: nowrap;
+  }
+
+  .post-author strong {
+    color: var(--text);
+    font-weight: var(--font-semibold);
+  }
+
+  .post-editorial-note {
+    margin: 2rem 0 0;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--r-md);
+    background: color-mix(in oklab, var(--panel) 78%, transparent);
+  }
+
+  .post-editorial-note p {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--text-sm);
+    line-height: 1.55;
+  }
+
+  .post-editorial-note a {
+    color: var(--brand);
+    font-weight: var(--font-medium);
+  }
+
+  @media (min-width: 1024px) {
+    .post-sidebar {
+      align-self: stretch;
+      overflow: visible;
+    }
+
+    .post-sidebar :global(.editorial-sidebar) {
+      min-height: 100%;
+      align-content: start;
+      overflow: visible;
+    }
+
+    .post-sidebar :global(.promo-card) {
+      position: sticky;
+      top: var(--post-sticky-top, calc(var(--nav-h, 76px) + 16px));
+      z-index: 2;
+      align-self: start;
+    }
+  }
+
+  @media (max-width: 1023px) {
+    .post-sidebar :global(.promo-card) {
+      position: relative;
+      top: auto;
+      z-index: auto;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .post-meta-row {
+      align-items: flex-start;
+      gap: 0.5rem 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .post-main .post-content :global(h3) { margin-top: 1.8rem; }
+  }
 </style>
