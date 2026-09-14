@@ -8,6 +8,17 @@ export function blogPublishDate(entry: CollectionEntry<"blog">): Date | null {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+function meetsPublicationGate(
+  entry: CollectionEntry<"blog">,
+  now: Date,
+): boolean {
+  if (entry.data.draft === true) return false;
+  if (entry.data.status !== "ready") return false;
+
+  const publishDate = blogPublishDate(entry);
+  return publishDate !== null && publishDate.getTime() <= now.getTime();
+}
+
 /**
  * Abilita l'anteprima editoriale solo nel server di sviluppo locale e solo
  * quando l'operatore la richiede esplicitamente. In build/preview/deploy
@@ -30,25 +41,21 @@ export function isReachableBlogEntry(
   entry: CollectionEntry<"blog">,
   now: Date = new Date(),
 ): boolean {
-  if (isExplicitLocalPreview()) return true;
-  if (entry.data.draft === true) return false;
-  if (entry.data.status !== "ready") return false;
-
-  const publishDate = blogPublishDate(entry);
-  return publishDate !== null && publishDate.getTime() <= now.getTime();
+  return isExplicitLocalPreview() || meetsPublicationGate(entry, now);
 }
 
 /**
- * Un post è pubblicabile nei percorsi editoriali solo se è raggiungibile e non
- * è in quarantena editoriale. Le pagine `legacy-review` restano quindi vive sul
- * loro URL ma non vengono proposte in feed, archivi, correlati o automazioni.
+ * Un post è pubblicabile nei percorsi editoriali solo se supera comunque il
+ * gate di pubblicazione ed è fuori dalla quarantena editoriale. La preview
+ * locale non inserisce quindi bozze o contenuti futuri in feed, archivi,
+ * correlati, hreflang o automazioni.
  */
 export function isPublishedBlogEntry(
   entry: CollectionEntry<"blog">,
   now: Date = new Date(),
 ): boolean {
   return (
-    isReachableBlogEntry(entry, now) &&
+    meetsPublicationGate(entry, now) &&
     entry.data.editorialStatus !== "legacy-review"
   );
 }
