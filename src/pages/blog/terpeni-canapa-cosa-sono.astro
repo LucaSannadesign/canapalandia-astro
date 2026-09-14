@@ -1,0 +1,179 @@
+---
+import SiteLayout from "../../layouts/SiteLayout.astro";
+import PostMeta from "../../components/PostMeta.astro";
+import PostShare from "../../components/PostShare.astro";
+import SupportCTA from "../../components/SupportCTA.astro";
+import BlogSidebar from "../../components/blog/BlogSidebar.astro";
+import RelatedPosts from "../../components/RelatedPosts.astro";
+import ArticleContent from "../../content/blog/terpeni-canapa-cosa-sono.mdx";
+
+export const prerender = false;
+
+// Route temporanea SOLO per la preview locale di CAN-260918.
+// Va rimossa prima di PR/merge. In build/preview/deploy restituisce sempre 404.
+if (!import.meta.env.DEV) {
+  return new Response(null, { status: 404, statusText: "Not Found" });
+}
+
+const slug = "terpeni-canapa-cosa-sono";
+const title = "Terpeni della canapa: cosa sono, perché cambiano e cosa non possono dimostrare";
+const description = "Cosa sono i terpeni della canapa, perché il profilo cambia tra cultivar e lotti e perché una lista di terpeni non dimostra effetti clinici.";
+const publishDate = "2026-09-18";
+const updatedDate = "2026-09-14";
+const canonical = `https://canapalandia.com/blog/${slug}/`;
+
+const metadata = {
+  title,
+  description,
+  canonical,
+  robots: { index: false, follow: false },
+  ogType: "article",
+  ogSiteName: "Canapalandia",
+  twitterCard: "summary_large_image",
+};
+---
+
+<SiteLayout metadata={metadata} newsletter={true}>
+  <div class="container page-shell">
+    <div class="post-layout">
+      <article class="post-main">
+        <aside class="local-preview-banner" aria-label="Anteprima locale">
+          <strong>ANTEPRIMA LOCALE — BOZZA NON PUBBLICATA</strong>
+          <span>Route temporanea DEV-only. Nessun deploy o pubblicazione possibile da questa pagina.</span>
+        </aside>
+
+        <h1>{title}</h1>
+
+        <div class="post-meta-row">
+          <PostMeta
+            publishDate={publishDate}
+            updatedDate={updatedDate}
+            slug={slug}
+            lang="it"
+          />
+          <p class="post-author" aria-label="Autore articolo">
+            Di <strong>Canapalandia</strong>
+          </p>
+        </div>
+
+        <aside class="hero-gate" aria-label="Stato immagine hero">
+          <strong>Hero non ancora collegata</strong>
+          <p>
+            Questo è un gate bloccante: prima della pubblicazione l'immagine approvata deve essere
+            presente nel repository, collegata a <code>image</code>/<code>coverImage</code> e verificata qui in locale.
+          </p>
+        </aside>
+
+        <div class="post-content" data-post-content>
+          <ArticleContent />
+        </div>
+
+        <aside class="post-editorial-note" aria-label="Nota editoriale">
+          <p>
+            Canapalandia è un progetto editoriale indipendente dedicato a canapa, CBD, cannabis light e
+            normativa in Italia. I contenuti hanno finalità informative e non costituiscono consulenza
+            legale o medica.
+            <a href="/disclaimer-legale-canapalandia/"> Leggi il disclaimer legale.</a>
+          </p>
+        </aside>
+
+        <hr class="post-separator" aria-hidden="true" />
+
+        <PostShare url={canonical} title={title} showShare={true} lang="it" />
+        <SupportCTA supportUrl="/sostieni-la-nostra-causa/" showSupportCta={true} />
+        <RelatedPosts
+          currentSlug={slug}
+          category="Ricerca"
+          tags={["canapa-sativa", "cannabinoidi", "ricerca"]}
+        />
+      </article>
+
+      <aside class="post-sidebar">
+        <BlogSidebar />
+      </aside>
+    </div>
+  </div>
+</SiteLayout>
+
+<style>
+  .local-preview-banner,
+  .hero-gate {
+    margin: 0 0 1.5rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    background: var(--panel);
+    font-family: var(--font-ui);
+  }
+
+  .local-preview-banner {
+    border-color: color-mix(in oklab, var(--gold) 55%, var(--border));
+  }
+
+  .local-preview-banner strong,
+  .local-preview-banner span,
+  .hero-gate strong,
+  .hero-gate p {
+    display: block;
+  }
+
+  .local-preview-banner strong,
+  .hero-gate strong {
+    margin-bottom: 0.25rem;
+    letter-spacing: 0.03em;
+  }
+
+  .local-preview-banner span,
+  .hero-gate p {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--text-sm);
+    line-height: 1.5;
+  }
+
+  .hero-gate {
+    border-color: color-mix(in oklab, var(--gold) 45%, var(--border));
+  }
+
+  .post-separator {
+    margin: 3rem 0 2.5rem;
+    border: none;
+    border-top: 1px solid var(--border);
+    opacity: 0.5;
+  }
+
+  .post-main .post-content {
+    max-width: 72ch;
+    width: 100%;
+    line-height: 1.7;
+    font-size: clamp(1.0625rem, 0.4vw + 1rem, 1.1875rem);
+  }
+
+  .post-main .post-content :global(table) {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0 2rem;
+    font-family: var(--font-ui);
+    font-size: 0.94rem;
+  }
+
+  .post-main .post-content :global(th),
+  .post-main .post-content :global(td) {
+    padding: 0.72rem 0.8rem;
+    border: 1px solid var(--border);
+    vertical-align: top;
+    text-align: left;
+  }
+
+  .post-main .post-content :global(th) {
+    background: var(--panel);
+  }
+
+  @media (max-width: 760px) {
+    .post-main .post-content :global(table) {
+      display: block;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+</style>
