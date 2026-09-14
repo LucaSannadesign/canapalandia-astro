@@ -20,34 +20,26 @@ function meetsPublicationGate(
 }
 
 /**
- * Abilita l'anteprima editoriale solo nel server di sviluppo locale e solo
- * quando l'operatore la richiede esplicitamente. In build/preview/deploy
- * `import.meta.env.DEV` è false, quindi questa eccezione non può rendere
- * raggiungibili bozze o contenuti futuri online.
- */
-function isExplicitLocalPreview(): boolean {
-  return import.meta.env.DEV && process.env.CANAPALANDIA_LOCAL_PREVIEW === "1";
-}
-
-/**
- * Un post è raggiungibile sul suo URL se è esplicitamente pronto, non è marcato
- * draft e la sua data di pubblicazione non è futura. Questo include i contenuti
- * `legacy-review`, che devono conservare lo storico URL durante la revisione.
+ * Un post e raggiungibile sul suo URL se supera il gate editoriale normale.
+ * Durante `astro dev`, invece, consentiamo la raggiungibilita diretta anche a
+ * bozze e contenuti futuri: e il gate di preview locale usato per il controllo
+ * umano prima della pubblicazione.
  *
- * In sviluppo locale, `CANAPALANDIA_LOCAL_PREVIEW=1` consente di aprire anche
- * bozze e contenuti futuri senza modificarne frontmatter o data editoriale.
+ * `import.meta.env.DEV` e false in build, `astro preview` e deploy, quindi questa
+ * eccezione non puo rendere pubblica online una bozza.
  */
 export function isReachableBlogEntry(
   entry: CollectionEntry<"blog">,
   now: Date = new Date(),
 ): boolean {
-  return isExplicitLocalPreview() || meetsPublicationGate(entry, now);
+  if (import.meta.env.DEV) return true;
+  return meetsPublicationGate(entry, now);
 }
 
 /**
- * Un post è pubblicabile nei percorsi editoriali solo se supera comunque il
- * gate di pubblicazione ed è fuori dalla quarantena editoriale. La preview
- * locale non inserisce quindi bozze o contenuti futuri in feed, archivi,
+ * Un post e pubblicabile nei percorsi editoriali solo se supera comunque il
+ * gate di pubblicazione ed e fuori dalla quarantena editoriale. La modalita
+ * dev locale non inserisce quindi bozze o contenuti futuri in feed, archivi,
  * correlati, hreflang o automazioni.
  */
 export function isPublishedBlogEntry(
