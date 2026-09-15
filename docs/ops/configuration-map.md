@@ -3,7 +3,7 @@
 Mappa NON sensibile delle dipendenze esterne. Mai inserire valori di credenziali.
 Ultimo aggiornamento: 2026-09-15.
 
-Legenda fonte: **V** = verificato (CLI/log/DNS/codice) · **L** = dichiarato da Luca · **?** = da verificare.
+Legenda fonte: **V** = verificato (CLI/log/DNS/codice/provider) · **L** = dichiarato da Luca · **?** = da verificare.
 
 ## Hosting
 
@@ -29,7 +29,7 @@ Legenda fonte: **V** = verificato (CLI/log/DNS/codice) · **L** = dichiarato da 
 
 | Servizio | Provider | Account/Workspace | Environment Vercel | Variabile | Usata da | Fonte |
 |---|---|---|---|---|---|---|
-| Email form | Resend | account condiviso con PreventivoDentale; dominio `canapalandia.com` (VERIFIED, eu-west-1); chiave `canapalandia-production`, Sending access | Production, Preview | `RESEND_API_KEY` | `src/pages/api/contatti.ts`, `src/pages/api/collaborazione.ts` | V codice/env · L account/chiave |
+| Email form | Resend | account condiviso con PreventivoDentale; dominio `canapalandia.com` (VERIFIED, eu-west-1); chiave dedicata Canapalandia con Sending access | Production, Preview | `RESEND_API_KEY` | `src/pages/api/contatti.ts`, `src/pages/api/collaborazione.ts` | V codice/env/provider · L account |
 | Newsletter | Buttondown | ? | Development, Preview, Production | `BUTTONDOWN_API_KEY` | `src/pages/api/newsletter.ts` | V codice/env · ? account |
 | Analytics | Google Analytics 4 | ? | Development, Preview, Production | `PUBLIC_GA_ID` | `src/components/GATag.astro`, `src/components/PrivacyConsent.astro` | V codice/env · ? account |
 | AI (Ribaltatore, auto-post) | OpenAI | ? | Development, Preview, Production (+ secret GitHub Actions) | `OPENAI_API_KEY` | `src/pages/api/ribalta-ai.ts`, `scripts/auto-post.mjs`, `.github/workflows/auto-post.yml` | V codice/env · ? account |
@@ -50,6 +50,7 @@ Legenda fonte: **V** = verificato (CLI/log/DNS/codice) · **L** = dichiarato da 
 - Un rollback Vercel a un deployment precedente ripristina anche i valori env di quel build.
 - `vercel env ls` mostra la data di creazione della variabile, non l'ultimo aggiornamento.
 - Le route `/api/*` rifiutano POST senza header `Origin` same-site (403, CSRF Astro).
+- Il nome/valore delle API key ruotabili non è fonte di verità nel repository: prima di una futura rotazione verificare account, dominio e chiave attualmente associata direttamente nel provider e su Vercel.
 
 ## Incidenti collegati
 
