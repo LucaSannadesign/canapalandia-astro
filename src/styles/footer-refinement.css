@@ -11,6 +11,24 @@ body {
   overflow-y: visible;
 }
 
+/* Mobile content gutter
+   app.css azzera il padding orizzontale di .page-shell tramite shorthand.
+   Ripristiniamo un margine di lettura piu' comodo su mobile, applicandolo
+   una sola volta anche quando i layout producono page-shell annidati. */
+@media (max-width: 767px) {
+  .container.page-shell {
+    padding-inline: max(
+      clamp(20px, 5vw, 24px),
+      env(safe-area-inset-left),
+      env(safe-area-inset-right)
+    );
+  }
+
+  .container.page-shell > .container.page-shell {
+    padding-inline: 0;
+  }
+}
+
 /* Mobile menu — stato attivo nelle category hub in light mode.
    category-refinement.css rende il testo attivo scuro, mentre app.css
    mantiene uno sfondo attivo scuro: il risultato era testo quasi invisibile.
