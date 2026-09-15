@@ -83,9 +83,11 @@ export default defineConfig({
     runtime: "serverless",
   }),
 
+  // Il sito non ottimizza immagini remote con astro:assets: autorizza solo il proprio
+  // dominio, così l'endpoint /_image non elabora immagini da host arbitrari.
   image: {
     domains: ["canapalandia.com"],
-    remotePatterns: [{ protocol: "https" }],
+    remotePatterns: [{ protocol: "https", hostname: "canapalandia.com" }],
   },
 
   integrations: [
