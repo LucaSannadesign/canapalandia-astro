@@ -22,8 +22,8 @@ La `RESEND_API_KEY` configurata su Vercel (progetto `canapalandia`, Production +
 apparteneva a una configurazione/account Resend precedente ed era vincolata a un dominio
 non più valido per quella chiave.
 
-Il dominio `canapalandia.com` su Resend era invece correttamente VERIFIED
-(verifica effettuata da Luca direttamente nell'account Resend).
+Il dominio `canapalandia.com` nell'account Resend attualmente usato era invece correttamente
+VERIFIED, con sending enabled e record DKIM/SPF/MX verificati.
 
 ## Evidenza
 
@@ -41,7 +41,7 @@ il rifiuto proveniva da Resend.
 Verifiche a supporto:
 - DNS Cloudflare pubblicati: `resend._domainkey` (DKIM), `send.` MX + SPF (amazonses, eu-west-1),
   `resend-domain-verification` TXT sul dominio radice.
-- Resend (verificato da Luca): dominio VERIFIED, sending enabled, DKIM/SPF/MX verificati.
+- Resend: dominio `canapalandia.com` VERIFIED, sending enabled, DKIM/SPF/MX verificati.
 - Git: nessuna modifica alla logica di invio dopo `824f1ef` (2026-08-31, migrazione
   Formspree → Resend); `453649b` (2026-09-12) ha solo localizzato risposte/redirect.
 
@@ -58,21 +58,21 @@ Verifiche a supporto:
 
 ## Modifica effettuata
 
-Una sola modifica di configurazione, nessuna modifica di codice/DNS/Resend-dominio:
+Una sola modifica di configurazione applicativa, nessuna modifica di codice o DNS:
 
-1. Creata in Resend una nuova API key `canapalandia-production`
-   (Sending access, dominio `canapalandia.com`) — eseguito da Luca.
-2. Aggiornato il valore di `RESEND_API_KEY` su Vercel per Production e Preview — eseguito da Luca.
-3. Redeploy di produzione — eseguito da Luca.
+1. Durante la diagnosi è stata generata una prima chiave Resend dedicata a Canapalandia, ma il suo valore è comparso in chat ed è stata quindi considerata esposta e non usata in produzione.
+2. Luca ha creato manualmente una nuova API key dedicata, con `Sending access` limitato al dominio `canapalandia.com`, senza condividerne il valore in chat.
+3. Aggiornato il valore di `RESEND_API_KEY` su Vercel per Production e Preview — eseguito da Luca.
+4. Redeploy di produzione completato.
 
-La vecchia chiave NON è stata revocata (decisione rimandata a dopo la verifica).
+La vecchia chiave non è stata revocata durante l'incidente: la revoca resta un'attività separata, da eseguire solo dopo identificazione certa della chiave obsoleta.
 
 ## Deployment
 
 | | Deployment | Note |
 |---|---|---|
 | Prima | `dpl_3Pa4Xsqdy42L6rtTvm6o6HKXBm2f` (`canapalandia-4akuahp3n-…vercel.app`) | chiave vecchia, errore 400 |
-| Dopo | `dpl_HQFkMNE2eGGkBAWvrbSeSkQmz9tB` (`canapalandia-k58poeu0n-…vercel.app`) | creato 2026-09-15 11:03:43 UTC, READY, alias `canapalandia.com` e `www.canapalandia.com` verificati con `vercel inspect` |
+| Dopo | `dpl_HQFkMNE2eGGkBAWvrbSeSkQmz9tB` (`canapalandia-k58poeu0n-…vercel.app`) | creato 2026-09-15 11:03:43 UTC, READY, produzione su `canapalandia.com` e `www.canapalandia.com` |
 
 ## Test eseguiti
 
@@ -90,27 +90,36 @@ Pre-fix (produzione, curl con `Origin: https://canapalandia.com`, equivalente al
 
 Post-fix (deployment `dpl_HQFk…`, 2026-09-15 UTC):
 
-| Endpoint | Ora | HTTP | Redirect | Log runtime |
-|---|---|---|---|---|
-| `POST /api/contatti/` (`[TEST] post-rotation`) | 11:18:48 | 303 | `/contatti/?sent=1` | nessun errore |
-| `POST /api/collaborazione/` (`[TEST] post-rotation`) | 11:18:51 | 303 | `/grazie-collaborazione/` | nessun errore |
+| Endpoint | Ora | HTTP | Redirect | Resend |
+|---|---:|---:|---|---|
+| `POST /api/contatti/` (`[TEST] post-rotation`) | 11:18:48 | 303 | `/contatti/?sent=1` | delivered |
+| `POST /api/collaborazione/` (`[TEST] post-rotation`) | 11:18:51 | 303 | `/grazie-collaborazione/` | delivered |
+| `POST /api/contatti/` (`[TEST] collaudo post-rotation`) | 14:14:01 | 303 | `/contatti/?sent=1` | delivered |
+| `POST /api/collaborazione/` (`[TEST] collaudo post-rotation`) | 14:14:04 | 303 | `/grazie-collaborazione/` | delivered |
 
-Nessun log error/fatal/warning sul nuovo deployment nella finestra di test.
-Il 303 viene emesso dal codice solo se Resend risponde `ok`.
-Ricezione email in `info@canapalandia.com`: verifica in carico a Luca.
-Dashboard Resend (log invii): non consultata da Claude.
+Nessun log error/fatal/warning sul nuovo deployment nella finestra di test e nessun nuovo
+`[Contatti] Resend error: 400`.
+
+La dashboard/API Resend ha confermato stato `delivered` verso `info@canapalandia.com` per tutte
+e quattro le email di test sopra elencate.
 
 ## Risultato
 
-RISOLTO E VERIFICATO (percorso form → endpoint → Resend → redirect di successo),
-con conferma di ricezione email demandata a verifica umana.
+**RISOLTO E VERIFICATO END-TO-END**.
+
+Percorso verificato:
+
+`form → endpoint Vercel → RESEND_API_KEY ruotata → Resend → delivered a info@canapalandia.com`
+
+Nessuna modifica applicativa è stata necessaria.
 
 ## Rollback
 
 - Non esiste un rollback utile: il deployment precedente e il valore precedente della
   chiave riportano esattamente al guasto.
-- In caso di problemi con la nuova chiave: generare un'altra chiave nell'account Resend
-  corretto, aggiornare `RESEND_API_KEY` su Vercel, un solo redeploy, ripetere i test.
+- In caso di problemi con la chiave attuale: identificare prima l'account Resend corretto,
+  generare una nuova chiave dedicata con minimo privilegio, aggiornare `RESEND_API_KEY`
+  su Vercel, eseguire un solo redeploy e ripetere i test end-to-end.
 
 ## Lezione / prevenzione
 
@@ -121,8 +130,8 @@ con conferma di ricezione email demandata a verifica umana.
   sempre in quale account è stata creata la chiave in uso, prima di concludere.
   La prima diagnosi di questo incidente ("dominio non verificato") era imprecisa ed è
   stata corretta dopo la verifica diretta dell'account.
-- Account Resend condiviso tra più progetti: usare chiavi dedicate per progetto con
-  nome esplicito (`canapalandia-production`) e minimo privilegio.
+- Se un secret compare in chat o log, considerarlo compromesso e non usarlo in produzione.
+- Con account Resend condivisi tra più progetti, usare chiavi dedicate per progetto e minimo privilegio.
 - `vercel env ls` mostra la data di creazione, non di ultimo aggiornamento: non usarla
   come prova dell'avvenuta rotazione; verificare con deployment nuovo + test.
-- Pending: valutare la revoca della vecchia chiave nell'account precedente (HUMAN_GATE).
+- Pending: identificare con certezza la vecchia chiave e valutarne la revoca con HUMAN_GATE.
