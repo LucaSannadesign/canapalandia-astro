@@ -72,8 +72,9 @@ try {
 }
 
 // Dati dei meta iniettati lato client. Frase originale e ribaltata sono contenuti
-// generati dagli utenti: vanno serializzati come JSON sicuro per un <script> inline,
-// senza interpolarli come stringhe JS (impedisce "</script>", apici e backslash).
+// generati dagli utenti: vanno serializzati come JSON sicuro per lo script inline,
+// senza interpolarli come stringhe JS (impedisce la chiusura anticipata del tag
+// script, apici e backslash).
 const headMeta = {
   og: {
     "og:title": titolo,
