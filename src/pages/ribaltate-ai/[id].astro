@@ -70,6 +70,54 @@ try {
 } catch (err: any) {
   console.error("[ribaltate-ai] Errore recupero frasi correlate:", err?.message);
 }
+
+// Dati dei meta iniettati lato client. Frase originale e ribaltata sono contenuti
+// generati dagli utenti: vanno serializzati come JSON sicuro per lo script inline,
+// senza interpolarli come stringhe JS (impedisce la chiusura anticipata del tag
+// script, apici e backslash).
+const headMeta = {
+  og: {
+    "og:title": titolo,
+    "og:description": descrizione,
+    "og:image": ogImageAbs,
+    "og:url": url,
+    "og:type": "article",
+    "og:site_name": "Canapalandia",
+  },
+  twitter: {
+    "twitter:card": "summary_large_image",
+    "twitter:title": titolo,
+    "twitter:description": descrizione,
+    "twitter:image": ogImageAbs,
+    "twitter:site": "@Canapalandia",
+  },
+  jsonLd: {
+    "@context": "https://schema.org",
+    "@type": "CreativeWork",
+    headline: titolo,
+    description: descrizione,
+    url: url,
+    image: ogImageAbs,
+    author: {
+      "@type": "Organization",
+      name: "Canapalandia",
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "Canapalandia",
+      logo: {
+        "@type": "ImageObject",
+        url: logoAbs,
+      },
+    },
+  },
+};
+const headMetaJson = JSON.stringify(headMeta)
+  .replaceAll("<", "\\u003c")
+  .replaceAll(">", "\\u003e")
+  .replaceAll("&", "\\u0026")
+  .replaceAll("\u2028", "\\u2028")
+  .replaceAll("\u2029", "\\u2029");
 ---
 
 <Fragment>
@@ -77,63 +125,28 @@ try {
   <script is:inline set:html={`
     (() => {
       const head = document.head || document.getElementsByTagName('head')[0];
-      
+      const data = ${headMetaJson};
+
       // Meta OG
-      const ogTags = {
-        'og:title': '${titolo.replace(/'/g, "\\'")}',
-        'og:description': '${descrizione.replace(/'/g, "\\'")}',
-        'og:image': '${ogImageAbs}',
-        'og:url': '${url}',
-        'og:type': 'article',
-        'og:site_name': 'Canapalandia',
-      };
-      
-      Object.entries(ogTags).forEach(([prop, content]) => {
+      Object.entries(data.og).forEach(([prop, content]) => {
         const meta = document.createElement('meta');
         meta.setAttribute('property', prop);
         meta.setAttribute('content', content);
         head.appendChild(meta);
       });
-      
+
       // Meta Twitter
-      const twitterTags = {
-        'twitter:card': 'summary_large_image',
-        'twitter:title': '${titolo.replace(/'/g, "\\'")}',
-        'twitter:description': '${descrizione.replace(/'/g, "\\'")}',
-        'twitter:image': '${ogImageAbs}',
-        'twitter:site': '@Canapalandia',
-      };
-      
-      Object.entries(twitterTags).forEach(([name, content]) => {
+      Object.entries(data.twitter).forEach(([name, content]) => {
         const meta = document.createElement('meta');
         meta.setAttribute('name', name);
         meta.setAttribute('content', content);
         head.appendChild(meta);
       });
-      
+
       // Structured Data
       const script = document.createElement('script');
       script.type = 'application/ld+json';
-      script.textContent = ${JSON.stringify({
-        "@context": "https://schema.org",
-        "@type": "CreativeWork",
-        headline: titolo,
-        description: descrizione,
-        url: url,
-        image: ogImageAbs,
-        author: {
-          "@type": "Organization",
-          name: "Canapalandia",
-        },
-        publisher: {
-          "@type": "Organization",
-          name: "Canapalandia",
-          logo: {
-            "@type": "ImageObject",
-            url: logoAbs,
-          },
-        },
-      })};
+      script.textContent = JSON.stringify(data.jsonLd);
       head.appendChild(script);
     })();
   `} />
