@@ -248,6 +248,10 @@ export const BLOG_TRANSLATION_PAIRS: readonly BlogTranslationPair[] = [
     en: "hemp-sustainability-reducing-environmental-impact",
   },
   {
+    it: "terpeni-canapa-cosa-sono",
+    en: "hemp-terpenes-what-they-are",
+  },
+  {
     it: "hhc-vietato-europa",
     en: "hhc-ban-europe",
   },
