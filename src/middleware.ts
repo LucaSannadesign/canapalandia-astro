@@ -12,6 +12,7 @@ const EN_BLOG_CATEGORIES = new Set<string>([
 ]);
 
 let englishBlogSlugsPromise: Promise<Set<string>> | null = null;
+let blogSlugsPromise: Promise<Set<string>> | null = null;
 
 async function getEnglishBlogSlugs(): Promise<Set<string>> {
   if (!englishBlogSlugsPromise) {
@@ -32,6 +33,23 @@ async function getEnglishBlogSlugs(): Promise<Set<string>> {
   }
 
   return englishBlogSlugsPromise;
+}
+
+async function getBlogSlugs(): Promise<Set<string>> {
+  if (!blogSlugsPromise) {
+    blogSlugsPromise = getCollection("blog")
+      .then(
+        (entries) =>
+          new Set<string>(
+            entries
+              .map((entry) => String(entry.data.slug || entry.id || "").trim())
+              .filter(Boolean),
+          ),
+      )
+      .catch(() => new Set<string>());
+  }
+
+  return blogSlugsPromise;
 }
 
 /**
@@ -233,6 +251,18 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
   );
   if (thinCatLegacy?.[1] && thinCategoryRedirects[thinCatLegacy[1]]) {
     return redirect301(thinCategoryRedirects[thinCatLegacy[1]]);
+  }
+
+  /**
+   * Vecchi permalink WordPress degli articoli al root -> URL canonica /blog/<slug>/.
+   * La regola è derivata dalla collection corrente, quindi copre automaticamente
+   * tutti gli slug editoriali presenti senza mantenere una lista manuale di redirect.
+   */
+  if (segments.length === 1 && pathNoSlash) {
+    const blogSlugs = await getBlogSlugs();
+    if (blogSlugs.has(pathNoSlash)) {
+      return redirect301(`/blog/${pathNoSlash}/`);
+    }
   }
 
   // Trailing slash redirect per pagine HTML:
