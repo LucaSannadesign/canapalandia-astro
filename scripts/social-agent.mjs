@@ -94,6 +94,29 @@ function extractMetaContent(html, key) {
   return "";
 }
 
+function extractTagAttribute(tag, attribute) {
+  const re = new RegExp(`\\b${attribute}\\s*=\\s*(["'])(.*?)\\1`, "i");
+  return decodeXml(tag.match(re)?.[2]?.trim() || "");
+}
+
+function extractAlternateHref(html, hreflang) {
+  const tags = String(html).match(/<link\b[^>]*>/gi) || [];
+  for (const tag of tags) {
+    const rel = extractTagAttribute(tag, "rel").toLowerCase().split(/\s+/);
+    if (!rel.includes("alternate")) continue;
+    const lang = extractTagAttribute(tag, "hreflang").toLowerCase();
+    if (lang !== hreflang.toLowerCase()) continue;
+    const href = extractTagAttribute(tag, "href");
+    if (href) return href;
+  }
+  return "";
+}
+
+function extractHeading(html) {
+  const h1 = String(html).match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i)?.[1] || "";
+  return cleanText(decodeXml(h1), 300);
+}
+
 async function fetchText(url, accept) {
   const response = await fetch(url, {
     headers: {
@@ -105,11 +128,67 @@ async function fetchText(url, accept) {
   return response.text();
 }
 
-async function resolveImage(post) {
-  const html = await fetchText(post.link, "text/html,application/xhtml+xml");
-  const image = extractMetaContent(html, "og:image");
-  if (!image) throw new Error(`No og:image found for ${post.link}`);
-  return new URL(image, post.link).toString();
+async function postFromPage(link, html = "", fallback = {}) {
+  const pageHtml = html || await fetchText(link, "text/html,application/xhtml+xml");
+  const title = extractHeading(pageHtml) || cleanText(extractMetaContent(pageHtml, "og:title"), 300);
+  const description = cleanText(
+    extractMetaContent(pageHtml, "og:description") || extractMetaContent(pageHtml, "description"),
+  );
+  const publishedRaw = extractMetaContent(pageHtml, "article:published_time");
+
+  return {
+    title: title || fallback.title || "Articolo",
+    description: description || fallback.description || "",
+    link,
+    slug: extractSlug(link),
+    pubDate: publishedRaw || fallback.pubDate || "",
+    dateISO: toISODate(publishedRaw) || fallback.dateISO || "",
+  };
+}
+
+async function resolveSocialContext(post, posts) {
+  const selectedHtml = await fetchText(post.link, "text/html,application/xhtml+xml");
+  const italianAlternate = extractAlternateHref(selectedHtml, "it");
+  const englishAlternate = extractAlternateHref(selectedHtml, "en");
+
+  let primaryPost = post;
+  let englishPost = null;
+  let primaryHtml = selectedHtml;
+
+  if (italianAlternate && englishAlternate) {
+    const italianLink = new URL(italianAlternate, post.link).toString();
+    const englishLink = new URL(englishAlternate, post.link).toString();
+    const italianSlug = extractSlug(italianLink);
+    const englishSlug = extractSlug(englishLink);
+
+    if (italianSlug && englishSlug && italianSlug !== englishSlug) {
+      const italianFromFeed = posts.find((item) => item.slug === italianSlug);
+      const englishFromFeed = posts.find((item) => item.slug === englishSlug);
+
+      if (post.slug === italianSlug) {
+        primaryPost = italianFromFeed || post;
+        primaryHtml = selectedHtml;
+      } else {
+        primaryPost = italianFromFeed || await postFromPage(italianLink, "", post);
+        primaryHtml = await fetchText(italianLink, "text/html,application/xhtml+xml");
+      }
+
+      if (post.slug === englishSlug) {
+        englishPost = englishFromFeed || post;
+      } else {
+        englishPost = englishFromFeed || await postFromPage(englishLink);
+      }
+    }
+  }
+
+  const image = extractMetaContent(primaryHtml, "og:image");
+  if (!image) throw new Error(`No og:image found for ${primaryPost.link}`);
+
+  return {
+    primaryPost,
+    englishPost,
+    image: new URL(image, primaryPost.link).toString(),
+  };
 }
 
 function statePath() {
@@ -167,6 +246,38 @@ function wasCompletedArticle(state, post) {
   return state.completedArticles.some((item) => item.slug === post.slug);
 }
 
+function hasRecordedChannelEvent(state, post, channel) {
+  if (!post) return false;
+  return state.sentEvents.some(
+    (event) => event.channel === channel && (event.slug === post.slug || event.eventId === eventId(post, channel)),
+  );
+}
+
+function pairedChannelComplete(state, primaryPost, englishPost, channel) {
+  return hasRecordedChannelEvent(state, primaryPost, channel) || hasRecordedChannelEvent(state, englishPost, channel);
+}
+
+function pairedArticleComplete(state, primaryPost, englishPost) {
+  return CHANNELS.every((channel) => pairedChannelComplete(state, primaryPost, englishPost, channel));
+}
+
+function knownComplete(state, post) {
+  return (
+    Boolean(post) &&
+    (wasCompletedArticle(state, post) || CHANNELS.every((channel) => hasRecordedChannelEvent(state, post, channel)))
+  );
+}
+
+function markCompletedAliases(state, primaryPost, englishPost, completedAt) {
+  let changed = false;
+  for (const item of [primaryPost, englishPost].filter(Boolean)) {
+    if (state.completedArticles.some((entry) => entry.slug === item.slug)) continue;
+    state.completedArticles.push({ slug: item.slug, link: item.link, completedAt });
+    changed = true;
+  }
+  return changed;
+}
+
 function withUtm(link, channel) {
   const url = new URL(link);
   url.searchParams.set("utm_source", channel);
@@ -222,29 +333,81 @@ function dynamicHashtags(post) {
   return ["#Canapalandia", ...topics.slice(0, 4)].join(" ");
 }
 
-function buildPayload(post, image, channel) {
+function buildPayload(post, image, channel, englishPost = null) {
   const description = cleanText(post.description);
+  const englishDescription = cleanText(englishPost?.description);
   const hashtags = dynamicHashtags(post);
-  const facebookCopy = [
+
+  const italianFacebook = [
+    "🇮🇹 Italiano",
     post.title,
     description,
     `Leggi l’articolo: ${withUtm(post.link, "facebook")}`,
-  ].filter(Boolean).join("\n\n");
-
-  const instagramCaption = [
+  ].filter(Boolean);
+  const italianInstagram = [
+    "🇮🇹 Italiano",
     post.title,
     description,
     "Articolo completo su Canapalandia:",
     withUtm(post.link, "instagram"),
-    hashtags,
-  ].filter(Boolean).join("\n\n");
-
-  const linkedinCopy = [
+  ].filter(Boolean);
+  const italianLinkedIn = [
+    "🇮🇹 Italiano",
     post.title,
     description,
     `Approfondisci su Canapalandia: ${withUtm(post.link, "linkedin")}`,
-    hashtags,
-  ].filter(Boolean).join("\n\n");
+  ].filter(Boolean);
+
+  const englishFacebook = englishPost
+    ? [
+        "🇬🇧 English",
+        englishPost.title,
+        englishDescription,
+        `Read the article: ${withUtm(englishPost.link, "facebook")}`,
+      ].filter(Boolean)
+    : [];
+  const englishInstagram = englishPost
+    ? [
+        "🇬🇧 English",
+        englishPost.title,
+        englishDescription,
+        "Full article on Canapalandia:",
+        withUtm(englishPost.link, "instagram"),
+      ].filter(Boolean)
+    : [];
+  const englishLinkedIn = englishPost
+    ? [
+        "🇬🇧 English",
+        englishPost.title,
+        englishDescription,
+        `Read more on Canapalandia: ${withUtm(englishPost.link, "linkedin")}`,
+      ].filter(Boolean)
+    : [];
+
+  const facebookCopy = englishPost
+    ? [italianFacebook.join("\n\n"), englishFacebook.join("\n\n")].join("\n\n")
+    : [post.title, description, `Leggi l’articolo: ${withUtm(post.link, "facebook")}`]
+        .filter(Boolean)
+        .join("\n\n");
+
+  const instagramCaption = englishPost
+    ? [italianInstagram.join("\n\n"), englishInstagram.join("\n\n"), hashtags].join("\n\n")
+    : [
+        post.title,
+        description,
+        "Articolo completo su Canapalandia:",
+        withUtm(post.link, "instagram"),
+        hashtags,
+      ].filter(Boolean).join("\n\n");
+
+  const linkedinCopy = englishPost
+    ? [italianLinkedIn.join("\n\n"), englishLinkedIn.join("\n\n"), hashtags].join("\n\n")
+    : [
+        post.title,
+        description,
+        `Approfondisci su Canapalandia: ${withUtm(post.link, "linkedin")}`,
+        hashtags,
+      ].filter(Boolean).join("\n\n");
 
   const contentByChannel = {
     facebook: facebookCopy,
@@ -269,6 +432,9 @@ function buildPayload(post, image, channel) {
     facebookCopy,
     instagramCaption,
     linkedinCopy,
+    languageMode: englishPost ? "it-en" : "it",
+    englishLink: englishPost?.link || "",
+    englishSlug: englishPost?.slug || "",
     source: "github-actions-social-agent",
     site: "canapalandia",
   };
@@ -319,7 +485,9 @@ function choosePost(posts, state, now) {
     }
   }
 
-  const next = recent.find((post) => !articleComplete(state, post) && !trackedArticle(state, post));
+  const next = recent.find(
+    (post) => !wasCompletedArticle(state, post) && !articleComplete(state, post) && !trackedArticle(state, post),
+  );
   return { post: next || null, retry: false };
 }
 
@@ -332,29 +500,63 @@ async function main() {
 
   const state = loadState();
   const now = new Date();
-  const { post } = choosePost(posts, state, now);
-  if (!post) {
-    console.log("[social-agent] no-op: no article ready for social publishing");
+  let context = null;
+
+  for (let attempt = 0; attempt < posts.length; attempt += 1) {
+    const { post: selectedPost } = choosePost(posts, state, now);
+    if (!selectedPost) {
+      console.log("[social-agent] no-op: no article ready for social publishing");
+      return;
+    }
+
+    const resolved = await resolveSocialContext(selectedPost, posts);
+    const { primaryPost, englishPost } = resolved;
+
+    if (englishPost && (knownComplete(state, primaryPost) || knownComplete(state, englishPost))) {
+      const completedAt =
+        state.completedArticles.find((item) => item.slug === primaryPost.slug || item.slug === englishPost.slug)
+          ?.completedAt || new Date().toISOString();
+      const changed = markCompletedAliases(state, primaryPost, englishPost, completedAt);
+      if (changed) saveState(state);
+      console.log(
+        `[social-agent] Skipping translated duplicate already completed: ${primaryPost.slug} + ${englishPost.slug}`,
+      );
+      continue;
+    }
+
+    context = resolved;
+    break;
+  }
+
+  if (!context) {
+    console.log("[social-agent] no-op: only completed translation aliases remained");
     return;
   }
 
-  const image = await resolveImage(post);
+  const { primaryPost: post, englishPost, image } = context;
   console.log(`[social-agent] Selected: ${post.title}`);
   console.log(`[social-agent] Image: ${image}`);
+  console.log(
+    englishPost
+      ? `[social-agent] Bilingual pair: ${post.slug} + ${englishPost.slug}`
+      : `[social-agent] No verified English alternate for ${post.slug}; publishing Italian only`,
+  );
 
-  const pendingChannels = CHANNELS.filter((channel) => !hasEvent(state, post, channel));
+  const pendingChannels = CHANNELS.filter(
+    (channel) => !pairedChannelComplete(state, post, englishPost, channel),
+  );
   console.log(`[social-agent] Pending channels: ${pendingChannels.join(", ")}`);
 
   if (DRY_RUN) {
     for (const channel of pendingChannels) {
-      const payload = buildPayload(post, image, channel);
+      const payload = buildPayload(post, image, channel, englishPost);
       console.log(`[social-agent] DRY RUN ${channel}: ${JSON.stringify(payload)}`);
     }
     return;
   }
 
   for (const channel of pendingChannels) {
-    const payload = buildPayload(post, image, channel);
+    const payload = buildPayload(post, image, channel, englishPost);
     await notifyMake(payload);
     state.sentEvents.push({
       eventId: payload.eventId,
@@ -366,14 +568,14 @@ async function main() {
     saveState(state);
   }
 
-  if (articleComplete(state, post)) {
+  if (pairedArticleComplete(state, post, englishPost)) {
     const completedAt = new Date().toISOString();
     state.lastCompletedAt = completedAt;
-    if (!state.completedArticles.some((item) => item.slug === post.slug)) {
-      state.completedArticles.push({ slug: post.slug, link: post.link, completedAt });
-    }
+    markCompletedAliases(state, post, englishPost, completedAt);
     saveState(state);
-    console.log(`[social-agent] Completed on ${CHANNELS.join(" + ")}: ${post.slug}`);
+    console.log(
+      `[social-agent] Completed on ${CHANNELS.join(" + ")}: ${post.slug}${englishPost ? ` + ${englishPost.slug}` : ""}`,
+    );
   }
 }
 
