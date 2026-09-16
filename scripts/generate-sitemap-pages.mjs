@@ -6,6 +6,7 @@ const SITE = "https://canapalandia.com";
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const BLOG_DIR = join(ROOT, "src", "content", "blog");
 const PAGES_DIR = join(ROOT, "src", "pages");
+const CONTENT_CONFIG_PATH = join(ROOT, "src", "content.config.ts");
 const OUT_PATH = join(ROOT, "src", "data", "sitemap-pages.json");
 
 const now = new Date();
@@ -30,25 +31,56 @@ const listFilesRecursive = async (dir) => {
   return out;
 };
 
+const stripScalarQuotes = (value) =>
+  (value || "").trim().replace(/^["']|["']$/g, "");
+
 const parseFrontmatter = (raw) => {
   const m = raw.match(/^---\s*\n([\s\S]*?)\n---\s*\n/m);
   const fm = m?.[1] || "";
   const get = (key) => {
     const mm = fm.match(new RegExp(`^${key}:\\s*(.+)\\s*$`, "m"));
-    return mm?.[1]?.trim();
+    return stripScalarQuotes(mm?.[1]);
   };
   return {
     slug: get("slug"),
     draft: get("draft"),
+    status: get("status"),
+    editorialStatus: get("editorialStatus"),
     publishDate: get("publishDate"),
   };
 };
 
 const normalizeSlug = (s) =>
-  (s || "")
-    .trim()
-    .replace(/^["']|["']$/g, "")
+  stripScalarQuotes(s)
     .replace(/^\/+|\/+$/g, "");
+
+/**
+ * `content.config.ts` è la fonte unica per la quarantena editoriale.
+ * Il generatore sitemap legge lo stesso Set invece di duplicarne gli slug.
+ * Se in futuro la dichiarazione cambia forma, il prebuild fallisce esplicitamente
+ * invece di pubblicare per errore URL `legacy-review` nella sitemap.
+ */
+const loadForcedLegacyReviewSlugs = async () => {
+  const raw = await readFile(CONTENT_CONFIG_PATH, "utf8");
+  const match = raw.match(
+    /const\s+BLOG_FORCED_LEGACY_REVIEW_SLUGS\s*=\s*new\s+Set(?:<[^>]+>)?\s*\(\s*\[([\s\S]*?)\]\s*\);/,
+  );
+
+  if (!match) {
+    throw new Error(
+      "Impossibile leggere BLOG_FORCED_LEGACY_REVIEW_SLUGS da src/content.config.ts",
+    );
+  }
+
+  const slugs = Array.from(match[1].matchAll(/["']([^"']+)["']/g), (m) => m[1].trim())
+    .filter(Boolean);
+
+  if (!slugs.length) {
+    throw new Error("BLOG_FORCED_LEGACY_REVIEW_SLUGS è vuoto o non leggibile");
+  }
+
+  return new Set(slugs);
+};
 
 function isFileLikeRoute(route) {
   const last = (route.split("/").pop() || "").trim();
@@ -99,11 +131,23 @@ const pageRouteExists = async (route) => {
 
 const main = async () => {
   const urls = new Set();
+  const forcedLegacyReviewSlugs = await loadForcedLegacyReviewSlugs();
+  const skipped = {
+    draft: 0,
+    nonReady: 0,
+    legacyReview: 0,
+    invalidDate: 0,
+    future: 0,
+  };
 
-  // Pagine “fisse” (aggiunte solo se esistono davvero)
+  // Pagine “fisse” (aggiunte solo se esistono davvero).
+  // Gli hub EN sono pagine editoriali canoniche e devono ricevere lo stesso
+  // segnale sitemap degli hub italiani.
   const fixedRoutes = [
     "/",
     "/blog/",
+    "/en/",
+    "/en/blog/",
     "/lab/",
     "/contatti/",
     "/privacy/",
@@ -116,7 +160,9 @@ const main = async () => {
     if (await pageRouteExists(r)) urls.add(routeToUrl(r));
   }
 
-  // Post blog da filesystem (content collections)
+  // Post blog da filesystem (content collections).
+  // Le condizioni qui devono restare coerenti con blogVisibility.ts e con
+  // la quarantena applicata in content.config.ts.
   if (await exists(BLOG_DIR)) {
     // Stesse estensioni del loader della collection: glob "**/*.{md,mdx}"
     const files = (await listFilesRecursive(BLOG_DIR)).filter((p) =>
@@ -130,16 +176,45 @@ const main = async () => {
 
       const raw = await readFile(filePath, "utf8");
       const fm = parseFrontmatter(raw);
-
-      // Escludi draft e publishDate futura (se presenti)
-      if ((fm.draft || "").toLowerCase() === "true") continue;
-      if (fm.publishDate) {
-        const d = new Date(fm.publishDate);
-        if (!Number.isNaN(d.getTime()) && d.getTime() > now.getTime()) continue;
-      }
-
       const slug = normalizeSlug(fm.slug) || normalizeSlug(fileSlug);
       if (!slug || slug === "undefined") continue;
+
+      if ((fm.draft || "").toLowerCase() === "true") {
+        skipped.draft += 1;
+        continue;
+      }
+
+      // Lo schema Astro usa `ready` come default; draft/test non sono pubblicabili.
+      const status = (fm.status || "ready").toLowerCase();
+      if (status !== "ready") {
+        skipped.nonReady += 1;
+        continue;
+      }
+
+      const editorialStatus = (fm.editorialStatus || "current").toLowerCase();
+      if (
+        editorialStatus === "legacy-review" ||
+        forcedLegacyReviewSlugs.has(slug)
+      ) {
+        skipped.legacyReview += 1;
+        continue;
+      }
+
+      // isReachableBlogEntry richiede una publishDate valida e non futura.
+      if (!fm.publishDate) {
+        skipped.invalidDate += 1;
+        continue;
+      }
+
+      const d = new Date(fm.publishDate);
+      if (Number.isNaN(d.getTime())) {
+        skipped.invalidDate += 1;
+        continue;
+      }
+      if (d.getTime() > now.getTime()) {
+        skipped.future += 1;
+        continue;
+      }
 
       urls.add(routeToUrl(`/blog/${slug}/`));
     }
@@ -150,6 +225,9 @@ const main = async () => {
   await mkdir(join(ROOT, "src", "data"), { recursive: true });
   await writeFile(OUT_PATH, JSON.stringify(sorted, null, 2) + "\n", "utf8");
   console.log(`[sitemap] Wrote ${sorted.length} pages to ${OUT_PATH}`);
+  console.log(
+    `[sitemap] Skipped: draft=${skipped.draft}, nonReady=${skipped.nonReady}, legacyReview=${skipped.legacyReview}, invalidDate=${skipped.invalidDate}, future=${skipped.future}`,
+  );
 };
 
 main().catch((err) => {
