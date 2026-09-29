@@ -350,6 +350,109 @@ const jsonLd = !isLegacyReview
     border-left: 3px solid var(--border);
   }
 
+  .post-main .post-content :global(.symptom-table-wrap) {
+    margin: 1.4rem 0 1.8rem;
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    background: color-mix(in oklab, var(--panel) 88%, transparent);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .post-main .post-content :global(.symptom-table-wrap:focus-visible) {
+    outline: 2px solid var(--brand);
+    outline-offset: 3px;
+  }
+
+  .post-main .post-content :global(.symptom-table) {
+    width: 100%;
+    min-width: 680px;
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: fixed;
+    font-size: 0.95em;
+    line-height: 1.5;
+  }
+
+  .post-main .post-content :global(.symptom-table th),
+  .post-main .post-content :global(.symptom-table td) {
+    padding: 0.95rem 1rem;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid var(--border-subtle);
+    overflow-wrap: anywhere;
+  }
+
+  .post-main .post-content :global(.symptom-table th) {
+    background: color-mix(in oklab, var(--brand) 18%, var(--panel));
+    color: var(--text);
+    font-family: Archivo, sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.045em;
+    text-transform: uppercase;
+  }
+
+  .post-main .post-content :global(.symptom-table th:first-child),
+  .post-main .post-content :global(.symptom-table td:first-child) {
+    width: 31%;
+  }
+
+  .post-main .post-content :global(.symptom-table th:nth-child(2)),
+  .post-main .post-content :global(.symptom-table td:nth-child(2)) {
+    width: 27%;
+  }
+
+  .post-main .post-content :global(.symptom-table tbody tr:nth-child(even)) {
+    background: color-mix(in oklab, var(--panel) 72%, transparent);
+  }
+
+  .post-main .post-content :global(.symptom-table tbody tr:hover) {
+    background: color-mix(in oklab, var(--brand) 8%, var(--panel));
+  }
+
+  .post-main .post-content :global(.symptom-table tbody tr:last-child td) {
+    border-bottom: 0;
+  }
+
+  .post-main .post-content :global(.symptom-table td strong) {
+    color: var(--text);
+    font-weight: 700;
+  }
+
+  :global(html[data-theme="light"]) .post-main .post-content :global(.symptom-table-wrap) {
+    background: #ffffff;
+    box-shadow: 0 10px 24px rgba(19, 56, 33, 0.08);
+  }
+
+  :global(html[data-theme="light"]) .post-main .post-content :global(.symptom-table th) {
+    background: #e8f4eb;
+    color: #133821;
+  }
+
+  :global(html[data-theme="light"]) .post-main .post-content :global(.symptom-table tbody tr:nth-child(even)) {
+    background: #f7faf7;
+  }
+
+  @media (max-width: 640px) {
+    .post-main .post-content :global(.symptom-table-wrap) {
+      margin-left: -0.15rem;
+      margin-right: -0.15rem;
+      border-radius: var(--r-sm);
+    }
+
+    .post-main .post-content :global(.symptom-table) {
+      min-width: 620px;
+      font-size: 0.9em;
+    }
+
+    .post-main .post-content :global(.symptom-table th),
+    .post-main .post-content :global(.symptom-table td) {
+      padding: 0.8rem 0.85rem;
+    }
+  }
+
   .post-main .post-content details {
     margin: 1.1rem 0;
     padding: 0.15rem 0;
