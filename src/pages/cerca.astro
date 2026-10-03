@@ -95,10 +95,15 @@ const dateOf = (entry: (typeof posts)[number]) => {
             <p class="muted">Prova con un termine più breve o diverso. Qui sotto trovi gli ultimi articoli.</p>
           </section>
         )
+      ) : q ? (
+        <section class="results">
+          <h2>Query troppo corta</h2>
+          <p class="muted">Scrivi almeno due lettere per cercare. Qui sotto trovi gli ultimi articoli.</p>
+        </section>
       ) : null}
     </div>
 
-    {!tokens.length || !results.length ? (
+    {!results.length ? (
       <section class="latest" aria-labelledby="latest-title">
         <h2 id="latest-title">Ultimi articoli</h2>
         <div class="grid">
@@ -122,8 +127,8 @@ const dateOf = (entry: (typeof posts)[number]) => {
     .search-head { margin-bottom: 18px; }
     .muted { opacity: .78; }
     .search-form { display:flex; gap: 10px; margin-top: 12px; }
-    .search-form input { flex:1; min-width: 0; padding: 12px 14px; border-radius: var(--r-md); border: 1px solid rgba(255,255,255,.14); background: rgba(0,0,0,.18); }
-    .search-form button { padding: 12px 16px; border-radius: var(--r-md); border: 0; background: #2ea043; font-weight: 700; cursor: pointer; }
+    .search-form input { flex:1; min-width: 0; min-height: 44px; font-size: 16px; padding: 12px 14px; border-radius: var(--r-md); border: 1px solid rgba(255,255,255,.14); background: rgba(0,0,0,.18); }
+    .search-form button { min-height: 44px; padding: 12px 16px; border-radius: var(--r-md); border: 0; background: #2ea043; font-weight: 700; cursor: pointer; }
     .grid { display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
     .card { padding: 16px; border-radius: var(--r-md); border: 1px solid rgba(255,255,255,.10); background: rgba(0,0,0,.18); overflow: hidden; }
     .card h3 { margin: 0 0 8px; font-size: 18px; line-height: 1.25; }

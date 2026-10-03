@@ -44,8 +44,9 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/en/sear
     </header>
 
     <section aria-live="polite">
-      <h2>{tokens.length ? (resultPosts.length ? "Results" : "No results") : "Latest English articles"}</h2>
+      <h2>{tokens.length ? (resultPosts.length ? "Results" : "No results") : q ? "Query too short" : "Latest English articles"}</h2>
       {tokens.length && !resultPosts.length ? <p>No matches were found for <strong>{q}</strong>.</p> : null}
+      {q && !tokens.length ? <p>Type at least two letters to search. Latest articles are shown below.</p> : null}
       <div class="grid">
         {resultPosts.map((entry) => (
           <article>
@@ -65,8 +66,8 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/en/sear
   h1 { margin: .3rem 0 .7rem; font: 500 clamp(2.8rem,6vw,5rem)/.96 Newsreader,serif; }
   header > p:last-of-type { color: var(--muted); }
   form { display:flex; gap:.6rem; margin-top:1.2rem; }
-  form input { flex:1; min-width:0; padding:.85rem .9rem; border:1px solid var(--border); border-radius:3px; background:var(--panel); color:var(--text); }
-  form button { border:0; border-radius:3px; padding:.85rem 1.1rem; background:var(--brand); color:#102b19; font-weight:800; cursor:pointer; }
+  form input { flex:1; min-width:0; min-height:44px; font-size:16px; padding:.85rem .9rem; border:1px solid var(--border); border-radius:3px; background:var(--panel); color:var(--text); }
+  form button { min-height:44px; border:0; border-radius:3px; padding:.85rem 1.1rem; background:var(--brand); color:#102b19; font-weight:800; cursor:pointer; }
   section > h2 { font: 500 2rem/1 Newsreader,serif; }
   .grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem; }
   article { border-top:1px solid var(--border); padding:1rem 0; }
