@@ -34,11 +34,10 @@ export function readSearchQuery(url: URL): string {
   return raw.replace(/\s+/g, " ").trim().slice(0, SEARCH_MAX_QUERY_LENGTH);
 }
 
+/** Parole di una sola lettera ("e", "a") matcherebbero quasi tutto: vengono scartate. */
 export function tokenizeSearchQuery(query: string): string[] {
-  const unique = [...new Set(normalizeSearchText(query).split(" ").filter(Boolean))];
-  // Le parole di una lettera ("e", "a") matcherebbero tutto: le ignoriamo se c'è altro.
-  const meaningful = unique.filter((t) => t.length > 1);
-  return (meaningful.length ? meaningful : unique).slice(0, MAX_TOKENS);
+  const unique = [...new Set(normalizeSearchText(query).split(" "))];
+  return unique.filter((t) => t.length > 1).slice(0, MAX_TOKENS);
 }
 
 /** Testo leggibile dal sorgente MD/MDX: via import/export, JSX/HTML, URL e sintassi markdown. */
@@ -73,19 +72,24 @@ function indexEntry(entry: BlogEntry): IndexedFields {
   return fields;
 }
 
+/** Il token deve aprire una parola (prefisso): "bioplast" trova "bioplastiche", "ing" non trova "marketing". */
+function hasWordStartingWith(text: string, token: string): boolean {
+  return text.startsWith(token) || text.includes(` ${token}`);
+}
+
 /** 0 = nessun match. Tutte le parole devono comparire (anche come prefisso/parziale). */
 function scoreEntry(fields: IndexedFields, tokens: string[], phrase: string): number {
   let score = 0;
   for (const token of tokens) {
     let tokenScore = 0;
-    if (fields.title.includes(token)) tokenScore += 10;
-    if (fields.meta.includes(token)) tokenScore += 5;
-    if (fields.description.includes(token)) tokenScore += 3;
-    if (fields.body.includes(token)) tokenScore += 1;
+    if (hasWordStartingWith(fields.title, token)) tokenScore += 10;
+    if (hasWordStartingWith(fields.meta, token)) tokenScore += 5;
+    if (hasWordStartingWith(fields.description, token)) tokenScore += 3;
+    if (hasWordStartingWith(fields.body, token)) tokenScore += 1;
     if (!tokenScore) return 0;
     score += tokenScore;
   }
-  if (tokens.length > 1 && fields.title.includes(phrase)) score += 20;
+  if (tokens.length > 1 && hasWordStartingWith(fields.title, phrase)) score += 20;
   return score;
 }
 
