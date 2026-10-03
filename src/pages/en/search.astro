@@ -3,31 +3,24 @@ export const prerender = false;
 
 import { getCollection } from "astro:content";
 import EnglishSiteLayout from "../../layouts/EnglishSiteLayout.astro";
-import { isReachableBlogEntry } from "../../lib/blogVisibility";
-import { languageFromCategory } from "../../lib/localization";
+import {
+  SEARCH_MAX_QUERY_LENGTH,
+  SEARCH_RESULTS_LIMIT,
+  postHref,
+  readSearchQuery,
+  searchPosts,
+  searchablePosts,
+  tokenizeSearchQuery,
+} from "../../lib/search";
 
-const q = (Astro.url.searchParams.get("q") ?? "").trim();
-const tokens = q.toLowerCase().split(/\s+/).filter(Boolean).slice(0, 6);
+const q = readSearchQuery(Astro.url);
+const tokens = tokenizeSearchQuery(q);
 
-const posts = (await getCollection("blog"))
-  .filter((entry) => {
-    if (!isReachableBlogEntry(entry)) return false;
-    if (entry.data.editorialStatus === "legacy-review") return false;
-    if (languageFromCategory(entry.data.category) !== "en") return false;
-    const d = entry.data.publishDate ? new Date(entry.data.publishDate) : null;
-    return d && !Number.isNaN(d.getTime()) && d.getTime() <= Date.now();
-  })
-  .sort((a, b) => new Date(b.data.publishDate ?? 0).getTime() - new Date(a.data.publishDate ?? 0).getTime());
+// Same source and editorial gate as the blog listings: published English posts only.
+const posts = searchablePosts(await getCollection("blog"), "en");
+const resultPosts = tokens.length ? searchPosts(posts, tokens).slice(0, SEARCH_RESULTS_LIMIT) : posts.slice(0, 12);
 
-const resultPosts = tokens.length
-  ? posts.filter((entry) => {
-      const haystack = `${entry.data.title ?? ""} ${entry.data.description ?? ""} ${entry.body ?? ""}`.toLowerCase();
-      return tokens.every((token) => haystack.includes(token));
-    }).slice(0, 30)
-  : posts.slice(0, 12);
-
-const slugOf = (entry: any) => String(entry.data.slug || entry.slug || entry.id || "").trim();
-const hrefOf = (entry: any) => `/blog/${slugOf(entry)}/`;
+const hrefOf = postHref;
 const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/en/search/`;
 ---
 
@@ -43,9 +36,9 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/en/sear
       <p class="eyebrow">Search</p>
       <h1>Search the English edition</h1>
       <p>Find articles by topic, keyword or subject.</p>
-      <form method="get" action="/en/search/">
+      <form method="get" action="/en/search/" role="search">
         <label class="sr-only" for="en-q">Search</label>
-        <input id="en-q" name="q" type="search" placeholder="Search…" value={q} />
+        <input id="en-q" name="q" type="search" placeholder="Search…" value={q} maxlength={SEARCH_MAX_QUERY_LENGTH} autocomplete="off" enterkeyhint="search" />
         <button type="submit">Search</button>
       </form>
     </header>
