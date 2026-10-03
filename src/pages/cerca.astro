@@ -2,12 +2,14 @@
 export const prerender = false;
 
 import { getCollection } from "astro:content";
+import CardPost from "../components/CardPost.astro";
 import MigratedLayout from "../layouts/MigratedLayout.astro";
 import { blogPublishDate } from "../lib/blogVisibility";
 import {
   SEARCH_MAX_QUERY_LENGTH,
   SEARCH_RESULTS_LIMIT,
   postHref,
+  postImageSrc,
   readSearchQuery,
   searchPosts,
   searchablePosts,
@@ -39,10 +41,14 @@ const resultsLabel =
       ? `Primi ${results.length} di ${matches.length} risultati`
       : `${matches.length} risultati`;
 
-const dateFormatter = new Intl.DateTimeFormat("it-IT", { day: "numeric", month: "long", year: "numeric" });
-const dateOf = (entry: (typeof posts)[number]) => {
+const dateFormatter = new Intl.DateTimeFormat("it-IT", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
+const dateLabel = (entry: (typeof posts)[number]) => {
   const d = blogPublishDate(entry);
-  return d ? { iso: d.toISOString().slice(0, 10), label: dateFormatter.format(d) } : null;
+  return d ? dateFormatter.format(d) : "";
 };
 ---
 
@@ -50,7 +56,9 @@ const dateOf = (entry: (typeof posts)[number]) => {
   <section class="container">
     <header class="search-head">
       <h1>Cerca</h1>
-      <p class="muted" id="q-hint">Cerca negli articoli del magazine: anche parole parziali, senza badare ad accenti o maiuscole.</p>
+      <p class="muted" id="q-hint">
+        Cerca negli articoli del magazine: anche parole parziali, senza badare ad accenti o maiuscole.
+      </p>
 
       <form class="search-form" method="get" action="/cerca/" role="search">
         <label class="sr-only" for="q">Cerca nel magazine</label>
@@ -73,30 +81,33 @@ const dateOf = (entry: (typeof posts)[number]) => {
       {tokens.length ? (
         results.length ? (
           <section class="results" aria-labelledby="results-title">
-            <h2 id="results-title">
-              {resultsLabel} per «{q}»
-            </h2>
-            <div class="grid">
-              {results.map((e) => {
-                const date = dateOf(e);
-                return (
-                  <article class="card">
-                    <h3><a href={postHref(e)}>{e.data.title}</a></h3>
-                    {e.data.description ? <p class="muted">{e.data.description}</p> : null}
-                    {date ? <p class="meta"><time datetime={date.iso}>{date.label}</time></p> : null}
-                  </article>
-                );
-              })}
+            <div class="results-head">
+              <h2 id="results-title">{resultsLabel} per «{q}»</h2>
+              <p class="muted">Articoli ordinati per pertinenza.</p>
+            </div>
+            <div class="results-grid">
+              {results.map((entry) => (
+                <CardPost
+                  href={postHref(entry)}
+                  img={postImageSrc(entry) || undefined}
+                  date={dateLabel(entry)}
+                  publishDate={entry.data.publishDate}
+                  updatedDate={entry.data.updatedDate}
+                  title={entry.data.title}
+                  excerpt={entry.data.description}
+                  category={entry.data.category || null}
+                />
+              ))}
             </div>
           </section>
         ) : (
-          <section class="results" aria-labelledby="results-title">
+          <section class="results empty-state" aria-labelledby="results-title">
             <h2 id="results-title">Nessun risultato per «{q}»</h2>
             <p class="muted">Prova con un termine più breve o diverso. Qui sotto trovi gli ultimi articoli.</p>
           </section>
         )
       ) : q ? (
-        <section class="results">
+        <section class="results empty-state">
           <h2>Query troppo corta</h2>
           <p class="muted">Scrivi almeno due lettere per cercare. Qui sotto trovi gli ultimi articoli.</p>
         </section>
@@ -105,37 +116,87 @@ const dateOf = (entry: (typeof posts)[number]) => {
 
     {!results.length ? (
       <section class="latest" aria-labelledby="latest-title">
-        <h2 id="latest-title">Ultimi articoli</h2>
-        <div class="grid">
-          {latest.map((p) => {
-            const date = dateOf(p);
-            return (
-              <article class="card">
-                <h3><a href={postHref(p)}>{p.data.title}</a></h3>
-                {p.data.description ? <p class="muted">{p.data.description}</p> : null}
-                {date ? <p class="meta"><time datetime={date.iso}>{date.label}</time></p> : null}
-              </article>
-            );
-          })}
+        <div class="results-head">
+          <h2 id="latest-title">Ultimi articoli</h2>
+          <p class="muted">Le pubblicazioni più recenti di Canapalandia.</p>
+        </div>
+        <div class="results-grid">
+          {latest.map((entry) => (
+            <CardPost
+              href={postHref(entry)}
+              img={postImageSrc(entry) || undefined}
+              date={dateLabel(entry)}
+              publishDate={entry.data.publishDate}
+              updatedDate={entry.data.updatedDate}
+              title={entry.data.title}
+              excerpt={entry.data.description}
+              category={entry.data.category || null}
+            />
+          ))}
         </div>
       </section>
     ) : null}
   </section>
 
   <style>
-    .container { max-width: 1120px; margin: 0 auto; padding: 24px 20px 56px; }
-    .search-head { margin-bottom: 18px; }
-    .muted { opacity: .78; }
-    .search-form { display:flex; gap: 10px; margin-top: 12px; }
-    .search-form input { flex:1; min-width: 0; min-height: 44px; font-size: 16px; padding: 12px 14px; border-radius: var(--r-md); border: 1px solid rgba(255,255,255,.14); background: rgba(0,0,0,.18); }
-    .search-form button { min-height: 44px; padding: 12px 16px; border-radius: var(--r-md); border: 0; background: #2ea043; font-weight: 700; cursor: pointer; }
-    .grid { display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-    .card { padding: 16px; border-radius: var(--r-md); border: 1px solid rgba(255,255,255,.10); background: rgba(0,0,0,.18); overflow: hidden; }
-    .card h3 { margin: 0 0 8px; font-size: 18px; line-height: 1.25; }
-    .card a { text-decoration: none; }
-    .meta { margin-top: 10px; font-size: 12px; opacity: .7; }
-    .sr-only { position:absolute; left:-9999px; }
-    @media (max-width: 980px){ .grid{ grid-template-columns: repeat(2, minmax(0,1fr)); } }
-    @media (max-width: 640px){ .grid{ grid-template-columns: 1fr; } .search-form{ flex-direction: column; } }
+    .container { max-width: 1180px; margin: 0 auto; padding: 32px 20px 64px; }
+    .search-head { max-width: 900px; margin-bottom: 32px; }
+    .search-head h1 { margin-bottom: 8px; }
+    .muted { color: var(--muted); }
+    .search-form { display:flex; gap: 10px; margin-top: 18px; }
+    .search-form input {
+      flex:1;
+      min-width: 0;
+      min-height: 44px;
+      font-size: 16px;
+      padding: 12px 14px;
+      border-radius: var(--r-md);
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.18);
+      color: inherit;
+    }
+    .search-form button {
+      min-height: 44px;
+      padding: 12px 18px;
+      border-radius: var(--r-md);
+      border: 0;
+      background: var(--brand, #2ea043);
+      color: #102b19;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .results,
+    .latest { margin-top: 32px; }
+    .results-head { margin-bottom: 18px; }
+    .results-head h2,
+    .empty-state h2 { margin: 0 0 6px; }
+    .results-head p,
+    .empty-state p { margin: 0; }
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 24px;
+      align-items: stretch;
+    }
+    .sr-only {
+      position:absolute;
+      width:1px;
+      height:1px;
+      padding:0;
+      margin:-1px;
+      overflow:hidden;
+      clip:rect(0,0,0,0);
+      white-space:nowrap;
+      border:0;
+    }
+    @media (max-width: 980px){
+      .results-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    }
+    @media (max-width: 640px){
+      .container { padding-inline: 16px; }
+      .results-grid { grid-template-columns: 1fr; gap: 18px; }
+      .search-form { flex-direction: column; }
+      .search-form button { width: 100%; }
+    }
   </style>
 </MigratedLayout>

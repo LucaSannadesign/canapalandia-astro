@@ -122,3 +122,21 @@ export function searchPosts(posts: BlogEntry[], tokens: string[]): BlogEntry[] {
 export function postHref(entry: BlogEntry): string {
   return `/blog/${String(entry.data.slug || entry.id).trim()}/`;
 }
+
+
+/** Immagine editoriale usata nelle anteprime dei risultati, coerente con il blog. */
+export function postImageSrc(entry: BlogEntry): string {
+  const image: unknown = entry.data.image || entry.data.coverImage || "";
+  let src = "";
+
+  if (typeof image === "string") {
+    src = image.trim();
+  } else if (image && typeof image === "object" && "src" in image) {
+    const value = (image as { src?: unknown }).src;
+    if (typeof value === "string") src = value.trim();
+  }
+
+  if (!src) return "";
+  if (/^https?:\/\//i.test(src)) return src;
+  return src.startsWith("/") ? src : `/${src}`;
+}
