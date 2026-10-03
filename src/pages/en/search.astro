@@ -3,31 +3,24 @@ export const prerender = false;
 
 import { getCollection } from "astro:content";
 import EnglishSiteLayout from "../../layouts/EnglishSiteLayout.astro";
-import { isReachableBlogEntry } from "../../lib/blogVisibility";
-import { languageFromCategory } from "../../lib/localization";
+import {
+  SEARCH_MAX_QUERY_LENGTH,
+  SEARCH_RESULTS_LIMIT,
+  postHref,
+  readSearchQuery,
+  searchPosts,
+  searchablePosts,
+  tokenizeSearchQuery,
+} from "../../lib/search";
 
-const q = (Astro.url.searchParams.get("q") ?? "").trim();
-const tokens = q.toLowerCase().split(/\s+/).filter(Boolean).slice(0, 6);
+const q = readSearchQuery(Astro.url);
+const tokens = tokenizeSearchQuery(q);
 
-const posts = (await getCollection("blog"))
-  .filter((entry) => {
-    if (!isReachableBlogEntry(entry)) return false;
-    if (entry.data.editorialStatus === "legacy-review") return false;
-    if (languageFromCategory(entry.data.category) !== "en") return false;
-    const d = entry.data.publishDate ? new Date(entry.data.publishDate) : null;
-    return d && !Number.isNaN(d.getTime()) && d.getTime() <= Date.now();
-  })
-  .sort((a, b) => new Date(b.data.publishDate ?? 0).getTime() - new Date(a.data.publishDate ?? 0).getTime());
+// Same source and editorial gate as the blog listings: published English posts only.
+const posts = searchablePosts(await getCollection("blog"), "en");
+const resultPosts = tokens.length ? searchPosts(posts, tokens).slice(0, SEARCH_RESULTS_LIMIT) : posts.slice(0, 12);
 
-const resultPosts = tokens.length
-  ? posts.filter((entry) => {
-      const haystack = `${entry.data.title ?? ""} ${entry.data.description ?? ""} ${entry.body ?? ""}`.toLowerCase();
-      return tokens.every((token) => haystack.includes(token));
-    }).slice(0, 30)
-  : posts.slice(0, 12);
-
-const slugOf = (entry: any) => String(entry.data.slug || entry.slug || entry.id || "").trim();
-const hrefOf = (entry: any) => `/blog/${slugOf(entry)}/`;
+const hrefOf = postHref;
 const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/en/search/`;
 ---
 
@@ -43,16 +36,17 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/en/sear
       <p class="eyebrow">Search</p>
       <h1>Search the English edition</h1>
       <p>Find articles by topic, keyword or subject.</p>
-      <form method="get" action="/en/search/">
+      <form method="get" action="/en/search/" role="search">
         <label class="sr-only" for="en-q">Search</label>
-        <input id="en-q" name="q" type="search" placeholder="Search…" value={q} />
+        <input id="en-q" name="q" type="search" placeholder="Search…" value={q} maxlength={SEARCH_MAX_QUERY_LENGTH} autocomplete="off" enterkeyhint="search" />
         <button type="submit">Search</button>
       </form>
     </header>
 
     <section aria-live="polite">
-      <h2>{tokens.length ? (resultPosts.length ? "Results" : "No results") : "Latest English articles"}</h2>
+      <h2>{tokens.length ? (resultPosts.length ? "Results" : "No results") : q ? "Query too short" : "Latest English articles"}</h2>
       {tokens.length && !resultPosts.length ? <p>No matches were found for <strong>{q}</strong>.</p> : null}
+      {q && !tokens.length ? <p>Type at least two letters to search. Latest articles are shown below.</p> : null}
       <div class="grid">
         {resultPosts.map((entry) => (
           <article>
@@ -72,8 +66,8 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/en/sear
   h1 { margin: .3rem 0 .7rem; font: 500 clamp(2.8rem,6vw,5rem)/.96 Newsreader,serif; }
   header > p:last-of-type { color: var(--muted); }
   form { display:flex; gap:.6rem; margin-top:1.2rem; }
-  form input { flex:1; min-width:0; padding:.85rem .9rem; border:1px solid var(--border); border-radius:3px; background:var(--panel); color:var(--text); }
-  form button { border:0; border-radius:3px; padding:.85rem 1.1rem; background:var(--brand); color:#102b19; font-weight:800; cursor:pointer; }
+  form input { flex:1; min-width:0; min-height:44px; font-size:16px; padding:.85rem .9rem; border:1px solid var(--border); border-radius:3px; background:var(--panel); color:var(--text); }
+  form button { min-height:44px; border:0; border-radius:3px; padding:.85rem 1.1rem; background:var(--brand); color:#102b19; font-weight:800; cursor:pointer; }
   section > h2 { font: 500 2rem/1 Newsreader,serif; }
   .grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem; }
   article { border-top:1px solid var(--border); padding:1rem 0; }

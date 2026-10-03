@@ -3,48 +3,18 @@ export const prerender = false;
 
 import { getCollection } from "astro:content";
 import MigratedLayout from "../layouts/MigratedLayout.astro";
-import { loadWp } from "../lib/wp";
-import { getExcerpt } from "../lib/utils";
+import { blogPublishDate } from "../lib/blogVisibility";
+import {
+  SEARCH_MAX_QUERY_LENGTH,
+  SEARCH_RESULTS_LIMIT,
+  postHref,
+  readSearchQuery,
+  searchPosts,
+  searchablePosts,
+  tokenizeSearchQuery,
+} from "../lib/search";
 
-function stripHtml(input: unknown): string {
-  if (typeof input !== "string") return "";
-  return input
-    .replace(/<script[\s\S]*?<\/script>/gi, " ")
-    .replace(/<style[\s\S]*?<\/style>/gi, " ")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function excerptFromEntry(e: any, max = 170): string {
-  return getExcerpt(e?.excerpt, e?.html, max);
-}
-
-function timeOf(e: any): number {
-  const raw = e?.date ?? e?.modified ?? "";
-  const t = Date.parse(String(raw));
-  return Number.isFinite(t) ? t : 0;
-}
-
-function hrefOf(e: any): string {
-  const p = String(e?.path ?? "").replace(/^\/+|\/+$/g, "");
-  return p ? `/${p}/` : "/";
-}
-
-function tokenize(q: string): string[] {
-  return q.toLowerCase().trim().split(/\s+/).filter(Boolean).slice(0, 6);
-}
-
-function matchesAllTokens(haystack: string, tokens: string[]): boolean {
-  const h = haystack.toLowerCase();
-  return tokens.every((t) => h.includes(t));
-}
-
-function normalizePath(value: unknown): string {
-  return String(value ?? "").trim().replace(/^\/+|\/+$/g, "");
-}
-
-const q = (Astro.url.searchParams.get("q") ?? Astro.url.searchParams.get("s") ?? "").trim();
+const q = readSearchQuery(Astro.url);
 
 // SEO: la ricerca interna è una pagina di servizio. Non deve competere nelle SERP;
 // i link ai risultati restano seguibili e il canonical resta stabile su /cerca/.
@@ -54,98 +24,102 @@ const title = "Cerca nel magazine | Canapalandia";
 const description =
   "Cerca articoli, guide e approfondimenti pubblicati su Canapalandia per tema, parola chiave o argomento.";
 
-// Gli articoli in legacy-review non devono ricomparire dalla vecchia ricerca WP.
-const legacyReviewEntries = await getCollection(
-  "blog",
-  ({ data }) => data.editorialStatus === "legacy-review",
-);
-const legacyReviewSlugs = new Set(
-  legacyReviewEntries
-    .map((entry) => normalizePath(entry.data.slug || entry.id).split("/").pop() || "")
-    .filter(Boolean),
-);
+// Stessa fonte e stesso gate editoriale di /blog/: solo articoli IT pubblicati,
+// esclusi bozze, contenuti futuri e quarantena `legacy-review`.
+const posts = searchablePosts(await getCollection("blog"), "it");
+const latest = posts.slice(0, 9);
 
-function isLegacyReviewWpEntry(e: any): boolean {
-  if (e?.kind !== "post") return false;
-  const path = normalizePath(e?.path || e?.slug || e?.link);
-  const leaf = path.split("/").filter(Boolean).pop() || "";
-  return legacyReviewSlugs.has(leaf);
-}
+const tokens = tokenizeSearchQuery(q);
+const matches = searchPosts(posts, tokens);
+const results = matches.slice(0, SEARCH_RESULTS_LIMIT);
+const resultsLabel =
+  matches.length === 1
+    ? "1 risultato"
+    : matches.length > results.length
+      ? `Primi ${results.length} di ${matches.length} risultati`
+      : `${matches.length} risultati`;
 
-const { entries } = await loadWp();
-const list = Array.isArray(entries) ? entries.filter((e) => !isLegacyReviewWpEntry(e)) : [];
-
-const posts = list.filter((e) => e?.kind === "post");
-const latest = posts.slice().sort((a, b) => timeOf(b) - timeOf(a)).slice(0, 9);
-
-const tokens = tokenize(q);
-
-const results = tokens.length
-  ? list
-      .filter((e) => {
-        const title = String(e?.title ?? "");
-        const body = stripHtml(e?.html ?? "");
-        const ex = stripHtml(e?.excerpt ?? "");
-        const hay = `${title} ${ex} ${body}`;
-        return hay.length && matchesAllTokens(hay, tokens);
-      })
-      .sort((a, b) => timeOf(b) - timeOf(a))
-      .slice(0, 30)
-  : [];
+const dateFormatter = new Intl.DateTimeFormat("it-IT", { day: "numeric", month: "long", year: "numeric" });
+const dateOf = (entry: (typeof posts)[number]) => {
+  const d = blogPublishDate(entry);
+  return d ? { iso: d.toISOString().slice(0, 10), label: dateFormatter.format(d) } : null;
+};
 ---
 
 <MigratedLayout title={title} description={description} robots={robots} canonical={canonical}>
   <section class="container">
     <header class="search-head">
       <h1>Cerca</h1>
-      <p class="muted">Digita un termine e premi Invio.</p>
+      <p class="muted" id="q-hint">Cerca negli articoli del magazine: anche parole parziali, senza badare ad accenti o maiuscole.</p>
 
-      <form class="search-form" method="get" action="/cerca/">
-        <label class="sr-only" for="q">Cerca</label>
-        <input id="q" name="q" type="search" placeholder="Cerca…" value={q} />
+      <form class="search-form" method="get" action="/cerca/" role="search">
+        <label class="sr-only" for="q">Cerca nel magazine</label>
+        <input
+          id="q"
+          name="q"
+          type="search"
+          placeholder="Es. CBD, decreto sicurezza, terpeni…"
+          value={q}
+          maxlength={SEARCH_MAX_QUERY_LENGTH}
+          autocomplete="off"
+          enterkeyhint="search"
+          aria-describedby="q-hint"
+        />
         <button type="submit">Cerca</button>
       </form>
     </header>
 
-    {tokens.length ? (
-      results.length ? (
+    <div aria-live="polite">
+      {tokens.length ? (
+        results.length ? (
+          <section class="results" aria-labelledby="results-title">
+            <h2 id="results-title">
+              {resultsLabel} per «{q}»
+            </h2>
+            <div class="grid">
+              {results.map((e) => {
+                const date = dateOf(e);
+                return (
+                  <article class="card">
+                    <h3><a href={postHref(e)}>{e.data.title}</a></h3>
+                    {e.data.description ? <p class="muted">{e.data.description}</p> : null}
+                    {date ? <p class="meta"><time datetime={date.iso}>{date.label}</time></p> : null}
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        ) : (
+          <section class="results" aria-labelledby="results-title">
+            <h2 id="results-title">Nessun risultato per «{q}»</h2>
+            <p class="muted">Prova con un termine più breve o diverso. Qui sotto trovi gli ultimi articoli.</p>
+          </section>
+        )
+      ) : q ? (
         <section class="results">
-          <h2>Risultati</h2>
-          <div class="grid">
-            {results.map((e) => (
-              <article class="card">
-                <h3><a href={hrefOf(e)}>{e.title ?? "Senza titolo"}</a></h3>
-                <p class="muted">{excerptFromEntry(e)}</p>
-                <p class="meta">{e.kind === "page" ? "Pagina" : "Articolo"}</p>
-              </article>
-            ))}
-          </div>
+          <h2>Query troppo corta</h2>
+          <p class="muted">Scrivi almeno due lettere per cercare. Qui sotto trovi gli ultimi articoli.</p>
         </section>
-      ) : (
-        <section class="results">
-          <h2>Nessun risultato</h2>
-          <p class="muted">
-            Non ho trovato corrispondenze per <strong>{q}</strong>. Qui sotto trovi gli ultimi articoli.
-          </p>
-        </section>
-      )
-    ) : (
-      <section class="results">
-        <h2>Ultimi articoli</h2>
-        <p class="muted">Suggerimenti recenti mentre non stai cercando nulla.</p>
-      </section>
-    )}
+      ) : null}
+    </div>
 
-    <section class="latest">
-      <div class="grid">
-        {latest.map((p) => (
-          <article class="card">
-            <h3><a href={hrefOf(p)}>{p.title ?? "Senza titolo"}</a></h3>
-            <p class="muted">{excerptFromEntry(p)}</p>
-          </article>
-        ))}
-      </div>
-    </section>
+    {!results.length ? (
+      <section class="latest" aria-labelledby="latest-title">
+        <h2 id="latest-title">Ultimi articoli</h2>
+        <div class="grid">
+          {latest.map((p) => {
+            const date = dateOf(p);
+            return (
+              <article class="card">
+                <h3><a href={postHref(p)}>{p.data.title}</a></h3>
+                {p.data.description ? <p class="muted">{p.data.description}</p> : null}
+                {date ? <p class="meta"><time datetime={date.iso}>{date.label}</time></p> : null}
+              </article>
+            );
+          })}
+        </div>
+      </section>
+    ) : null}
   </section>
 
   <style>
@@ -153,8 +127,8 @@ const results = tokens.length
     .search-head { margin-bottom: 18px; }
     .muted { opacity: .78; }
     .search-form { display:flex; gap: 10px; margin-top: 12px; }
-    .search-form input { flex:1; min-width: 0; padding: 12px 14px; border-radius: var(--r-md); border: 1px solid rgba(255,255,255,.14); background: rgba(0,0,0,.18); }
-    .search-form button { padding: 12px 16px; border-radius: var(--r-md); border: 0; background: #2ea043; font-weight: 700; cursor: pointer; }
+    .search-form input { flex:1; min-width: 0; min-height: 44px; font-size: 16px; padding: 12px 14px; border-radius: var(--r-md); border: 1px solid rgba(255,255,255,.14); background: rgba(0,0,0,.18); }
+    .search-form button { min-height: 44px; padding: 12px 16px; border-radius: var(--r-md); border: 0; background: #2ea043; font-weight: 700; cursor: pointer; }
     .grid { display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
     .card { padding: 16px; border-radius: var(--r-md); border: 1px solid rgba(255,255,255,.10); background: rgba(0,0,0,.18); overflow: hidden; }
     .card h3 { margin: 0 0 8px; font-size: 18px; line-height: 1.25; }
