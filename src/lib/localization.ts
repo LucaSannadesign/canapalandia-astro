@@ -383,6 +383,10 @@ export const BLOG_TRANSLATION_PAIRS: readonly BlogTranslationPair[] = [
     it: "come-integrare-i-semi-di-canapa-nella-tua-dieta",
     en: "how-to-incorporate-hemp-seeds-daily-diet",
   },
+  {
+    it: "canapa-alimentare-semi-farina-olio-proteine",
+    en: "hemp-food-seeds-flour-oil-protein",
+  },
 ] as const;
 
 /**
