@@ -24,6 +24,10 @@ export type BlogTranslationPair = {
  */
 export const BLOG_TRANSLATION_PAIRS: readonly BlogTranslationPair[] = [
   {
+    it: "efsa-cbd-2026-cosa-cambia-livello-provvisorio-sicurezza",
+    en: "efsa-cbd-2026-september-opinions-novel-food",
+  },
+  {
     it: "festa-420-cannabis-italia-2025",
     en: "420-global-cannabis-day-2025",
   },
