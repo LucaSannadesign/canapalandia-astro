@@ -100,7 +100,7 @@ export const BLOG_TRANSLATION_PAIRS: readonly BlogTranslationPair[] = [
     en: "cannabis-and-bees-an-alliance-to-save-the-planet",
   },
   {
-    it: "codice-della-strada-e-cannabis-una-riforma-controversa",
+    it: "cannabis-e-codice-della-strada-rischi-reali",
     en: "cannabis-driving-laws-italy",
   },
   {
