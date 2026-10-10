@@ -278,81 +278,93 @@ function take(n: number, ...sources: Post[][]): Post[] {
   return takeFrom(n, ...sources, recent, published);
 }
 
-/**
- * Lettura senza consumo, per i moduli di servizio ("In aggiornamento" e
- * "Ultima ora"): mostrano titoli, non schede, quindi non devono sottrarre
- * un articolo alle sezioni visuali che vengono dopo. Saltano ciò che è già
- * assegnato (`used`) e non si ripetono tra loro (`serviceShown`), ma non
- * scrivono in `used`.
- */
-const serviceShown = new Set<string>();
+/** Un giorno in millisecondi; la freschezza si basa sulla data di pubblicazione. */
+const DAY_MS = 86_400_000;
+const FRESH_WINDOW_DAYS = 7;
+const FEATURED_WINDOW_DAYS = 14;
+const UPDATED_WINDOW_DAYS = 45;
 
-function peek(n: number, ...sources: Post[][]): Post[] {
-  const out: Post[] = [];
-  for (const source of [...sources, recent, published]) {
-    for (const post of source) {
-      if (out.length >= n) return out;
-      const key = getKey(post);
-      if (!used.has(key) && !serviceShown.has(key)) {
-        serviceShown.add(key);
-        out.push(post);
-      }
-    }
-  }
-  return out;
+function getUpdatedDate(post: Post): Date | null {
+  const raw = post.data.updatedDate;
+  if (!raw) return null;
+  const d = raw instanceof Date ? raw : new Date(String(raw));
+  return Number.isNaN(d.getTime()) ? null : d;
 }
 
-// Pool "in evidenza": prima le scelte manuali, poi le notizie.
+/**
+ * La selezione editoriale manuale scade dopo 14 giorni dalla pubblicazione.
+ * homeFeaturedUntil permette alla redazione una scadenza esplicita, senza
+ * rendere permanenti le vecchie evidenze.
+ */
 const featuredManual = published
-  .filter((p) => p.data.homeFeatured === true)
+  .filter((p) => {
+    if (p.data.homeFeatured !== true) return false;
+    const until = p.data.homeFeaturedUntil?.getTime();
+    const expiresAt = until ?? dateValue(p) + FEATURED_WINDOW_DAYS * DAY_MS;
+    return expiresAt >= NOW.getTime();
+  })
   .sort((a, b) => {
     const rankA = a.data.homeFeaturedRank ?? 999;
     const rankB = b.data.homeFeaturedRank ?? 999;
     if (rankA !== rankB) return rankA - rankB;
     return dateValue(b) - dateValue(a);
   });
+
+const freshPosts = published.filter(
+  (p) => NOW.getTime() - dateValue(p) <= FRESH_WINDOW_DAYS * DAY_MS,
+);
 const news = byCategory("cannabis-news-it");
 
-// L'ordine di queste chiamate definisce la priorità: ogni sezione prende i
-// contenuti più recenti ancora liberi. Le sezioni tematiche usano `takeFrom`,
-// così non pescano mai fuori dalla loro area editoriale.
+// 1. Apertura: il nuovo articolo più recente prende il posto principale.
+//    Senza nuovi articoli, valgono le evidenze non scadute e poi il più recente.
+const hero = take(1, freshPosts, featuredManual, recent)[0] ?? null;
+const heroSide = take(2, freshPosts, recent);
 
-// 1. Hero
-const hero = take(1, featuredManual, news)[0] ?? null;
-const heroSide = take(2, featuredManual, news);
+// 2. Le fasce di servizio leggono la cronologia, senza sottrarre articoli
+//    alle schede visuali. Evitiamo l'etichetta "Ultima ora" su post datati.
+const ticker = published.slice(0, 3);
+const altreNotizie = published.slice(3, 6);
 
-// 2. "In aggiornamento" (rotazione) e "Ultima ora": cronologia pura, in sola
-//    lettura — i titoli restano disponibili per le sezioni con immagine.
-const ticker = peek(3);
-const ultimaOra = peek(3);
-
-// 3. In evidenza
+// 3. Il blocco editoriale mantiene una priorità manuale solo se non scaduta.
 const evidenzaLead = take(1, featuredManual, news)[0] ?? null;
-const evidenzaList = take(3);
+const evidenzaList = take(3, featuredManual, recent);
 
-// 4. Ultime notizie: solo pool ripuliti da ciò che i moduli di servizio
-//    mostrano già nella stessa schermata. Niente `take()`: la sua coda su
-//    `recent`/`published` non filtrati potrebbe riproporre quei titoli.
-const withoutService = (pool: Post[]): Post[] =>
-  pool.filter((p) => !serviceShown.has(getKey(p)));
+// 4. Ultime notizie: cronologia effettiva, anche se un titolo appare nella hero
+//    o nella barra superiore. La deduplicazione qui sarebbe fuorviante.
+const ultime = published.slice(0, 4);
 
-const ultime = takeFrom(4, withoutService(recent), withoutService(published));
+// 5. Revisioni sostanziali di vecchi contenuti: aggiornamenti recenti, non
+//    semplici pubblicazioni. La data dell'articolo resta invariata.
+const ultimeIds = new Set(ultime.map(getKey));
+const updatedPosts = published
+  .filter((p) => {
+    const updated = getUpdatedDate(p);
+    if (!updated || ultimeIds.has(getKey(p))) return false;
+    const ts = updated.getTime();
+    return (
+      ts <= NOW.getTime() &&
+      ts >= NOW.getTime() - UPDATED_WINDOW_DAYS * DAY_MS &&
+      ts - dateValue(p) > DAY_MS
+    );
+  })
+  .sort((a, b) => (getUpdatedDate(b)?.getTime() ?? 0) - (getUpdatedDate(a)?.getTime() ?? 0))
+  .slice(0, 4);
 
-// 5. Osservatorio normativa
+// 6. Osservatorio normativa
 const normativa = byCategory("Normativa");
 const normLead = takeFrom(1, normativa)[0] ?? null;
 const normLinks = takeFrom(2, normativa);
 const normTimeline = takeFrom(4, normativa);
 
-// 6. CBD
+// 7. CBD
 const cbdPosts = takeFrom(3, byCategory("cbd-alimentazione"), byCategory("cbd-bellezza-cura-pelle"));
 
-// 7. Canapa
+// 8. Canapa
 const canapa = byCategory("canapa-e-ambiente");
 const canapaMain = takeFrom(2, canapa);
 const canapaList = takeFrom(4, canapa);
 
-// 8. Approfondimenti e guide: contenuti lunghi, non cronologia
+// 9. Approfondimenti e guide: contenuti lunghi, non cronologia
 const guide = takeFrom(
   4,
   byCategory("guide-tutorial"),
@@ -448,11 +460,11 @@ const homeJsonLd = {
 
     <!-- ===== IN AGGIORNAMENTO (una notizia alla volta) ===== -->
     {ticker.length > 0 && (
-      <section class="cl-brief" aria-label="Ultimi aggiornamenti" data-brief>
+      <section class="cl-brief" aria-label="Ultimi articoli pubblicati" data-brief>
         <div class="cl-wrap cl-brief__inner">
           <p class="cl-brief__label">
             <span class="cl-dot cl-dot--ocra" aria-hidden="true"></span>
-            In aggiornamento
+            Ultimi articoli
           </p>
 
           <div class="cl-brief__viewport" data-brief-viewport aria-live="off">
@@ -567,14 +579,14 @@ const homeJsonLd = {
               </article>
             )}
 
-            {ultimaOra.length > 0 && (
+            {altreNotizie.length > 0 && (
               <div class="cl-flash">
                 <p class="cl-flash__head">
                   <span class="cl-dot cl-dot--lime" aria-hidden="true"></span>
-                  Ultima ora
+                  Altre notizie
                 </p>
                 <ul class="cl-flash__list">
-                  {ultimaOra.map((p) => (
+                  {altreNotizie.map((p) => (
                     <li class="cl-flash__item">
                       <a href={postHref(p)}>
                         <span class="cl-flash__date">{formatDayMonth(getPublishDate(p))}</span>
@@ -688,6 +700,43 @@ const homeJsonLd = {
                 </h3>
                 <p class="cl-metaline">
                   {formatDateShort(getPublishDate(p))} · {readingMinutes(p)} min
+                </p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+    )}
+
+    <!-- ===== ARTICOLI AGGIORNATI ===== -->
+    {updatedPosts.length > 0 && (
+      <section id="aggiornati" class="cl-latest cl-updates" aria-labelledby="updates-title">
+        <div class="cl-wrap">
+          <div class="cl-sechead">
+            <h2 id="updates-title" class="cl-sechead__title">Aggiornati di recente</h2>
+            <span class="cl-sechead__aside">Approfondimenti rivisti dalla redazione</span>
+          </div>
+          <div class="cl-grid4">
+            {updatedPosts.map((p) => (
+              <article class="cl-card">
+                <a class="cl-card__media" href={postHref(p)} tabindex="-1" aria-hidden="true">
+                  <img
+                    src={normalizeImage(p)}
+                    alt=""
+                    width="300"
+                    height="225"
+                    loading="lazy"
+                    decoding="async"
+                    referrerpolicy="no-referrer"
+                    onerror="this.onerror=null;this.src='/images/placeholder.svg';"
+                  />
+                </a>
+                <p class="cl-kicker">{categoryLabel(p.data.category)}</p>
+                <h3 class="cl-card__title"><a href={postHref(p)}>{p.data.title}</a></h3>
+                <p class="cl-metaline">
+                  <time datetime={getUpdatedDate(p)?.toISOString()}>
+                    Aggiornato il {formatDateShort(getUpdatedDate(p))}
+                  </time>
                 </p>
               </article>
             ))}
@@ -1818,7 +1867,12 @@ const homeJsonLd = {
     color: var(--cl-kicker);
   }
 
-  /* ---------- Ultime notizie ---------- */
+  /* ---------- Ultime notizie e approfondimenti aggiornati ---------- */
+
+  .cl-updates {
+    border-top: 1px solid var(--cl-rule-soft);
+  }
+
 
   .cl-latest {
     padding-block: var(--cl-section);
