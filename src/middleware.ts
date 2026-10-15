@@ -225,6 +225,29 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     return gone410();
   }
 
+  // GSC 2026-10-15: permalink storici con un equivalente editoriale attuale.
+  // Chiavi senza slash finale: entrambe le varianti convergono direttamente.
+  const legacyPageRedirects: Record<string, string> = {
+    "coltivare-canapa-legale-italia-2025": "/blog/cannabis-light-cbd-legale-italia-2026/",
+    "cannabis-light-cbd-italia-2026": "/blog/cannabis-light-cbd-legale-italia-2026/",
+    "blog/cannabis-light-cbd-italia-2026": "/blog/cannabis-light-cbd-legale-italia-2026/",
+    "decreto-sicurezza-filiera-canapa": "/blog/filiera-canapa-sfida-decreto-sicurezza/",
+    "novel-food-cbd-cosa-significa": "/blog/cbd-novel-food-ue-2026/",
+    "en/support-our-cause": "/en/support/",
+    "en/support-our-cause-defend-light-cannabis-and-industrial-hemp": "/en/support/",
+    "donations/modulo-di-donazione": "/sostieni-la-nostra-causa/",
+    "contact": "/contatti/",
+    "en/2021/09": "/en/blog/",
+    "sitemap-index.xml": "/sitemap.xml",
+  };
+  const legacyTarget = legacyPageRedirects[pathNoSlash];
+  if (legacyTarget) {
+    // Le sitemap sono file XML e non devono ricevere uno slash finale.
+    const destination = new URL(legacyTarget, url.origin);
+    destination.search = url.search;
+    return Response.redirect(destination.toString(), 301);
+  }
+
   /**
    * Consolidamento SEO esplicito per la vecchia guida inglese che in produzione
    * veniva ancora servita con HTTP 200 nonostante il redirect in vercel.json.
