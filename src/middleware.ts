@@ -213,6 +213,7 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
   };
 
   const exactGonePaths = new Set([
+    "cat-prod/cannabis-light",
     "wp-login.php",
     "xmlrpc.php",
     ".env",
@@ -239,6 +240,9 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     "contact": "/contatti/",
     "en/2021/09": "/en/blog/",
     "sitemap-index.xml": "/sitemap.xml",
+    // Entrambe le categorie WP sono confluite in cannabis-news-it nella migrazione.
+    "categoria/coltivazione-legale": "/categoria/cannabis-news-it/",
+    "categoria/novita-tendenze": "/categoria/cannabis-news-it/",
   };
   const legacyTarget = legacyPageRedirects[pathNoSlash];
   if (legacyTarget) {
