@@ -41,7 +41,19 @@ Bedrocan: fallimento confermato, ma non è corretto parlare di stop totale alla 
 - [x] Farmacista33 14 ottobre e ADUC 17 ottobre: attribuzioni separate da atti ufficiali.
 - [ ] Verifica reale delle giacenze italiane per varietà, non disponibili nei dati pubblici controllati.
 - [ ] Revisione professionale sanitaria/legale prima della pubblicazione.
-- [ ] Build MDX, test route e immagine di copertina ancora da completare.
+- [x] Controllo statico frontmatter: status draft, draft true, tag consentiti, nessun H1 interno, un link contestuale a un articolo già presente, 10 link documentali, 11 sezioni H2, seoTitle 55 caratteri, meta description 134 caratteri.
+- [x] Blocco di visibilità verificato nel codice: `isReachableBlogEntry` rifiuta `draft === true`.
+- [ ] Build Astro e verifica MDX reale: **non eseguite** perché il repository non è presente nel filesystem disponibile e l'ambiente non ha accesso Git di rete. Non sostituire questo controllo con la sola analisi statica.
+- [ ] Test dell'URL in preview prima di qualsiasi merge: il draft deve restituire 404.
+- [ ] Immagine di copertina e versione social da creare con controllo qualità.
+
+### Brief immagine Bedrocan (non ancora realizzata)
+
+- Hero: 1600×900 WebP, leggibile in 16:9 e crop social, senza testo sovraimpresso obbligatorio.
+- Idea: fotografia editoriale concettuale di una preparazione galenica in farmacia: contenitore ambrato senza marchi né etichette inventate, documentazione farmaceutica generica, sfondo neutro; evocare la continuità delle forniture senza mostrare scaffali vuoti o pazienti identificabili.
+- Palette: verde salvia/desaturato, grafite e toni caldi del vetro; contrasto moderato; evitare look promozionale, invito al consumo e presunti loghi Bedrocan.
+- Alt proposto: "Contenitore farmaceutico ambrato su un banco di farmacia, immagine editoriale della continuità delle forniture di cannabis terapeutica".
+- Social: preparare 1080×1350 per Instagram e 1200×630 per Facebook/OG, controllando tagli e area sicura; evitare claim non verificati in grafica.
 
 ## Articolo 2 — Consulta
 
