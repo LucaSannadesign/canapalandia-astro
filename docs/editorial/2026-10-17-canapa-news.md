@@ -13,21 +13,35 @@
 
 Le date sono raccomandazioni editoriali, non pubblicazioni o invii programmati. La pubblicazione deve essere autorizzata dopo revisione.
 
-## Articolo 1 — Bedrocan
+## Articolo 1 — Bedrocan (revisionato il 17 ottobre 2026)
 
 - File: src/content/blog/bedrocan-crisi-cannabis-terapeutica-italia-2026.mdx
-- Focus SEO: crisi Bedrocan cannabis terapeutica Italia, importazioni cannabis medica 2026.
-- Angolo originale: distinguere fallimento del produttore, interruzione del canale BMC, scorte nei Paesi Bassi e disponibilità effettive in Italia.
-- Dati da aggiornare prima dell'online: comunicazioni del Ministero della Salute, quantitativi e tempi per varietà, eventuali annunci di grossisti.
+- Focus SEO: fallimento Bedrocan, cannabis terapeutica in Italia, forniture cannabis medica.
+- Intervento v2: chiariti gli ambiti delle due procedure fallimentari olandesi; aggiunta fonte primaria STENOCARE sulla fine dell'export OMC; distinto il possibile canale danese dalla reale disponibilità italiana; verificati i 1.694,800 kg di distribuzione ministeriale 2024 per canale; riportato il dato ADUC >80% solo come stima associativa non verificabile come dato ufficiale 2026.
+- Distinzione irrinunciabile: la disponibilità di scorte per i pazienti olandesi fino al 2027 non equivale a disponibilità in Italia. Una genetica diversa non è automaticamente intercambiabile per terapia.
+- Non ci sono affermazioni di carenza generalizzata italiana accertata. Nessuna istruzione al paziente di cambiare posologia.
+- Stato: **draft, non pubblicabile**. Restano immagini, build Astro, preview e verifica di eventuali nuove comunicazioni del Ministero.
 
-### Facebook — proposta
+### Facebook — proposta revisionata
 
-Il fallimento delle società olandesi Bedrocan riapre il problema delle forniture di cannabis terapeutica in Italia. Ma attenzione: le scorte annunciate nei Paesi Bassi non equivalgono a una garanzia per le farmacie italiane. Abbiamo separato fatti confermati, rischi e domande ancora senza risposta. Nel nuovo approfondimento di Canapalandia analizziamo la filiera e cosa può fare chi segue una terapia prescritta.
+**Crisi Bedrocan: cosa sappiamo davvero sulle forniture di cannabis terapeutica in Italia?** Due società olandesi sono fallite e il canale pubblico delle esportazioni è destinato a fermarsi. Ma le scorte dichiarate nei Paesi Bassi non garantiscono quelle italiane e le forniture alternative richiedono verifiche. Nel nostro approfondimento separiamo fatti, stime e domande ancora aperte.
 
-### Instagram — proposta
+### Instagram — proposta revisionata
 
-Crisi Bedrocan: quali conseguenze per i pazienti italiani? Il fallimento è confermato; lo stop al canale pubblico olandese di esportazione era già previsto entro il 2026. Il dato che manca è la disponibilità italiana, varietà per varietà. Facciamo chiarezza con le fonti.
+Bedrocan: fallimento confermato, ma non è corretto parlare di stop totale alla cannabis terapeutica. L'ente olandese dichiara scorte nazionali fino a metà 2027; per l'Italia la disponibilità va verificata varietà per varietà. Le alternative annunciate non sono automaticamente equivalenti per chi segue una terapia.
 #Canapalandia #CannabisTerapeutica #DirittiDeiPazienti #Sanita
+
+### Esito di fact-check manuale
+
+- [x] Registro olandese: confermati i due procedimenti, decisione 7 ottobre e pubblicazione 8 ottobre.
+- [x] BMC 9 ottobre: scorte olandesi fino a metà 2027 per tutte le cinque varianti; non estendere a Italia.
+- [x] STENOCARE 2 ottobre: annunciato termine esportazioni OMC entro fine 2026.
+- [x] Bedrocan 10 settembre: canale danese indicato prima del fallimento, non una garanzia post-fallimento.
+- [x] Ministero Salute: tabella 2024 verificata per 3 canali, senza ricostruire una quota d'origine dei grossisti.
+- [x] Farmacista33 14 ottobre e ADUC 17 ottobre: attribuzioni separate da atti ufficiali.
+- [ ] Verifica reale delle giacenze italiane per varietà, non disponibili nei dati pubblici controllati.
+- [ ] Revisione professionale sanitaria/legale prima della pubblicazione.
+- [ ] Build MDX, test route e immagine di copertina ancora da completare.
 
 ## Articolo 2 — Consulta
 
@@ -69,7 +83,7 @@ Tisane alla canapa: cosa cambia nel 2027? Il regolamento UE prevede 40 mg/kg per
 - [x] Fonti in calce (istituzionali quando disponibili).
 - [x] Distinzione tra fatti, dichiarazioni di parte e ipotesi.
 - [x] Status draft, draft true; con queste impostazioni la route pubblica deve restituire 404 secondo blogVisibility.ts.
-- [ ] Riesame dei fatti e dei collegamenti il giorno dell'uscita.
+- [ ] Riesame dei fatti e dei collegamenti il giorno dell'uscita (il fact-check della bozza Bedrocan è stato aggiornato al 17/10).
 - [ ] Revisione editoriale e medico-legale proporzionata ai temi.
 - [ ] Immagini originali/licenziate, coerenti con l'articolo: file WebP, alt descrittivo, versione social.
 - [ ] Aggiornare il frontmatter per lo stato ready: data pubblicazione, immagine e campi social solo dopo QA.
