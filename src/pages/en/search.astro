@@ -21,9 +21,17 @@ const tokens = tokenizeSearchQuery(q);
 
 // Same source and editorial gate as the blog listings: published English posts only.
 const posts = searchablePosts(await getCollection("blog"), "en");
-const resultPosts = tokens.length
-  ? searchPosts(posts, tokens).slice(0, SEARCH_RESULTS_LIMIT)
-  : posts.slice(0, 12);
+const matches = tokens.length ? searchPosts(posts, tokens) : [];
+const resultPosts = tokens.length ? matches.slice(0, SEARCH_RESULTS_LIMIT) : posts.slice(0, 12);
+
+// Parità con /cerca/: il conteggio va mostrato e il troncamento dichiarato,
+// altrimenti oltre SEARCH_RESULTS_LIMIT i risultati sparivano senza avviso.
+const resultsLabel =
+  matches.length === 1
+    ? "1 result"
+    : matches.length > resultPosts.length
+      ? `Top ${resultPosts.length} of ${matches.length} results`
+      : `${matches.length} results`;
 
 const dateFormatter = new Intl.DateTimeFormat("en-GB", {
   day: "numeric",
@@ -68,7 +76,7 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/en/sear
 
     <section aria-live="polite">
       <div class="results-head">
-        <h2>{tokens.length ? (resultPosts.length ? "Results" : "No results") : q ? "Query too short" : "Latest English articles"}</h2>
+        <h2>{tokens.length ? (resultPosts.length ? `${resultsLabel} for “${q}”` : "No results") : q ? "Query too short" : "Latest English articles"}</h2>
         {tokens.length && resultPosts.length ? <p>Articles ordered by relevance.</p> : null}
         {tokens.length && !resultPosts.length ? <p>No matches were found for <strong>{q}</strong>.</p> : null}
         {q && !tokens.length ? <p>Type at least two letters to search. Latest articles are shown below.</p> : null}

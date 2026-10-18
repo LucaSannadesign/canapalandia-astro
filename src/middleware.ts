@@ -226,6 +226,20 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
   }
 
   /**
+   * URL di ricerca legacy WordPress (`/?s=termine`): atterravano in home senza
+   * eseguire alcuna ricerca. `readSearchQuery` accetta già `s`, ma la query
+   * arrivava su una route che non la legge: qui la rotta viene corretta a monte.
+   */
+  const legacyWpSearch = url.searchParams.get("s");
+  if (legacyWpSearch !== null && (pathNoSlash === "" || pathNoSlash.toLowerCase() === "en")) {
+    const target = pathNoSlash.toLowerCase() === "en" ? "/en/search/" : "/cerca/";
+    const destination = new URL(target, url.origin);
+    const term = legacyWpSearch.trim();
+    if (term) destination.searchParams.set("q", term);
+    return Response.redirect(destination.toString(), 301);
+  }
+
+  /**
    * Consolidamento SEO esplicito per la vecchia guida inglese che in produzione
    * veniva ancora servita con HTTP 200 nonostante il redirect in vercel.json.
    * Il middleware è la fonte effettiva per questa route legacy.

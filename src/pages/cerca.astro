@@ -144,6 +144,8 @@ const dateLabel = (entry: (typeof posts)[number]) => {
     .search-head h1 { margin-bottom: 8px; }
     .muted { color: var(--muted); }
     .search-form { display:flex; gap: 10px; margin-top: 18px; }
+    /* Token di tema: in light mode i valori hardcoded dark rendevano il campo
+       un riquadro grigio con bordo invisibile. Stesso approccio di /en/search/. */
     .search-form input {
       flex:1;
       min-width: 0;
@@ -151,10 +153,13 @@ const dateLabel = (entry: (typeof posts)[number]) => {
       font-size: 16px;
       padding: 12px 14px;
       border-radius: var(--r-md);
-      border: 1px solid rgba(255,255,255,.14);
-      background: rgba(0,0,0,.18);
-      color: inherit;
+      /* Il token --border resta sotto 3:1 su entrambi i temi: per un campo di
+         input il bordo è l'unico confine percepibile, quindi va rinforzato. */
+      border: 1px solid color-mix(in oklab, var(--text) 55%, transparent);
+      background: var(--panel-2);
+      color: var(--text);
     }
+    .search-form input::placeholder { color: var(--muted); }
     .search-form button {
       min-height: 44px;
       padding: 12px 18px;
