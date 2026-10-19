@@ -4,9 +4,11 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "astro dev",
-    "prebuild": "rm -rf .astro dist .vercel/output node_modules/.vite node_modules/.astro && node scripts/generate-sitemap-pages.mjs",
+    "prebuild": "node scripts/production-guard.mjs build && rm -rf .astro dist .vercel/output node_modules/.vite node_modules/.astro && node scripts/generate-sitemap-pages.mjs",
     "build": "astro build",
     "preview": "astro preview",
+    "guard:production": "node scripts/production-guard.mjs monitor",
+    "test:production-guard": "node --test tests/production-guard.test.mjs",
     "astro": "astro",
     "migrate:wp": "node scripts/migrate-wp-to-content.mjs",
     "mirror:media": "node scripts/mirror-media.mjs",

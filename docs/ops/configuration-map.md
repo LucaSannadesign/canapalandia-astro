@@ -15,6 +15,8 @@ Legenda fonte: **V** = verificato (CLI/log/DNS/codice/provider) · **L** = dichi
 | Domini produzione | `canapalandia.com`, `www.canapalandia.com` | V |
 | Framework | Astro 6, `output: "server"`, adapter `@astrojs/vercel` (serverless) | V |
 | Branch produzione | `main` | V |
+| Rilascio produzione | solo da `main`: guardia di build + monitor ([runbook](production-release-runbook.md)) | V |
+| Piano Vercel | Hobby | V |
 
 ## DNS / dominio
 
@@ -55,3 +57,4 @@ Legenda fonte: **V** = verificato (CLI/log/DNS/codice/provider) · **L** = dichi
 ## Incidenti collegati
 
 - [2026-09-15 — Form contatti, Resend API key](incidents/2026-09-15-form-contatti-resend-api-key.md)
+- [2026-10-19 — Produzione servita da feature branch / PR draft](incidents/2026-10-19-produzione-da-feature-branch.md)
