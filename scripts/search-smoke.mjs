@@ -7,6 +7,8 @@
  *   SMOKE_BASE_URL=https://<preview>.vercel.app node scripts/search-smoke.mjs
  *
  * Default: http://localhost:4321 (astro dev). Solo richieste GET, nessun dato persistito.
+ * Anteprime Vercel protette: impostare VERCEL_AUTOMATION_BYPASS_SECRET (header
+ * x-vercel-protection-bypass); senza, lo script si ferma invece di analizzare la pagina di login.
  */
 
 const BASE = (process.argv[2] || process.env.SMOKE_BASE_URL || "http://localhost:4321").replace(/\/+$/, "");
@@ -19,8 +21,11 @@ const check = (ok, label, detail = "") => {
   console.log(`${ok ? "PASS" : "FAIL"}  ${label}${detail ? `  (${detail})` : ""}`);
 };
 
+const BYPASS = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+const headers = BYPASS ? { "x-vercel-protection-bypass": BYPASS } : {};
+
 async function get(path, { redirect = "follow" } = {}) {
-  const res = await fetch(`${BASE}${path}`, { redirect });
+  const res = await fetch(`${BASE}${path}`, { redirect, headers });
   return { res, html: redirect === "manual" ? "" : await res.text() };
 }
 
@@ -56,6 +61,20 @@ async function linkLanguage(path) {
 }
 
 console.log(`Search smoke su ${BASE}\n`);
+
+// Deployment Protection: un redirect verso un altro host o un 401 non sono il sito da verificare.
+{
+  const { res } = await get("/cerca/", { redirect: "manual" });
+  const location = res.headers.get("location") || "";
+  const offSite = location && new URL(location, BASE).host !== new URL(BASE).host;
+  if (res.status === 401 || offSite) {
+    console.error(
+      `STOP  ${BASE} è protetto (HTTP ${res.status}${offSite ? ` -> ${new URL(location).host}` : ""}).\n` +
+        "      Imposta VERCEL_AUTOMATION_BYPASS_SECRET oppure usa dev server / build locale.",
+    );
+    process.exit(2);
+  }
+}
 
 // --- IT /cerca/ -------------------------------------------------------------
 {
