@@ -15,6 +15,8 @@
     "cover": "node scripts/generate-cover.mjs",
     "auto-post:dry": "node scripts/auto-post.mjs --dry-run",
     "smoke": "node scripts/smoke.mjs",
+    "test": "node --experimental-strip-types --disable-warning=ExperimentalWarning --import ./tests/support/register-ts.mjs --test \"tests/**/*.test.ts\"",
+    "smoke:search": "node scripts/search-smoke.mjs",
     "i18n:audit": "node scripts/i18n-audit.mjs",
     "i18n:check": "npm run i18n:audit && npm run build"
   },
