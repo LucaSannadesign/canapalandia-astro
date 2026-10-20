@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   SEARCH_MAX_QUERY_LENGTH,
   normalizeSearchText,
+  paginateSearchMatches,
   postHref,
   readSearchQuery,
   searchPosts,
@@ -204,5 +205,48 @@ describe("postHref", () => {
     assert.equal(postHref(itPosts[0]), "/blog/decreto-sicurezza-canapa/");
     assert.equal(postHref(enPosts[0]), "/blog/efsa-cbd-novel-food/");
     assert.equal(postHref(post("id-interno", { slug: " slug-pubblico " })), "/blog/slug-pubblico/");
+  });
+});
+ 
+describe("paginateSearchMatches (IT ed EN, senza JavaScript)", () => {
+  const entries = Array.from({ length: 75 }, (_, index) => index + 1);
+  const page = (param: string, items = entries) =>
+    paginateSearchMatches(items, new URL(`https://canapalandia.com/cerca/?q=cbd${param}`).searchParams);
+
+  it("mostra 30, poi 60, poi 75 risultati, mantenendo i precedenti senza duplicati", () => {
+    const first = page("");
+    const second = page("&page=2");
+    const third = page("&page=3");
+    assert.deepEqual([first.results.length, second.results.length, third.results.length], [30, 60, 75]);
+    assert.deepEqual([first.remaining, second.remaining, third.remaining], [45, 15, 0]);
+    assert.deepEqual([first.nextPage, second.nextPage, third.nextPage], [2, 3, null]);
+    assert.deepEqual(second.results.slice(0, 30), first.results);
+    assert.deepEqual(third.results.slice(0, 60), second.results);
+    assert.equal(new Set(third.results).size, 75);
+  });
+
+  it("valida pagina e limita i numeri oltre l'ultimo blocco", () => {
+    for (const invalid of ["0", "-1", "abc", "1.5", "1e2", "99999999999999999999999"]) {
+      assert.equal(page(`&page=${invalid}`).page, 1, invalid);
+    }
+    assert.equal(page("&page=100").results.length, 75);
+    assert.equal(page("&page=100").nextPage, null);
+  });
+
+  it("gestisce zero risultati, limite esatto e limite superato", () => {
+    assert.deepEqual(page("", []).results, []);
+    assert.equal(page("&page=5", []).nextPage, null);
+    assert.equal(page("", entries.slice(0, 30)).nextPage, null);
+    assert.equal(page("", entries.slice(0, 31)).nextPage, 2);
+  });
+
+  it("preserva in sicurezza query e numero di pagina nei link IT e EN", () => {
+    const q = "perché & cbd";
+    for (const path of ["/cerca/", "/en/search/"]) {
+      const url = new URL(`${path}?${new URLSearchParams({ q, page: "2" })}`, "https://canapalandia.com");
+      assert.equal(url.pathname, path);
+      assert.equal(url.searchParams.get("q"), q);
+      assert.equal(url.searchParams.get("page"), "2");
+    }
   });
 });
