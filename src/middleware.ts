@@ -226,6 +226,15 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     return gone410();
   }
 
+  // Ricerca WordPress storica (/?s=termine, /en/?s=term): senza questo redirect la
+  // homepage ignorava il parametro e la ricerca sembrava non funzionare.
+  const legacySearchTerm = url.searchParams.get("s")?.trim();
+  if (legacySearchTerm && (pathNoSlash === "" || pathNoSlash === "en")) {
+    const destination = new URL(pathNoSlash === "en" ? "/en/search/" : "/cerca/", url.origin);
+    destination.searchParams.set("q", legacySearchTerm);
+    return Response.redirect(destination.toString(), 301);
+  }
+
   // GSC 2026-10-15: permalink storici con un equivalente editoriale attuale.
   // Chiavi senza slash finale: entrambe le varianti convergono direttamente.
   const legacyPageRedirects: Record<string, string> = {

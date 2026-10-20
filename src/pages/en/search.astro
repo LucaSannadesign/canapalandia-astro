@@ -8,6 +8,9 @@ import { blogPublishDate } from "../../lib/blogVisibility";
 import {
   SEARCH_MAX_QUERY_LENGTH,
   SEARCH_RESULTS_LIMIT,
+  SEARCH_NEW_RESULTS_ANCHOR,
+  firstNewSearchResultIndex,
+  paginateSearchMatches,
   postHref,
   postImageSrc,
   readSearchQuery,
@@ -21,9 +24,18 @@ const tokens = tokenizeSearchQuery(q);
 
 // Same source and editorial gate as the blog listings: published English posts only.
 const posts = searchablePosts(await getCollection("blog"), "en");
-const resultPosts = tokens.length
-  ? searchPosts(posts, tokens).slice(0, SEARCH_RESULTS_LIMIT)
-  : posts.slice(0, 12);
+const matches = searchPosts(posts, tokens);
+const { results, page, nextPage, remaining } = paginateSearchMatches(matches, Astro.url.searchParams);
+const firstNewResultIndex = firstNewSearchResultIndex(page);
+const nextPageHref = nextPage ? `/en/search/?${new URLSearchParams({ q, page: String(nextPage) })}#${SEARCH_NEW_RESULTS_ANCHOR}` : null;
+// With no query, a too-short query or zero matches, suggest the latest articles instead of an empty grid.
+const resultPosts = results.length ? results : posts.slice(0, 12);
+const resultsLabel =
+  matches.length === 1
+    ? "1 result"
+    : matches.length > results.length
+      ? `First ${results.length} of ${matches.length} results`
+      : `${matches.length} results`;
 
 const dateFormatter = new Intl.DateTimeFormat("en-GB", {
   day: "numeric",
@@ -49,7 +61,7 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/en/sear
     <header>
       <p class="eyebrow">Search</p>
       <h1>Search the English edition</h1>
-      <p>Find articles by topic, keyword or subject.</p>
+      <p id="en-q-hint">Find articles by topic, keyword or subject.</p>
       <form method="get" action="/en/search/" role="search">
         <label class="sr-only" for="en-q">Search</label>
         <input
@@ -61,6 +73,7 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/en/sear
           maxlength={SEARCH_MAX_QUERY_LENGTH}
           autocomplete="off"
           enterkeyhint="search"
+          aria-describedby="en-q-hint"
         />
         <button type="submit">Search</button>
       </form>
@@ -68,15 +81,16 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/en/sear
 
     <section aria-live="polite">
       <div class="results-head">
-        <h2>{tokens.length ? (resultPosts.length ? "Results" : "No results") : q ? "Query too short" : "Latest English articles"}</h2>
-        {tokens.length && resultPosts.length ? <p>Articles ordered by relevance.</p> : null}
-        {tokens.length && !resultPosts.length ? <p>No matches were found for <strong>{q}</strong>.</p> : null}
+        <h2>{tokens.length ? (results.length ? `${resultsLabel} for “${q}”` : "No results") : q ? "Query too short" : "Latest English articles"}</h2>
+        {results.length ? <p>Articles ordered by relevance.</p> : null}
+        {tokens.length && !results.length ? <p>No matches were found for <strong>{q}</strong>. Try a shorter or different term. Latest articles are shown below.</p> : null}
         {q && !tokens.length ? <p>Type at least two letters to search. Latest articles are shown below.</p> : null}
       </div>
 
       <div class="results-grid">
-        {resultPosts.map((entry) => (
+        {resultPosts.map((entry, index) => (
           <CardPost
+            anchorId={index === firstNewResultIndex ? SEARCH_NEW_RESULTS_ANCHOR : undefined}
             href={postHref(entry)}
             img={postImageSrc(entry) || undefined}
             date={dateLabel(entry)}
@@ -88,6 +102,11 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/en/sear
           />
         ))}
       </div>
+      {nextPageHref && (
+        <nav class="load-more" aria-label="More search results">
+          <a href={nextPageHref}>Load more results ({Math.min(remaining, SEARCH_RESULTS_LIMIT)} of {remaining} remaining)</a>
+        </nav>
+      )}
     </section>
   </section>
 </EnglishSiteLayout>
@@ -121,14 +140,17 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/en/sear
     cursor:pointer;
   }
   .results-head { margin-bottom: 1.1rem; }
-  .results-head h2 { margin: 0 0 .4rem; font: 500 2rem/1 Newsreader,serif; }
-  .results-head p { margin: 0; color: var(--muted); }
+  .results-head h2 { margin: 0 0 .4rem; font: 500 2rem/1 Newsreader,serif; overflow-wrap: anywhere; }
+  .results-head p { margin: 0; color: var(--muted); overflow-wrap: anywhere; }
   .results-grid {
     display:grid;
     grid-template-columns:repeat(3,minmax(0,1fr));
     gap:1.5rem;
     align-items: stretch;
   }
+  .load-more { display:flex; justify-content:center; margin-top:2rem; }
+  .load-more a { display:inline-block; min-height:44px; padding:.85rem 1.2rem; border-radius:3px; background:var(--brand); color:#102b19; font-weight:800; text-align:center; }
+  .load-more a:focus-visible { outline:3px solid currentColor; outline-offset:3px; }
   .sr-only {
     position:absolute;
     width:1px;

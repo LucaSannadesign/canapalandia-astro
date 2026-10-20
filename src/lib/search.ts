@@ -15,6 +15,32 @@ type BlogEntry = CollectionEntry<"blog">;
 
 export const SEARCH_MAX_QUERY_LENGTH = 100;
 export const SEARCH_RESULTS_LIMIT = 30;
+
+/** Ancora condivisa: dopo 'Carica altri' il browser scorre al primo risultato nuovo. */
+export const SEARCH_NEW_RESULTS_ANCHOR = "search-new-results";
+
+/** Indice del primo risultato aggiunto alla pagina corrente (nessuna ancora alla prima pagina). */
+export function firstNewSearchResultIndex(page: number): number | null {
+  return Number.isSafeInteger(page) && page > 1 ? (page - 1) * SEARCH_RESULTS_LIMIT : null;
+}
+
+/** Ricerca progressiva accessibile: page=1 mostra 30, page=2 mostra 60 e così via.
+ * Valori non validi tornano a pagina 1; valori oltre l'ultima pagina sono limitati.
+ */
+export function paginateSearchMatches<T>(
+  matches: T[],
+  searchParams: URLSearchParams,
+  pageSize: number = SEARCH_RESULTS_LIMIT,
+): { results: T[]; page: number; nextPage: number | null; remaining: number } {
+  const raw = searchParams.get("page");
+  const candidate = raw && /^[1-9]\d*$/.test(raw) ? Number(raw) : 1;
+  const lastPage = Math.max(1, Math.ceil(matches.length / pageSize));
+  const page = Number.isSafeInteger(candidate) ? Math.min(candidate, lastPage) : 1;
+  const results = matches.slice(0, page * pageSize);
+  const remaining = matches.length - results.length;
+  return { results, page, nextPage: remaining ? page + 1 : null, remaining };
+}
+
 const MAX_TOKENS = 8;
 
 /** Minuscolo, senza accenti e senza punteggiatura: "Perché l’EFSA?" -> "perche l efsa". */
