@@ -3,6 +3,8 @@ import { describe, it } from "node:test";
 import {
   SEARCH_MAX_QUERY_LENGTH,
   normalizeSearchText,
+  SEARCH_NEW_RESULTS_ANCHOR,
+  firstNewSearchResultIndex,
   paginateSearchMatches,
   postHref,
   readSearchQuery,
@@ -245,6 +247,30 @@ describe("paginateSearchMatches (IT ed EN, senza JavaScript)", () => {
     for (const path of ["/cerca/", "/en/search/"]) {
       const url = new URL(`${path}?${new URLSearchParams({ q, page: "2" })}`, "https://canapalandia.com");
       assert.equal(url.pathname, path);
+      assert.equal(url.searchParams.get("q"), q);
+      assert.equal(url.searchParams.get("page"), "2");
+    }
+  });
+});
+
+describe("Posizionamento dopo il caricamento progressivo", () => {
+  it("non aggiunge un'ancora quando si mostrano i primi 30 risultati", () => {
+    assert.equal(firstNewSearchResultIndex(1), null);
+    assert.equal(firstNewSearchResultIndex(0), null);
+  });
+
+  it("sposta il punto di lettura sul 31° e sul 61° risultato", () => {
+    assert.equal(firstNewSearchResultIndex(2), 30);
+    assert.equal(firstNewSearchResultIndex(3), 60);
+    assert.equal(firstNewSearchResultIndex(-1), null);
+    assert.equal(firstNewSearchResultIndex(Number.NaN), null);
+  });
+
+  it("il link al lotto successivo contiene l'ancora leggibile in italiano e inglese", () => {
+    for (const pathname of ["/cerca/", "/en/search/"]) {
+      const q = "cbd";
+      const url = new URL(`${pathname}?${new URLSearchParams({ q, page: "2" })}#${SEARCH_NEW_RESULTS_ANCHOR}`, "https://canapalandia.com");
+      assert.equal(url.hash, "#search-new-results");
       assert.equal(url.searchParams.get("q"), q);
       assert.equal(url.searchParams.get("page"), "2");
     }
