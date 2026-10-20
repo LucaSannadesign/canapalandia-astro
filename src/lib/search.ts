@@ -16,6 +16,14 @@ type BlogEntry = CollectionEntry<"blog">;
 export const SEARCH_MAX_QUERY_LENGTH = 100;
 export const SEARCH_RESULTS_LIMIT = 30;
 
+/** Ancora condivisa: dopo 'Carica altri' il browser scorre al primo risultato nuovo. */
+export const SEARCH_NEW_RESULTS_ANCHOR = "search-new-results";
+
+/** Indice del primo risultato aggiunto alla pagina corrente (nessuna ancora alla prima pagina). */
+export function firstNewSearchResultIndex(page: number): number | null {
+  return Number.isSafeInteger(page) && page > 1 ? (page - 1) * SEARCH_RESULTS_LIMIT : null;
+}
+
 /** Ricerca progressiva accessibile: page=1 mostra 30, page=2 mostra 60 e così via.
  * Valori non validi tornano a pagina 1; valori oltre l'ultima pagina sono limitati.
  */
