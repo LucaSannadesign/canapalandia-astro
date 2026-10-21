@@ -252,6 +252,22 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     // Entrambe le categorie WP sono confluite in cannabis-news-it nella migrazione.
     "categoria/coltivazione-legale": "/categoria/cannabis-news-it/",
     "categoria/novita-tendenze": "/categoria/cannabis-news-it/",
+    // Export WP 2026-10-21: categorie storiche oggi vuote (404). Le chiavi precedono la
+    // route /categoria/[slug]/: rimuoverle se la categoria torna ad avere articoli.
+    "categoria/normative-aspetti-legali": "/categoria/normativa/",
+    "categoria/ribellario": "/categoria/cannabis-news-it/",
+    "categoria/cbd-bellezza-cura-pelle": "/categoria/salute-benessere/",
+    // Permalink EN storici (WordPress /en/...) con una pagina attuale equivalente.
+    "en/about-us": "/en/about/",
+    "en/privacy-policy-en": "/en/privacy/",
+    "en/terms-and-conditions": "/en/terms/",
+    "en/disclaimer-legale-canapalandia-eng": "/en/disclaimer/",
+    "en/canapalandia-blog-cannabis-news-and-information-on-light-cannabis": "/en/blog/",
+    // Vecchi slug EN con anno, già consolidati sotto /blog/ in astro.config.mjs.
+    "en/best-cbd-strains-2025": "/blog/best-cbd-strains/",
+    "en/top-hemp-strains-2025": "/blog/top-hemp-strains/",
+    "en/italy-light-cannabis-ban-security-decree-2025": "/blog/italy-light-cannabis-ban-security-decree/",
+    "en/medical-cannabis-slovenia-albania-italy-2025": "/blog/medical-cannabis-slovenia-albania-italy/",
   };
   const legacyTarget = legacyPageRedirects[pathNoSlash];
   if (legacyTarget) {
@@ -336,6 +352,7 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     /^go(?:\/|$)/i,
     /^partner(?:\/|$)/i,
     /^partner-selezionati(?:\/|$)/i,
+    /^en\/partners(?:\/|$)/i,
     /^cgi-bin(?:\/|$)/i,
     /^vendor\/phpunit(?:\/|$)/i,
   ];
@@ -385,7 +402,7 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
       alimentazione: "/categoria/cbd-alimentazione/",
       benessere: "/categoria/salute-benessere/",
       salute: "/categoria/salute-benessere/",
-      cosmetici: "/categoria/cbd-bellezza-cura-pelle/",
+      cosmetici: "/categoria/salute-benessere/",
       legale: "/categoria/cannabis-legalization/",
       "aspetti-legali": "/categoria/cannabis-legalization/",
       normativa: "/categoria/cannabis-news-it/",
