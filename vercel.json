@@ -61,12 +61,12 @@
     },
     {
       "source": "/en/canapalandia-blog-benefits-of-light-cannabis-and-cbd",
-      "destination": "/blog/",
+      "destination": "/en/blog/",
       "permanent": true
     },
     {
       "source": "/en/canapalandia-blog-benefits-of-light-cannabis-and-cbd/",
-      "destination": "/blog/",
+      "destination": "/en/blog/",
       "permanent": true
     },
     {
