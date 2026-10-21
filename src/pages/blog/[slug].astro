@@ -93,7 +93,8 @@ const hreflangHead = seoAlternates
   : "";
 
 const metadata = {
-  title: entry.data.seoTitle || entry.data.title,
+  // In quarantena il seoTitle non deve anticipare il titolo del testo ancora ritirato.
+  title: isLegacyReview ? entry.data.title : entry.data.seoTitle || entry.data.title,
   description: entry.data.description || "",
   canonical: `${SITE_URL}/blog/${slug}/`,
   robots: { index: !isLegacyReview, follow: true },
