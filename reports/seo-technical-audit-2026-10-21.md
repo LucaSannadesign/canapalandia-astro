@@ -66,3 +66,24 @@ pnpm seo:check -- --base http://localhost:4321
 pnpm seo:check                        # produzione
 pnpm seo:check -- --urls export.csv   # lista di URL (es. export GSC)
 ```
+
+## Aggiornamento — verifica post-deploy e dati strutturati
+
+**Produzione verificata** (`main` @ `06d882f`, deployment `dpl_AT2Qhc8…`, PR #125):
+
+- sitemap 238/238 a 200, canonical/noindex/hreflang senza errori;
+- link interni: resta solo `/cdn-cgi/l/email-protection` (Cloudflare);
+- URL WordPress storici in 404: 88 su 645, identico alla verifica locale.
+
+**Dati strutturati** (controllo completo sui 238 URL della sitemap):
+
+| Problema | URL | Causa | Intervento |
+|---|---|---|---|
+| JSON-LD visibile ai lettori in un blocco di codice e quindi non letto come dato strutturato | `/blog/cbd-novel-food-ue-2026/` | Blocco ` ```json ` mai chiuso a fine articolo | Convertito in `<script type="application/ld+json">` con la sola `FAQPage` |
+| Secondo `Article` senza `image`, in conflitto con il `BlogPosting` del template | `/blog/efsa-sicurezza-cbd-2026/` (e Novel Food) | Nodo `Article` scritto a mano nel corpo MDX | Nodo rimosso; resta il `BlogPosting` del template, completo |
+
+`scripts/seo-check.mjs` ora segnala anche JSON-LD dentro `<pre>` ed `Article`/`BlogPosting` senza `headline`, `image` o `datePublished`.
+
+**Non verificabile da qui:** Core Web Vitals. L'API PageSpeed Insights anonima ha restituito 429 (quota esaurita) e non c'è accesso a Search Console.
+
+**Residuo editoriale:** in `/blog/cbd-novel-food-ue-2026/` i rimandi `[^1]`…`[^12]` compaiono come testo, perché le definizioni delle note non sono mai state nel repository. Vanno aggiunte le fonti: non sono state ricostruite.
