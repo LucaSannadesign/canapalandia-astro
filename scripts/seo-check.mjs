@@ -10,7 +10,8 @@
 //
 // Controlli sugli URL della sitemap: status 200 senza redirect, canonical
 // auto-referenziale, nessun noindex (meta o X-Robots-Tag), hreflang reciproci
-// e coerenti con la sitemap, JSON-LD parsabile, <title> e <h1> presenti.
+// e coerenti con la sitemap, JSON-LD parsabile e non visibile in un blocco di
+// codice, campi base degli Article, <title> e <h1> presenti.
 // Con i link interni attivi (default) segnala anche link verso 4xx/5xx o redirect.
 // Con --urls verifica solo status e destinazione finale degli URL indicati.
 //
@@ -219,12 +220,23 @@ async function auditSitemap() {
     if (p.h1Count === 0) report(warnings, url, "h1-missing");
     if (p.h1Count > 1) report(warnings, url, "h1-multiple", String(p.h1Count));
     for (const [i, block] of p.jsonLd.entries()) {
+      let data;
       try {
-        JSON.parse(block);
+        data = JSON.parse(block);
       } catch (e) {
         report(errors, url, "jsonld-invalid", `blocco ${i + 1}: ${e.message}`);
+        continue;
+      }
+      const nodes = [data].flat().flatMap((n) => n?.["@graph"] ?? [n]);
+      for (const node of nodes) {
+        const type = [node?.["@type"]].flat().join(",");
+        if (!/\b(Article|BlogPosting|NewsArticle)\b/.test(type)) continue;
+        const missing = ["headline", "image", "datePublished"].filter((k) => !node[k]);
+        if (missing.length) report(warnings, url, "jsonld-article-incomplete", `${type} senza ${missing.join(", ")}`);
       }
     }
+    // JSON-LD finito in un blocco di codice: visibile ai lettori, ignorato da Google.
+    if (/<pre\b[^>]*>[\s\S]*?schema\.org[\s\S]*?<\/pre>/i.test(r.text)) report(errors, url, "jsonld-visible-in-code-block");
     // hreflang: la sitemap e la pagina devono dichiarare le stesse alternative.
     for (const lang of new Set([...Object.keys(entry.alternates), ...Object.keys(p.hreflang)])) {
       if (entry.alternates[lang] !== p.hreflang[lang]) {
