@@ -15,6 +15,11 @@
   ],
   "redirects": [
     {
+      "source": "/sitemap-index.xml",
+      "destination": "/sitemap.xml",
+      "permanent": true
+    },
+    {
       "source": "/missione",
       "destination": "/chi-siamo/missione/",
       "permanent": true
@@ -56,12 +61,12 @@
     },
     {
       "source": "/en/canapalandia-blog-benefits-of-light-cannabis-and-cbd",
-      "destination": "/blog/",
+      "destination": "/en/blog/",
       "permanent": true
     },
     {
       "source": "/en/canapalandia-blog-benefits-of-light-cannabis-and-cbd/",
-      "destination": "/blog/",
+      "destination": "/en/blog/",
       "permanent": true
     },
     {

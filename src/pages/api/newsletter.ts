@@ -2,6 +2,17 @@ export const prerender = false;
 
 import type { APIRoute } from "astro";
 
+// Un endpoint di iscrizione non è una pagina da indicizzare. Nessuna chiamata
+// al provider per le visite GET dei crawler; il flusso POST resta invariato.
+export const GET: APIRoute = () =>
+  new Response(null, {
+    status: 405,
+    headers: {
+      Allow: "POST",
+      "X-Robots-Tag": "noindex",
+    },
+  });
+
 const BUTTONDOWN_API_URL = "https://api.buttondown.com/v1/subscribers";
 
 type Campaign = "hemp-food-001";

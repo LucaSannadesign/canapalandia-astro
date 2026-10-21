@@ -1,11 +1,12 @@
 ---
 import SiteLayout from '../layouts/SiteLayout.astro';
 import { getCollection } from 'astro:content';
+import { isPublishedBlogEntry } from '../lib/blogVisibility';
 
 const posts = await getCollection('blog');
 
 const sortedPosts = posts
-  .filter(post => !post.data.draft && post.data.editorialStatus !== 'legacy-review')
+  .filter((post) => isPublishedBlogEntry(post))
   .sort((a, b) => {
     const dateA = new Date(a.data.publishDate || a.data.date || a.data.pubDate || '1970-01-01');
     const dateB = new Date(b.data.publishDate || b.data.date || b.data.pubDate || '1970-01-01');

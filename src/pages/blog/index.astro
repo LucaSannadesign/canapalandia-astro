@@ -5,7 +5,7 @@ import Layout from "../../layouts/MigratedLayout.astro";
 import { PRIMARY_EDITORIAL_CATEGORY_SLUGS } from "../../config/navigation";
 import { categoryHref } from "../../lib/categoryUrl";
 import { isPublishedBlogEntry } from "../../lib/blogVisibility";
-import { toPlainText } from "../../lib/utils";
+import { SEARCH_MAX_QUERY_LENGTH } from "../../lib/search";
 
 // Paginazione statica: pagina 1 è sempre prerenderizzata
 
@@ -28,25 +28,6 @@ function publishDateOf(entry: CollectionEntry<"blog">): Date | null {
   if (!raw) return null;
   const d = raw instanceof Date ? raw : new Date(String(raw));
   return Number.isNaN(d.getTime()) ? null : d;
-}
-
-function formatUpdatedLabel(
-  publishDate: CollectionEntry<"blog">["data"]["publishDate"],
-  updatedDate: CollectionEntry<"blog">["data"]["updatedDate"],
-): string {
-  if (!updatedDate || !publishDate) return "";
-  const pub = publishDate instanceof Date ? publishDate : new Date(String(publishDate));
-  const upd = updatedDate instanceof Date ? updatedDate : new Date(String(updatedDate));
-  if (Number.isNaN(pub.getTime()) || Number.isNaN(upd.getTime())) return "";
-  if (upd.getTime() <= pub.getTime()) return "";
-  if (
-    pub.getFullYear() === upd.getFullYear() &&
-    pub.getMonth() === upd.getMonth() &&
-    pub.getDate() === upd.getDate()
-  ) {
-    return "";
-  }
-  return `Aggiornato il ${upd.toLocaleDateString("it-IT", { year: "numeric", month: "long", day: "numeric" })}`;
 }
 
 // Helper per normalizzare immagine post
@@ -124,18 +105,6 @@ const totalPages = Math.ceil(totalPosts / PAGE_SIZE);
 
 // Pagina 1: mostra i primi 10 post
 const pagePosts = sortedPosts.slice(0, PAGE_SIZE);
-
-// Indice post per ricerca client-side
-const postsIndex = sortedPosts.map((p) => ({
-  href: postHref(p),
-  title: p.data.title ?? "",
-  description: toPlainText(p.data.description),
-  category: p.data.category ?? "",
-  tags: Array.isArray(p.data.tags) ? p.data.tags : [],
-  date: formatDate(publishDateOf(p)),
-  updatedLabel: formatUpdatedLabel(p.data.publishDate, p.data.updatedDate),
-  img: normalizeImage(p),
-}));
 
 // Estrai categorie dai post italiani
 type CategoryData = {
@@ -305,38 +274,25 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/blog/`;
             </div>
           )}
 
-          {/* Form di ricerca */}
-          <form id="blogSearch" class="blog-search" role="search" style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border);">
+          {/* Ricerca: stesso motore, stesso gate editoriale e stessa lingua di /cerca/; funziona anche senza JS */}
+          <form class="blog-search" method="get" action="/cerca/" role="search" style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border);">
             <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; max-width: 600px; margin: 0 auto;">
               <label for="searchInput" class="sr-only">Cerca articoli</label>
               <input
-                type="text"
+                type="search"
                 id="searchInput"
                 name="q"
-                placeholder="Cerca articoli per titolo, descrizione, categoria o tag..."
+                placeholder="Cerca articoli, guide e approfondimenti…"
                 class="blog-search__input"
+                maxlength={SEARCH_MAX_QUERY_LENGTH}
                 autocomplete="off"
-                aria-label="Cerca articoli"
+                enterkeyhint="search"
               />
               <button type="submit" class="btn">
                 Cerca
               </button>
-              <button type="button" id="resetSearch" class="btn btn-ghost" style="display: none;">
-                Reset
-              </button>
             </div>
-            <p id="searchStatus" aria-live="polite" aria-atomic="true" class="blog-search__status"></p>
           </form>
-
-          {/* Container risultati ricerca (sostituisce la lista normale quando attiva) */}
-          <div id="searchResults" class="blog-search__results" style="display: none;">
-            <div class="grid" id="searchResultsGrid"></div>
-            <div id="searchLoadMore" style="margin-top: 2rem; text-align: center; display: none;">
-              <button type="button" class="btn" id="loadMoreSearch">
-                Carica altri risultati
-              </button>
-            </div>
-          </div>
         </>
       ) : (
         <div class="card" style="padding:18px;">
@@ -350,170 +306,6 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/blog/`;
     </section>
   </div>
 </Layout>
-
-<script type="module" define:vars={{ postsIndex }}>
-  const ALL = postsIndex;
-  const PAGE_SIZE = 10;
-  
-  const form = document.getElementById("blogSearch");
-  const input = document.getElementById("searchInput");
-  const resetBtn = document.getElementById("resetSearch");
-  const statusEl = document.getElementById("searchStatus");
-  const resultsEl = document.getElementById("searchResults");
-  const resultsGrid = document.getElementById("searchResultsGrid");
-  const postsGrid = document.getElementById("postsGrid");
-  const loadMoreBtn = document.getElementById("loadMoreSearch");
-  const loadMoreContainer = document.getElementById("searchLoadMore");
-  
-  let currentQuery = "";
-  let filteredResults = [];
-  let displayedCount = 0;
-  let searchTimeout = null;
-  
-  // Funzione di ricerca
-  function searchPosts(query) {
-    if (!query.trim()) return [];
-    
-    const q = query.toLowerCase().trim();
-    return ALL.filter((post) => {
-      const titleMatch = post.title.toLowerCase().includes(q);
-      const descMatch = (post.description || "").toLowerCase().includes(q);
-      const catMatch = (post.category || "").toLowerCase().includes(q);
-      const tagsMatch = post.tags.some((tag) => tag.toLowerCase().includes(q));
-      return titleMatch || descMatch || catMatch || tagsMatch;
-    });
-  }
-  
-  // Renderizza risultati
-  function renderResults(results, start = 0, append = false) {
-    const end = start + PAGE_SIZE;
-    const slice = results.slice(start, end);
-    
-    if (!append) {
-      resultsGrid.innerHTML = "";
-      displayedCount = 0;
-    }
-    
-    slice.forEach((post) => {
-      const card = document.createElement("article");
-      card.className = "card post-card";
-      card.innerHTML = `
-        <a href="${post.href}" class="cardLink">
-          ${post.img ? `
-          <div class="thumb">
-            <img src="${post.img}" alt="${escapeHtml(post.title)}" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='/images/placeholder.svg';" />
-          </div>
-          ` : ""}
-          <div class="cardBody">
-            <p class="cardMeta">${escapeHtml(post.date)}</p>
-            ${post.updatedLabel ? `<p class="cardMeta cardMeta--updated">${escapeHtml(post.updatedLabel)}</p>` : ""}
-            ${post.category ? `<span class="badge badge--cat">${escapeHtml(post.category)}</span>` : ""}
-            <h3 class="card-title clamp-2">${escapeHtml(post.title)}</h3>
-            ${post.description ? `<p class="card-excerpt clamp-3">${escapeHtml(post.description)}</p>` : ""}
-            <div class="card-footer">
-              <span class="card-read">Leggi →</span>
-            </div>
-          </div>
-        </a>
-      `;
-      resultsGrid.appendChild(card);
-    });
-    
-    displayedCount += slice.length;
-    
-    // Mostra/nascondi "Carica altri"
-    if (displayedCount < results.length) {
-      loadMoreContainer.style.display = "block";
-    } else {
-      loadMoreContainer.style.display = "none";
-    }
-  }
-  
-  // Escape HTML
-  function escapeHtml(text) {
-    const div = document.createElement("div");
-    div.textContent = text;
-    return div.innerHTML;
-  }
-  
-  // Aggiorna status
-  function updateStatus(count, query) {
-    if (!query.trim()) {
-      statusEl.textContent = "";
-      return;
-    }
-    if (count === 0) {
-      statusEl.textContent = `Nessun risultato per "${query}"`;
-    } else {
-      statusEl.textContent = `Trovati ${count} risultato${count === 1 ? "" : "i"} per "${query}"`;
-    }
-  }
-  
-  // Reset ricerca
-  function resetSearch() {
-    currentQuery = "";
-    filteredResults = [];
-    displayedCount = 0;
-    input.value = "";
-    statusEl.textContent = "";
-    resultsEl.style.display = "none";
-    postsGrid.style.display = "grid";
-    resetBtn.style.display = "none";
-    loadMoreContainer.style.display = "none";
-  }
-  
-  // Handler ricerca (con debounce)
-  function handleSearch(query) {
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
-    }
-    
-    searchTimeout = window.setTimeout(() => {
-      if (!query.trim()) {
-        resetSearch();
-        return;
-      }
-      
-      currentQuery = query;
-      filteredResults = searchPosts(query);
-      updateStatus(filteredResults.length, query);
-      
-      if (filteredResults.length > 0) {
-        resultsEl.style.display = "block";
-        postsGrid.style.display = "none";
-        resetBtn.style.display = "inline-flex";
-        renderResults(filteredResults, 0, false);
-      } else {
-        resultsEl.style.display = "block";
-        postsGrid.style.display = "none";
-        resetBtn.style.display = "inline-flex";
-        resultsGrid.innerHTML = '<div class="card" style="padding:18px;"><p>Nessun risultato trovato.</p></div>';
-      }
-    }, 200);
-  }
-  
-  // Event listeners
-  form?.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const query = input?.value || "";
-    handleSearch(query);
-  });
-  
-  input?.addEventListener("input", (e) => {
-    const query = e.target.value || "";
-    handleSearch(query);
-  });
-  
-  resetBtn?.addEventListener("click", () => {
-    resetSearch();
-  });
-  
-  loadMoreBtn?.addEventListener("click", () => {
-    if (filteredResults.length > displayedCount) {
-      renderResults(filteredResults, displayedCount, true);
-    }
-  });
-</script>
 
 <style>
   :global(html[data-theme="dark"]:has(.page-blog)) {
@@ -558,17 +350,6 @@ const canonical = `${import.meta.env.SITE || "https://canapalandia.com"}/blog/`;
     box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
   }
 
-  .blog-search__status {
-    margin-top: 1rem;
-    text-align: center;
-    color: var(--muted);
-    font-size: 0.9rem;
-    min-height: 1.5rem;
-  }
-
-  .blog-search__results {
-    margin-top: 2rem;
-  }
 
   .sr-only {
     position: absolute;

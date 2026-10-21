@@ -213,6 +213,7 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
   };
 
   const exactGonePaths = new Set([
+    "cat-prod/cannabis-light",
     "wp-login.php",
     "xmlrpc.php",
     ".env",
@@ -225,17 +226,54 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     return gone410();
   }
 
-  /**
-   * URL di ricerca legacy WordPress (`/?s=termine`): atterravano in home senza
-   * eseguire alcuna ricerca. `readSearchQuery` accetta già `s`, ma la query
-   * arrivava su una route che non la legge: qui la rotta viene corretta a monte.
-   */
-  const legacyWpSearch = url.searchParams.get("s");
-  if (legacyWpSearch !== null && (pathNoSlash === "" || pathNoSlash.toLowerCase() === "en")) {
-    const target = pathNoSlash.toLowerCase() === "en" ? "/en/search/" : "/cerca/";
-    const destination = new URL(target, url.origin);
-    const term = legacyWpSearch.trim();
-    if (term) destination.searchParams.set("q", term);
+  // Ricerca WordPress storica (/?s=termine, /en/?s=term): senza questo redirect la
+  // homepage ignorava il parametro e la ricerca sembrava non funzionare.
+  const legacySearchTerm = url.searchParams.get("s")?.trim();
+  if (legacySearchTerm && (pathNoSlash === "" || pathNoSlash === "en")) {
+    const destination = new URL(pathNoSlash === "en" ? "/en/search/" : "/cerca/", url.origin);
+    destination.searchParams.set("q", legacySearchTerm);
+    return Response.redirect(destination.toString(), 301);
+  }
+
+  // GSC 2026-10-15: permalink storici con un equivalente editoriale attuale.
+  // Chiavi senza slash finale: entrambe le varianti convergono direttamente.
+  const legacyPageRedirects: Record<string, string> = {
+    "coltivare-canapa-legale-italia-2025": "/blog/cannabis-light-cbd-legale-italia-2026/",
+    "cannabis-light-cbd-italia-2026": "/blog/cannabis-light-cbd-legale-italia-2026/",
+    "blog/cannabis-light-cbd-italia-2026": "/blog/cannabis-light-cbd-legale-italia-2026/",
+    "decreto-sicurezza-filiera-canapa": "/blog/filiera-canapa-sfida-decreto-sicurezza/",
+    "novel-food-cbd-cosa-significa": "/blog/cbd-novel-food-ue-2026/",
+    "en/support-our-cause": "/en/support/",
+    "en/support-our-cause-defend-light-cannabis-and-industrial-hemp": "/en/support/",
+    "donations/modulo-di-donazione": "/sostieni-la-nostra-causa/",
+    "contact": "/contatti/",
+    "en/2021/09": "/en/blog/",
+    "sitemap-index.xml": "/sitemap.xml",
+    // Entrambe le categorie WP sono confluite in cannabis-news-it nella migrazione.
+    "categoria/coltivazione-legale": "/categoria/cannabis-news-it/",
+    "categoria/novita-tendenze": "/categoria/cannabis-news-it/",
+    // Export WP 2026-10-21: categorie storiche oggi vuote (404). Le chiavi precedono la
+    // route /categoria/[slug]/: rimuoverle se la categoria torna ad avere articoli.
+    "categoria/normative-aspetti-legali": "/categoria/normativa/",
+    "categoria/ribellario": "/categoria/cannabis-news-it/",
+    "categoria/cbd-bellezza-cura-pelle": "/categoria/salute-benessere/",
+    // Permalink EN storici (WordPress /en/...) con una pagina attuale equivalente.
+    "en/about-us": "/en/about/",
+    "en/privacy-policy-en": "/en/privacy/",
+    "en/terms-and-conditions": "/en/terms/",
+    "en/disclaimer-legale-canapalandia-eng": "/en/disclaimer/",
+    "en/canapalandia-blog-cannabis-news-and-information-on-light-cannabis": "/en/blog/",
+    // Vecchi slug EN con anno, già consolidati sotto /blog/ in astro.config.mjs.
+    "en/best-cbd-strains-2025": "/blog/best-cbd-strains/",
+    "en/top-hemp-strains-2025": "/blog/top-hemp-strains/",
+    "en/italy-light-cannabis-ban-security-decree-2025": "/blog/italy-light-cannabis-ban-security-decree/",
+    "en/medical-cannabis-slovenia-albania-italy-2025": "/blog/medical-cannabis-slovenia-albania-italy/",
+  };
+  const legacyTarget = legacyPageRedirects[pathNoSlash];
+  if (legacyTarget) {
+    // Le sitemap sono file XML e non devono ricevere uno slash finale.
+    const destination = new URL(legacyTarget, url.origin);
+    destination.search = url.search;
     return Response.redirect(destination.toString(), 301);
   }
 
@@ -314,6 +352,7 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     /^go(?:\/|$)/i,
     /^partner(?:\/|$)/i,
     /^partner-selezionati(?:\/|$)/i,
+    /^en\/partners(?:\/|$)/i,
     /^cgi-bin(?:\/|$)/i,
     /^vendor\/phpunit(?:\/|$)/i,
   ];
@@ -363,7 +402,7 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
       alimentazione: "/categoria/cbd-alimentazione/",
       benessere: "/categoria/salute-benessere/",
       salute: "/categoria/salute-benessere/",
-      cosmetici: "/categoria/cbd-bellezza-cura-pelle/",
+      cosmetici: "/categoria/salute-benessere/",
       legale: "/categoria/cannabis-legalization/",
       "aspetti-legali": "/categoria/cannabis-legalization/",
       normativa: "/categoria/cannabis-news-it/",

@@ -129,6 +129,7 @@ const blog = defineCollection({
       canonical: z.string().optional(),
       homeFeatured: z.boolean().optional(), // Flag per selezione editoriale "In evidenza"
       homeFeaturedRank: z.number().optional(), // Priorità manuale (più basso = più importante)
+      homeFeaturedUntil: z.coerce.date().optional(), // Scadenza esplicita dell'evidenza (altrimenti 14 giorni)
       socialShare: z.boolean().optional(),
       socialEvergreen: z.boolean().optional(),
       instagramShare: z.boolean().optional(),
