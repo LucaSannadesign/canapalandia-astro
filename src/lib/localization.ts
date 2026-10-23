@@ -24,6 +24,10 @@ export type BlogTranslationPair = {
  */
 export const BLOG_TRANSLATION_PAIRS: readonly BlogTranslationPair[] = [
   {
+    it: "consiglio-ue-canapa-intera-pianta-ottobre-2026",
+    en: "eu-council-whole-hemp-plant-october-2026",
+  },
+  {
     it: "efsa-cbd-2026-cosa-cambia-livello-provvisorio-sicurezza",
     en: "efsa-cbd-2026-september-opinions-novel-food",
   },
