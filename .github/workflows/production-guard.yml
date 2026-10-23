@@ -1,0 +1,70 @@
+name: Production guard
+
+# Solo lettura: verifica che la produzione Vercel serva un commit contenuto in main.
+# Non esegue deploy, promote o rollback e non usa secret Vercel.
+# Runbook: docs/ops/production-release-runbook.md
+
+on:
+  # Vercel registra ogni deployment anche su GitHub (environment "Production").
+  deployment_status:
+  # Rete di sicurezza: copre i casi in cui l'evento non arriva.
+  schedule:
+    - cron: '17,47 * * * *'
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/production-guard.mjs"
+      - "tests/production-guard.test.mjs"
+      - ".github/workflows/production-guard.yml"
+
+permissions:
+  contents: read
+  deployments: read
+
+concurrency:
+  group: production-guard-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'monitor' }}
+  cancel-in-progress: false
+
+jobs:
+  test-guard:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.12.0
+
+      - name: Test production guard
+        run: node --test tests/production-guard.test.mjs
+
+  verify-production:
+    if: >-
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'deployment_status' &&
+       github.event.deployment.environment == 'Production' &&
+       github.event.deployment_status.state == 'success')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # Lo script di verifica arriva sempre da main, non dal commit deployato.
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.12.0
+
+      - name: Verify production provenance
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PRODUCTION_SHA: ${{ github.event.deployment.sha }}
+        run: node scripts/production-guard.mjs monitor
