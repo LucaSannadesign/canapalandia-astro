@@ -162,10 +162,11 @@ const dateLabel = (entry: (typeof posts)[number]) => {
       font-size: 16px;
       padding: 12px 14px;
       border-radius: var(--r-md);
-      border: 1px solid rgba(255,255,255,.14);
-      background: rgba(0,0,0,.18);
-      color: inherit;
+      border: 1px solid color-mix(in oklab, var(--text) 55%, transparent);
+      background: var(--panel-2);
+      color: var(--text);
     }
+    .search-form input::placeholder { color: var(--muted); }
     .search-form button {
       min-height: 44px;
       padding: 12px 18px;
