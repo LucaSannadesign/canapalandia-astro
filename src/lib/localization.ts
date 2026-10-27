@@ -24,6 +24,10 @@ export type BlogTranslationPair = {
  */
 export const BLOG_TRANSLATION_PAIRS: readonly BlogTranslationPair[] = [
   {
+    it: "quanta-acqua-consuma-canapa-industriale",
+    en: "how-much-water-does-industrial-hemp-use",
+  },
+  {
     it: "consiglio-ue-canapa-intera-pianta-ottobre-2026",
     en: "eu-council-whole-hemp-plant-october-2026",
   },
