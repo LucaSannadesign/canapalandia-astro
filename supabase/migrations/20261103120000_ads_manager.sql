@@ -12,7 +12,10 @@
 -- - stati `scheduled`/`active` impossibili senza checklist completa e dati non sintetici.
 -- =============================================================================
 
-create extension if not exists btree_gist;
+-- Estensione fuori da `public` (advisor Supabase 0014). Le opclass di default si risolvono per tipo,
+-- indipendentemente dallo schema.
+create schema if not exists extensions;
+create extension if not exists btree_gist with schema extensions;
 
 -- -----------------------------------------------------------------------------
 -- Inserzionisti
@@ -120,6 +123,7 @@ create table if not exists public.ads_campaigns (
 );
 
 create index if not exists ads_campaigns_status_idx on public.ads_campaigns (status, starts_on, ends_on);
+create index if not exists ads_campaigns_advertiser_idx on public.ads_campaigns (advertiser_id);
 
 -- -----------------------------------------------------------------------------
 -- Creatività
@@ -154,6 +158,7 @@ create index if not exists ads_creatives_campaign_idx on public.ads_creatives (c
 create or replace function public.ads_creatives_guard()
 returns trigger
 language plpgsql
+set search_path = ''
 as $$
 declare
   v_status text;
@@ -195,12 +200,15 @@ create table if not exists public.ads_placements (
 );
 
 create index if not exists ads_placements_lookup_idx on public.ads_placements (article_slug, position_code, starts_on, ends_on);
+create index if not exists ads_placements_creative_idx on public.ads_placements (creative_id);
+create index if not exists ads_placements_position_idx on public.ads_placements (position_code);
 
 -- Stati che occupano lo spazio (una bozza o una proposta non blocca nulla)
 create or replace function public.ads_status_is_blocking(p_status text)
 returns boolean
 language sql
 immutable
+set search_path = ''
 as $$
   select p_status in ('approved', 'scheduled', 'active', 'paused');
 $$;
@@ -208,6 +216,7 @@ $$;
 create or replace function public.ads_placements_sync_from_campaign()
 returns trigger
 language plpgsql
+set search_path = ''
 as $$
 declare
   c record;
@@ -240,6 +249,7 @@ create trigger ads_placements_sync
 create or replace function public.ads_campaigns_guard()
 returns trigger
 language plpgsql
+set search_path = ''
 as $$
 declare
   v_placements integer;
@@ -282,6 +292,7 @@ create trigger ads_campaigns_guard
 create or replace function public.ads_campaigns_propagate()
 returns trigger
 language plpgsql
+set search_path = ''
 as $$
 begin
   if new.status is distinct from old.status
@@ -334,6 +345,8 @@ create table if not exists public.ads_daily_stats (
   primary key (placement_id, day)
 );
 
+create index if not exists ads_daily_stats_campaign_idx on public.ads_daily_stats (campaign_id, day);
+
 -- Vista unica per i report: aggregati consolidati + eventi grezzi non ancora consolidati
 create or replace view public.ads_campaign_daily_stats
 with (security_invoker = true)
@@ -363,6 +376,7 @@ group by campaign_id, placement_id, day;
 create or replace function public.ads_purge_events(p_retain_days integer default 35)
 returns integer
 language plpgsql
+set search_path = ''
 as $$
 declare
   v_cutoff date;
@@ -421,6 +435,16 @@ alter table public.ads_placements enable row level security;
 alter table public.ads_events enable row level security;
 alter table public.ads_daily_stats enable row level security;
 alter table public.ads_audit_log enable row level security;
+
+-- RLS senza policy è intenzionale (advisor 0008): nessun accesso via API pubblica, solo service_role server-side.
+comment on table public.ads_advertisers is 'Advertising Manager: inserzionisti. RLS senza policy: accesso solo server-side (service_role).';
+comment on table public.ads_positions is 'Advertising Manager: catalogo posizioni. RLS senza policy: accesso solo server-side (service_role).';
+comment on table public.ads_campaigns is 'Advertising Manager: campagne con checklist di attivazione. RLS senza policy: accesso solo server-side (service_role).';
+comment on table public.ads_creatives is 'Advertising Manager: creatività approvate. RLS senza policy: accesso solo server-side (service_role).';
+comment on table public.ads_placements is 'Advertising Manager: posizionamenti con esclusività EXCLUDE. RLS senza policy: accesso solo server-side (service_role).';
+comment on table public.ads_events is 'Advertising Manager: eventi grezzi pseudonimi, conservazione 35 giorni. RLS senza policy: accesso solo server-side (service_role).';
+comment on table public.ads_daily_stats is 'Advertising Manager: aggregati giornalieri. RLS senza policy: accesso solo server-side (service_role).';
+comment on table public.ads_audit_log is 'Advertising Manager: registro delle decisioni. RLS senza policy: accesso solo server-side (service_role).';
 
 do $$
 declare

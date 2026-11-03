@@ -168,11 +168,28 @@ npm test                          # unitari + integrazione + sicurezza (node --t
 ./scripts/test-ads-migration.sh   # migrazione, vincoli, permessi, rollback su PostgreSQL locale usa-e-getta
 ```
 
+### Collaudo su Supabase locale (Docker)
+
+Esegue il repository Supabase reale, PostgREST, RLS con i ruoli `anon`/`service_role`, report e rollback.
+Lo script e il test rifiutano qualsiasi URL che non sia `127.0.0.1`/`localhost`.
+
+```bash
+supabase init --workdir /percorso/temporaneo
+supabase start --workdir /percorso/temporaneo -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+./scripts/test-ads-supabase-local.sh /percorso/temporaneo
+supabase db advisors --workdir /percorso/temporaneo --type all   # con la migrazione applicata
+supabase stop --workdir /percorso/temporaneo --no-backup
+```
+
+Esito del collaudo 2026-11-03 (Supabase CLI 3.0.0, Postgres 17.11): 3/3 test di integrazione, 27/27 asserzioni SQL
+sull'immagine Supabase, `db lint` senza errori, advisors senza WARN (restano solo INFO attesi: indici non ancora usati
+su DB vuoto e RLS senza policy, intenzionale). Rollback completo verificato.
+
 ## 8. Rischi aperti
 
 - **EXTERNAL_CHECK_REQUIRED — privacy**: il tracciamento usa un identificativo pseudonimo (dato personale ai sensi GDPR). Base giuridica, informativa (privacy/cookie policy) e necessità di consenso vanno verificate prima di attivare; per questo `tracking_privacy` è un passo obbligatorio.
 - **EXTERNAL_CHECK_REQUIRED — fiscale/contrattuale e categoria merceologica**: fatturazione, contratto, obblighi di trasparenza della pubblicità e limiti sui prodotti a base di canapa non sono verificati dal sistema.
-- **Repository Supabase non eseguito contro PostgREST**: lo schema è testato su PostgreSQL 17 locale e la logica su repository in memoria; le query `supabase-js` (embed con hint FK) vanno provate su un progetto Supabase isolato prima dell'attivazione.
+- **Nessun ambiente Supabase remoto isolato per Canapalandia**: il collaudo reale è stato fatto su stack Supabase locale. Prima dell'attivazione la migrazione va applicata al progetto Supabase effettivamente usato da Canapalandia (account da identificare, vedi `docs/ops/configuration-map.md`), idealmente prima su un suo branch o progetto di staging.
 - **Rate limit in memoria**: per istanza serverless, non globale. È una mitigazione: traffico anomalo distribuito su più istanze può essere registrato, e finisce tra gli eventi idonei solo se il filtro bot e la deduplica non lo riconoscono.
 - **Filtro bot euristico**: riconosce bot dichiarati e segnali evidenti, non bot evoluti.
 - **Token admin unico condiviso**: `actor` è dichiarativo. Sufficiente per un solo operatore; per più persone servirà un'autenticazione per utente.
