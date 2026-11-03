@@ -32,6 +32,18 @@ ADS_ITEST_SUPABASE_URL="$API_URL" ADS_ITEST_SERVICE_ROLE_KEY="$SERVICE_KEY" ADS_
   node --experimental-strip-types --disable-warning=ExperimentalWarning \
   --import "$ROOT/tests/support/register-ts.mjs" --test "$ROOT/tests/supabase-local/ads-supabase.itest.ts"
 
+echo "→ script di conservazione (dry-run, esecuzione locale, rifiuto remoto)"
+DRY="$(SUPABASE_URL="$API_URL" SUPABASE_SERVICE_ROLE_KEY="$SERVICE_KEY" node "$ROOT/scripts/ads-retention.mjs")"
+grep -q '"mode": "dry-run"' <<<"$DRY" || { echo "FAIL: dry-run"; exit 1; }
+EXEC="$(SUPABASE_URL="$API_URL" SUPABASE_SERVICE_ROLE_KEY="$SERVICE_KEY" node "$ROOT/scripts/ads-retention.mjs" --execute)"
+grep -q '"events_deleted"' <<<"$EXEC" || { echo "FAIL: execute locale"; exit 1; }
+set +e
+SUPABASE_URL="https://abcdefghijklmnop.supabase.co" SUPABASE_SERVICE_ROLE_KEY="non-usata" node "$ROOT/scripts/ads-retention.mjs" --execute >/dev/null 2>&1
+REMOTE_EXIT=$?
+set -e
+[ "$REMOTE_EXIT" = "3" ] || { echo "FAIL: lo script non ha rifiutato l'host remoto (exit $REMOTE_EXIT)"; exit 1; }
+echo "   dry-run OK, --execute locale OK, remoto senza --allow-remote rifiutato (exit 3)"
+
 echo "→ rollback"
 "${PSQL[@]}" -f "$ROLLBACK"
 "${PSQL[@]}" -c "notify pgrst, 'reload schema';"

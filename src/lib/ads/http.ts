@@ -24,18 +24,53 @@ export function empty(status: number, extra: Record<string, string> = {}): Respo
 
 export const notFound = () => json({ error: "not_found" }, 404);
 
-/** Legge il body come JSON entro un limite di byte; null se assente, troppo grande o non valido. */
-export async function readJsonBody(request: Request, maxBytes: number): Promise<unknown | null> {
-  const declared = Number(request.headers.get("content-length") ?? "0");
-  if (declared > maxBytes) return null;
-  const text = await request.text();
-  if (!text || new TextEncoder().encode(text).length > maxBytes) return null;
+export type JsonBody = { ok: true; value: unknown } | { ok: false; error: "too_large" | "invalid" };
+
+/**
+ * Legge il body come JSON con un limite EFFETTIVO di byte: il flusso viene letto a pezzi e interrotto
+ * (reader.cancel) appena supera `maxBytes`, anche senza Content-Length o con un valore falso.
+ * UTF-8 non valido o JSON malformato → "invalid".
+ */
+export async function readJsonBody(request: Request, maxBytes: number): Promise<JsonBody> {
+  const declared = request.headers.get("content-length");
+  if (declared !== null && (!/^\d+$/.test(declared) || Number(declared) > maxBytes)) {
+    return { ok: false, error: /^\d+$/.test(declared) ? "too_large" : "invalid" };
+  }
+  if (!request.body) return { ok: false, error: "invalid" };
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
   try {
-    return JSON.parse(text);
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > maxBytes) {
+        await reader.cancel("body oltre il limite").catch(() => {});
+        return { ok: false, error: "too_large" };
+      }
+      chunks.push(value);
+    }
   } catch {
-    return null;
+    return { ok: false, error: "invalid" };
+  }
+  if (total === 0) return { ok: false, error: "invalid" };
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const c of chunks) {
+    bytes.set(c, offset);
+    offset += c.byteLength;
+  }
+  try {
+    return { ok: true, value: JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)) };
+  } catch {
+    return { ok: false, error: "invalid" };
   }
 }
+
+/** Risposta standard per un body rifiutato. */
+export const bodyError = (error: "too_large" | "invalid") =>
+  error === "too_large" ? json({ error: "payload_too_large" }, 413) : json({ error: "invalid_body" }, 400);
 
 function digest(value: string): Buffer {
   return createHash("sha256").update(value, "utf8").digest();

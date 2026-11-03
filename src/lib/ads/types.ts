@@ -82,11 +82,14 @@ export interface Campaign extends ActivationChecklist {
   rotation_weight: number | null;
   is_synthetic: boolean;
   notes: string | null;
+  /** Usato per la concorrenza ottimistica delle operazioni admin. */
+  updated_at: string;
 }
 
 export interface Creative {
   id: string;
   campaign_id: string;
+  creative_key: string | null;
   label: string;
   image_path: string | null;
   image_width: number | null;
@@ -130,6 +133,7 @@ export interface AdEvent {
   visitor_hash: string | null;
   is_bot: boolean;
   is_duplicate: boolean;
+  is_unverified: boolean;
   filter_reason: string | null;
 }
 

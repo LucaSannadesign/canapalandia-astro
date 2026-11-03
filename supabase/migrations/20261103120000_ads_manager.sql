@@ -131,6 +131,8 @@ create index if not exists ads_campaigns_advertiser_idx on public.ads_campaigns 
 create table if not exists public.ads_creatives (
   id uuid primary key default gen_random_uuid(),
   campaign_id uuid not null references public.ads_campaigns (id) on delete cascade,
+  -- Chiave scelta dall'operatore: i posizionamenti si collegano per chiave, mai per ordine di inserimento
+  creative_key text check (creative_key is null or creative_key ~ '^[a-z0-9_-]{1,40}$'),
   label text not null check (length(label) between 2 and 120),
   -- Immagine solo self-hosted sotto /ads/ (nessun asset esterno, nessun tracker di terze parti)
   image_path text check (image_path is null or image_path ~ '^/ads/[a-z0-9][a-z0-9/_.-]*\.(webp|png|jpg|jpeg|avif)$'),
@@ -149,7 +151,8 @@ create table if not exists public.ads_creatives (
   created_at timestamptz not null default now(),
   constraint ads_creatives_approval check (
     review_status <> 'approved' or (approved_at is not null and landing_reviewed_at is not null)
-  )
+  ),
+  constraint ads_creatives_key_unique unique (campaign_id, creative_key)
 );
 
 create index if not exists ads_creatives_campaign_idx on public.ads_creatives (campaign_id);
@@ -326,7 +329,9 @@ create table if not exists public.ads_events (
   visitor_hash text check (visitor_hash is null or visitor_hash ~ '^[a-f0-9]{16,64}$'),
   is_bot boolean not null default false,
   is_duplicate boolean not null default false,
-  is_eligible boolean generated always as (not is_bot and not is_duplicate) stored,
+  -- Clic senza token di visualizzazione valido: registrato (il lettore viene reindirizzato) ma non idoneo
+  is_unverified boolean not null default false,
+  is_eligible boolean generated always as (not is_bot and not is_duplicate and not is_unverified) stored,
   filter_reason text
 );
 
@@ -371,19 +376,29 @@ from (
 ) s
 group by campaign_id, placement_id, day;
 
--- Consolida e cancella gli eventi grezzi più vecchi di p_retain_days (default 35).
--- Non schedulata: va eseguita manualmente o da un cron approvato.
-create or replace function public.ads_purge_events(p_retain_days integer default 35)
-returns integer
+-- Conservazione (nessuna schedulazione: esecuzione manuale o da un job approvato, vedi docs/ads/README.md §6).
+-- In UNA transazione:
+--   1. consolida in ads_daily_stats gli eventi più vecchi di p_retain_days (default 35) e li cancella;
+--   2. rimuove lo pseudonimo (visitor_hash) dagli eventi più vecchi di p_pseudonym_retain_days (default 2):
+--      la deduplica usa al massimo 30 minuti, oltre lo pseudonimo non serve più.
+-- Idempotente: rieseguirla non cambia gli aggregati (i grezzi consolidati non esistono più).
+drop function if exists public.ads_purge_events(integer);
+create or replace function public.ads_purge_events(p_retain_days integer default 35, p_pseudonym_retain_days integer default 2)
+returns jsonb
 language plpgsql
 set search_path = ''
 as $$
 declare
   v_cutoff date;
+  v_rolled integer;
   v_deleted integer;
+  v_pseudonyms integer;
 begin
-  if p_retain_days < 7 then
-    raise exception 'ads: conservazione minima 7 giorni';
+  if p_retain_days is null or p_retain_days < 7 or p_retain_days > 400 then
+    raise exception 'ads: conservazione minima 7 giorni, massima 400';
+  end if;
+  if p_pseudonym_retain_days is null or p_pseudonym_retain_days < 1 or p_pseudonym_retain_days > p_retain_days then
+    raise exception 'ads: conservazione pseudonimi tra 1 giorno e la conservazione dei grezzi';
   end if;
   v_cutoff := (now() at time zone 'Europe/Rome')::date - p_retain_days;
 
@@ -401,11 +416,41 @@ begin
     impressions_eligible = d.impressions_eligible + excluded.impressions_eligible,
     clicks_registered = d.clicks_registered + excluded.clicks_registered,
     clicks_eligible = d.clicks_eligible + excluded.clicks_eligible;
+  get diagnostics v_rolled = row_count;
 
   delete from public.ads_events where (occurred_at at time zone 'Europe/Rome')::date < v_cutoff;
   get diagnostics v_deleted = row_count;
-  return v_deleted;
+
+  update public.ads_events set visitor_hash = null
+   where visitor_hash is not null and occurred_at < now() - make_interval(days => p_pseudonym_retain_days);
+  get diagnostics v_pseudonyms = row_count;
+
+  return jsonb_build_object(
+    'cutoff_day', v_cutoff,
+    'daily_rows_upserted', v_rolled,
+    'events_deleted', v_deleted,
+    'pseudonyms_removed', v_pseudonyms
+  );
 end;
+$$;
+
+-- Sola lettura: cosa farebbe la purge adesso (per il dry-run e il monitoraggio).
+create or replace function public.ads_retention_status(p_retain_days integer default 35, p_pseudonym_retain_days integer default 2)
+returns jsonb
+language sql
+stable
+set search_path = ''
+as $$
+  select jsonb_build_object(
+    'cutoff_day', (now() at time zone 'Europe/Rome')::date - p_retain_days,
+    'events_total', (select count(*) from public.ads_events),
+    'oldest_event_at', (select min(occurred_at) from public.ads_events),
+    'events_past_retention', (select count(*) from public.ads_events
+                               where (occurred_at at time zone 'Europe/Rome')::date < (now() at time zone 'Europe/Rome')::date - p_retain_days),
+    'pseudonyms_past_retention', (select count(*) from public.ads_events
+                                   where visitor_hash is not null and occurred_at < now() - make_interval(days => p_pseudonym_retain_days)),
+    'daily_stats_rows', (select count(*) from public.ads_daily_stats)
+  );
 $$;
 
 -- -----------------------------------------------------------------------------
@@ -423,6 +468,236 @@ create table if not exists public.ads_audit_log (
 );
 
 create index if not exists ads_audit_log_campaign_idx on public.ads_audit_log (campaign_id, at);
+
+-- -----------------------------------------------------------------------------
+-- Operazioni amministrative atomiche: ogni modifica e la sua riga di audit avvengono nella
+-- stessa transazione (o entrambe o nessuna). Campi modificabili in whitelist; concorrenza
+-- ottimistica su updated_at. Eseguibili solo da service_role.
+-- -----------------------------------------------------------------------------
+create or replace function public.ads_require_actor(p_actor text)
+returns text
+language plpgsql
+immutable
+set search_path = ''
+as $$
+begin
+  if p_actor is null or length(btrim(p_actor)) not between 2 and 80 then
+    raise exception 'ads: actor obbligatorio (2-80 caratteri)';
+  end if;
+  return btrim(p_actor);
+end;
+$$;
+
+create or replace function public.ads_admin_create_advertiser(p_data jsonb, p_actor text)
+returns public.ads_advertisers
+language plpgsql
+set search_path = ''
+as $$
+declare
+  v_actor text := public.ads_require_actor(p_actor);
+  v_row public.ads_advertisers;
+begin
+  insert into public.ads_advertisers (code, legal_name, display_name, website_url, allowed_domains, contact_name,
+    contact_email, contact_phone, negotiation_status, is_synthetic, notes)
+  values (p_data->>'code', p_data->>'legal_name', p_data->>'display_name', p_data->>'website_url',
+    coalesce((select array_agg(x) from jsonb_array_elements_text(p_data->'allowed_domains') x), '{}'),
+    p_data->>'contact_name', p_data->>'contact_email', p_data->>'contact_phone',
+    coalesce(p_data->>'negotiation_status', 'prospect'), coalesce((p_data->>'is_synthetic')::boolean, false), p_data->>'notes')
+  returning * into v_row;
+  insert into public.ads_audit_log (campaign_id, action, from_status, to_status, actor, details)
+  values (null, 'advertiser_created', null, v_row.negotiation_status, v_actor, jsonb_build_object('advertiser', v_row.code));
+  return v_row;
+end;
+$$;
+
+create or replace function public.ads_admin_update_advertiser(p_id uuid, p_patch jsonb, p_actor text)
+returns public.ads_advertisers
+language plpgsql
+set search_path = ''
+as $$
+declare
+  v_actor text := public.ads_require_actor(p_actor);
+  v_old public.ads_advertisers;
+  v_row public.ads_advertisers;
+  v_bad text;
+begin
+  select k into v_bad from jsonb_object_keys(p_patch) k
+   where k not in ('legal_name', 'display_name', 'website_url', 'allowed_domains', 'contact_name', 'contact_email',
+                   'contact_phone', 'negotiation_status', 'notes')
+   limit 1;
+  if v_bad is not null then
+    raise exception 'ads: campo non modificabile: %', v_bad;
+  end if;
+  select * into v_old from public.ads_advertisers where id = p_id for update;
+  if not found then
+    raise exception 'ads: inserzionista inesistente';
+  end if;
+  update public.ads_advertisers a set
+    legal_name = case when p_patch ? 'legal_name' then p_patch->>'legal_name' else a.legal_name end,
+    display_name = case when p_patch ? 'display_name' then p_patch->>'display_name' else a.display_name end,
+    website_url = case when p_patch ? 'website_url' then p_patch->>'website_url' else a.website_url end,
+    allowed_domains = case when p_patch ? 'allowed_domains'
+      then coalesce((select array_agg(x) from jsonb_array_elements_text(p_patch->'allowed_domains') x), '{}')
+      else a.allowed_domains end,
+    contact_name = case when p_patch ? 'contact_name' then p_patch->>'contact_name' else a.contact_name end,
+    contact_email = case when p_patch ? 'contact_email' then p_patch->>'contact_email' else a.contact_email end,
+    contact_phone = case when p_patch ? 'contact_phone' then p_patch->>'contact_phone' else a.contact_phone end,
+    negotiation_status = case when p_patch ? 'negotiation_status' then p_patch->>'negotiation_status' else a.negotiation_status end,
+    notes = case when p_patch ? 'notes' then p_patch->>'notes' else a.notes end,
+    updated_at = now()
+  where a.id = p_id
+  returning * into v_row;
+  insert into public.ads_audit_log (campaign_id, action, from_status, to_status, actor, details)
+  values (null, 'advertiser_updated', v_old.negotiation_status, v_row.negotiation_status, v_actor,
+          jsonb_build_object('advertiser', v_row.code, 'fields', (select jsonb_agg(k) from jsonb_object_keys(p_patch) k)));
+  return v_row;
+end;
+$$;
+
+create or replace function public.ads_admin_create_campaign(p_campaign jsonb, p_creatives jsonb, p_placements jsonb, p_actor text)
+returns uuid
+language plpgsql
+set search_path = ''
+as $$
+declare
+  v_actor text := public.ads_require_actor(p_actor);
+  v_id uuid;
+  v_creative uuid;
+  c jsonb;
+  p jsonb;
+begin
+  if jsonb_typeof(p_creatives) <> 'array' or jsonb_array_length(p_creatives) = 0
+     or jsonb_typeof(p_placements) <> 'array' or jsonb_array_length(p_placements) = 0 then
+    raise exception 'ads: servono almeno una creatività e un posizionamento';
+  end if;
+  insert into public.ads_campaigns (code, advertiser_id, name, contract_type, price_cents, currency, starts_on, ends_on,
+    notes, is_synthetic, status, auto_renew)
+  values (p_campaign->>'code', (p_campaign->>'advertiser_id')::uuid, p_campaign->>'name',
+    coalesce(p_campaign->>'contract_type', 'exclusive_time'), (p_campaign->>'price_cents')::integer,
+    coalesce(p_campaign->>'currency', 'EUR'), (p_campaign->>'starts_on')::date, (p_campaign->>'ends_on')::date,
+    p_campaign->>'notes', coalesce((p_campaign->>'is_synthetic')::boolean, false), 'draft', false)
+  returning id into v_id;
+
+  for c in select value from jsonb_array_elements(p_creatives) loop
+    if coalesce(c->>'key', '') = '' then
+      raise exception 'ads: creatività senza key';
+    end if;
+    insert into public.ads_creatives (campaign_id, creative_key, label, image_path, image_width, image_height, alt_text,
+      headline, body, cta_label, destination_url, sponsor_label)
+    values (v_id, c->>'key', c->>'label', c->>'image_path', (c->>'image_width')::integer, (c->>'image_height')::integer,
+      c->>'alt_text', c->>'headline', c->>'body', c->>'cta_label', c->>'destination_url',
+      coalesce(c->>'sponsor_label', 'Contenuto sponsorizzato'));
+  end loop;
+
+  for p in select value from jsonb_array_elements(p_placements) loop
+    select id into v_creative from public.ads_creatives where campaign_id = v_id and creative_key = p->>'creative_key';
+    if v_creative is null then
+      raise exception 'ads: creative_key % inesistente', p->>'creative_key';
+    end if;
+    -- Date sovrascritte dal trigger con quelle della campagna
+    insert into public.ads_placements (campaign_id, creative_id, article_slug, position_code, starts_on, ends_on)
+    values (v_id, v_creative, p->>'article_slug', p->>'position_code', (p_campaign->>'starts_on')::date, (p_campaign->>'ends_on')::date);
+  end loop;
+
+  insert into public.ads_audit_log (campaign_id, action, from_status, to_status, actor, details)
+  values (v_id, 'campaign_created', null, 'draft', v_actor, jsonb_build_object('code', p_campaign->>'code'));
+  return v_id;
+end;
+$$;
+
+create or replace function public.ads_admin_update_campaign(
+  p_id uuid,
+  p_expected_updated_at timestamptz,
+  p_patch jsonb,
+  p_actor text,
+  p_action text,
+  p_details jsonb default '{}'::jsonb
+)
+returns public.ads_campaigns
+language plpgsql
+set search_path = ''
+as $$
+declare
+  v_actor text := public.ads_require_actor(p_actor);
+  v_old public.ads_campaigns;
+  v_row public.ads_campaigns;
+  v_bad text;
+begin
+  if coalesce(p_action, '') !~ '^[a-z_]{3,60}$' then
+    raise exception 'ads: action di audit non valida';
+  end if;
+  select k into v_bad from jsonb_object_keys(p_patch) k
+   where k not in ('status', 'written_confirmation_at', 'written_confirmation_ref', 'commercial_terms_approved_at',
+                   'availability_verified_at', 'tax_contract_verified_at', 'tracking_tested_at',
+                   'tracking_privacy_reviewed_at', 'dates_confirmed_at', 'activation_authorized_at', 'activation_authorized_by')
+   limit 1;
+  if v_bad is not null then
+    raise exception 'ads: campo non modificabile: %', v_bad;
+  end if;
+  select * into v_old from public.ads_campaigns where id = p_id for update;
+  if not found then
+    raise exception 'ads: campagna inesistente';
+  end if;
+  if p_expected_updated_at is not null and v_old.updated_at <> p_expected_updated_at then
+    raise exception 'ads: modifica concorrente sulla campagna %, ricaricare e riprovare', v_old.code;
+  end if;
+  update public.ads_campaigns c set
+    status = case when p_patch ? 'status' then p_patch->>'status' else c.status end,
+    written_confirmation_at = case when p_patch ? 'written_confirmation_at' then (p_patch->>'written_confirmation_at')::timestamptz else c.written_confirmation_at end,
+    written_confirmation_ref = case when p_patch ? 'written_confirmation_ref' then p_patch->>'written_confirmation_ref' else c.written_confirmation_ref end,
+    commercial_terms_approved_at = case when p_patch ? 'commercial_terms_approved_at' then (p_patch->>'commercial_terms_approved_at')::timestamptz else c.commercial_terms_approved_at end,
+    availability_verified_at = case when p_patch ? 'availability_verified_at' then (p_patch->>'availability_verified_at')::timestamptz else c.availability_verified_at end,
+    tax_contract_verified_at = case when p_patch ? 'tax_contract_verified_at' then (p_patch->>'tax_contract_verified_at')::timestamptz else c.tax_contract_verified_at end,
+    tracking_tested_at = case when p_patch ? 'tracking_tested_at' then (p_patch->>'tracking_tested_at')::timestamptz else c.tracking_tested_at end,
+    tracking_privacy_reviewed_at = case when p_patch ? 'tracking_privacy_reviewed_at' then (p_patch->>'tracking_privacy_reviewed_at')::timestamptz else c.tracking_privacy_reviewed_at end,
+    dates_confirmed_at = case when p_patch ? 'dates_confirmed_at' then (p_patch->>'dates_confirmed_at')::timestamptz else c.dates_confirmed_at end,
+    activation_authorized_at = case when p_patch ? 'activation_authorized_at' then (p_patch->>'activation_authorized_at')::timestamptz else c.activation_authorized_at end,
+    activation_authorized_by = case when p_patch ? 'activation_authorized_by' then p_patch->>'activation_authorized_by' else c.activation_authorized_by end
+  where c.id = p_id
+  returning * into v_row;
+  insert into public.ads_audit_log (campaign_id, action, from_status, to_status, actor, details)
+  values (p_id, p_action, v_old.status, v_row.status, v_actor, coalesce(p_details, '{}'::jsonb));
+  return v_row;
+end;
+$$;
+
+create or replace function public.ads_admin_review_creative(p_creative_id uuid, p_patch jsonb, p_actor text, p_action text, p_details jsonb default '{}'::jsonb)
+returns public.ads_creatives
+language plpgsql
+set search_path = ''
+as $$
+declare
+  v_actor text := public.ads_require_actor(p_actor);
+  v_row public.ads_creatives;
+  v_status text;
+  v_bad text;
+begin
+  if coalesce(p_action, '') !~ '^[a-z_]{3,60}$' then
+    raise exception 'ads: action di audit non valida';
+  end if;
+  select k into v_bad from jsonb_object_keys(p_patch) k
+   where k not in ('review_status', 'approved_at', 'approved_by', 'landing_reviewed_at')
+   limit 1;
+  if v_bad is not null then
+    raise exception 'ads: campo non modificabile: %', v_bad;
+  end if;
+  update public.ads_creatives cr set
+    review_status = case when p_patch ? 'review_status' then p_patch->>'review_status' else cr.review_status end,
+    approved_at = case when p_patch ? 'approved_at' then (p_patch->>'approved_at')::timestamptz else cr.approved_at end,
+    approved_by = case when p_patch ? 'approved_by' then p_patch->>'approved_by' else cr.approved_by end,
+    landing_reviewed_at = case when p_patch ? 'landing_reviewed_at' then (p_patch->>'landing_reviewed_at')::timestamptz else cr.landing_reviewed_at end
+  where cr.id = p_creative_id
+  returning * into v_row;
+  if not found then
+    raise exception 'ads: creatività inesistente';
+  end if;
+  select status into v_status from public.ads_campaigns where id = v_row.campaign_id;
+  insert into public.ads_audit_log (campaign_id, action, from_status, to_status, actor, details)
+  values (v_row.campaign_id, p_action, v_status, v_status, v_actor,
+          coalesce(p_details, '{}'::jsonb) || jsonb_build_object('creative', v_row.id));
+  return v_row;
+end;
+$$;
 
 -- -----------------------------------------------------------------------------
 -- Permessi: nessun accesso per anon/authenticated, solo service_role (server-side)
@@ -449,14 +724,34 @@ comment on table public.ads_audit_log is 'Advertising Manager: registro delle de
 do $$
 declare
   r text;
+  f text;
+  v_functions text[] := array[
+    'public.ads_purge_events(integer, integer)',
+    'public.ads_retention_status(integer, integer)',
+    'public.ads_status_is_blocking(text)',
+    'public.ads_require_actor(text)',
+    'public.ads_admin_create_advertiser(jsonb, text)',
+    'public.ads_admin_update_advertiser(uuid, jsonb, text)',
+    'public.ads_admin_create_campaign(jsonb, jsonb, jsonb, text)',
+    'public.ads_admin_update_campaign(uuid, timestamptz, jsonb, text, text, jsonb)',
+    'public.ads_admin_review_creative(uuid, jsonb, text, text, jsonb)'
+  ];
 begin
+  foreach f in array v_functions loop
+    execute format('revoke execute on function %s from public', f);
+  end loop;
   foreach r in array array['anon', 'authenticated'] loop
     if exists (select 1 from pg_roles where rolname = r) then
       execute format('revoke all on public.ads_advertisers, public.ads_positions, public.ads_campaigns, public.ads_creatives, public.ads_placements, public.ads_events, public.ads_daily_stats, public.ads_audit_log, public.ads_campaign_daily_stats from %I', r);
-      execute format('revoke execute on function public.ads_purge_events(integer) from %I', r);
+      foreach f in array v_functions loop
+        execute format('revoke execute on function %s from %I', f, r);
+      end loop;
     end if;
   end loop;
+  if exists (select 1 from pg_roles where rolname = 'service_role') then
+    foreach f in array v_functions loop
+      execute format('grant execute on function %s to service_role', f);
+    end loop;
+  end if;
 end;
 $$;
-
-revoke execute on function public.ads_purge_events(integer) from public;

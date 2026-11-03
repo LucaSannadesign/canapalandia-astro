@@ -6,8 +6,8 @@
 
 import { getSupabaseServer } from "../supabaseServer";
 import type { CampaignContext, CampaignDraftInput, OccupiedSlot } from "./campaigns";
-import { AdsConflictError, type AdsRepository, type AdvertiserInput, type CampaignPatch, type CreativePatch } from "./repository";
-import type { AdEvent, AdEventType, Advertiser, AuditEntry, Campaign, Creative, DailyStat, Placement, PlacementBundle } from "./types";
+import { AdsConflictError, type AdsRepository, type AdvertiserInput, type AuditContext, type CampaignPatch, type CreativePatch } from "./repository";
+import type { AdEvent, AdEventType, Advertiser, Campaign, Creative, DailyStat, Placement, PlacementBundle } from "./types";
 
 type Db = ReturnType<typeof getSupabaseServer>;
 type PgError = { code?: string; message: string } | null;
@@ -34,7 +34,9 @@ function toBundle(row: BundleRow): PlacementBundle {
 
 export function createSupabaseAdsRepository(db: Db = getSupabaseServer()): AdsRepository {
   // Client non tipizzato sullo schema: le righe sono validate dai vincoli SQL e dal dominio.
-  const from = (table: string) => (db as unknown as { from: (t: string) => any }).from(table);
+  const client = db as unknown as { from: (t: string) => any; rpc: (fn: string, args: Record<string, unknown>) => any };
+  const from = (table: string) => client.from(table);
+  const rpc = (fn: string, args: Record<string, unknown>) => client.rpc(fn, args);
 
   const repo: AdsRepository = {
     async listAdvertisers() {
@@ -47,17 +49,13 @@ export function createSupabaseAdsRepository(db: Db = getSupabaseServer()): AdsRe
       if (error) raise(error, "getAdvertiser");
       return (data as Advertiser | null) ?? null;
     },
-    async createAdvertiser(input: AdvertiserInput) {
-      const { data, error } = await from("ads_advertisers").insert(input).select("*").single();
+    async createAdvertiser(input: AdvertiserInput, actor) {
+      const { data, error } = await rpc("ads_admin_create_advertiser", { p_data: input, p_actor: actor });
       if (error) raise(error, "createAdvertiser");
       return data as Advertiser;
     },
-    async updateAdvertiser(id, patch) {
-      const { data, error } = await from("ads_advertisers")
-        .update({ ...patch, updated_at: new Date().toISOString() })
-        .eq("id", id)
-        .select("*")
-        .single();
+    async updateAdvertiser(id, patch, actor) {
+      const { data, error } = await rpc("ads_admin_update_advertiser", { p_id: id, p_patch: patch, p_actor: actor });
       if (error) raise(error, "updateAdvertiser");
       return data as Advertiser;
     },
@@ -86,49 +84,39 @@ export function createSupabaseAdsRepository(db: Db = getSupabaseServer()): AdsRe
         placements: placements.data as Placement[],
       };
     },
-    async createCampaignDraft(input: CampaignDraftInput) {
+    async createCampaignDraft(input: CampaignDraftInput, actor) {
+      // Una sola transazione SQL: campagna, creatività, posizionamenti (collegati per chiave) e audit
       const { creatives, placements, ...campaign } = input;
-      const { data: created, error } = await from("ads_campaigns")
-        .insert({ ...campaign, status: "draft", auto_renew: false })
-        .select("id")
-        .single();
+      const { data, error } = await rpc("ads_admin_create_campaign", {
+        p_campaign: campaign,
+        p_creatives: creatives,
+        p_placements: placements,
+        p_actor: actor,
+      });
       if (error) raise(error, "createCampaignDraft");
-      const campaignId = (created as { id: string }).id;
-      try {
-        const { data: rows, error: cErr } = await from("ads_creatives")
-          .insert(creatives.map(({ key: _key, ...c }) => ({ ...c, campaign_id: campaignId })))
-          .select("id");
-        if (cErr) raise(cErr, "createCampaignDraft.creatives");
-        // Le righe tornano nell'ordine di inserimento
-        const ids = (rows as { id: string }[]).map((r) => r.id);
-        const keyToId = new Map(creatives.map((c, i) => [c.key, ids[i]]));
-        const { error: pErr } = await from("ads_placements").insert(
-          placements.map((p) => ({
-            campaign_id: campaignId,
-            creative_id: keyToId.get(p.creative_key) ?? null,
-            article_slug: p.article_slug,
-            position_code: p.position_code,
-            // Sovrascritti dal trigger con le date della campagna
-            starts_on: campaign.starts_on,
-            ends_on: campaign.ends_on,
-          })),
-        );
-        if (pErr) raise(pErr, "createCampaignDraft.placements");
-      } catch (err) {
-        // Compensazione: la bozza appena creata viene rimossa (cascade su creatività/posizionamenti)
-        await from("ads_campaigns").delete().eq("id", campaignId).eq("status", "draft");
-        throw err;
-      }
-      return (await repo.getCampaignContext(campaignId))!;
+      return (await repo.getCampaignContext(data as string))!;
     },
-    async updateCampaign(id, patch: CampaignPatch) {
-      const { data, error } = await from("ads_campaigns").update(patch).eq("id", id).select("*").single();
+    async updateCampaign(id, patch: CampaignPatch, audit: AuditContext, expectedUpdatedAt) {
+      const { data, error } = await rpc("ads_admin_update_campaign", {
+        p_id: id,
+        p_expected_updated_at: expectedUpdatedAt,
+        p_patch: patch,
+        p_actor: audit.actor,
+        p_action: audit.action,
+        p_details: audit.details ?? {},
+      });
       if (error) raise(error, "updateCampaign");
       return data as Campaign;
     },
-    async updateCreative(id, patch: CreativePatch) {
-      const { data, error } = await from("ads_creatives").update(patch).eq("id", id).select("*").single();
-      if (error) raise(error, "updateCreative");
+    async reviewCreative(id, patch: CreativePatch, audit: AuditContext) {
+      const { data, error } = await rpc("ads_admin_review_creative", {
+        p_creative_id: id,
+        p_patch: patch,
+        p_actor: audit.actor,
+        p_action: audit.action,
+        p_details: audit.details ?? {},
+      });
+      if (error) raise(error, "reviewCreative");
       return data as Creative;
     },
 
@@ -188,10 +176,6 @@ export function createSupabaseAdsRepository(db: Db = getSupabaseServer()): AdsRe
       return data as DailyStat[];
     },
 
-    async appendAudit(entry: AuditEntry) {
-      const { error } = await from("ads_audit_log").insert(entry);
-      if (error) raise(error, "appendAudit");
-    },
   };
   return repo;
 }

@@ -1,12 +1,13 @@
 ---
 /**
  * Spazio pubblicitario proprietario. INATTIVO per impostazione predefinita:
- * con ADS_ENABLED diverso da "true" non produce markup, non carica moduli di database
- * e non esegue query. Anche con l'interruttore acceso mostra qualcosa solo se esiste un
- * posizionamento `active`, nel periodo, con checklist completa e creatività approvata.
+ * con ADS_ENABLED diverso da "true", o con il tracciamento non configurato (ADS_HASH_SECRET),
+ * non produce markup, non carica moduli di database e non esegue query. Anche con tutto
+ * configurato mostra qualcosa solo se esiste un posizionamento `active`, nel periodo, con
+ * checklist completa e creatività approvata.
  * Stili e script sono inline nel ramo condizionale: a slot spento il peso aggiunto alla pagina è zero.
  */
-import { isAdsEnabled, readAdsEnv } from "../lib/ads/config";
+import { isTrackingConfigured, readAdsEnv } from "../lib/ads/config";
 import type { ServedAd } from "../lib/ads/handlers";
 import type { AdPosition } from "../lib/ads/types";
 
@@ -19,19 +20,26 @@ interface Props {
 const { slug, position = "article_end", lang = "it" } = Astro.props;
 
 let ad: ServedAd | null = null;
-if (isAdsEnabled(readAdsEnv())) {
-  const [{ getServableAd }, { runtimeAdsDeps }] = await Promise.all([
+let script = "";
+if (isTrackingConfigured(readAdsEnv())) {
+  const [{ getServableAd }, { runtimeAdsDeps }, { extractClientIp }, { AD_SLOT_SCRIPT }] = await Promise.all([
     import("../lib/ads/handlers"),
     import("../lib/ads/runtime"),
+    import("../lib/rateLimit"),
+    import("../lib/ads/clientScript"),
   ]);
-  ad = await getServableAd(slug, position, runtimeAdsDeps());
+  const ip = extractClientIp(Astro.request);
+  // Il token di visualizzazione è legato a questo lettore: senza IP non viene servito nulla.
+  const viewer = ip ? { ip, userAgent: Astro.request.headers.get("user-agent") } : undefined;
+  ad = await getServableAd(slug, position, { ...runtimeAdsDeps(ip), viewer });
+  script = AD_SLOT_SCRIPT;
 }
 
 const label = lang === "en" ? "Sponsored" : ad?.sponsorLabel ?? "Contenuto sponsorizzato";
 ---
 
 {ad && (
-  <aside class="ad-slot" aria-label={label} data-ad-slot data-ad-placement={ad.placementId}>
+  <aside class="ad-slot" aria-label={label} data-ad-slot data-ad-placement={ad.placementId} data-ad-token={ad.viewToken}>
     <p class="ad-slot__label">{label} · {ad.advertiserName}</p>
     <a class="ad-slot__link" href={ad.clickHref} rel="sponsored noopener" target="_blank">
       {ad.imagePath && ad.imageWidth && ad.imageHeight && (
@@ -49,32 +57,7 @@ const label = lang === "en" ? "Sponsored" : ad?.sponsorLabel ?? "Contenuto spons
       {ad.body && <span class="ad-slot__body">{ad.body}</span>}
       <span class="ad-slot__cta">{ad.ctaLabel ?? (lang === "en" ? "Visit" : "Visita")} → {ad.destinationHost}</span>
     </a>
-    <script is:inline>
-      (() => {
-        const slot = document.currentScript && document.currentScript.closest("[data-ad-slot]");
-        if (!slot || !("IntersectionObserver" in window) || !navigator.sendBeacon) return;
-        const placement = slot.getAttribute("data-ad-placement");
-        let timer = 0;
-        let sent = false;
-        const io = new IntersectionObserver(
-          (entries) => {
-            for (const entry of entries) {
-              if (entry.isIntersecting && entry.intersectionRatio >= 0.5 && !sent) {
-                timer = window.setTimeout(() => {
-                  sent = true;
-                  io.disconnect();
-                  navigator.sendBeacon("/api/ads/event/", JSON.stringify({ type: "impression", placement }));
-                }, 1000);
-              } else {
-                window.clearTimeout(timer);
-              }
-            }
-          },
-          { threshold: [0, 0.5] },
-        );
-        io.observe(slot);
-      })();
-    </script>
+    <script is:inline set:html={script} />
     <style is:inline>
       .ad-slot {
         margin: 2rem 0;

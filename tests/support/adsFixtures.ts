@@ -60,6 +60,7 @@ export function synthCampaign(overrides: Partial<Campaign> = {}): Campaign {
     dates_confirmed_at: T,
     activation_authorized_at: T,
     activation_authorized_by: "test",
+    updated_at: T,
     ...overrides,
   };
 }
@@ -68,6 +69,7 @@ export function synthCreative(overrides: Partial<Creative> = {}): Creative {
   return {
     id: "00000000-0000-4000-8000-0000000000c1",
     campaign_id: "00000000-0000-4000-8000-0000000000a1",
+    creative_key: "main",
     label: "SYNTH creatività",
     image_path: "/ads/synth/banner.webp",
     image_width: 1200,

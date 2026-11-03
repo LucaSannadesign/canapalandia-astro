@@ -1,7 +1,8 @@
 /**
  * Repository in memoria per i test dell'Advertising Manager.
  * Replica i vincoli critici della migrazione SQL (esclusività EXCLUDE, gate di stato, immutabilità
- * di creatività e posizionamenti dopo la bozza) così i test di integrazione falliscono come il database.
+ * di creatività e posizionamenti dopo la bozza, RPC atomiche con audit e concorrenza ottimistica)
+ * così i test di integrazione falliscono come il database.
  */
 
 import { randomUUID } from "node:crypto";
@@ -9,8 +10,11 @@ import { BLOCKING_STATUSES, type CampaignContext, type CampaignDraftInput, type 
 import { rangesOverlap } from "../../src/lib/ads/dates.ts";
 import {
   AdsConflictError,
+  CAMPAIGN_PATCH_FIELDS,
   type AdsRepository,
   type AdvertiserInput,
+  type AdvertiserPatch,
+  type AuditContext,
   type CampaignPatch,
   type CreativePatch,
 } from "../../src/lib/ads/repository.ts";
@@ -27,6 +31,17 @@ import type {
 } from "../../src/lib/ads/types.ts";
 
 const clone = <T>(v: T): T => structuredClone(v);
+
+/** Equivalente di public.ads_require_actor. */
+function requireActor(actor: string): string {
+  const a = (actor ?? "").trim();
+  if (a.length < 2 || a.length > 80) throw new AdsConflictError("ads: actor obbligatorio (2-80 caratteri)");
+  return a;
+}
+
+let clock = Date.parse("2026-01-01T00:00:00Z");
+/** updated_at strettamente crescente, come now() in transazioni distinte. */
+const nextTimestamp = () => new Date((clock += 1000)).toISOString();
 
 export class MemoryAdsRepository implements AdsRepository {
   advertisers = new Map<string, Advertiser>();
@@ -51,18 +66,25 @@ export class MemoryAdsRepository implements AdsRepository {
     const a = this.advertisers.get(id);
     return a ? clone(a) : null;
   }
-  async createAdvertiser(input: AdvertiserInput) {
+  async createAdvertiser(input: AdvertiserInput, actor: string) {
     this.touch();
+    const who = requireActor(actor);
     if ([...this.advertisers.values()].some((a) => a.code === input.code)) throw new AdsConflictError("code già esistente");
     const a: Advertiser = { ...clone(input), id: randomUUID() };
     this.advertisers.set(a.id, a);
+    this.audit.push({ campaign_id: null, action: "advertiser_created", from_status: null, to_status: a.negotiation_status, actor: who, details: { advertiser: a.code } });
     return clone(a);
   }
-  async updateAdvertiser(id: string, patch: Partial<AdvertiserInput>) {
+  async updateAdvertiser(id: string, patch: AdvertiserPatch, actor: string) {
     this.touch();
+    const who = requireActor(actor);
+    const bad = Object.keys(patch).find((k) => ["code", "is_synthetic", "id"].includes(k));
+    if (bad) throw new AdsConflictError(`ads: campo non modificabile: ${bad}`);
     const a = this.advertisers.get(id);
-    if (!a) throw new Error("not found");
+    if (!a) throw new AdsConflictError("ads: inserzionista inesistente");
+    const from = a.negotiation_status;
     Object.assign(a, clone(patch));
+    this.audit.push({ campaign_id: null, action: "advertiser_updated", from_status: from, to_status: a.negotiation_status, actor: who, details: { advertiser: a.code, fields: Object.keys(patch) } });
     return clone(a);
   }
 
@@ -83,9 +105,13 @@ export class MemoryAdsRepository implements AdsRepository {
     });
   }
 
-  async createCampaignDraft(input: CampaignDraftInput): Promise<CampaignContext> {
+  async createCampaignDraft(input: CampaignDraftInput, actor: string): Promise<CampaignContext> {
     this.touch();
+    const who = requireActor(actor);
     if ([...this.campaigns.values()].some((c) => c.code === input.code)) throw new AdsConflictError("code già esistente");
+    const keys = new Set(input.creatives.map((c) => c.key));
+    const missing = input.placements.find((p) => !keys.has(p.creative_key));
+    if (missing) throw new AdsConflictError(`ads: creative_key ${missing.creative_key} inesistente`);
     const campaign: Campaign = {
       id: randomUUID(),
       code: input.code,
@@ -112,6 +138,7 @@ export class MemoryAdsRepository implements AdsRepository {
       dates_confirmed_at: null,
       activation_authorized_at: null,
       activation_authorized_by: null,
+      updated_at: nextTimestamp(),
     };
     this.campaigns.set(campaign.id, campaign);
     const keyToId = new Map<string, string>();
@@ -119,6 +146,7 @@ export class MemoryAdsRepository implements AdsRepository {
       const creative: Creative = {
         id: randomUUID(),
         campaign_id: campaign.id,
+        creative_key: c.key,
         label: c.label,
         image_path: c.image_path ?? null,
         image_width: c.image_width ?? null,
@@ -150,14 +178,23 @@ export class MemoryAdsRepository implements AdsRepository {
       };
       this.placements.set(placement.id, placement);
     }
+    this.audit.push({ campaign_id: campaign.id, action: "campaign_created", from_status: null, to_status: "draft", actor: who, details: { code: campaign.code } });
     return (await this.getCampaignContext(campaign.id))!;
   }
 
-  async updateCampaign(id: string, patch: CampaignPatch) {
+  async updateCampaign(id: string, patch: CampaignPatch, audit: AuditContext, expectedUpdatedAt: string | null) {
     this.touch();
+    // Stesse verifiche della RPC ads_admin_update_campaign, tutte PRIMA di qualsiasi modifica
+    const who = requireActor(audit.actor);
+    if (!/^[a-z_]{3,60}$/.test(audit.action)) throw new AdsConflictError("ads: action di audit non valida");
+    const bad = Object.keys(patch).find((k) => !(CAMPAIGN_PATCH_FIELDS as readonly string[]).includes(k));
+    if (bad) throw new AdsConflictError(`ads: campo non modificabile: ${bad}`);
     const current = this.campaigns.get(id);
-    if (!current) throw new Error("not found");
-    const next = { ...current, ...clone(patch) };
+    if (!current) throw new AdsConflictError("ads: campagna inesistente");
+    if (expectedUpdatedAt !== null && current.updated_at !== expectedUpdatedAt) {
+      throw new AdsConflictError(`ads: modifica concorrente sulla campagna ${current.code}, ricaricare e riprovare`);
+    }
+    const next = { ...current, ...clone(patch), updated_at: nextTimestamp() };
     this.assertCampaignConstraints(next);
     // Equivalente del trigger di propagazione + vincolo EXCLUDE
     const own = [...this.placements.values()].filter((p) => p.campaign_id === id);
@@ -172,10 +209,19 @@ export class MemoryAdsRepository implements AdsRepository {
         }
       }
     }
+    if (this.failNextAudit) {
+      this.failNextAudit = false;
+      // Transazione annullata: né la modifica né l'audit vengono applicati
+      throw new Error("audit insert failed (simulato)");
+    }
     this.campaigns.set(id, next);
     for (const p of own) Object.assign(p, { starts_on: next.starts_on, ends_on: next.ends_on, is_blocking: blocking });
+    this.audit.push({ campaign_id: id, action: audit.action, from_status: current.status, to_status: next.status, actor: who, details: clone(audit.details ?? {}) });
     return clone(next);
   }
+
+  /** Simula il fallimento dell'insert di audit dentro la transazione della prossima updateCampaign. */
+  failNextAudit = false;
 
   private assertCampaignConstraints(c: Campaign) {
     if (c.auto_renew) throw new AdsConflictError("ads_campaigns_no_auto_renew");
@@ -197,13 +243,17 @@ export class MemoryAdsRepository implements AdsRepository {
     }
   }
 
-  async updateCreative(id: string, patch: CreativePatch) {
+  async reviewCreative(id: string, patch: CreativePatch, audit: AuditContext) {
     this.touch();
+    const who = requireActor(audit.actor);
     const c = this.creatives.get(id);
-    if (!c) throw new Error("not found");
-    const status = this.campaigns.get(c.campaign_id)?.status;
+    if (!c) throw new AdsConflictError("ads: creatività inesistente");
+    const status = this.campaigns.get(c.campaign_id)?.status ?? null;
     if (status !== "draft" && status !== "pending_approval") throw new AdsConflictError("ads: creatività modificabili solo in bozza o in approvazione");
-    Object.assign(c, clone(patch));
+    const next = { ...c, ...clone(patch) };
+    if (next.review_status === "approved" && !(next.approved_at && next.landing_reviewed_at)) throw new AdsConflictError("ads_creatives_approval");
+    Object.assign(c, next);
+    this.audit.push({ campaign_id: c.campaign_id, action: audit.action, from_status: status, to_status: status, actor: who, details: { ...clone(audit.details ?? {}), creative: c.id } });
     return clone(c);
   }
 
@@ -277,8 +327,4 @@ export class MemoryAdsRepository implements AdsRepository {
     return [...rows.values()];
   }
 
-  async appendAudit(entry: AuditEntry) {
-    this.touch();
-    this.audit.push(clone(entry));
-  }
 }

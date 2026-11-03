@@ -16,17 +16,24 @@ import {
   handleAdminReport,
   type AdsDeps,
 } from "../src/lib/ads/handlers.ts";
+import { issueViewToken } from "../src/lib/ads/tracking.ts";
 import { ADMIN_TOKEN, HASH_SECRET, HUMAN_UA, SCENARIO_ARTICLES, seedActiveCampaign, synthPlacement } from "./support/adsFixtures.ts";
 import { MemoryAdsRepository } from "./support/memoryAdsRepository.ts";
 
 const ORIGIN = "https://canapalandia.test";
 const ENABLED = { ADS_ENABLED: "true", ADS_HASH_SECRET: HASH_SECRET, ADS_ADMIN_TOKEN: ADMIN_TOKEN };
+const NOW = "2026-11-05T10:00:00Z";
 let ipCounter = 0;
 const freshIp = () => `198.51.100.${++ipCounter}`;
 
-function deps(repo: MemoryAdsRepository, env: AdsDeps["env"], now = "2026-11-05T10:00:00Z", clientIp = freshIp()): AdsDeps {
-  return { env, repo: () => repo, now: () => new Date(now), clientIp };
+type TestDeps = AdsDeps & { viewer: { ip: string; userAgent: string | null } };
+function deps(repo: MemoryAdsRepository, env: AdsDeps["env"], now = NOW, clientIp = freshIp(), ua: string | null = HUMAN_UA): TestDeps {
+  return { env, repo: () => repo, now: () => new Date(now), clientIp, viewer: { ip: clientIp, userAgent: ua } };
 }
+
+/** Token come quello emesso dal server al rendering, `ageMs` prima dell'evento. */
+const tokenFor = (placement: string, d: TestDeps, ageMs = 5_000, ua: string | null = d.viewer.userAgent) =>
+  issueViewToken(HASH_SECRET, placement, { ip: d.viewer.ip, userAgent: ua }, new Date(d.now!().getTime() - ageMs));
 
 function adminReq(path: string, init: { method?: string; body?: unknown; token?: string | null } = {}) {
   const headers: Record<string, string> = { "content-type": "application/json" };
@@ -38,15 +45,25 @@ function adminReq(path: string, init: { method?: string; body?: unknown; token?:
   });
 }
 
-const beacon = (placement: string, ua: string | null = HUMAN_UA, extra: Record<string, string> = {}) =>
+const beacon = (placement: string, token: string | null, ua: string | null = HUMAN_UA, extra: Record<string, string> = {}) =>
   new Request(`${ORIGIN}/api/ads/event/`, {
     method: "POST",
-    headers: { "content-type": "text/plain", ...(ua ? { "user-agent": ua } : {}), ...extra },
-    body: JSON.stringify({ type: "impression", placement }),
+    headers: { "content-type": "text/plain", "sec-fetch-site": "same-origin", ...(ua ? { "user-agent": ua } : {}), ...extra },
+    body: JSON.stringify({ type: "impression", placement, ...(token ? { token } : {}) }),
   });
 
 const clickReq = (placement: string, ua: string | null = HUMAN_UA, query = "") =>
   new Request(`${ORIGIN}/api/ads/click/${placement}/${query}`, { headers: ua ? { "user-agent": ua } : {} });
+
+const quietly = async <T>(fn: () => Promise<T>): Promise<T> => {
+  const original = console.error;
+  console.error = () => {};
+  try {
+    return await fn();
+  } finally {
+    console.error = original;
+  }
+};
 
 describe("interruttore globale spento (stato di consegna)", () => {
   it("nessun annuncio e nessuna query anche con una campagna 'active' nel database", async () => {
@@ -55,11 +72,33 @@ describe("interruttore globale spento (stato di consegna)", () => {
     for (const env of [{}, { ADS_ENABLED: "false" }, { ADS_ENABLED: "1" }, { ADS_ENABLED: "TRUE", ADS_HASH_SECRET: HASH_SECRET }]) {
       const d = deps(repo, env);
       for (const slug of SCENARIO_ARTICLES) assert.equal(await getServableAd(slug, "article_end", d), null);
-      assert.equal((await handleAdEvent(beacon(synthPlacement(1).id), d)).status, 404);
+      assert.equal((await handleAdEvent(beacon(synthPlacement(1).id, tokenFor(synthPlacement(1).id, d)), d)).status, 404);
       assert.equal((await handleAdClick(synthPlacement(1).id, clickReq(synthPlacement(1).id), d)).status, 404);
     }
     assert.equal(repo.calls, 0, "il repository non deve essere interrogato");
     assert.equal(repo.events.length, 0);
+  });
+});
+
+describe("rilievo 1: nessuna erogazione con tracciamento incompleto", () => {
+  it("ADS_ENABLED=true ma ADS_HASH_SECRET assente o corto: nessun annuncio, nessuna query, clic 404", async () => {
+    const repo = new MemoryAdsRepository();
+    seedActiveCampaign(repo, { markSynthetic: false });
+    for (const env of [{ ADS_ENABLED: "true" }, { ADS_ENABLED: "true", ADS_HASH_SECRET: "troppo-corto" }]) {
+      const d = deps(repo, env);
+      assert.equal(await getServableAd("synth-articolo-a", "article_end", d), null);
+      assert.equal((await handleAdClick(synthPlacement(1).id, clickReq(synthPlacement(1).id), d)).status, 404);
+      assert.equal((await handleAdEvent(beacon(synthPlacement(1).id, "x"), d)).status, 404);
+    }
+    assert.equal(repo.calls, 0);
+    assert.equal(repo.events.length, 0);
+  });
+  it("senza lettore identificabile (nessun IP per firmare il token) non si eroga", async () => {
+    const repo = new MemoryAdsRepository();
+    seedActiveCampaign(repo, { markSynthetic: false });
+    const { viewer: _v, ...noViewer } = deps(repo, ENABLED);
+    assert.equal(await getServableAd("synth-articolo-a", "article_end", noViewer), null);
+    assert.equal(repo.calls, 0);
   });
 });
 
@@ -71,7 +110,8 @@ describe("pubblicazione con interruttore acceso (ambiente isolato)", () => {
     assert.equal((await handleAdClick(synthPlacement(1).id, clickReq(synthPlacement(1).id), deps(repo, ENABLED))).status, 404);
     const shown = await getServableAd("synth-articolo-a", "article_end", { ...deps(repo, ENABLED), allowSynthetic: true });
     assert.equal(shown?.campaignCode, "synth-exclusive-30d");
-    assert.equal(shown?.clickHref, `/api/ads/click/${synthPlacement(1).id}/`);
+    assert.match(shown!.viewToken, /^\d{13}\.[a-f0-9]{32}$/);
+    assert.equal(shown?.clickHref, `/api/ads/click/${synthPlacement(1).id}/?t=${encodeURIComponent(shown!.viewToken)}`);
   });
 
   it("solo sugli articoli contrattualizzati, nel periodo, con creatività approvata", async () => {
@@ -91,42 +131,32 @@ describe("pubblicazione con interruttore acceso (ambiente isolato)", () => {
     repo.findCandidatePlacements = async () => {
       throw new Error("db down");
     };
-    const original = console.error;
-    console.error = () => {};
-    try {
-      assert.equal(await getServableAd("synth-articolo-a", "article_end", deps(repo, ENABLED)), null);
-    } finally {
-      console.error = original;
-    }
+    assert.equal(await quietly(() => getServableAd("synth-articolo-a", "article_end", deps(repo, ENABLED))), null);
   });
 });
 
-describe("clic in uscita e impressioni", () => {
+describe("clic in uscita", () => {
   it("redirect solo verso la destinazione approvata: i parametri della richiesta sono ignorati", async () => {
     const repo = new MemoryAdsRepository();
     seedActiveCampaign(repo, { markSynthetic: false });
     const id = synthPlacement(1).id;
-    const res = await handleAdClick(id, clickReq(id, HUMAN_UA, "?url=https://evil.example/&to=//evil.example"), deps(repo, ENABLED));
+    const d = deps(repo, ENABLED);
+    const res = await handleAdClick(id, clickReq(id, HUMAN_UA, `?t=${tokenFor(id, d)}&url=https://evil.example/&to=//evil.example`), d);
     assert.equal(res.status, 302);
     assert.equal(res.headers.get("location"), "https://shop.example.test/attrezzatura");
     assert.equal(res.headers.get("cache-control"), "no-store");
     assert.equal(res.headers.get("referrer-policy"), "origin");
     assert.equal(repo.events.length, 1);
+    assert.equal(repo.events[0].is_unverified, false);
   });
 
   it("destinazione manomessa nel DB fuori allowlist: nessun redirect", async () => {
     const repo = new MemoryAdsRepository();
     seedActiveCampaign(repo, { markSynthetic: false });
     repo.creatives.get("00000000-0000-4000-8000-0000000000c1")!.destination_url = "https://evil.example/phish";
-    const original = console.error;
-    console.error = () => {};
-    try {
-      const res = await handleAdClick(synthPlacement(1).id, clickReq(synthPlacement(1).id), deps(repo, ENABLED));
-      assert.equal(res.status, 404);
-      assert.equal(res.headers.get("location"), null);
-    } finally {
-      console.error = original;
-    }
+    const res = await quietly(() => handleAdClick(synthPlacement(1).id, clickReq(synthPlacement(1).id), deps(repo, ENABLED)));
+    assert.equal(res.status, 404);
+    assert.equal(res.headers.get("location"), null);
   });
 
   it("id non valido o inesistente: 404", async () => {
@@ -137,60 +167,156 @@ describe("clic in uscita e impressioni", () => {
     }
   });
 
-  it("clic registrati vs idonei: bot e ripetizioni registrati ma esclusi", async () => {
+  it("clic registrati vs idonei: bot, ripetizioni e clic senza token valido registrati ma esclusi", async () => {
     const repo = new MemoryAdsRepository();
     seedActiveCampaign(repo, { markSynthetic: false });
     const id = synthPlacement(2).id;
     const ip = freshIp();
-    await handleAdClick(id, clickReq(id), deps(repo, ENABLED, "2026-11-05T10:00:00Z", ip));
-    await handleAdClick(id, clickReq(id), deps(repo, ENABLED, "2026-11-05T10:03:00Z", ip));
-    await handleAdClick(id, clickReq(id), deps(repo, ENABLED, "2026-11-05T10:20:00Z", ip));
-    await handleAdClick(id, clickReq(id, "Googlebot/2.1 (+http://www.google.com/bot.html)"), deps(repo, ENABLED));
+    const at = (iso: string) => deps(repo, ENABLED, iso, ip);
+    const withToken = (iso: string) => `?t=${tokenFor(id, at(iso))}`;
+    await handleAdClick(id, clickReq(id, HUMAN_UA, withToken("2026-11-05T10:00:00Z")), at("2026-11-05T10:00:00Z"));
+    await handleAdClick(id, clickReq(id, HUMAN_UA, withToken("2026-11-05T10:03:00Z")), at("2026-11-05T10:03:00Z"));
+    await handleAdClick(id, clickReq(id, HUMAN_UA, withToken("2026-11-05T10:20:00Z")), at("2026-11-05T10:20:00Z"));
+    const bot = deps(repo, ENABLED, NOW, freshIp(), "Googlebot/2.1 (+http://www.google.com/bot.html)");
+    await handleAdClick(id, clickReq(id, bot.viewer.userAgent, `?t=${tokenFor(id, bot)}`), bot);
+    const noToken = deps(repo, ENABLED);
+    const r = await handleAdClick(id, clickReq(id), noToken);
+    assert.equal(r.status, 302, "il lettore viene comunque reindirizzato");
+    const foreign = deps(repo, ENABLED);
+    await handleAdClick(id, clickReq(id, HUMAN_UA, `?t=${tokenFor(id, noToken)}`), foreign);
+    const stale = deps(repo, ENABLED);
+    await handleAdClick(id, clickReq(id, HUMAN_UA, `?t=${tokenFor(id, stale, 5 * 60 * 60 * 1000)}`), stale);
     assert.deepEqual(
-      repo.events.map((e) => [e.is_bot, e.is_duplicate]),
+      repo.events.map((e) => [e.is_bot, e.is_duplicate, e.is_unverified, e.filter_reason]),
       [
-        [false, false],
-        [false, true],
-        [false, false],
-        [true, false],
+        [false, false, false, null],
+        [false, true, false, "ripetuto nella finestra di deduplica"],
+        [false, false, false, null],
+        [true, false, false, "user-agent automatizzato"],
+        [false, false, true, "token mancante"],
+        [false, false, true, "token non valido per questo lettore o posizionamento"],
+        [false, false, true, "token scaduto"],
       ],
     );
     assert.ok(repo.events.every((e) => /^[a-f0-9]{32}$/.test(e.visitor_hash!)), "nessun IP in chiaro");
   });
+});
 
-  it("impressioni: payload validato, deduplica, prefetch filtrato, rate limit", async () => {
+describe("rilievo 2: impressioni solo con token di visualizzazione valido", () => {
+  const setup = () => {
     const repo = new MemoryAdsRepository();
     seedActiveCampaign(repo, { markSynthetic: false });
-    const id = synthPlacement(3).id;
-    const ip = freshIp();
-    const d = deps(repo, ENABLED, "2026-11-05T10:00:00Z", ip);
-    assert.equal((await handleAdEvent(beacon(id), d)).status, 204);
-    assert.equal((await handleAdEvent(beacon(id), d)).status, 204);
-    assert.equal((await handleAdEvent(beacon(id, HUMAN_UA, { "sec-purpose": "prefetch" }), d)).status, 204);
-    assert.deepEqual(repo.events.map((e) => [e.is_duplicate, e.is_bot]), [[false, false], [true, false], [false, true]]);
+    return { repo, id: synthPlacement(3).id };
+  };
 
+  it("beacon con token valido accettato; ripetizione e prefetch registrati ma non idonei", async () => {
+    const { repo, id } = setup();
+    const d = deps(repo, ENABLED);
+    const t = tokenFor(id, d);
+    assert.equal((await handleAdEvent(beacon(id, t), d)).status, 204);
+    assert.equal((await handleAdEvent(beacon(id, t), d)).status, 204);
+    assert.equal((await handleAdEvent(beacon(id, t, HUMAN_UA, { "sec-purpose": "prefetch" }), d)).status, 204);
+    assert.deepEqual(repo.events.map((e) => [e.is_duplicate, e.is_bot, e.is_unverified]), [[false, false, false], [true, false, false], [false, true, false]]);
+  });
+
+  it("rifiutati SENZA registrazione: token mancante, falsificato, di altro lettore/posizionamento, precoce, scaduto, futuro, cross-site", async () => {
+    const { repo, id } = setup();
+    const d = deps(repo, ENABLED);
+    const other = deps(repo, ENABLED);
+    const cases: [string, Request][] = [
+      ["mancante", beacon(id, null)],
+      ["malformato", beacon(id, "abc")],
+      ["falsificato", beacon(id, `${tokenFor(id, d).split(".")[0]}.${"0".repeat(32)}`)],
+      ["altro lettore (IP)", beacon(id, tokenFor(id, other))],
+      ["altro lettore (user-agent)", beacon(id, tokenFor(id, d), "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/130.0 Safari/537.36")],
+      ["altro posizionamento", beacon(id, tokenFor(synthPlacement(1).id, d))],
+      ["prima di 1 s di visibilità", beacon(id, tokenFor(id, d, 500))],
+      ["scaduto (> 30 min)", beacon(id, tokenFor(id, d, 31 * 60 * 1000))],
+      ["emesso nel futuro", beacon(id, tokenFor(id, d, -60_000))],
+      ["cross-site", beacon(id, tokenFor(id, d), HUMAN_UA, { "sec-fetch-site": "cross-site" })],
+    ];
+    for (const [label, req] of cases) {
+      const res = await handleAdEvent(req, d);
+      assert.equal(res.status, 403, label);
+    }
+    assert.equal(repo.events.length, 0, "nessun evento registrato");
+  });
+
+  it("payload non validi e posizionamenti inesistenti; rate limit per IP", async () => {
+    const { repo, id } = setup();
     const bad = [
       new Request(`${ORIGIN}/api/ads/event/`, { method: "POST", body: "{not json" }),
       new Request(`${ORIGIN}/api/ads/event/`, { method: "POST", body: JSON.stringify({ type: "click", placement: id }) }),
       new Request(`${ORIGIN}/api/ads/event/`, { method: "POST", body: JSON.stringify({ type: "impression", placement: "x" }) }),
-      new Request(`${ORIGIN}/api/ads/event/`, { method: "POST", body: JSON.stringify({ type: "impression", placement: id, pad: "x".repeat(1000) }) }),
+      new Request(`${ORIGIN}/api/ads/event/`, { method: "POST", body: JSON.stringify(["impression"]) }),
     ];
     for (const r of bad) assert.equal((await handleAdEvent(r, deps(repo, ENABLED))).status, 400);
-    assert.equal((await handleAdEvent(beacon("00000000-0000-4000-8000-00000000ffff"), deps(repo, ENABLED))).status, 404);
+    const oversize = new Request(`${ORIGIN}/api/ads/event/`, { method: "POST", body: JSON.stringify({ type: "impression", placement: id, pad: "x".repeat(1000) }) });
+    assert.equal((await handleAdEvent(oversize, deps(repo, ENABLED))).status, 413);
+    const ghost = "00000000-0000-4000-8000-00000000ffff";
+    const d = deps(repo, ENABLED);
+    assert.equal((await handleAdEvent(beacon(ghost, tokenFor(ghost, d)), d)).status, 404);
 
     const flood = deps(repo, ENABLED, "2026-11-05T11:00:00Z", freshIp());
+    const t = tokenFor(id, flood);
     const statuses: number[] = [];
-    for (let i = 0; i < 65; i++) statuses.push((await handleAdEvent(beacon(id), flood)).status);
+    for (let i = 0; i < 65; i++) statuses.push((await handleAdEvent(beacon(id, t), flood)).status);
     assert.equal(statuses.filter((s) => s === 429).length, 5);
   });
+});
 
-  it("senza secret di hashing il tracciamento resta spento (nessuna registrazione)", async () => {
+describe("rilievo 6: limite effettivo alla lettura dei body", () => {
+  const streamOf = (totalBytes: number) => {
+    let pulled = 0;
+    const chunk = new Uint8Array(16 * 1024).fill(97);
+    const stream = new ReadableStream<Uint8Array>({
+      pull(c) {
+        if (pulled >= totalBytes) return c.close();
+        pulled += chunk.length;
+        c.enqueue(chunk);
+      },
+    });
+    return { stream, pulled: () => pulled };
+  };
+
+  it("body in streaming senza Content-Length: lettura interrotta al limite, 413", async () => {
     const repo = new MemoryAdsRepository();
     seedActiveCampaign(repo, { markSynthetic: false });
-    const env = { ADS_ENABLED: "true" };
-    assert.equal((await handleAdEvent(beacon(synthPlacement(1).id), deps(repo, env))).status, 404);
-    assert.equal((await handleAdClick(synthPlacement(1).id, clickReq(synthPlacement(1).id), deps(repo, env))).status, 302);
-    assert.equal(repo.events.length, 0);
+    const s = streamOf(5 * 1024 * 1024);
+    const req = new Request(`${ORIGIN}/api/ads/event/`, { method: "POST", body: s.stream, duplex: "half" } as RequestInit);
+    assert.equal(req.headers.get("content-length"), null);
+    const res = await handleAdEvent(req, deps(repo, ENABLED));
+    assert.equal(res.status, 413);
+    assert.ok(s.pulled() <= 64 * 1024, `letti ${s.pulled()} byte su 5 MB`);
+  });
+
+  it("admin: stream oltre 64 KB interrotto; Content-Length dichiarato oltre il limite rifiutato subito", async () => {
+    const repo = new MemoryAdsRepository();
+    const s = streamOf(10 * 1024 * 1024);
+    const req = new Request(`${ORIGIN}/api/ads/admin/advertisers/`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${ADMIN_TOKEN}` },
+      body: s.stream,
+      duplex: "half",
+    } as RequestInit);
+    assert.equal((await handleAdminAdvertisers(req, deps(repo, ENABLED))).status, 413);
+    assert.ok(s.pulled() <= 128 * 1024, `letti ${s.pulled()} byte su 10 MB`);
+    const declared = new Request(`${ORIGIN}/api/ads/admin/advertisers/`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${ADMIN_TOKEN}`, "content-length": String(10 * 1024 * 1024) },
+      body: "{}",
+    });
+    assert.equal((await handleAdminAdvertisers(declared, deps(repo, ENABLED))).status, 413);
+  });
+
+  it("UTF-8 non valido rifiutato", async () => {
+    const repo = new MemoryAdsRepository();
+    const req = new Request(`${ORIGIN}/api/ads/admin/advertisers/`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${ADMIN_TOKEN}` },
+      body: new Uint8Array([0x7b, 0xff, 0xfe, 0x7d]),
+    });
+    assert.equal((await handleAdminAdvertisers(req, deps(repo, ENABLED))).status, 400);
   });
 });
 
@@ -331,15 +457,15 @@ describe("scenario sintetico completo: esclusiva fine articolo 30 giorni × 3 ar
     assert.equal((await rivalAct({ action: "mark", mark: "availability" })).status, 422);
     // Anche forzando lo stato a livello repository, il vincolo di esclusività blocca
     await assert.rejects(
-      repo.updateCampaign(rivalId, {
-        status: "approved",
-        written_confirmation_at: "x",
-        commercial_terms_approved_at: "x",
-        availability_verified_at: "x",
-        tax_contract_verified_at: "x",
-      }),
+      repo.updateCampaign(
+        rivalId,
+        { status: "approved", written_confirmation_at: "x", commercial_terms_approved_at: "x", availability_verified_at: "x", tax_contract_verified_at: "x" },
+        { actor: "forzatura", action: "status_changed" },
+        null,
+      ),
       /ads_placements_no_overlap/,
     );
+    assert.ok(!repo.audit.some((a) => a.actor === "forzatura"), "nessun audit per la modifica respinta");
 
     // Calendario disponibilità
     const cal = await call(handleAdminAvailability(adminReq("/api/ads/admin/availability/?slug=synth-articolo-b,synth-articolo-z&from=2026-11-01&to=2026-12-31"), d()));
@@ -390,8 +516,80 @@ describe("scenario sintetico completo: esclusiva fine articolo 30 giorni × 3 ar
   it("payload admin oltre il limite o senza actor: rifiutato", async () => {
     const repo = new MemoryAdsRepository();
     const big = adminReq("/api/ads/admin/advertisers/", { body: { actor: "test", notes: "x".repeat(70_000) } });
-    assert.equal((await handleAdminAdvertisers(big, deps(repo, ENABLED))).status, 400);
+    assert.equal((await handleAdminAdvertisers(big, deps(repo, ENABLED))).status, 413);
     const noActor = adminReq("/api/ads/admin/advertisers/", { body: { code: "synth-x" } });
     assert.equal((await handleAdminAdvertisers(noActor, deps(repo, ENABLED))).status, 400);
+  });
+
+  it("rilievo 4: se l'audit fallisce la modifica non avviene (nessun cambio senza traccia)", async () => {
+    const repo = new MemoryAdsRepository();
+    seedActiveCampaign(repo, { markSynthetic: false });
+    const id = "00000000-0000-4000-8000-0000000000a1";
+    repo.failNextAudit = true;
+    const res = await quietly(() =>
+      handleAdminCampaign(id, adminReq(`/api/ads/admin/campaigns/${id}/`, { body: { actor: "collaudo", action: "transition", to: "paused" } }), deps(repo, ENABLED)),
+    );
+    assert.equal(res.status, 500);
+    assert.equal(repo.campaigns.get(id)!.status, "active", "stato invariato");
+    assert.equal(repo.audit.length, 0);
+    const ok = await handleAdminCampaign(id, adminReq(`/api/ads/admin/campaigns/${id}/`, { body: { actor: "collaudo", action: "transition", to: "paused" } }), deps(repo, ENABLED));
+    assert.equal(ok.status, 200);
+    assert.deepEqual(repo.audit.map((a) => [a.action, a.from_status, a.to_status, a.actor]), [["status_changed", "active", "paused", "collaudo"]]);
+  });
+
+  it("rilievo 4: modifica concorrente rilevata (concorrenza ottimistica) → 409, nessuna modifica", async () => {
+    const repo = new MemoryAdsRepository();
+    seedActiveCampaign(repo, { markSynthetic: false });
+    const id = "00000000-0000-4000-8000-0000000000a1";
+    const snapshot = (await repo.getCampaignContext(id))!.campaign.updated_at;
+    await repo.updateCampaign(id, { status: "paused" }, { actor: "operatore-a", action: "status_changed" }, snapshot);
+    await assert.rejects(
+      repo.updateCampaign(id, { status: "completed" }, { actor: "operatore-b", action: "status_changed" }, snapshot),
+      /modifica concorrente/,
+    );
+    assert.equal(repo.campaigns.get(id)!.status, "paused");
+    assert.deepEqual(repo.audit.map((a) => a.actor), ["operatore-a"]);
+    // Campi fuori whitelist e actor mancante: respinti prima di qualsiasi modifica
+    await assert.rejects(repo.updateCampaign(id, { price_cents: 1 } as never, { actor: "x-op", action: "status_changed" }, null), /campo non modificabile/);
+    await assert.rejects(repo.updateCampaign(id, { status: "active" }, { actor: "", action: "status_changed" }, null), /actor obbligatorio/);
+    assert.equal(repo.audit.length, 1);
+  });
+
+  it("rilievo 7: le creatività si collegano ai posizionamenti per chiave, in qualsiasi ordine", async () => {
+    const repo = new MemoryAdsRepository();
+    const d = deps(repo, { ADS_ADMIN_TOKEN: ADMIN_TOKEN });
+    const adv = await handleAdminAdvertisers(
+      adminReq("/api/ads/admin/advertisers/", {
+        body: { actor: "test", code: "synth-keys", legal_name: "SYNTH keys", display_name: "SYNTH keys", allowed_domains: ["shop.example.test"], is_synthetic: true },
+      }),
+      d,
+    );
+    const advertiserId = ((await adv.json()) as any).advertiser.id;
+    const creative = (key: string) => ({ key, label: `SYNTH ${key}`, alt_text: `alt ${key}`, headline: key, destination_url: `https://shop.example.test/${key}` });
+    const res = await handleAdminCampaigns(
+      adminReq("/api/ads/admin/campaigns/", {
+        body: {
+          actor: "test",
+          code: "synth-keys-campaign",
+          advertiser_id: advertiserId,
+          name: "SYNTH chiavi",
+          starts_on: "2026-12-01",
+          ends_on: "2026-12-10",
+          is_synthetic: true,
+          creatives: [creative("zeta"), creative("alfa"), creative("beta")],
+          placements: [
+            { article_slug: "synth-uno", position_code: "article_end", creative_key: "beta" },
+            { article_slug: "synth-due", position_code: "article_end", creative_key: "zeta" },
+            { article_slug: "synth-tre", position_code: "article_end", creative_key: "alfa" },
+          ],
+        },
+      }),
+      d,
+    );
+    assert.equal(res.status, 201);
+    const body = (await res.json()) as any;
+    const byId = new Map<string, any>(body.creatives.map((c: any) => [c.id, c]));
+    const mapping = Object.fromEntries(body.placements.map((p: any) => [p.article_slug, byId.get(p.creative_id).creative_key]));
+    assert.deepEqual(mapping, { "synth-uno": "beta", "synth-due": "zeta", "synth-tre": "alfa" });
   });
 });

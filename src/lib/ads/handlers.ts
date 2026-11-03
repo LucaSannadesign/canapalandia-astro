@@ -20,19 +20,32 @@ import {
   type ChecklistMark,
 } from "./campaigns";
 import { globalDestinationAllowlist, isAdsEnabled, isTrackingConfigured, type AdsEnv } from "./config";
+
+/** Limiti effettivi di lettura dei body (byte). */
+export const EVENT_BODY_LIMIT = 512;
+export const ADMIN_BODY_LIMIT = 64 * 1024;
 import { addDays, isIsoDate, romeDate } from "./dates";
 import { checkDestination, hostMatchesDomain } from "./destination";
-import { UUID_RE, authorizeAdmin, empty, json, notFound, readJsonBody } from "./http";
+import { UUID_RE, authorizeAdmin, bodyError, empty, json, notFound, readJsonBody } from "./http";
 import { buildCampaignReport, reportToCsv } from "./reports";
-import { AdsConflictError, type AdsRepository, type AdvertiserInput } from "./repository";
-import { DEDUP_WINDOW_MS, EVENT_RATE_LIMIT, classifyEvent, readSignals, visitorHash } from "./tracking";
+import { AdsConflictError, type AdsRepository, type AdvertiserInput, type AdvertiserPatch, type CampaignPatch, type CreativePatch } from "./repository";
+import {
+  DEDUP_WINDOW_MS,
+  EVENT_RATE_LIMIT,
+  classifyEvent,
+  issueViewToken,
+  readSignals,
+  verifyViewToken,
+  visitorHash,
+  type TokenCheck,
+  type Viewer,
+} from "./tracking";
 import {
   AD_POSITIONS,
   CAMPAIGN_STATUSES,
   NEGOTIATION_STATUSES,
   type AdPosition,
   type CampaignStatus,
-  type Creative,
   type NegotiationStatus,
 } from "./types";
 
@@ -63,6 +76,8 @@ export interface ServedAd {
   imagePath: string | null;
   imageWidth: number | null;
   imageHeight: number | null;
+  /** Token di visualizzazione firmato, legato a posizionamento, istante e lettore. */
+  viewToken: string;
   clickHref: string;
   destinationHost: string;
 }
@@ -70,17 +85,23 @@ export interface ServedAd {
 const AD_LOOKUP_TIMEOUT_MS = 1500;
 
 /**
- * Restituisce l'annuncio da mostrare o null. Con ADS_ENABLED diverso da "true" ritorna null
- * SENZA interrogare il database. Qualsiasi errore o lentezza produce null: l'articolo non si rompe mai.
+ * Restituisce l'annuncio da mostrare o null. Fail-closed:
+ * - ADS_ENABLED diverso da "true" → null SENZA interrogare il database;
+ * - tracciamento non configurato (ADS_HASH_SECRET assente o corto) → null senza query:
+ *   un annuncio non misurabile non viene erogato;
+ * - lettore non identificabile (nessun IP/user-agent per firmare il token) → null;
+ * - qualsiasi errore o lentezza del database → null: l'articolo non si rompe mai.
  */
 export async function getServableAd(
   articleSlug: string,
   position: AdPosition,
-  deps: AdsDeps & { allowSynthetic?: boolean },
+  deps: AdsDeps & { viewer?: Viewer; allowSynthetic?: boolean },
 ): Promise<ServedAd | null> {
-  if (!isAdsEnabled(deps.env)) return null;
+  if (!isTrackingConfigured(deps.env)) return null;
+  if (!deps.viewer) return null;
   if (!(AD_POSITIONS as readonly string[]).includes(position)) return null;
-  const today = romeDate(nowOf(deps));
+  const now = nowOf(deps);
+  const today = romeDate(now);
   const globalAllowlist = globalDestinationAllowlist(deps.env);
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
@@ -97,6 +118,7 @@ export async function getServableAd(
     const dest = checkDestination(bundle.creative.destination_url, allowedDomainsFor(bundle.advertiser, globalAllowlist));
     if (!dest.ok) return null;
     const c = bundle.creative;
+    const viewToken = issueViewToken(deps.env.ADS_HASH_SECRET!, bundle.placement.id, deps.viewer, now);
     return {
       placementId: bundle.placement.id,
       campaignCode: bundle.campaign.code,
@@ -109,7 +131,8 @@ export async function getServableAd(
       imagePath: c.image_path,
       imageWidth: c.image_width,
       imageHeight: c.image_height,
-      clickHref: `/api/ads/click/${bundle.placement.id}/`,
+      viewToken,
+      clickHref: `/api/ads/click/${bundle.placement.id}/?t=${encodeURIComponent(viewToken)}`,
       destinationHost: dest.url.hostname,
     };
   } catch (err) {
@@ -129,6 +152,7 @@ async function recordEvent(
   request: Request,
   bundle: { placement: { id: string; campaign_id: string } },
   type: "impression" | "click",
+  token: TokenCheck,
 ): Promise<void> {
   const now = nowOf(deps);
   const signals = readSignals(request);
@@ -136,7 +160,7 @@ async function recordEvent(
   const since = new Date(now.getTime() - DEDUP_WINDOW_MS[type]).toISOString();
   const repo = deps.repo();
   const last = await repo.lastEventAt(bundle.placement.id, type, hash, since);
-  const cls = classifyEvent({ signals, lastSimilarEventAt: last, type, now });
+  const cls = classifyEvent({ signals, lastSimilarEventAt: last, type, now, token });
   await repo.insertEvent({
     occurred_at: now.toISOString(),
     event_type: type,
@@ -151,21 +175,36 @@ function rateLimited(deps: AdsDeps, bucket: string): boolean {
   return !checkRateLimit(`ads-${bucket}:${deps.clientIp ?? "unknown"}`, EVENT_RATE_LIMIT.max, EVENT_RATE_LIMIT.windowMs).allowed;
 }
 
-/** POST /api/ads/event/ — beacon di impressione `{ "type": "impression", "placement": "<uuid>" }`. */
+const viewerOf = (deps: AdsDeps, request: Request): Viewer => ({
+  ip: deps.clientIp ?? "",
+  userAgent: request.headers.get("user-agent"),
+});
+
+/**
+ * POST /api/ads/event/ — beacon di impressione `{ "type": "impression", "placement": "<uuid>", "token": "<token>" }`.
+ * Rifiutato SENZA registrare (403) se: richiesta cross-site, token mancante/non valido/scaduto/troppo
+ * precoce o emesso per un altro lettore. I beacon accettati sono poi filtrati (bot, ripetizioni).
+ */
 export async function handleAdEvent(request: Request, deps: AdsDeps): Promise<Response> {
   if (!isTrackingConfigured(deps.env)) return notFound();
   if (rateLimited(deps, "event")) return json({ error: "rate_limited" }, 429, { "Retry-After": "60" });
-  const body = (await readJsonBody(request, 512)) as Record<string, unknown> | null;
-  if (!body || body.type !== "impression" || typeof body.placement !== "string" || !UUID_RE.test(body.placement)) {
+  const fetchSite = request.headers.get("sec-fetch-site");
+  if (fetchSite && fetchSite !== "same-origin") return json({ error: "cross_site" }, 403);
+  const parsed = await readJsonBody(request, EVENT_BODY_LIMIT);
+  if (!parsed.ok) return bodyError(parsed.error);
+  const body = parsed.value as Record<string, unknown> | null;
+  if (!body || typeof body !== "object" || body.type !== "impression" || typeof body.placement !== "string" || !UUID_RE.test(body.placement)) {
     return json({ error: "invalid_event" }, 400);
   }
+  const now = nowOf(deps);
+  const token = verifyViewToken(deps.env.ADS_HASH_SECRET!, body.token, body.placement, viewerOf(deps, request), now, "impression");
+  if (!token.ok) return json({ error: "invalid_token" }, 403);
   try {
     const bundle = await deps.repo().getPlacementBundle(body.placement);
-    const today = romeDate(nowOf(deps));
-    if (!bundle || !isServable(bundle, today, { globalAllowlist: globalDestinationAllowlist(deps.env) }).servable) {
+    if (!bundle || !isServable(bundle, romeDate(now), { globalAllowlist: globalDestinationAllowlist(deps.env) }).servable) {
       return notFound();
     }
-    await recordEvent(deps, request, bundle, "impression");
+    await recordEvent(deps, request, bundle, "impression", token);
     return empty(204);
   } catch (err) {
     log("registrazione impressione fallita", err);
@@ -174,18 +213,20 @@ export async function handleAdEvent(request: Request, deps: AdsDeps): Promise<Re
 }
 
 /**
- * GET /api/ads/click/:placement/ — registra il clic e reindirizza alla destinazione APPROVATA salvata
- * nel database. Nessun parametro della richiesta influenza la destinazione.
+ * GET /api/ads/click/:placement/?t=<token> — registra il clic e reindirizza alla destinazione APPROVATA
+ * salvata nel database. Nessun parametro della richiesta influenza la destinazione. Senza token valido
+ * il lettore viene comunque reindirizzato, ma il clic è registrato come non verificato.
+ * Con tracciamento non configurato non esistono annunci da cliccare: 404.
  */
 export async function handleAdClick(placementId: string, request: Request, deps: AdsDeps): Promise<Response> {
-  if (!isAdsEnabled(deps.env) || !UUID_RE.test(placementId)) return notFound();
+  if (!isTrackingConfigured(deps.env) || !UUID_RE.test(placementId)) return notFound();
   const globalAllowlist = globalDestinationAllowlist(deps.env);
+  const now = nowOf(deps);
   let destination: URL;
   let bundle;
   try {
     bundle = await deps.repo().getPlacementBundle(placementId);
-    const today = romeDate(nowOf(deps));
-    if (!bundle || !bundle.creative || !isServable(bundle, today, { globalAllowlist }).servable) return notFound();
+    if (!bundle || !bundle.creative || !isServable(bundle, romeDate(now), { globalAllowlist }).servable) return notFound();
     const dest = checkDestination(bundle.creative.destination_url, allowedDomainsFor(bundle.advertiser, globalAllowlist));
     if (!dest.ok) {
       log(`destinazione rifiutata per ${placementId}: ${dest.reason}`);
@@ -197,9 +238,17 @@ export async function handleAdClick(placementId: string, request: Request, deps:
     return notFound();
   }
 
-  if (isTrackingConfigured(deps.env) && !rateLimited(deps, "click")) {
+  if (!rateLimited(deps, "click")) {
+    const token = verifyViewToken(
+      deps.env.ADS_HASH_SECRET!,
+      new URL(request.url).searchParams.get("t"),
+      placementId,
+      viewerOf(deps, request),
+      now,
+      "click",
+    );
     try {
-      await recordEvent(deps, request, bundle, "click");
+      await recordEvent(deps, request, bundle, "click", token);
     } catch (err) {
       // Il lettore viene comunque reindirizzato: il clic mancante risulterà nei log, non nel report.
       log("registrazione clic fallita", err);
@@ -212,7 +261,6 @@ export async function handleAdClick(placementId: string, request: Request, deps:
 // Area admin (API JSON protette da token)
 // ---------------------------------------------------------------------------
 
-const ADMIN_BODY_LIMIT = 64 * 1024;
 
 async function withAdmin(request: Request, deps: AdsDeps, fn: (repo: AdsRepository) => Promise<Response>): Promise<Response> {
   if (rateLimitedAdmin(deps)) return json({ error: "rate_limited" }, 429, { "Retry-After": "600" });
@@ -321,16 +369,17 @@ export function handleAdminAdvertisers(request: Request, deps: AdsDeps): Promise
       }
       return json({ advertisers: await repo.listAdvertisers() });
     }
-    const body = (await readJsonBody(request, ADMIN_BODY_LIMIT)) as Record<string, unknown> | null;
-    if (!body) return json({ error: "invalid_body" }, 400);
+    const read = await readJsonBody(request, ADMIN_BODY_LIMIT);
+    if (!read.ok) return bodyError(read.error);
+    const body = read.value as Record<string, unknown> | null;
+    if (!body || typeof body !== "object" || Array.isArray(body)) return json({ error: "invalid_body" }, 400);
     const actor = readActor(body);
     if (!actor) return json({ error: "actor obbligatorio (chi esegue l'operazione)" }, 400);
 
     if (request.method === "POST") {
       const parsed = parseAdvertiser(body, false);
       if ("errors" in parsed) return json({ error: "validation", details: parsed.errors }, 422);
-      const advertiser = await repo.createAdvertiser(parsed.value as AdvertiserInput);
-      await repo.appendAudit({ campaign_id: null, action: "advertiser_created", from_status: null, to_status: advertiser.negotiation_status, actor, details: { advertiser: advertiser.code } });
+      const advertiser = await repo.createAdvertiser(parsed.value as AdvertiserInput, actor);
       return json({ advertiser }, 201);
     }
     if (request.method === "PATCH") {
@@ -339,15 +388,7 @@ export function handleAdminAdvertisers(request: Request, deps: AdsDeps): Promise
       if (!current) return notFound();
       const parsed = parseAdvertiser(body, true);
       if ("errors" in parsed) return json({ error: "validation", details: parsed.errors }, 422);
-      const advertiser = await repo.updateAdvertiser(body.id, parsed.value);
-      await repo.appendAudit({
-        campaign_id: null,
-        action: "advertiser_updated",
-        from_status: current.negotiation_status,
-        to_status: advertiser.negotiation_status,
-        actor,
-        details: { advertiser: advertiser.code, fields: Object.keys(parsed.value) },
-      });
+      const advertiser = await repo.updateAdvertiser(body.id, parsed.value as AdvertiserPatch, actor);
       return json({ advertiser });
     }
     return json({ error: "method_not_allowed" }, 405);
@@ -375,6 +416,7 @@ function campaignView(ctx: CampaignContext, env: AdsEnv, conflicts: ReturnType<t
         would_serve_if_enabled: r.servable,
         reason: r.servable ? null : r.reason,
         ads_enabled: isAdsEnabled(env),
+        tracking_configured: isTrackingConfigured(env),
       };
     }),
   };
@@ -389,16 +431,17 @@ export function handleAdminCampaigns(request: Request, deps: AdsDeps): Promise<R
       return json({ campaigns: await repo.listCampaigns(advertiserId ? { advertiser_id: advertiserId } : undefined) });
     }
     if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405);
-    const body = (await readJsonBody(request, ADMIN_BODY_LIMIT)) as Record<string, unknown> | null;
-    if (!body) return json({ error: "invalid_body" }, 400);
+    const read = await readJsonBody(request, ADMIN_BODY_LIMIT);
+    if (!read.ok) return bodyError(read.error);
+    const body = read.value as Record<string, unknown> | null;
+    if (!body || typeof body !== "object" || Array.isArray(body)) return json({ error: "invalid_body" }, 400);
     const actor = readActor(body);
     if (!actor) return json({ error: "actor obbligatorio (chi esegue l'operazione)" }, 400);
     if (typeof body.advertiser_id !== "string" || !UUID_RE.test(body.advertiser_id)) return json({ error: "advertiser_id non valido" }, 422);
     const advertiser = await repo.getAdvertiser(body.advertiser_id);
     const parsed = validateCampaignDraft(body, advertiser, globalDestinationAllowlist(deps.env));
     if (!parsed.ok) return json({ error: "validation", details: parsed.errors }, 422);
-    const ctx = await repo.createCampaignDraft(parsed.value);
-    await repo.appendAudit({ campaign_id: ctx.campaign.id, action: "campaign_created", from_status: null, to_status: "draft", actor, details: { code: ctx.campaign.code } });
+    const ctx = await repo.createCampaignDraft(parsed.value, actor);
     const conflicts = await conflictsFor(repo, ctx);
     return json(campaignView(ctx, deps.env, conflicts, romeDate(nowOf(deps))), 201);
   });
@@ -420,13 +463,16 @@ export function handleAdminCampaign(id: string, request: Request, deps: AdsDeps)
     if (request.method === "GET") return json(campaignView(ctx, deps.env, await conflictsFor(repo, ctx), today));
     if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405);
 
-    const body = (await readJsonBody(request, ADMIN_BODY_LIMIT)) as Record<string, unknown> | null;
-    if (!body) return json({ error: "invalid_body" }, 400);
+    const read = await readJsonBody(request, ADMIN_BODY_LIMIT);
+    if (!read.ok) return bodyError(read.error);
+    const body = read.value as Record<string, unknown> | null;
+    if (!body || typeof body !== "object" || Array.isArray(body)) return json({ error: "invalid_body" }, 400);
     const actor = readActor(body);
     if (!actor) return json({ error: "actor obbligatorio (chi esegue l'operazione)" }, 400);
     const confirm = typeof body.confirm === "string" ? body.confirm : undefined;
-    const audit = (action: string, details: Record<string, unknown>, to: CampaignStatus | null = null) =>
-      repo.appendAudit({ campaign_id: id, action, from_status: ctx.campaign.status, to_status: to, actor, details });
+    // Modifica e audit nella stessa transazione; updated_at letto sopra = concorrenza ottimistica
+    const updateCampaign = (patch: CampaignPatch, action: string, details: Record<string, unknown>) =>
+      repo.updateCampaign(id, patch, { actor, action, details }, ctx.campaign.updated_at);
 
     if (body.action === "mark") {
       const mark = body.mark as ChecklistMark;
@@ -435,11 +481,10 @@ export function handleAdminCampaign(id: string, request: Request, deps: AdsDeps)
       const conflicts = mark === "availability" ? await conflictsFor(repo, ctx) : [];
       const check = checkMark(ctx, mark, { ref, confirm, conflicts, globalAllowlist });
       if (!check.ok) return json({ error: "precondition_failed", details: check.errors }, 422);
-      const patch: Record<string, unknown> = { [CHECKLIST_MARKS[mark]]: now.toISOString() };
+      const patch: CampaignPatch = { [CHECKLIST_MARKS[mark]]: now.toISOString() };
       if (mark === "written_confirmation") patch.written_confirmation_ref = ref;
       if (mark === "authorization") patch.activation_authorized_by = actor;
-      await repo.updateCampaign(id, patch);
-      await audit(`checklist_${mark}`, { ref: ref ?? null });
+      await updateCampaign(patch, `checklist_${mark}`, { ref: ref ?? null });
       const updated = (await repo.getCampaignContext(id))!;
       return json(campaignView(updated, deps.env, await conflictsFor(repo, updated), today));
     }
@@ -452,7 +497,7 @@ export function handleAdminCampaign(id: string, request: Request, deps: AdsDeps)
       if (!creative) return json({ error: "creative_id non appartiene alla campagna" }, 422);
       const decision = body.decision;
       if (decision !== "approved" && decision !== "rejected") return json({ error: "decision: approved | rejected" }, 422);
-      let patch: Partial<Creative>;
+      let patch: CreativePatch;
       if (decision === "approved") {
         if (body.landing_reviewed !== true) return json({ error: "precondition_failed", details: ["confermare landing_reviewed: true dopo aver visto la landing page"] }, 422);
         const dest = checkDestination(creative.destination_url, allowedDomainsFor(ctx.advertiser, globalAllowlist));
@@ -461,8 +506,11 @@ export function handleAdminCampaign(id: string, request: Request, deps: AdsDeps)
       } else {
         patch = { review_status: "rejected", approved_at: null, approved_by: null, landing_reviewed_at: null };
       }
-      await repo.updateCreative(creative.id, patch);
-      await audit(`creative_${decision}`, { creative: creative.id, destination: creative.destination_url });
+      await repo.reviewCreative(creative.id, patch, {
+        actor,
+        action: `creative_${decision}`,
+        details: { destination: creative.destination_url },
+      });
       const updated = (await repo.getCampaignContext(id))!;
       return json(campaignView(updated, deps.env, await conflictsFor(repo, updated), today));
     }
@@ -473,8 +521,7 @@ export function handleAdminCampaign(id: string, request: Request, deps: AdsDeps)
       const conflicts = await conflictsFor(repo, ctx);
       const check = checkTransition(ctx, { to, confirm, today, conflicts, globalAllowlist });
       if (!check.ok) return json({ error: "precondition_failed", details: check.errors }, 422);
-      await repo.updateCampaign(id, { status: to });
-      await audit("status_changed", { reason: typeof body.reason === "string" ? body.reason.slice(0, 500) : null }, to);
+      await updateCampaign({ status: to }, "status_changed", { reason: typeof body.reason === "string" ? body.reason.slice(0, 500) : null });
       const updated = (await repo.getCampaignContext(id))!;
       return json(campaignView(updated, deps.env, await conflictsFor(repo, updated), today));
     }

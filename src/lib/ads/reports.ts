@@ -56,17 +56,18 @@ export interface CampaignReport {
 }
 
 export const METHODOLOGY = [
-  "Impressione registrata: il box sponsorizzato è rimasto visibile almeno al 50% per almeno 1 secondo nel browser del lettore (IntersectionObserver), segnalato con una richiesta first-party senza cookie.",
+  "Impressione registrata: il box sponsorizzato è rimasto visibile almeno al 50% per 1 secondo continuo, con la scheda in primo piano, nel browser del lettore (IntersectionObserver e Page Visibility), segnalato con una richiesta first-party senza cookie e con un token di visualizzazione firmato dal server per quel lettore e quel rendering.",
   "Clic registrato: passaggio dal redirect server-side di Canapalandia verso la destinazione approvata.",
-  "Evento idoneo: evento registrato esclusi user-agent automatizzati noti, prefetch/prerender e ripetizioni dello stesso visitatore pseudonimo entro 30 minuti (impressioni) o 10 minuti (clic).",
+  "Evento idoneo: evento registrato esclusi user-agent automatizzati noti, prefetch/prerender, clic senza token di visualizzazione valido e ripetizioni dello stesso visitatore pseudonimo entro 30 minuti (impressioni) o 10 minuti (clic).",
   "CTR: clic idonei / impressioni idonee × 100, calcolato solo se le impressioni idonee sono maggiori di zero.",
   "Il visitatore pseudonimo è un HMAC giornaliero troncato di IP e user-agent: non è reversibile, non è collegabile tra giorni diversi e serve solo alla deduplica.",
-  "I dati grezzi sono conservati al massimo 35 giorni; oltre restano solo aggregati giornalieri.",
+  "I dati grezzi sono conservati al massimo 35 giorni (lo pseudonimo al massimo 2 giorni); oltre restano solo aggregati giornalieri.",
 ];
 
 export const LIMITATIONS = [
   "Le impressioni senza JavaScript, con blocco degli annunci o con chiusura della pagina prima di 1 secondo non sono registrate: il valore è un minimo verificabile, non il totale delle visualizzazioni.",
   "Il filtro dei bot riconosce solo automatismi che si dichiarano o mostrano segnali evidenti; bot evoluti possono non essere esclusi.",
+  "La visibilità è riportata dal browser: il server non può verificare che una persona abbia guardato il box. Un client automatizzato che riceve davvero la pagina ed esegue il JavaScript può produrre eventi formalmente validi.",
   "Clic unici non misurati: con un identificativo pseudonimo giornaliero non esiste una metodologia affidabile e conforme alla privacy per contarli.",
   "Conversioni, vendite e comportamento sul sito dell'inserzionista non sono misurati da Canapalandia.",
   "Il limite di frequenza è applicato per istanza serverless: in caso di traffico anomalo distribuito alcune richieste possono essere registrate e poi classificate come non idonee.",

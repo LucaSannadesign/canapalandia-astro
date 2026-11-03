@@ -16,7 +16,7 @@ import { globalDestinationAllowlist, isAdsEnabled, isTrackingConfigured } from "
 import { addDays, isIsoDate, rangesOverlap, romeDate } from "../src/lib/ads/dates.ts";
 import { checkDestination, isSafeImagePath } from "../src/lib/ads/destination.ts";
 import { buildCampaignReport, campaignWeeks, csvCell, reportToCsv } from "../src/lib/ads/reports.ts";
-import { automatedTrafficReason, classifyEvent, visitorHash } from "../src/lib/ads/tracking.ts";
+import { automatedTrafficReason, classifyEvent, issueViewToken, verifyViewToken, visitorHash } from "../src/lib/ads/tracking.ts";
 import type { DailyStat } from "../src/lib/ads/types.ts";
 import { HUMAN_UA, SCENARIO_ARTICLES, synthAdvertiser, synthCampaign, synthCreative, synthPlacement } from "./support/adsFixtures.ts";
 
@@ -281,6 +281,27 @@ describe("tracciamento", () => {
     assert.notEqual(a, visitorHash("s".repeat(40), "2026-11-06", "203.0.113.7", HUMAN_UA));
     assert.match(a, /^[a-f0-9]{32}$/);
     assert.equal(a.includes("203"), false);
+  });
+  it("token di visualizzazione: legato a posizionamento e lettore, età minima/massima, confronto a tempo costante", () => {
+    const secret = "s".repeat(40);
+    const viewer = { ip: "203.0.113.7", userAgent: HUMAN_UA };
+    const issued = new Date("2026-11-05T23:59:59.500Z");
+    const t = issueViewToken(secret, "p1", viewer, issued);
+    assert.match(t, /^\d{13}\.[a-f0-9]{32}$/);
+    assert.equal(t.includes("203"), false, "il token non contiene l'IP");
+    const at = (ms: number) => new Date(issued.getTime() + ms);
+    assert.deepEqual(verifyViewToken(secret, t, "p1", viewer, at(1000), "impression"), { ok: true });
+    assert.deepEqual(verifyViewToken(secret, t, "p1", viewer, at(2 * 60 * 60 * 1000), "click"), { ok: true }, "dopo mezzanotte resta valido");
+    assert.equal(verifyViewToken(secret, t, "p1", viewer, at(999), "impression").ok, false);
+    assert.equal(verifyViewToken(secret, t, "p1", viewer, at(30 * 60 * 1000 + 1), "impression").ok, false);
+    assert.equal(verifyViewToken(secret, t, "p2", viewer, at(1000), "impression").ok, false);
+    assert.equal(verifyViewToken(secret, t, "p1", { ...viewer, ip: "203.0.113.8" }, at(1000), "impression").ok, false);
+    assert.equal(verifyViewToken("x".repeat(40), t, "p1", viewer, at(1000), "impression").ok, false, "altro secret");
+    for (const bad of [null, "", "1.2", `${t}x`, t.toUpperCase()]) assert.equal(verifyViewToken(secret, bad, "p1", viewer, at(1000), "impression").ok, false);
+  });
+  it("clic con token non valido: registrato come non verificato", () => {
+    const c = classifyEvent({ signals: { userAgent: HUMAN_UA, purpose: null }, type: "click", now: new Date(), lastSimilarEventAt: null, token: { ok: false, reason: "token mancante" } });
+    assert.deepEqual(c, { is_bot: false, is_duplicate: false, is_unverified: true, filter_reason: "token mancante" });
   });
   it("ripetizioni nella finestra: registrate ma non idonee", () => {
     const now = new Date("2026-11-05T10:00:00Z");
