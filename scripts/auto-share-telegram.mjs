@@ -598,7 +598,8 @@ async function main() {
     console.log(`[auto-share] Already shared posts in state: ${sentPosts.length}`);
 
     // 2. Escludi draft/non pubblicati (se segnali presenti)
-    const publishablePosts = allPosts.filter(isPublishedPost);
+    // Editorial approval is for the blog only; social distribution for this slug is not authorized.
+    const publishablePosts = allPosts.filter((post) => isPublishedPost(post) && post.slug !== "infusi-foglie-canapa-regole-ue-2027");
     console.log(`[auto-share] Publishable posts after draft filter: ${publishablePosts.length}`);
     let selectedPost = null;
 
