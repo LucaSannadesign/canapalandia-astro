@@ -495,7 +495,8 @@ async function main() {
   console.log(`[social-agent] Starting${DRY_RUN ? " (dry-run)" : ""}...`);
   console.log(`[social-agent] Channels: ${CHANNELS.join(", ")}`);
   const xml = await fetchText(RSS_URL, "application/rss+xml,application/xml,text/xml");
-  const posts = parseFeed(xml);
+  // No automatic Make/social delivery for the editorially approved blog-only article.
+  const posts = parseFeed(xml).filter((post) => post.slug !== "infusi-foglie-canapa-regole-ue-2027");
   console.log(`[social-agent] Feed posts loaded: ${posts.length}`);
 
   const state = loadState();
