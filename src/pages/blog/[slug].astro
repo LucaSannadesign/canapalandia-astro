@@ -12,6 +12,7 @@ import RelatedPosts from "../../components/RelatedPosts.astro";
 import PostBodyH1 from "../../components/PostBodyH1.astro";
 import PostAttachments from "../../components/PostAttachments.astro";
 import LanguageSwitcher from "../../components/LanguageSwitcher.astro";
+import AdSlot from "../../components/AdSlot.astro";
 import { isPublishedBlogEntry, isReachableBlogEntry } from "../../lib/blogVisibility";
 import { FEATURES } from "../../lib/consts";
 import {
@@ -267,6 +268,9 @@ const jsonLd = !isLegacyReview
         </aside>
 
         <hr class="post-separator" aria-hidden="true" />
+
+        {/* Spazio sponsorizzato di fine articolo: non renderizza nulla finché ADS_ENABLED !== "true" */}
+        {!isLegacyReview ? <AdSlot slug={slug} position="article_end" lang={isEnglish ? "en" : "it"} /> : null}
 
         {!isLegacyReview && !isEnglish && FEATURES.REACTIONS && <Reactions slug={slug} />}
 
