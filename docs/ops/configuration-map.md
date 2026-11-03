@@ -36,6 +36,7 @@ Legenda fonte: **V** = verificato (CLI/log/DNS/codice/provider) · **L** = dichi
 | Database | Supabase | ? | Development, Preview, Production | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | `src/lib/supabaseServer.ts`, `src/pages/frasi-ribaltate.astro` | V codice/env · ? account |
 | Pagamenti | Stripe | ? | Development, Preview, Production | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | nessun riferimento trovato in `src/`, `scripts/`, `netlify/`, `.github/` | V env · ? utilizzo |
 | Feature flag Drop 001 | — (non secret) | — | file `.env.production` nel repo | `DROP_001_TEST_ENABLED` | nessun riferimento trovato con grep testuale | V file · ? utilizzo |
+| Advertising Manager (inattivo) | — (first-party, usa Supabase) | — | **non configurate** (default: spento) | `ADS_ENABLED`, `ADS_ADMIN_TOKEN`, `ADS_HASH_SECRET`, `ADS_DESTINATION_ALLOWLIST` | `src/lib/ads/config.ts`, `src/components/AdSlot.astro`, `src/pages/api/ads/**` — vedi `docs/ads/README.md` | V codice |
 
 ## Destinatari email
 
