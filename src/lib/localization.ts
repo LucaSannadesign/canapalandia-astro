@@ -24,6 +24,10 @@ export type BlogTranslationPair = {
  */
 export const BLOG_TRANSLATION_PAIRS: readonly BlogTranslationPair[] = [
   {
+    it: "cbd-biologico-sentenza-corte-ue-2026",
+    en: "organic-cbd-certification-eu-court-2026",
+  },
+  {
     it: "quanta-acqua-consuma-canapa-industriale",
     en: "how-much-water-does-industrial-hemp-use",
   },
