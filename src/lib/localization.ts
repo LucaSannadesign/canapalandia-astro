@@ -24,6 +24,10 @@ export type BlogTranslationPair = {
  */
 export const BLOG_TRANSLATION_PAIRS: readonly BlogTranslationPair[] = [
   {
+    it: "cannabis-psicoattiva-siberia-2800-anni-fa",
+    en: "psychoactive-cannabis-siberia-2800-years-ago",
+  },
+  {
     it: "cbd-biologico-sentenza-corte-ue-2026",
     en: "organic-cbd-certification-eu-court-2026",
   },
