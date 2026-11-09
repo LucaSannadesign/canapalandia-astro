@@ -348,8 +348,7 @@ function buildPayload(post, image, channel, englishPost = null) {
     "🇮🇹 Italiano",
     post.title,
     description,
-    "Articolo completo su Canapalandia:",
-    withUtm(post.link, "instagram"),
+    "📖 Articolo completo su canapalandia.com · link in bio",
   ].filter(Boolean);
   const italianLinkedIn = [
     "🇮🇹 Italiano",
@@ -371,8 +370,7 @@ function buildPayload(post, image, channel, englishPost = null) {
         "🇬🇧 English",
         englishPost.title,
         englishDescription,
-        "Full article on Canapalandia:",
-        withUtm(englishPost.link, "instagram"),
+        "📖 Full article on canapalandia.com · link in bio",
       ].filter(Boolean)
     : [];
   const englishLinkedIn = englishPost
@@ -395,8 +393,7 @@ function buildPayload(post, image, channel, englishPost = null) {
     : [
         post.title,
         description,
-        "Articolo completo su Canapalandia:",
-        withUtm(post.link, "instagram"),
+        "📖 Articolo completo su canapalandia.com · link in bio",
         hashtags,
       ].filter(Boolean).join("\n\n");
 

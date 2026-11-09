@@ -1,0 +1,24 @@
+name: Social caption PR check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/social-agent.mjs"
+      - "tests/social-agent-caption.test.mjs"
+      - ".github/workflows/social-caption-pr-check.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  social-caption-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify Instagram captions and channel URLs (no publishing)
+        run: node --test tests/social-agent-caption.test.mjs
