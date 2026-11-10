@@ -188,7 +188,7 @@ const creativeVersion = "seed-pilot-v1";
       status.textContent = response.status === 409
         ? "Sei già nella lista. L'interesse è stato registrato."
         : "Grazie. Interesse registrato: nessun ordine è stato effettuato.";
-      pushAnalytics("hemp_food_001_waitlist_signup");
+      pushAnalytics(response.status === 409 ? "hemp_food_001_waitlist_existing" : "hemp_food_001_waitlist_signup");
     } catch (error) {
       status.textContent = error instanceof Error ? error.message : "Errore durante l'iscrizione. Riprova.";
       submitButton.disabled = false;
@@ -198,14 +198,41 @@ const creativeVersion = "seed-pilot-v1";
 
 <style>
   .shop-test {
-    --paper: #f3efe3;
-    --ink: #171914;
-    --muted: #666a60;
-    --line: rgba(23, 25, 20, 0.2);
-    --green: #3f5d38;
+    /* Tokens espliciti per mantenere il contrasto sul verde in entrambi i temi. */
+    --shop-body: #e8f5ec;
+    --shop-muted: #d7e7db;
+    --line: rgba(218, 236, 222, 0.30);
+    --green: #1d623d;
+    color: var(--shop-body);
     max-width: 1180px;
     margin: 0 auto;
     padding: clamp(32px, 7vw, 84px) 22px 96px;
+  }
+
+  :global(html[data-theme="light"]) .shop-test {
+    --shop-body: #1d3527;
+    --shop-muted: #3e5346;
+    --line: rgba(24, 52, 34, 0.28);
+  }
+
+  .shop-hero h1, .lead, .waitlist-form > label:not(.consent-row) {
+    color: var(--shop-body);
+  }
+  .kicker, .section-index, .product__eyebrow {
+    color: var(--shop-muted);
+  }
+  .waitlist-form input[type="email"] {
+    background: var(--bg);
+    color: var(--shop-body);
+    border-color: var(--line);
+  }
+  .waitlist-form input[type="email"]::placeholder {
+    color: var(--shop-muted);
+    opacity: 1;
+  }
+  .consent-row a, .method a {
+    color: var(--shop-body);
+    text-underline-offset: 0.15em;
   }
 
   .kicker,
@@ -246,7 +273,7 @@ const creativeVersion = "seed-pilot-v1";
     max-width: 720px;
     padding: 13px 16px;
     border-left: 3px solid var(--green);
-    color: var(--muted);
+    color: var(--shop-muted);
     line-height: 1.55;
   }
 
@@ -263,7 +290,7 @@ const creativeVersion = "seed-pilot-v1";
 
   .shop-hero__media figcaption {
     margin-top: 9px;
-    color: var(--muted);
+    color: var(--shop-muted);
     font-size: 0.78rem;
     line-height: 1.45;
   }
@@ -293,7 +320,7 @@ const creativeVersion = "seed-pilot-v1";
   .gate p,
   .waitlist__copy > p {
     max-width: 760px;
-    color: var(--muted);
+    color: var(--shop-muted);
     font-size: 1.04rem;
     line-height: 1.65;
   }
@@ -316,13 +343,13 @@ const creativeVersion = "seed-pilot-v1";
   }
 
   .price-test small {
-    color: var(--muted);
+    color: var(--shop-muted);
   }
 
   .product__checks {
     margin: 0 0 28px;
     padding-left: 1.1rem;
-    color: var(--muted);
+    color: var(--shop-muted);
     line-height: 1.65;
   }
 
@@ -386,7 +413,7 @@ const creativeVersion = "seed-pilot-v1";
     gap: 10px;
     align-items: start;
     margin: 8px 0 4px;
-    color: var(--muted);
+    color: var(--shop-muted);
     font-size: 0.88rem;
     line-height: 1.5;
   }
@@ -398,7 +425,7 @@ const creativeVersion = "seed-pilot-v1";
   .form-status {
     min-height: 1.5em;
     margin: 2px 0 0;
-    color: var(--muted);
+    color: var(--shop-muted);
     font-size: 0.88rem;
   }
 
