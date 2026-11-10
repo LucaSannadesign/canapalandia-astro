@@ -1,0 +1,353 @@
+---
+interface Props { lang?: "it" | "en"; }
+const lang = Astro.props.lang === "en" ? "en" : "it";
+const en = lang === "en";
+const text = en ? {
+  eyebrow: "CANAPALANDIA SHOP · INTEREST TEST 001",
+  title: "Shelled hemp seeds.",
+  headline: "A new idea for your everyday cooking.",
+  intro: "We are exploring a 500 g pack of shelled hemp seeds for food use. The goal is to find a certified organic product with verifiable origin and documents, subject to supplier checks.",
+  product: "Shelled hemp seeds",
+  amount: "500 g format under consideration",
+  origin: "Supplier and documentation to be checked",
+  priceCaption: "Indicative test price · not an offer",
+  primary: "Keep me informed",
+  disclaimer: "Not yet for sale. No checkout, orders or payments. We are measuring genuine interest before deciding whether to continue.",
+  illustration: "Illustrative concept. Packaging and final product have not been selected.",
+  ribbon: ["A versatile food ingredient", "500 g proposed format", "No purchase required"],
+  usesEyebrow: "IN THE KITCHEN",
+  usesTitle: "Three ways to imagine using them",
+  usesLead: "From breakfast to everyday dishes: a few illustrative ideas, not product or nutritional claims.",
+  uses: [
+    {label:"BREAKFAST",title:"With yogurt and berries",body:"A simple addition to yogurt, fruit or cereal.",image:"bottega-colazione.webp",alt:"Illustrative bowl of yogurt, berries and shelled hemp seeds"},
+    {label:"SAVOURY",title:"On salads and bowls",body:"An ingredient for cold dishes and everyday bowls.",image:"bottega-insalata.webp",alt:"Illustrative green salad with tomato, avocado and seeds"},
+    {label:"RECIPES",title:"In everyday recipes",body:"An idea for home bread and other preparations.",image:"bottega-pane.webp",alt:"Illustrative freshly sliced bread with seeds"}
+  ],
+  factsEyebrow: "THE PROPOSAL, WITH NO PREMATURE PROMISES",
+  factsTitle: "What we are actually testing",
+  factsLead: "We have not yet chosen a supplier or approved a label. This page tests whether the proposed format and price are of interest.",
+  factsNote: "Origin, organic certification, nutrition information and applicable compliance will be confirmed only after checking the actual supplier documentation.",
+  specs:[["Ingredient","Shelled hemp seeds for food use"],["Format","500 g · proposed"],["Test price","€14.90 · indicative"],["Organic status","Target only · not verified"],["Availability","Not for sale · no orders accepted"]],
+  stepsEyebrow:"TRANSPARENCY",
+  stepsTitle:"What must happen before any sale",
+  stepsLead:"Interest registration does not guarantee a launch. These checks are still required.",
+  steps:["Measure interest in the format and price","Select and verify the supplier","Confirm organic status, documentation and labelling","Assess cost, logistics and legal requirements"],
+  signupEyebrow:"YOUR OPINION COUNTS",
+  signupTitle:"Would you genuinely consider it at this price?",
+  signupLead:"If the proposal interests you, leave your email to receive updates only if the test continues. This is not a reservation or a purchase.",
+  emailLabel:"Your email address",
+  emailPlaceholder:"name@example.com",
+  consentStart:"I agree to the ",
+  consentEnd:" and to receiving updates about this test.",
+  privacy:"Privacy Policy",
+  submit:"Register my interest",
+  noPurchase:"No purchase, payment or obligation.",
+  pending:"Sending…",
+  success:"Thank you. Interest registered; no order has been placed.",
+  existing:"You are already on the list. Your interest has been noted.",
+  error:"The registration could not be completed.",
+  footer:"Illustrative images and product concept; not photographs of an available product."
+} : {
+  eyebrow: "BOTTEGA CANAPALANDIA · TEST DI INTERESSE 001",
+  title: "Semi di canapa decorticati.",
+  headline: "Una nuova idea per la tua cucina.",
+  intro: "Stiamo valutando un formato da 500 g di semi di canapa decorticati per uso alimentare. L’obiettivo è selezionare un prodotto biologico certificato, con origine e documentazione verificabili dopo il controllo del fornitore.",
+  product:"Semi di canapa decorticati",
+  amount:"Formato 500 g in valutazione",
+  origin:"Fornitore e documenti da verificare",
+  priceCaption:"Prezzo test indicativo · non è un'offerta",
+  primary:"Vorrei essere avvisato",
+  disclaimer:"Il prodotto non è ancora in vendita. Nessun ordine, carrello o pagamento: stiamo verificando l'interesse reale prima di decidere.",
+  illustration:"Immagine illustrativa. Confezione e prodotto definitivo non sono ancora stati selezionati.",
+  ribbon:["Ingrediente alimentare versatile","Formato proposto da 500 g","Nessun acquisto richiesto"],
+  usesEyebrow:"IN CUCINA",
+  usesTitle:"Tre modi per immaginarli ogni giorno",
+  usesLead:"Dalla colazione ai piatti quotidiani: idee illustrative d'uso, non promesse nutrizionali o caratteristiche certificate.",
+  uses:[
+    {label:"COLAZIONE",title:"Con yogurt e frutti di bosco",body:"Un'aggiunta semplice a yogurt, frutta e cereali.",image:"bottega-colazione.webp",alt:"Illustrazione realistica di yogurt con frutti di bosco e semi di canapa decorticati"},
+    {label:"PIATTI SALATI",title:"Su insalate e bowl",body:"Un ingrediente per piatti freddi e preparazioni quotidiane.",image:"bottega-insalata.webp",alt:"Illustrazione realistica di un'insalata verde con pomodoro, avocado e semi"},
+    {label:"RICETTE",title:"Nelle preparazioni casalinghe",body:"Un'idea per pane e altre ricette da preparare a casa.",image:"bottega-pane.webp",alt:"Illustrazione realistica di pane rustico tagliato con semi"}
+  ],
+  factsEyebrow:"LA PROPOSTA, SENZA PROMESSE PREMATURE",
+  factsTitle:"Che cosa stiamo valutando",
+  factsLead:"Non abbiamo ancora scelto il fornitore né approvato etichetta e confezione. Questa pagina serve a capire se il formato e il prezzo proposti suscitano interesse.",
+  factsNote:"Origine, certificazione biologica, valori nutrizionali e conformità saranno comunicati solo dopo la verifica dei documenti del prodotto effettivo.",
+  specs:[["Ingrediente","Semi di canapa decorticati, uso alimentare"],["Formato","500 g · ipotesi da validare"],["Prezzo test","€14,90 · indicativo"],["Certificazione BIO","Obiettivo · ancora da verificare"],["Disponibilità","Non in vendita · nessun ordine"]],
+  stepsEyebrow:"TRASPARENZA",
+  stepsTitle:"Cosa serve prima di una possibile vendita",
+  stepsLead:"La lista di interesse non implica che il prodotto sarà commercializzato. Servono ancora queste verifiche.",
+  steps:["Misurare interesse per formato e prezzo","Selezionare e verificare il fornitore","Confermare certificazione, documenti ed etichetta","Valutare costi, logistica e requisiti applicabili"],
+  signupEyebrow:"LA TUA OPINIONE CONTA",
+  signupTitle:"Ti interesserebbe davvero a questo prezzo?",
+  signupLead:"Se la proposta ti interessa, lascia la tua email per ricevere aggiornamenti soltanto se decideremo di proseguire. Non è una prenotazione o un acquisto.",
+  emailLabel:"La tua email",
+  emailPlaceholder:"nome@email.it",
+  consentStart:"Acconsento al trattamento dei dati secondo la ",
+  consentEnd:" e all'iscrizione alla lista di aggiornamento del test.",
+  privacy:"Privacy Policy",
+  submit:"Segnala il mio interesse",
+  noPurchase:"Nessun ordine, nessun pagamento, nessun obbligo d'acquisto.",
+  pending:"Invio in corso…",
+  success:"Grazie. Interesse registrato: nessun ordine è stato effettuato.",
+  existing:"Sei già nella lista. Il tuo interesse è stato registrato.",
+  error:"Iscrizione non riuscita.",
+  footer:"Immagini illustrative e concept di prodotto, non fotografie di un articolo già disponibile."
+};
+const formId = en ? "enHempFoodWaitlistForm" : "hempFoodWaitlistForm";
+const statusId = en ? "enBottegaStatus" : "formStatus";
+const emailId = en ? "enBottegaEmail" : "bottegaEmail";
+const privacyUrl = en ? "/en/privacy/" : "/privacy-policy/";
+---
+<main class="bottega-v2" data-bottega-page data-language={lang}>
+  <section class="bottega-hero" aria-labelledby="bottega-title">
+    <div class="bottega-container bottega-hero__grid">
+      <div class="bottega-hero__content">
+        <p class="bottega-kicker">{text.eyebrow}</p>
+        <h1 id="bottega-title">{text.title}<span>{text.headline}</span></h1>
+        <p class="bottega-intro">{text.intro}</p>
+        <div class="bottega-perks" aria-label={en ? "Test characteristics" : "Caratteristiche della proposta"}>
+          <span><i aria-hidden="true">✓</i>{text.product}</span>
+          <span><i aria-hidden="true">✓</i>{text.amount}</span>
+          <span><i aria-hidden="true">✓</i>{text.origin}</span>
+        </div>
+        <div class="bottega-offer">
+          <div class="bottega-offer__price">
+            <small>{text.priceCaption}</small>
+            <strong>{en ? "€14.90" : "€14,90"}</strong>
+          </div>
+          <a class="bottega-button" href="#waitlist" data-interest-cta>{text.primary} <span aria-hidden="true">→</span></a>
+        </div>
+        <p class="bottega-disclaimer"><span aria-hidden="true">ⓘ</span>{text.disclaimer}</p>
+      </div>
+      <figure class="bottega-hero__media">
+        <img src="/images/bottega-semi-hero.webp" width="1100" height="800" alt={en ? "Illustrative bowl with shelled hemp seeds on a natural wooden surface" : "Ciotola illustrativa di semi di canapa decorticati su un piano in legno"} loading="eager" decoding="async" fetchpriority="high"/>
+        <div class="bottega-hero__stamp" aria-label={en ? "500 g concept, not for sale" : "Concept 500 g, non in vendita"}>
+          <span>CANAPALANDIA</span>
+          <strong>500 g</strong>
+          <small>{en ? "CONCEPT / TEST" : "CONCEPT / TEST"}</small>
+        </div>
+        <figcaption>{text.illustration}</figcaption>
+      </figure>
+    </div>
+  </section>
+  <section class="bottega-benefits" aria-label={en ? "Test principles" : "Principi del test"}>
+    <div class="bottega-container bottega-benefits__grid">
+      {text.ribbon.map((line,index)=><p><span aria-hidden="true">0{index+1}</span>{line}</p>)}
+    </div>
+  </section>
+  <section class="bottega-section bottega-uses" id="utilizzi" aria-labelledby="bottega-uses-title">
+    <div class="bottega-container">
+      <p class="bottega-kicker">{text.usesEyebrow}</p>
+      <h2 id="bottega-uses-title">{text.usesTitle}</h2>
+      <p class="bottega-section__intro">{text.usesLead}</p>
+      <div class="bottega-cards">
+        {text.uses.map((item)=><article class="bottega-card">
+          <div class="bottega-card__image">
+            <img src={"/images/"+item.image} width="760" height="520" alt={item.alt} loading="lazy" decoding="async"/>
+            <span>{item.label}</span>
+          </div>
+          <div class="bottega-card__body"><h3>{item.title}</h3><p>{item.body}</p></div>
+        </article>)}
+      </div>
+    </div>
+  </section>
+  <section class="bottega-section bottega-facts" id="prodotto" aria-labelledby="bottega-facts-title">
+    <div class="bottega-container bottega-facts__grid">
+      <div class="bottega-facts__copy">
+        <p class="bottega-kicker">{text.factsEyebrow}</p>
+        <h2 id="bottega-facts-title">{text.factsTitle}</h2>
+        <p>{text.factsLead}</p>
+        <p class="bottega-facts__note">{text.factsNote}</p>
+      </div>
+      <dl class="bottega-specs">
+        {text.specs.map(([name,value])=><div><dt>{name}</dt><dd>{value}</dd></div>)}
+      </dl>
+    </div>
+  </section>
+  <section class="bottega-section bottega-steps" aria-labelledby="bottega-steps-title">
+    <div class="bottega-container">
+      <div class="bottega-steps__heading">
+        <div><p class="bottega-kicker">{text.stepsEyebrow}</p><h2 id="bottega-steps-title">{text.stepsTitle}</h2></div>
+        <p>{text.stepsLead}</p>
+      </div>
+      <ol>{text.steps.map((step,index)=><li><b aria-hidden="true">0{index+1}</b><span>{step}</span></li>)}</ol>
+    </div>
+  </section>
+  <section class="bottega-signup" id="waitlist" aria-labelledby="bottega-signup-title">
+    <div class="bottega-container bottega-signup__grid">
+      <div>
+        <p class="bottega-kicker">{text.signupEyebrow}</p>
+        <h2 id="bottega-signup-title">{text.signupTitle}</h2>
+        <p>{text.signupLead}</p>
+        <p class="bottega-signup__no-purchase"><span aria-hidden="true">✓</span>{text.noPurchase}</p>
+      </div>
+      <form class="bottega-form" id={formId} data-bottega-form method="post" action="/api/newsletter">
+        <input type="hidden" name="campaign" value="hemp-food-001"/>
+        <input type="hidden" name="preference" value="semi-decorticati-500g"/>
+        <input type="hidden" name="creativeVersion" value="seed-pilot-v1"/>
+        <input type="hidden" name="lang" value={lang}/>
+        <div class="bottega-hp" aria-hidden="true"><label for={en ? "en-bottega-hp" : "bottega-hp"}>Leave empty</label><input id={en ? "en-bottega-hp" : "bottega-hp"} type="text" name="hp" tabindex="-1" autocomplete="off"/></div>
+        <label for={emailId}>{text.emailLabel}</label>
+        <input id={emailId} name="email" type="email" placeholder={text.emailPlaceholder} autocomplete="email" required/>
+        <label class="bottega-consent">
+          <input name="consent" type="checkbox" required/>
+          <span>{text.consentStart}<a href={privacyUrl}>{text.privacy}</a>{text.consentEnd}</span>
+        </label>
+        <button class="bottega-submit" type="submit">{text.submit}<span aria-hidden="true">→</span></button>
+        <p class="bottega-feedback" data-bottega-status id={statusId} role="status" aria-live="polite"></p>
+      </form>
+    </div>
+  </section>
+  <p class="bottega-footnote">{text.footer}</p>
+</main>
+<script>
+  const root=document.querySelector<HTMLElement>("[data-bottega-page]");
+  const form=root?.querySelector<HTMLFormElement>("[data-bottega-form]");
+  const status=root?.querySelector<HTMLElement>("[data-bottega-status]");
+  const btn=form?.querySelector<HTMLButtonElement>("[type=submit]");
+  const en=root?.getAttribute("data-language")==="en";
+  form?.addEventListener("submit",async(e)=>{
+    e.preventDefault();
+    if(!status||!btn)return;
+    const data=new FormData(form);
+    const previous=btn.textContent||"";
+    btn.disabled=true;
+    status.textContent=en?"Sending…":"Invio in corso…";
+    try{
+      const r=await fetch("/api/newsletter",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+        email:data.get("email"),consent:data.get("consent"),hp:data.get("hp"),
+        campaign:"hemp-food-001",preference:"semi-decorticati-500g",creativeVersion:"seed-pilot-v1",lang:en?"en":"it"
+      })});
+      const response=await r.json().catch(()=>({}));
+      if(!r.ok&&r.status!==409)throw new Error(response.message||(en?"Registration failed.":"Iscrizione non riuscita."));
+      if(r.status===409){
+        status.textContent=en?"You are already on the list. Your interest has been noted.":"Sei già nella lista. Il tuo interesse è stato registrato.";
+      }else{
+        status.textContent=en?"Thank you. Interest registered; no order has been placed.":"Grazie. Interesse registrato: nessun ordine è stato effettuato.";
+      }
+      status.dataset.state=r.status===409?"existing":"ok";
+      // Analytics is consent-gated by PrivacyConsent. Never send an email or COA contents.
+      const w=window as typeof window & {canapalandiaTrack?:(name:string,params:Record<string,string>)=>void};
+      w.canapalandiaTrack?.(r.status===409?"hemp_food_001_waitlist_existing":"hemp_food_001_waitlist_signup",{campaign:"hemp-food-001",language:en?"en":"it"});
+      if(r.status===409)btn.disabled=false;
+    }catch(error){
+      status.textContent=error instanceof Error?error.message:(en?"Registration failed.":"Iscrizione non riuscita.");
+      status.dataset.state="error";
+      btn.disabled=false;
+      btn.textContent=previous;
+    }
+  });
+</script>
+<style>
+  .bottega-v2{--bt-ink:#172f24;--bt-soft:#47594b;--bt-green:#10432f;--bt-cream:#f8f5eb;--bt-line:#d9decf;color:var(--bt-ink);background:var(--bt-cream);overflow:hidden;font-family:var(--font-ui,Arial,sans-serif)}
+  .bottega-v2 *{box-sizing:border-box}
+  .bottega-container{width:min(1200px,calc(100% - 52px));margin-inline:auto}
+  .bottega-kicker{margin:0;color:#325e33!important;font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;line-height:1.4}
+  .bottega-v2 h1,.bottega-v2 h2,.bottega-v2 h3{font-family:Georgia, "Times New Roman", serif;font-weight:500;letter-spacing:-.041em;color:var(--bt-ink);text-wrap:balance}
+  .bottega-v2 h2{font-size:clamp(32px,3.4vw,51px);line-height:1.09;margin:12px 0 18px}
+  .bottega-v2 p{margin-block:0}
+  .bottega-hero{background:radial-gradient(ellipse at 90% 10%,#e9e5d1 0,transparent 53%),#f9f6ec}
+  .bottega-hero__grid{display:grid;grid-template-columns:minmax(0,1.06fr) minmax(0,.94fr);align-items:center;gap:clamp(26px,4.4vw,66px);padding-block:clamp(40px,5vw,70px)}
+  .bottega-hero__content{min-width:0}
+  .bottega-v2 h1{font-size:clamp(47px,5.1vw,78px);line-height:.99;margin:19px 0 20px}
+  .bottega-v2 h1 span{display:block;font:600 clamp(19px,2.05vw,26px)/1.25 var(--font-ui,Arial,sans-serif);letter-spacing:-.02em;color:#3b6a36;margin-top:18px}
+  .bottega-intro{font-size:clamp(16px,1.3vw,19px);line-height:1.6;max-width:58ch;color:#2c3d31}
+  .bottega-perks{display:flex;gap:13px;flex-wrap:wrap;margin:25px 0 22px}
+  .bottega-perks span{display:inline-flex;gap:7px;align-items:flex-start;font-size:12px;font-weight:700;line-height:1.36;max-width:185px}
+  .bottega-perks i{font-style:normal;color:#287c43;font-weight:900}
+  .bottega-offer{display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+  .bottega-offer__price{display:grid;gap:2px;padding:0 24px 0 0;border-right:1px solid #bfc6b6}
+  .bottega-offer__price small{font-size:11px;color:#4b5b4d}
+  .bottega-offer__price strong{font-family:Georgia,serif;font-size:42px;line-height:1.1;color:#14432b;font-weight:700;letter-spacing:-.04em}
+  .bottega-v2 .bottega-button,.bottega-v2 .bottega-submit{display:inline-flex;align-items:center;justify-content:center;gap:17px;background:#155437;border:0;border-radius:8px;color:#fff!important;text-decoration:none;font:700 14px/1.25 var(--font-ui,Arial,sans-serif);padding:17px 22px;min-height:52px;cursor:pointer;transition:background .15s,transform .15s}
+  .bottega-v2 .bottega-button:hover,.bottega-v2 .bottega-submit:hover{background:#0e3d2a;transform:translateY(-1px)}
+  .bottega-v2 a:focus-visible,.bottega-v2 button:focus-visible,.bottega-v2 input:focus-visible{outline:3px solid #bd8737;outline-offset:3px}
+  .bottega-disclaimer{display:flex;gap:8px;align-items:flex-start;font-size:12px;max-width:67ch;line-height:1.56;color:#45594b;margin-top:18px!important}
+  .bottega-disclaimer span{font-size:18px;line-height:1}
+  .bottega-hero__media{position:relative;min-width:0;margin:0;isolation:isolate}
+  .bottega-hero__media img{display:block;width:100%;height:clamp(360px,42vw,525px);object-fit:cover;object-position:center;border-radius:16px;box-shadow:0 25px 70px #153e2923}
+  .bottega-hero__stamp{position:absolute;right:15px;top:16px;display:grid;gap:2px;justify-items:center;background:#f6eedeed;color:#153f2a;border:1px solid #e2d6c1;padding:15px 19px;border-radius:8px;box-shadow:0 10px 24px #1b332922}
+  .bottega-hero__stamp>span{font-size:10px;letter-spacing:.07em;font-weight:800}
+  .bottega-hero__stamp strong{font:700 29px Georgia,serif;letter-spacing:-.035em}
+  .bottega-hero__stamp small{font-size:9px;letter-spacing:.08em;font-weight:800}
+  .bottega-hero__media figcaption{padding:9px 3px 0;color:#4c5d51;font-size:11px;line-height:1.4}
+  .bottega-benefits{background:#0c3d2a;color:#e9f5eb}
+  .bottega-benefits__grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+  .bottega-benefits p{display:flex;align-items:center;gap:14px;padding:18px 22px;font-size:13px;font-weight:700;border-right:1px solid #75a1845b;color:#f5f6ed}
+  .bottega-benefits p:first-child{padding-left:0}
+  .bottega-benefits p:last-child{border:0}
+  .bottega-benefits span{font:600 22px Georgia,serif;color:#c9dcac}
+  .bottega-section{padding:clamp(50px,5.5vw,80px) 0}
+  .bottega-section__intro{max-width:73ch;color:#4b5c4e;font-size:16px;margin:-2px 0 29px!important;line-height:1.6}
+  .bottega-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:19px}
+  .bottega-card{background:#fffefa;border:1px solid #e2e0d5;border-radius:12px;overflow:hidden;box-shadow:0 9px 25px #152c1d0d}
+  .bottega-card__image{position:relative;aspect-ratio:1.46;overflow:hidden}
+  .bottega-card__image img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .25s}
+  .bottega-card:hover .bottega-card__image img{transform:scale(1.035)}
+  .bottega-card__image>span{position:absolute;left:16px;bottom:14px;background:#fff8e9;color:#2b4e2f;padding:6px 10px;font-size:10px;font-weight:800;border-radius:4px;letter-spacing:.06em}
+  .bottega-card__body{padding:20px 21px 24px}
+  .bottega-card h3{font-size:25px;line-height:1.12;margin:0 0 10px}
+  .bottega-card p{font-size:14px;line-height:1.55;color:#47584b}
+  .bottega-facts{background:#eaecdf}
+  .bottega-facts__grid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(30px,6vw,80px);align-items:center}
+  .bottega-facts__copy>p:not(.bottega-kicker){font-size:16px;color:#35493b;line-height:1.65;max-width:59ch}
+  .bottega-facts__note{margin-top:14px!important;font-size:13px!important;color:#4a5a4d!important}
+  .bottega-specs{margin:0;background:#fbfaf3;border:1px solid #d4dbc9;border-radius:11px;overflow:hidden}
+  .bottega-specs div{display:grid;grid-template-columns:135px 1fr;gap:16px;align-items:center;padding:15px 18px;border-bottom:1px solid #e0e4d5}
+  .bottega-specs div:last-child{border:0}
+  .bottega-specs dt{font-weight:800;color:#42603d;font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+  .bottega-specs dd{margin:0;font-weight:650;font-size:13px;color:#183c2b}
+  .bottega-steps{background:#f9f7ef}
+  .bottega-steps__heading{display:grid;grid-template-columns:1fr .7fr;gap:30px;align-items:end;margin-bottom:24px}
+  .bottega-steps__heading>p{font-size:15px;line-height:1.6;color:#46574a;padding-bottom:13px}
+  .bottega-steps ol{list-style:none;counter-reset:none;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin:0;padding:0}
+  .bottega-steps li{border:1px solid #dce1d0;background:#fffefa;border-radius:10px;padding:20px 17px;display:flex;align-items:flex-start;gap:13px;min-height:100px}
+  .bottega-steps li b{flex:0 0 auto;background:#cce0a7;color:#19412c;border-radius:50%;width:34px;height:34px;display:grid;place-items:center;font-size:13px}
+  .bottega-steps li span{font-size:13px;font-weight:680;line-height:1.42;color:#263b2d}
+  .bottega-signup{background:radial-gradient(circle at 0% 90%,#1d6541 0,transparent 45%),#0c3828;color:#f0f6e9;padding:clamp(56px,6vw,92px) 0;scroll-margin-top:95px}
+  .bottega-signup__grid{display:grid;grid-template-columns:1fr .95fr;align-items:center;gap:clamp(30px,7vw,90px)}
+  .bottega-signup .bottega-kicker{color:#cbdcb2!important}
+  .bottega-signup h2{color:#fff9ed;font-size:clamp(36px,4vw,55px)}
+  .bottega-signup__grid>div>p:not(.bottega-kicker){font-size:16px;line-height:1.6;max-width:58ch;color:#e1eee2}
+  .bottega-signup__no-purchase{font-size:13px!important;display:flex;align-items:flex-start;gap:10px;margin-top:19px!important}
+  .bottega-signup__no-purchase span{color:#c6e3aa;font-size:19px}
+  .bottega-form{padding:28px;background:#f9f7ef;border-radius:13px;display:grid;gap:12px;color:#183427;box-shadow:0 24px 40px #0002}
+  .bottega-form>label:first-of-type{font-size:14px;font-weight:780}
+  .bottega-form input[type=email]{width:100%;background:#fff;color:#192e21;border:1px solid #a6b5a9;border-radius:6px;padding:15px;font:500 16px var(--font-ui,Arial,sans-serif)}
+  .bottega-form input[type=email]::placeholder{color:#59685d;opacity:1}
+  .bottega-consent{display:flex;gap:10px;font-size:12px;color:#344c3d;line-height:1.55;align-items:flex-start}
+  .bottega-consent input{margin-top:3px;width:16px;height:16px;flex:0 0 auto;accent-color:#22643c}
+  .bottega-v2 .bottega-consent a{font-weight:750;text-decoration:underline;text-underline-offset:2px;color:#18512e!important}
+  .bottega-v2 .bottega-submit{width:100%;display:flex;justify-content:space-between;text-align:left}
+  .bottega-submit:disabled{opacity:.66;cursor:default}
+  .bottega-feedback{min-height:19px;font-size:13px;line-height:1.45;color:#244a33}
+  .bottega-feedback[data-state=error]{color:#9d1c1c}
+  .bottega-hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+  .bottega-footnote{background:#0c3828;color:#cadccc;text-align:center;padding:18px 20px;font-size:11px;line-height:1.5}
+  @media(max-width:980px){
+    .bottega-hero__grid{grid-template-columns:1fr;gap:28px}.bottega-hero__media img{height:430px}
+    .bottega-facts__grid{gap:30px}.bottega-steps ol{grid-template-columns:repeat(2,minmax(0,1fr))}
+  }
+  @media(max-width:700px){
+    .bottega-container{width:min(100% - 34px,560px)}
+    .bottega-v2 h1{font-size:clamp(42px,11vw,64px)}
+    .bottega-v2 h1 span{font-size:21px}
+    .bottega-hero__grid{padding-block:34px}
+    .bottega-hero__media img{height:clamp(260px,69vw,390px)}
+    .bottega-hero__stamp{top:12px;right:12px;padding:9px 11px}.bottega-hero__stamp strong{font-size:23px}
+    .bottega-perks{gap:11px}.bottega-perks span{max-width:100%;font-size:12px}
+    .bottega-offer{gap:14px}.bottega-offer__price strong{font-size:35px}.bottega-offer__price{padding-right:12px}
+    .bottega-v2 .bottega-button{padding:14px 16px;min-height:49px}
+    .bottega-benefits__grid{grid-template-columns:1fr}
+    .bottega-benefits p{border:0;border-bottom:1px solid #75a1845b;padding:11px 0!important}
+    .bottega-benefits p:last-child{border:0}
+    .bottega-cards,.bottega-facts__grid,.bottega-steps__heading,.bottega-signup__grid{grid-template-columns:1fr}
+    .bottega-card__image{aspect-ratio:1.6}
+    .bottega-facts__grid,.bottega-signup__grid{gap:24px}
+    .bottega-steps ol{grid-template-columns:1fr}
+    .bottega-steps li{min-height:0}
+    .bottega-form{padding:21px}
+    .bottega-section{padding:50px 0}
+  }
+  @media(prefers-reduced-motion:reduce){.bottega-v2 *{transition:none!important;scroll-behavior:auto}}
+</style>
