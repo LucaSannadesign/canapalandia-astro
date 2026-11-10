@@ -228,6 +228,11 @@ const extraHead = `
     status: "measured" | "nd" | "lod" | "loq" | "unknown";
   };
 
+  const canapalandiaTrack = (name: string, params: Record<string, string | number | boolean> = {}) => {
+    const tracker = window as typeof window & { canapalandiaTrack?: (event: string, data: Record<string, string | number | boolean>) => void };
+    tracker.canapalandiaTrack?.(name, { language: "it", ...params }); // Mai inviare testo/valori del COA.
+  };
+
   const input = document.querySelector<HTMLTextAreaElement>("#coa-input");
   const analyzeButton = document.querySelector<HTMLButtonElement>("#analyze-coa");
   const clearButton = document.querySelector<HTMLButtonElement>("#clear-coa");
@@ -430,7 +435,7 @@ const extraHead = `
     if (paragraph) paragraph.textContent = message;
   }
 
-  function analyze() {
+  function analyze(source: "manual" | "example" = "manual") {
     if (!input || !output || !emptyState || !summary || !resultsContainer) return;
     const text = input.value.trim();
 
@@ -463,9 +468,10 @@ const extraHead = `
 
     for (const item of parsed) resultsContainer.appendChild(renderResult(item));
     renderTerms(text);
+    canapalandiaTrack("lab_analysis_success", { source, recognized_count: parsed.length });
   }
 
-  analyzeButton?.addEventListener("click", analyze);
+  analyzeButton?.addEventListener("click", () => analyze("manual"));
 
   clearButton?.addEventListener("click", () => {
     if (!input) return;
@@ -484,7 +490,8 @@ const extraHead = `
       "CBG 0,18 %",
       "CBN ND",
     ].join("\n");
-    analyze();
+    canapalandiaTrack("lab_example_used", { language: "it" });
+    analyze("example");
   });
 </script>
 

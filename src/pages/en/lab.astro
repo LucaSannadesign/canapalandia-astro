@@ -59,6 +59,10 @@ const structuredData = {
 
   <script is:inline>
     (() => {
+      const trackLab = (name, params = {}) => {
+        window.canapalandiaTrack?.(name, { language: 'en', ...params }); // No COA content or identifiers.
+      };
+      let fromExample = false;
       const input = document.getElementById('en-coa-input');
       const analyze = document.getElementById('en-analyze-coa');
       const clear = document.getElementById('en-clear-coa');
@@ -117,8 +121,10 @@ const structuredData = {
         if (results) results.innerHTML = parsed.map((r) => `<article class="lab-result"><div><strong>${esc(r.label)}</strong><span>${esc(descriptions[r.key] || '')}</span></div><div class="lab-result__value">${r.value !== null ? `${esc(r.value)} ${esc(r.unit || '')}` : esc(r.status || '')}</div><small>${esc(r.raw)}</small></article>`).join('');
         const used = [...new Set(parsed.map(r => r.status).filter(Boolean))];
         if (terms) terms.innerHTML = used.length ? `<p><strong>Threshold terms detected:</strong> ${used.map(esc).join(', ')}. Their exact meaning depends on the laboratory method and certificate legend.</p>` : '';
+        trackLab('lab_analysis_success', { source: fromExample ? 'example' : 'manual', recognized_count: parsed.length });
       };
-      example?.addEventListener('click', () => { if (input) input.value = 'CBD 12.4 %\nCBDA 0.8 %\nΔ9-THC < LOQ\nCBG 0.18 %\nCBN ND'; });
+      example?.addEventListener('click', () => { if (input) input.value = 'CBD 12.4 %\nCBDA 0.8 %\nΔ9-THC < LOQ\nCBG 0.18 %\nCBN ND'; fromExample = true; trackLab('lab_example_used'); });
+      input?.addEventListener('input', () => { fromExample = false; });
       clear?.addEventListener('click', () => { if (input) input.value=''; if (empty) empty.hidden=false; if (output) output.hidden=true; });
       analyze?.addEventListener('click', render);
     })();

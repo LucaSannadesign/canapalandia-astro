@@ -226,12 +226,13 @@ const copy = lang === "en"
       readNewsletterSuccess();
     }
 
-    const demandStatus = document.getElementById("formStatus");
+    const demandStatus = document.getElementById("formStatus") ?? document.getElementById("enBottegaStatus");
     if (demandStatus instanceof HTMLElement) {
       const readDemandSuccess = () => {
         if (demandStatus.dataset.gaTracked === "1") return;
         const message = (demandStatus.textContent || "").trim();
-        if (!/^(Grazie\.|Sei già|Thank you\.|You are already)/i.test(message)) return;
+        // Solo nuove adesioni confermate (HTTP 200), non 409 già iscritto.
+        if (!/^(Grazie\.|Thank you\.)/i.test(message)) return;
         const preferenceInput = document.querySelector<HTMLInputElement>('input[name="preference"]');
         demandStatus.dataset.gaTracked = "1";
         trackEvent("demand_test_signup", { campaign: "hemp-food-001", preference: preferenceInput?.value || "semi-decorticati-500g" });
