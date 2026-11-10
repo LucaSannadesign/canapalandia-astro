@@ -24,6 +24,10 @@ export type BlogTranslationPair = {
  */
 export const BLOG_TRANSLATION_PAIRS: readonly BlogTranslationPair[] = [
   {
+    it: "carifit-canapa-crea-primo-olio-ricerca",
+    en: "carifit-hemp-crea-first-oil-pressing",
+  },
+  {
     it: "cannabis-psicoattiva-siberia-2800-anni-fa",
     en: "psychoactive-cannabis-siberia-2800-years-ago",
   },
