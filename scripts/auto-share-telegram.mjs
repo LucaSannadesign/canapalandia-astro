@@ -599,7 +599,16 @@ async function main() {
 
     // 2. Escludi draft/non pubblicati (se segnali presenti)
     // Editorial approval is for the blog only; social distribution for this slug is not authorized.
-    const publishablePosts = allPosts.filter((post) => isPublishedPost(post) && post.slug !== "infusi-foglie-canapa-regole-ue-2027");
+    const SOCIAL_NOT_BEFORE = {
+  // Carosello concordato per la sera: la pubblicazione del blog non deve inviare il post in anticipo.
+  "tabacco-riscaldato-cannabis-light-rischi-divieti": "2026-11-12T17:30:00Z",
+  "heated-tobacco-cannabis-light-risks-regulation": "2026-11-12T17:30:00Z",
+};
+const publishablePosts = allPosts.filter((post) =>
+  isPublishedPost(post) &&
+  post.slug !== "infusi-foglie-canapa-regole-ue-2027" &&
+  !(SOCIAL_NOT_BEFORE[post.slug] && Date.now() < Date.parse(SOCIAL_NOT_BEFORE[post.slug]))
+);
     console.log(`[auto-share] Publishable posts after draft filter: ${publishablePosts.length}`);
     let selectedPost = null;
 
