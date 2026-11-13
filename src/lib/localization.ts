@@ -23,6 +23,7 @@ export type BlogTranslationPair = {
  * revisionate e registrate esplicitamente qui.
  */
 export const BLOG_TRANSLATION_PAIRS: readonly BlogTranslationPair[] = [
+  { it: "cannabis-cbd-ansia-ricerca-lancet-psychiatry", en: "cbd-anxiety-stress-evidence-review" },
   { it: "tabacco-riscaldato-cannabis-light-rischi-divieti", en: "heated-tobacco-cannabis-light-risks-regulation" },
   {
     it: "cannabis-psicoattiva-siberia-2800-anni-fa",

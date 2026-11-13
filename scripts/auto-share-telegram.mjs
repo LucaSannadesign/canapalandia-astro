@@ -32,6 +32,13 @@ const SHARE_MODE = process.env.SHARE_MODE || "repost";
 const NEW_POST_WINDOW_HOURS = Number(process.env.NEW_POST_WINDOW_HOURS || 48);
 const MIN_HOURS_BETWEEN_SHARES = Number(process.env.MIN_HOURS_BETWEEN_SHARES || 22);
 const RECENT_POSTS_WINDOW_MONTHS = 6;
+// Editorial-only updates can appear in RSS but must never be shared without separate approval.
+const EDITORIAL_ONLY_SLUGS = new Set([
+  "infusi-foglie-canapa-regole-ue-2027",
+  "cannabis-cbd-ansia-ricerca-lancet-psychiatry",
+  "cbd-anxiety-stress-evidence-review",
+]);
+
 const TEMPORARY_EXCLUDED_SLUGS = {
   "25-aprile-canapa-liberazione-proibizionismo": "2026-05-12",
   "20-aprile-420-canapa-cannabis-italia-2026": "2026-05-12",
@@ -606,7 +613,7 @@ async function main() {
 };
 const publishablePosts = allPosts.filter((post) =>
   isPublishedPost(post) &&
-  post.slug !== "infusi-foglie-canapa-regole-ue-2027" &&
+  !EDITORIAL_ONLY_SLUGS.has(post.slug) &&
   !(SOCIAL_NOT_BEFORE[post.slug] && Date.now() < Date.parse(SOCIAL_NOT_BEFORE[post.slug]))
 );
     console.log(`[auto-share] Publishable posts after draft filter: ${publishablePosts.length}`);
