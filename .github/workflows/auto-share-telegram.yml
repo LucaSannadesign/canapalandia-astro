@@ -8,6 +8,9 @@ on:
       - main
     paths:
       - 'src/content/**'
+      # Editorial-only CBD anxiety review: publication does not authorise social delivery.
+      - '!src/content/blog/cannabis-cbd-ansia-ricerca-lancet-psychiatry.mdx'
+      - '!src/content/blog/cbd-anxiety-stress-evidence-review.mdx'
       - 'src/pages/rss.xml.ts'
   workflow_dispatch:
     inputs:
