@@ -8,6 +8,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { normalizeMakeWebhookUrl } from "./make-webhook-url.mjs";
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
@@ -489,7 +490,8 @@ async function sendTelegramManualMessage({ title, description, url }) {
  * Invia payload post selezionato al webhook Make (opzionale)
  */
 async function sendMakeWebhook(post) {
-  if (!MAKE_WEBHOOK_URL) {
+  const webhookUrl = normalizeMakeWebhookUrl(MAKE_WEBHOOK_URL);
+  if (!webhookUrl) {
     console.log("[auto-share] Make webhook skipped: MAKE_WEBHOOK_URL not set");
     return;
   }
@@ -505,7 +507,7 @@ async function sendMakeWebhook(post) {
     site: "canapalandia",
   };
 
-  const response = await fetch(MAKE_WEBHOOK_URL, {
+  const response = await fetch(webhookUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -514,8 +516,7 @@ async function sendMakeWebhook(post) {
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Make webhook error ${response.status}: ${errorText}`);
+    throw new Error(`Make webhook HTTP ${response.status}; platform delivery not verified`);
   }
 
   console.log("[auto-share] Make webhook notified successfully");
@@ -708,6 +709,7 @@ const publishablePosts = allPosts.filter((post) =>
         await sendMakeWebhook(selectedPost);
       } catch (err) {
         console.warn(`[auto-share] WARN: Make webhook failed after Telegram success: ${err?.message || err}`);
+        console.warn(`::warning::Telegram delivered, but optional Make webhook failed: ${err?.message || err}`);
       }
     }
 
