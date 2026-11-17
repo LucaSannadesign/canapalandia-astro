@@ -272,7 +272,7 @@ function markCompletedAliases(state, primaryPost, englishPost, completedAt) {
   let changed = false;
   for (const item of [primaryPost, englishPost].filter(Boolean)) {
     if (state.completedArticles.some((entry) => entry.slug === item.slug)) continue;
-    state.completedArticles.push({ slug: item.slug, link: item.link, completedAt });
+    state.completedArticles.push({ slug: item.slug, link: item.link, completedAt, makeHandoff: "accepted_unverified" });
     changed = true;
   }
   return changed;
@@ -446,7 +446,7 @@ async function notifyMake(payload) {
   });
   const text = await response.text();
   if (!response.ok) throw new Error(`Make webhook error ${response.status}: ${text.slice(0, 300)}`);
-  console.log(`[social-agent] Make accepted ${payload.eventId}: HTTP ${response.status}`);
+  console.log(`[social-agent] Make accepted ${payload.eventId}: HTTP ${response.status}; platform publication NOT VERIFIED`);
 }
 
 function choosePost(posts, state, now) {
@@ -467,7 +467,7 @@ function choosePost(posts, state, now) {
     (post) => trackedArticle(state, post) && !articleComplete(state, post) && !wasCompletedArticle(state, post),
   );
   if (incomplete) {
-    console.log(`[social-agent] Resuming partially published article: ${incomplete.slug}`);
+    console.log(`[social-agent] Resuming partially handed-off article: ${incomplete.slug}`);
     return { post: incomplete, retry: true };
   }
 
@@ -476,7 +476,7 @@ function choosePost(posts, state, now) {
     if (!Number.isNaN(last.getTime())) {
       const hours = (now.getTime() - last.getTime()) / 3_600_000;
       if (hours < MIN_HOURS_BETWEEN_ARTICLES) {
-        console.log(`[social-agent] no-op: only ${hours.toFixed(1)}h since last completed article`);
+        console.log(`[social-agent] no-op: only ${hours.toFixed(1)}h since last completed Make handoff`);
         return { post: null, retry: false };
       }
     }
@@ -503,7 +503,7 @@ async function main() {
   for (let attempt = 0; attempt < posts.length; attempt += 1) {
     const { post: selectedPost } = choosePost(posts, state, now);
     if (!selectedPost) {
-      console.log("[social-agent] no-op: no article ready for social publishing");
+      console.log("[social-agent] no-op: no article ready for Make handoff");
       return;
     }
 
@@ -517,7 +517,7 @@ async function main() {
       const changed = markCompletedAliases(state, primaryPost, englishPost, completedAt);
       if (changed) saveState(state);
       console.log(
-        `[social-agent] Skipping translated duplicate already completed: ${primaryPost.slug} + ${englishPost.slug}`,
+        `[social-agent] Skipping translated duplicate already handed off: ${primaryPost.slug} + ${englishPost.slug}`,
       );
       continue;
     }
@@ -537,7 +537,7 @@ async function main() {
   console.log(
     englishPost
       ? `[social-agent] Bilingual pair: ${post.slug} + ${englishPost.slug}`
-      : `[social-agent] No verified English alternate for ${post.slug}; publishing Italian only`,
+      : `[social-agent] No verified English alternate for ${post.slug}; handing off Italian only`,
   );
 
   const pendingChannels = CHANNELS.filter(
@@ -562,6 +562,8 @@ async function main() {
       slug: post.slug,
       link: post.link,
       sentAt: new Date().toISOString(),
+      makeHandoff: "accepted_unverified",
+      platformPublicationVerified: false,
     });
     saveState(state);
   }
@@ -572,8 +574,9 @@ async function main() {
     markCompletedAliases(state, post, englishPost, completedAt);
     saveState(state);
     console.log(
-      `[social-agent] Completed on ${CHANNELS.join(" + ")}: ${post.slug}${englishPost ? ` + ${englishPost.slug}` : ""}`,
+      `[social-agent] Handoff accepted by Make on ${CHANNELS.join(" + ")}: ${post.slug}${englishPost ? ` + ${englishPost.slug}` : ""}; actual platform publication NOT VERIFIED`,
     );
+    console.log(`::notice::Canapalandia Social Agent: Make accepted ${CHANNELS.length} channel payloads, but Facebook/Instagram/LinkedIn publication is unverified until provider receipts are checked.`);
   }
 }
 
