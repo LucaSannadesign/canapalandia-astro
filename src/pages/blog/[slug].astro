@@ -75,6 +75,7 @@ function toDate(value: Date | string | number | null | undefined): Date | null {
 
 const rawCover = entry.data.image || entry.data.coverImage || "";
 const coverSrc = normalizeImgSrc(rawCover);
+const hasHempFlourResponsiveHero = coverSrc === "/images/canapalandia-farina-canapa-impasti-1600w.webp";
 const postImage = normalizeImage(entry);
 const SITE_URL = import.meta.env.SITE || "https://canapalandia.com";
 const alternates = translationAlternates(slug, SITE_URL);
@@ -221,6 +222,10 @@ const jsonLd = !isLegacyReview
             <img
               class="post-hero__img"
               src={coverSrc}
+              srcset={hasHempFlourResponsiveHero ? "/images/canapalandia-farina-canapa-impasti-960w.webp 960w, /images/canapalandia-farina-canapa-impasti-1600w.webp 1600w" : undefined}
+              sizes={hasHempFlourResponsiveHero ? "(max-width: 720px) calc(100vw - 2rem), (max-width: 1200px) 75vw, 1100px" : undefined}
+              width={hasHempFlourResponsiveHero ? 1600 : undefined}
+              height={hasHempFlourResponsiveHero ? 900 : undefined}
               alt={entry.data.coverAlt || entry.data.title || ""}
               loading="eager"
               decoding="async"
