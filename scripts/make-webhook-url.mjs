@@ -8,7 +8,7 @@ export function normalizeMakeWebhookUrl(value) {
   const raw = String(value ?? "").trim();
   if (!raw) return "";
 
-  const matches = [...raw.matchAll(/https:\/\/hook\.[a-z0-9-]+\.make\.com\/[a-z0-9_-]+/gi)]
+  const matches = [...raw.matchAll(/https:\/\/hook\.[a-z]{2}[0-9]+\.make\.com\/[a-z0-9_-]+/gi)]
     .map((match) => match[0]);
 
   if (matches.length !== 1) {
@@ -16,7 +16,7 @@ export function normalizeMakeWebhookUrl(value) {
   }
 
   const url = new URL(matches[0]);
-  if (!/^hook\.[a-z0-9-]+\.make\.com$/i.test(url.hostname) ||
+  if (!/^hook\.[a-z]{2}[0-9]+\.make\.com$/i.test(url.hostname) ||
       url.protocol !== "https:" ||
       !/^\/[a-z0-9_-]+$/i.test(url.pathname)) {
     throw new Error("MAKE_WEBHOOK_URL non valido: il destinatario non e' un webhook ufficiale Make");
