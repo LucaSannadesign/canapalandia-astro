@@ -1,0 +1,59 @@
+name: Canapalandia social reliability checks
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/social-agent.mjs'
+      - 'scripts/auto-share-telegram.mjs'
+      - 'scripts/make-webhook-url.mjs'
+      - 'scripts/auto-post.mjs'
+      - 'tests/social-agent-*.test.mjs'
+      - 'tests/make-webhook-url.test.mjs'
+      - 'pnpm-workspace.yaml'
+      - '.github/workflows/auto-post.yml'
+      - '.github/workflows/social-reliability-pr-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  offline-social-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Syntax checks
+        run: |
+          node --check scripts/make-webhook-url.mjs
+          node --check scripts/auto-share-telegram.mjs
+          node --check scripts/social-agent.mjs
+      - name: Safe, local-only fake-provider tests
+        run: |
+          node --test tests/make-webhook-url.test.mjs tests/social-agent-caption.test.mjs tests/social-agent-handoff.test.mjs
+
+  auto-post-install-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: pnpm
+      - name: Confirm package/workspace configuration from repaired Auto Post workflow
+        run: |
+          pnpm --version
+          pnpm store path
+          pnpm install --frozen-lockfile
+          node --check scripts/auto-post.mjs
+      - name: Confirm calendar is not a live editorial queue
+        run: |
+          node --input-type=module -e "import fs from 'node:fs'; const posts=JSON.parse(fs.readFileSync('calendar/posts.json','utf8')); if(!Array.isArray(posts))process.exit(1); console.log('Legacy calendar entries:',posts.length);"
