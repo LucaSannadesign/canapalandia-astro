@@ -11,6 +11,8 @@ on:
       # Editorial-only CBD anxiety review: publication does not authorise social delivery.
       - '!src/content/blog/cannabis-cbd-ansia-ricerca-lancet-psychiatry.mdx'
       - '!src/content/blog/cbd-anxiety-stress-evidence-review.mdx'
+      - '!src/content/blog/canapa-navi-corderie-cordami-storia.mdx'
+      - '!src/content/blog/hemp-rope-sailing-ships-maritime-history.mdx'
       - 'src/pages/rss.xml.ts'
   workflow_dispatch:
     inputs:

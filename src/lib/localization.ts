@@ -23,6 +23,7 @@ export type BlogTranslationPair = {
  * revisionate e registrate esplicitamente qui.
  */
 export const BLOG_TRANSLATION_PAIRS: readonly BlogTranslationPair[] = [
+  { it: "canapa-navi-corderie-cordami-storia", en: "hemp-rope-sailing-ships-maritime-history" },
   { it: "farina-canapa-impasti-percentuali-consistenza", en: "hemp-flour-baking-percentages-texture" },
   { it: "cannabis-cbd-ansia-ricerca-lancet-psychiatry", en: "cbd-anxiety-stress-evidence-review" },
   { it: "tabacco-riscaldato-cannabis-light-rischi-divieti", en: "heated-tobacco-cannabis-light-risks-regulation" },

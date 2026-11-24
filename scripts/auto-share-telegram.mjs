@@ -35,6 +35,8 @@ const MIN_HOURS_BETWEEN_SHARES = Number(process.env.MIN_HOURS_BETWEEN_SHARES || 
 const RECENT_POSTS_WINDOW_MONTHS = 6;
 // Editorial-only updates can appear in RSS but must never be shared without separate approval.
 const EDITORIAL_ONLY_SLUGS = new Set([
+  "canapa-navi-corderie-cordami-storia",
+  "hemp-rope-sailing-ships-maritime-history",
   "infusi-foglie-canapa-regole-ue-2027",
   "cannabis-cbd-ansia-ricerca-lancet-psychiatry",
   "cbd-anxiety-stress-evidence-review",
