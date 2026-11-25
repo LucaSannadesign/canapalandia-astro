@@ -1,0 +1,134 @@
+---
+import SiteLayout from "../../layouts/SiteLayout.astro";
+export const prerender = false;
+
+// Solo anteprima di revisione, mai disponibile sui domini di produzione.
+const host = Astro.url.hostname;
+const env = import.meta.env.VERCEL_ENV;
+if (env === "production" || ["canapalandia.com", "www.canapalandia.com"].includes(host) || !(host.endsWith(".vercel.app") || host === "localhost" || host === "127.0.0.1")) {
+  return new Response("Not found", { status: 404, headers: { "X-Robots-Tag": "noindex, nofollow" } });
+}
+Astro.response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
+Astro.response.headers.set("Cache-Control", "private, no-store");
+
+const title = "Cannabis tra esperienza, conoscenza e cultura: il percorso editoriale di Adelino Peterus Melo";
+const description = "Adelino Peterus Melo: trent’anni di osservazione della cannabis, due libri, imprenditoria, ricerca e traduzioni assistite dall’intelligenza artificiale.";
+---
+<SiteLayout title={title} description={description} robots="noindex,nofollow,noarchive" newsletter={false}>
+  <main class="editorial-preview" id="contenuto-intervista">
+    <article aria-labelledby="article-title">
+      <header class="article-head">
+        <p class="draft-label">ANTEPRIMA EDITORIALE · CAN-INT-002 · REV. 0.2 · 25 NOVEMBRE 2026</p>
+        <p class="kicker">Cultura e società / Interviste</p>
+        <h1 id="article-title">{title}</h1>
+        <p class="dek">Dall’osservazione della pianta all’imprenditoria e alla scrittura: due libri offrono l’occasione per interrogare un autore indipendente dei Paesi Bassi sul rapporto tra esperienza, scienza e cultura della cannabis.</p>
+        <p class="byline">Redazione Canapalandia</p>
+        <aside class="review-notice">Bozza per il confronto con l’autore. Le dieci domande sono in attesa di risposta; il testo non costituisce una recensione integrale delle opere.</aside>
+      </header>
+      <nav class="contents" aria-label="Indice dell’articolo">
+        <h2>In questo articolo</h2>
+        <ul>
+          <li><a href="#percorso">Il percorso personale</a></li>
+          <li><a href="#testament">The Cannabis Testament</a></li>
+          <li><a href="#my-way">My Way in Cannabis</a></li>
+          <li><a href="#scienza">Esperienza e scienza</a></li>
+          <li><a href="#europa">La cannabis in Europa</a></li>
+          <li><a href="#traduzioni">Intelligenza artificiale e traduzioni</a></li>
+        </ul>
+      </nav>
+      <p>Prima di diventare materia di libri e dibattiti pubblici, la cannabis è stata per Adelino Peterus Melo un interesse coltivato attraverso anni di osservazione. A raccontarlo è lui stesso nella prefazione di <em>The Cannabis Testament</em>, dove ricostruisce l’origine di un percorso iniziato circa trent’anni fa.</p>
+      <p>Autore indipendente attivo nei Paesi Bassi, Melo ha raccolto le proprie esperienze in due volumi dalle prospettive differenti. Il primo prende in esame la pianta; il secondo ripercorre una storia individuale e imprenditoriale. Non li presentiamo come trattati scientifici, ma come occasione per un dialogo su come nasce, si verifica e si trasmette la conoscenza.</p>
+
+      <section id="percorso">
+        <h2>Trent’anni di osservazione: da dove nasce un percorso</h2>
+        <p>Nell’estratto della prefazione l’autore ricorda una lunga fase di apprendimento, nella quale colloca anche circa otto anni di studio delle opere di Ed Rosenthal. È un dato autobiografico, non una certificazione di competenza scientifica né un rapporto di collaborazione con Rosenthal.</p>
+        <p>Al di là della durata del percorso, interessa capire quali domande, incontri e cambiamenti di prospettiva abbiano orientato il suo lavoro.</p>
+        <div class="question"><p class="q-label">Canapalandia · 01</p><p>Quale episodio ricorda come il punto di svolta in cui l’interesse per la cannabis è diventato parte centrale della Sua vita personale e professionale?</p></div>
+        <div class="question"><p class="q-label">Canapalandia · 02</p><p>Guardando a questi trent’anni, quale convinzione ha dovuto rivedere e quale esperienza L’ha portata a cambiare idea?</p></div>
+      </section>
+      <section id="testament">
+        <h2>The Cannabis Testament: dalla pianta al libro</h2>
+        <figure class="book">
+          <a href="https://thecannabistestament.nl/" rel="nofollow"><img src="https://thecannabistestament.nl/assets/book-cover.jpg" alt="Copertina originale di The Cannabis Testament" width="705" height="1000" loading="lazy" decoding="async" referrerpolicy="no-referrer" /></a>
+          <figcaption><strong>The Cannabis Testament</strong><br />Copertina ufficiale: Adelino Peterus Melo.</figcaption>
+        </figure>
+        <p>Il volume illustrato affianca la prospettiva personale dell’autore ad argomenti botanici, storici e chimici. L’indice pubblico dell’edizione inglese comprende 46 capitoli raccolti in sei parti, con uno spazio dedicato alle fonti e agli interrogativi ancora aperti.</p>
+        <p>Un elemento da approfondire è il rapporto tra l’esperienza che ha originato il libro e le conoscenze scientifiche alle quali esso fa riferimento. Senza avere ancora esaminato l’opera integrale, non è possibile valutarne l’accuratezza tecnica.</p>
+        <div class="question"><p class="q-label">Canapalandia · 03</p><p>Che cosa L’ha spinta a scrivere <em>The Cannabis Testament</em>, per quale lettore lo ha concepito e quale domanda vorrebbe che rimanesse al termine della lettura?</p></div>
+      </section>
+      <section id="my-way">
+        <h2>My Way in Cannabis: una storia personale e imprenditoriale</h2>
+        <figure class="book">
+          <a href="https://thecannabistestament.nl/my-way-in-cannabis" rel="nofollow"><img src="https://thecannabistestament.nl/assets/my-way-ebook-cover.jpg" alt="Copertina originale di My Way in Cannabis" width="705" height="1000" loading="lazy" decoding="async" referrerpolicy="no-referrer" /></a>
+          <figcaption><strong>My Way in Cannabis</strong><br />Copertina ufficiale: Adelino Peterus Melo.</figcaption>
+        </figure>
+        <p>Il secondo libro sposta il centro della narrazione dalla pianta alla persona. La presentazione ufficiale lo descrive come un racconto di apprendimento, sviluppo di prodotti e relazioni internazionali; le cinque edizioni EPUB tradotte sono articolate in 42 capitoli.</p>
+        <p>Il settore della cannabis pone chi vi opera di fronte a responsabilità specifiche: sostenibilità delle iniziative, trasparenza nei confronti del pubblico e rispetto di norme differenti da Paese a Paese. La biografia offre un punto di partenza per discutere queste tensioni, senza attribuire all’autore posizioni non ancora espresse.</p>
+        <div class="question"><p class="q-label">Canapalandia · 04</p><p>Quali tappe racconta in <em>My Way in Cannabis</em> per spiegare il passaggio dall’interesse personale all’attività imprenditoriale? Perché ha sentito il bisogno di raccontarle in un secondo libro?</p></div>
+        <div class="question"><p class="q-label">Canapalandia · 05</p><p>Qual è stata la decisione professionale più difficile che ha dovuto affrontare, e quali responsabilità ritiene oggi imprescindibili per chi opera nel settore?</p></div>
+      </section>
+      <section id="scienza">
+        <h2>Esperienza, ricerca scientifica e responsabilità divulgativa</h2>
+        <p>L’osservazione individuale può far emergere interrogativi interessanti. La ricerca scientifica, invece, richiede metodi documentati, dati verificabili, valutazione delle spiegazioni alternative e risultati riproducibili. I due approcci possono dialogare, purché una testimonianza non sia scambiata per una prova di efficacia.</p>
+        <p>Questo principio assume particolare rilevanza quando la discussione tocca la salute. La plausibilità di un’ipotesi o l’esperienza di una singola persona non dimostrano un beneficio clinico né consentono di generalizzarlo.</p>
+        <div class="question"><p class="q-label">Canapalandia · 06</p><p>Come distingue nei Suoi libri le osservazioni personali dai risultati della ricerca pubblicata? Può indicare un esempio di affermazione che considera ancora un’ipotesi e spiegare quali verifiche sarebbero necessarie?</p></div>
+      </section>
+      <section id="europa">
+        <h2>Paesi Bassi ed Europa: un quadro normativo in trasformazione</h2>
+        <p>L’esperienza olandese è da tempo associata alla tolleranza nei confronti dei coffeeshop, senza che ciò equivalga a una legalizzazione generale della filiera. Il governo dei Paesi Bassi ha avviato una sperimentazione di approvvigionamento controllato per studiare la regolamentazione della produzione, della distribuzione e della vendita, e valutarne gli effetti anche sulla salute e sulla sicurezza pubblica.</p>
+        <p>Nel resto d’Europa convivono politiche differenti. Come chiarisce l’EUDA, la disciplina del possesso e dell’uso illecito rimane di competenza dei singoli Stati: non esiste un modello europeo uniforme.</p>
+        <div class="question"><p class="q-label">Canapalandia · 07</p><p>Quale cambiamento della percezione pubblica della cannabis ha osservato nei Paesi Bassi nel corso della Sua esperienza? Quali contraddizioni sono rimaste irrisolte?</p></div>
+        <div class="question"><p class="q-label">Canapalandia · 08</p><p>Quali elementi del modello olandese ritiene utili per il dibattito europeo, e quali criteri dovrebbe adottare una politica pubblica per valutare salute, accesso alla conoscenza e riduzione dei rischi?</p></div>
+      </section>
+      <section id="traduzioni">
+        <h2>Intelligenza artificiale e traduzioni: opportunità e limiti</h2>
+        <p>Entrambi i libri sono disponibili anche in italiano. L’autore dichiara di aver utilizzato strumenti di intelligenza artificiale e precisa che le traduzioni non hanno ricevuto una revisione linguistica e specialistica indipendente.</p>
+        <p>Per l’editoria indipendente, la tecnologia può facilitare l’accesso a mercati e lettori lontani. Nei testi tecnici, però, un errore terminologico può alterare il senso di un concetto. La responsabilità della verifica rimane umana: una traduzione fluente non è necessariamente una traduzione corretta.</p>
+        <div class="question"><p class="q-label">Canapalandia · 09</p><p>In quali fasi della scrittura e delle traduzioni è intervenuta l’intelligenza artificiale? Come verifica che il significato originale e la terminologia tecnica siano conservati, e considera una revisione indipendente delle edizioni internazionali?</p></div>
+      </section>
+      <section id="conclusioni">
+        <h2>Una conoscenza da trasmettere</h2>
+        <p>Il valore di una testimonianza non consiste necessariamente nell’offrire risposte definitive, ma nella possibilità di aprire domande. Le esperienze personali acquistano interesse nel confronto con altre prospettive e con strumenti che permettano di verificarle.</p>
+        <div class="question"><p class="q-label">Canapalandia · 10</p><p>Se dovesse lasciare a chi si avvicina oggi alla cultura della cannabis un insegnamento maturato in questi trent’anni, quale sceglierebbe?</p></div>
+      </section>
+      <footer class="article-end">
+        <h2>Fonti e approfondimenti</h2>
+        <ul>
+          <li><a href="https://thecannabistestament.nl/" rel="nofollow">Sito ufficiale di Adelino Peterus Melo</a></li>
+          <li><a href="https://thecannabistestament.nl/read-a-sample" rel="nofollow">The Cannabis Testament – prefazione</a></li>
+          <li><a href="https://thecannabistestament.nl/inside-the-book" rel="nofollow">The Cannabis Testament – indice</a></li>
+          <li><a href="https://thecannabistestament.nl/my-way-in-cannabis" rel="nofollow">My Way in Cannabis – presentazione</a></li>
+          <li><a href="https://thecannabistestament.nl/press" rel="nofollow">Materiali stampa e informazioni sulle edizioni</a></li>
+          <li><a href="https://www.euda.europa.eu/publications/european-drug-report/2026/cannabis_it">EUDA – Relazione europea sulla droga 2026: cannabis</a></li>
+          <li><a href="https://www.euda.europa.eu/publications/faqs/cannabis-laws-in-europe-faq/how-do-eu-countries-respond-illegal-use-and-supply-cannabis_en">EUDA – Normative europee sulla cannabis</a></li>
+          <li><a href="https://www.government.nl/themes/family-health-and-care/controlled-cannabis-supply-chain-experiment">Governo dei Paesi Bassi – Controlled Cannabis Supply Chain Experiment</a></li>
+        </ul>
+        <p class="editorial-note"><strong>Nota redazionale.</strong> L’articolo nasce da una collaborazione editoriale di visibilità reciproca senza compensi economici. Canapalandia mantiene la propria autonomia editoriale. La bozza si basa sulle informazioni pubbliche e biografiche disponibili; le risposte e l’eventuale approfondimento dei libri saranno integrati dopo la ricezione e la verifica dei materiali. Le copertine provengono dal materiale stampa ufficiale dell’autore.</p>
+        <a href="#article-title">Torna all’inizio</a>
+      </footer>
+    </article>
+  </main>
+</SiteLayout>
+<style>
+  .editorial-preview { max-width: 780px; margin-inline: auto; padding: clamp(1.25rem, 4vw, 3rem) 1.25rem 5rem; line-height: 1.75; }
+  .article-head { margin-block-end: 2rem; }
+  .draft-label { font-size: .76rem; letter-spacing: .06em; border: 1px solid currentColor; padding: .65rem .85rem; font-weight: 700; border-radius: .3rem; }
+  .kicker, .q-label { font-size: .82rem; font-weight: 700; letter-spacing: .035em; }
+  .article-head h1 { font-size: clamp(2rem, 5vw, 3.25rem); line-height: 1.12; letter-spacing: -.035em; margin-block: .7rem 1rem; }
+  .dek { font-size: clamp(1.15rem, 2vw, 1.35rem); line-height: 1.5; }
+  .byline { font-size: .9rem; font-weight: 600; }
+  .review-notice, .contents, .editorial-note { border: 1px solid currentColor; border-radius: .5rem; padding: 1rem 1.25rem; margin-block: 1.5rem; }
+  .contents h2 { font-size: 1rem; margin: 0 0 .5rem; }
+  .contents ul, .article-end ul { padding-inline-start: 1.25rem; }
+  .contents a, .article-end a { text-decoration: underline; text-underline-offset: .17em; overflow-wrap: anywhere; }
+  section { margin-block: 2.7rem; scroll-margin-top: 7rem; }
+  section h2, .article-end h2 { font-size: clamp(1.5rem, 3vw, 2rem); line-height: 1.25; letter-spacing: -.025em; margin-block-end: 1rem; }
+  .editorial-preview p { margin-block: .8rem 1rem; }
+  .question { border-inline-start: 3px solid #578a58; padding: .55rem 0 .55rem 1.15rem; margin-block: 1.6rem; }
+  .question .q-label { margin-block: 0 .3rem; }
+  .question p:last-child { margin: 0; font-weight: 600; }
+  .book { margin: 1.5rem auto; text-align: center; }
+  .book img { display: block; width: min(100%, 240px); height: auto; margin-inline: auto; border-radius: .2rem; }
+  figcaption { font-size: .8rem; margin-top: .5rem; }
+  .article-end { margin-top: 3rem; }
+</style>
