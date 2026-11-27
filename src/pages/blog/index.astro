@@ -4,7 +4,7 @@ import CardPost from "../../components/CardPost.astro";
 import Layout from "../../layouts/MigratedLayout.astro";
 import { PRIMARY_EDITORIAL_CATEGORY_SLUGS } from "../../config/navigation";
 import { categoryHref } from "../../lib/categoryUrl";
-import { isPublishedBlogEntry } from "../../lib/blogVisibility";
+import { searchablePosts } from "../../lib/search";
 import { SEARCH_MAX_QUERY_LENGTH } from "../../lib/search";
 
 // Paginazione statica: pagina 1 è sempre prerenderizzata
@@ -54,25 +54,6 @@ function normalizeImage(entry: CollectionEntry<"blog">): string {
   return srcValue.startsWith("/") ? srcValue : `/${srcValue}`;
 }
 
-// Filtro per post italiani
-function isItalianPost(entry: CollectionEntry<"blog">): boolean {
-  const data = entry.data as any;
-  
-  // Se esiste data.lang, escludi "en"
-  if (data.lang !== undefined) {
-    return data.lang === "it";
-  }
-  
-  // Se esiste data.locale, escludi "en"
-  if (data.locale !== undefined) {
-    return data.locale === "it";
-  }
-  
-  // MODIFICA PER ASTRO V6: usa id invece di slug per i controlli
-  const id = entry.id || "";
-  return !id.startsWith("en/");
-}
-
 // Carica tutti i post dalla collection
 let postsAll: CollectionEntry<"blog">[] = [];
 try {
@@ -81,22 +62,9 @@ try {
   console.warn("[blog/index] Nessun contenuto trovato in Content Collections");
 }
 
-// Filtra solo post italiani realmente pubblici
-const now = new Date();
-const italianPosts = postsAll.filter(
-  (post) => isItalianPost(post) && isPublishedBlogEntry(post, now),
-);
-
-// Ordina per publishDate DESC
-const sortedPosts = italianPosts
-  .slice()
-  .sort((a, b) => {
-    const da = a.data.publishDate;
-    const db = b.data.publishDate;
-    const ta = da ? (da instanceof Date ? da.getTime() : new Date(da).getTime()) : 0;
-    const tb = db ? (db instanceof Date ? db.getTime() : new Date(db).getTime()) : 0;
-    return tb - ta;
-  });
+// Unico filtro editoriale e linguistico, prima di conteggi e paginazione.
+const italianPosts = searchablePosts(postsAll, "it");
+const sortedPosts = italianPosts;
 
 // Paginazione: 10 post per pagina
 const PAGE_SIZE = 10;
