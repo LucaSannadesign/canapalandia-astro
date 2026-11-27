@@ -8,6 +8,7 @@ on:
       - "src/components/**"
       - "src/pages/blog/**"
       - "src/lib/localization.ts"
+      - "src/content.config.ts"
       - "src/lib/search.ts"
       - "src/lib/blogVisibility.ts"
       - "src/pages/partials/blog-results.astro"

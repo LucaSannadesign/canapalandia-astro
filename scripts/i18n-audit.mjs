@@ -61,14 +61,18 @@ if (!fs.existsSync(LOCALIZATION_FILE)) {
   const enBlock = localizationSource.match(/EN_BLOG_CATEGORIES\s*=\s*new Set<string>\(\[([\s\S]*?)\]\)/);
   if (!enBlock) throw new Error("Cannot read authoritative EN category registry");
   const enCategories = new Set([...enBlock[1].matchAll(/["']([^"']+)["']/g)].map(m => m[1]));
+  const schemaSource = fs.readFileSync(path.join(ROOT, "src", "content.config.ts"), "utf8");
+  const quarantineBlock = schemaSource.match(/BLOG_FORCED_LEGACY_REVIEW_SLUGS\s*=\s*new Set<string>\(\[([\s\S]*?)\]\)/);
+  if (!quarantineBlock) throw new Error("Cannot read authoritative legacy quarantine registry");
+  const quarantined = new Set([...quarantineBlock[1].matchAll(/["']([^"']+)["']/g)].map(m => m[1]));
   function publicationData(fm, relativePath) {
     const category = field(fm, "category");
     return {
       path: relativePath,
       language: enCategories.has(category) ? "en" : "it",
       status: field(fm, "status") || "ready",
-      draft: field(fm, "draft") === "true",
-      editorialStatus: field(fm, "editorialStatus") || "current",
+      draft: /^(true|yes|on)$/i.test(field(fm, "draft")),
+      editorialStatus: quarantined.has(field(fm, "slug")) ? "legacy-review" : (field(fm, "editorialStatus") || "current"),
       publishDate: field(fm, "publishDate"),
     };
   }

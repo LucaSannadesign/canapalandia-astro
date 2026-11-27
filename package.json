@@ -4,8 +4,8 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "astro dev",
-    "prebuild": "node scripts/i18n-audit.mjs && rm -rf .astro dist .vercel/output node_modules/.vite node_modules/.astro && node scripts/generate-sitemap-pages.mjs",
-    "build": "astro build",
+    "prebuild": "rm -rf .astro dist .vercel/output node_modules/.vite node_modules/.astro && node scripts/generate-sitemap-pages.mjs",
+    "build": "node scripts/i18n-audit.mjs && astro build",
     "preview": "astro preview",
     "astro": "astro",
     "migrate:wp": "node scripts/migrate-wp-to-content.mjs",
