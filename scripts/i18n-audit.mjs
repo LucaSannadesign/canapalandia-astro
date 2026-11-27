@@ -1,5 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
+import { completenessErrors, ready } from "./i18n-completeness.mjs";
 
 const ROOT = process.cwd();
 const BLOG_DIR = path.join(ROOT, "src", "content", "blog");
@@ -25,7 +27,7 @@ function field(fm, key) {
   const match = fm.match(new RegExp(`^${key}:\\s*(.+?)\\s*$`, "m"));
   if (!match) return "";
 
-  const raw = match[1].trim();
+  const raw = match[1].trim().replace(/\s+#.*$/, "").trim();
   if (
     (raw.startsWith('"') && raw.endsWith('"')) ||
     (raw.startsWith("'") && raw.endsWith("'"))
@@ -55,6 +57,45 @@ if (!fs.existsSync(LOCALIZATION_FILE)) {
     errors.push("No explicit BLOG_TRANSLATION_PAIRS found");
   }
 
+  const policy = JSON.parse(fs.readFileSync(path.join(ROOT, "scripts", "i18n-publication-policy.json"), "utf8"));
+  const enBlock = localizationSource.match(/EN_BLOG_CATEGORIES\s*=\s*new Set<string>\(\[([\s\S]*?)\]\)/);
+  if (!enBlock) throw new Error("Cannot read authoritative EN category registry");
+  const enCategories = new Set([...enBlock[1].matchAll(/["']([^"']+)["']/g)].map(m => m[1]));
+  const schemaSource = fs.readFileSync(path.join(ROOT, "src", "content.config.ts"), "utf8");
+  const quarantineBlock = schemaSource.match(/BLOG_FORCED_LEGACY_REVIEW_SLUGS\s*=\s*new Set<string>\(\[([\s\S]*?)\]\)/);
+  if (!quarantineBlock) throw new Error("Cannot read authoritative legacy quarantine registry");
+  const quarantined = new Set([...quarantineBlock[1].matchAll(/["']([^"']+)["']/g)].map(m => m[1]));
+  function publicationData(fm, relativePath) {
+    const category = field(fm, "category");
+    return {
+      path: relativePath,
+      language: enCategories.has(category) ? "en" : "it",
+      status: field(fm, "status") || "ready",
+      draft: /^(true|yes|on)$/i.test(field(fm, "draft")),
+      editorialStatus: quarantined.has(field(fm, "slug")) ? "legacy-review" : (field(fm, "editorialStatus") || "current"),
+      publishDate: field(fm, "publishDate"),
+    };
+  }
+  const promotedPaths = new Set();
+  // In PRs, also detect old drafts promoted to ready, including backdated ones.
+  const base = process.env.I18N_BASE_SHA;
+  if (base) {
+    if (!/^[a-f0-9]{40}$/.test(base)) throw new Error("Invalid I18N_BASE_SHA");
+    const changed = execFileSync("git", ["diff", "--name-only", "-z", "--diff-filter=AM", base, "HEAD", "--", "src/content/blog"], { encoding: "utf8" }).split("\0").filter(Boolean);
+    for (const relativePath of changed) {
+      if (!/\.mdx?$/.test(relativePath)) continue;
+      let previous = "";
+      try {
+        previous = execFileSync("git", ["show", base + ":" + relativePath], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+      } catch {
+        // New paths are protected independently by the policy baseline.
+        promotedPaths.add(relativePath);
+        continue;
+      }
+      if (!ready(publicationData(frontmatter(previous), relativePath))) promotedPaths.add(relativePath);
+    }
+  }
+
   const files = walk(BLOG_DIR);
   const entries = new Map();
 
@@ -65,6 +106,7 @@ if (!fs.existsSync(LOCALIZATION_FILE)) {
     if (entries.has(slug)) errors.push(`Duplicate public slug: ${slug}`);
     entries.set(slug, {
       file,
+      ...publicationData(fm, path.relative(ROOT, file).split(path.sep).join("/")),
       source,
       title: field(fm, "title"),
       description: field(fm, "description"),
@@ -72,6 +114,8 @@ if (!fs.existsSync(LOCALIZATION_FILE)) {
       canonical: field(fm, "canonical"),
     });
   }
+
+  errors.push(...completenessErrors(entries, pairs, policy, promotedPaths));
 
   const used = new Set();
   for (const pair of pairs) {

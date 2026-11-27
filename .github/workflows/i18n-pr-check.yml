@@ -8,12 +8,16 @@ on:
       - "src/components/**"
       - "src/pages/blog/**"
       - "src/lib/localization.ts"
+      - "src/content.config.ts"
       - "src/lib/search.ts"
       - "src/lib/blogVisibility.ts"
       - "src/pages/partials/blog-results.astro"
       - "tests/blog-listing-language.test.ts"
       - "tests/search.test.ts"
       - "scripts/i18n-audit.mjs"
+      - "scripts/i18n-completeness.mjs"
+      - "scripts/i18n-publication-policy.json"
+      - "tests/i18n-completeness.test.ts"
       - "package.json"
       - "pnpm-lock.yaml"
       - ".github/workflows/i18n-pr-check.yml"
@@ -34,6 +38,8 @@ jobs:
     steps:
       - name: Checkout PR
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
@@ -54,6 +60,8 @@ jobs:
         run: pnpm test
 
       - name: Localization audit
+        env:
+          I18N_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: pnpm i18n:audit
 
       - name: Astro build
