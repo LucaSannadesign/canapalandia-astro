@@ -1,0 +1,6 @@
+# Bilingual publication gate (CAN-I18N)
+Effective for all new blog files and publications dated from 2026-11-28. Existing historical files are grandfathered by a fixed snapshot; do not expand this list. Existing drafts promoted in a PR also need a pair, including backdated releases.
+
+Before marking a new article ready: prepare the complete Italian and English articles, review source accuracy and image/quotation rights for both versions, register the explicit pair in `src/lib/localization.ts`, align release dates, check categories, metadata, canonical/hreflang/sitemap and preview. A draft may be prepared without its counterpart, but may not be published ready alone. Monolingual publication requires an explicit editorial decision: a slug, reason and approval reference in the reviewed policy exceptions array. Never invent approval. No automated translation or rights clearance is implied by a passing check.
+
+The existing i18n workflow runs the unit tests and audit, and the production build independently runs the audit before Astro. Historical gaps are tracked separately; Melo is issue #151. The date/path gate protects new files even if backdated, and PR comparison detects existing drafts promoted to ready. Direct pushes bypass the PR-only comparison: keep editorial changes on reviewed PRs. No new services or paid workflows.
