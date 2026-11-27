@@ -23,6 +23,7 @@ export type BlogTranslationPair = {
  * revisionate e registrate esplicitamente qui.
  */
 export const BLOG_TRANSLATION_PAIRS: readonly BlogTranslationPair[] = [
+  { it: "intervista-adelino-peterus-melo-cannabis", en: "interview-adelino-peterus-melo-cannabis" },
   {
     it: "canapa-industriale-unione-europea-briefing-2026",
     en: "industrial-hemp-eu-briefing-2026",
