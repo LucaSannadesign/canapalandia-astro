@@ -8,6 +8,11 @@ on:
       - "src/components/**"
       - "src/pages/blog/**"
       - "src/lib/localization.ts"
+      - "src/lib/search.ts"
+      - "src/lib/blogVisibility.ts"
+      - "src/pages/partials/blog-results.astro"
+      - "tests/blog-listing-language.test.ts"
+      - "tests/search.test.ts"
       - "scripts/i18n-audit.mjs"
       - "package.json"
       - "pnpm-lock.yaml"
@@ -44,6 +49,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Unit tests (including blog language regression)
+        run: pnpm test
 
       - name: Localization audit
         run: pnpm i18n:audit
