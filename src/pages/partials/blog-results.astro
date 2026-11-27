@@ -1,7 +1,7 @@
 ---
 import { getCollection, type CollectionEntry } from "astro:content";
 import CardPost from "../../components/CardPost.astro";
-import { isPublishedBlogEntry } from "../../lib/blogVisibility";
+import { searchablePosts } from "../../lib/search";
 
 export const prerender = false;
 
@@ -18,7 +18,7 @@ const formatDate = (value: Date | string | number | null | undefined): string =>
 };
 
 function postHref(entry: any): string {
-  const slug = entry?.slug ?? entry?.data?.slug ?? "";
+  const slug = (entry.data?.slug || entry.id || "").trim();
   if (!slug) throw new Error("Missing slug for post link");
   return `/blog/${slug}/`;
 }
@@ -64,21 +64,13 @@ const PER_PAGE = 12;
 const now = new Date();
 
 // Parti esclusivamente dai contenuti pubblici.
-let filtered = postsAll.filter((post) => isPublishedBlogEntry(post, now));
+let filtered = searchablePosts(postsAll, "it", now);
 if (cat) {
   filtered = filtered.filter((p) => (p.data.category || "") === cat);
 }
 
-// Ordina per publishDate DESC
-const allSorted = filtered
-  .slice()
-  .sort((a, b) => {
-    const da = dateOf(a);
-    const db = dateOf(b);
-    const ta = da ? da.getTime() : 0;
-    const tb = db ? db.getTime() : 0;
-    return tb - ta;
-  });
+// searchablePosts restituisce già i post ordinati per publishDate DESC.
+const allSorted = filtered;
 
 // Paginate
 const start = (page - 1) * PER_PAGE;
